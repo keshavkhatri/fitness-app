@@ -1,0 +1,62 @@
+// =============================================================================
+// Ionic bridge — maps our palette onto Ionic's CSS variables so built-in Ionic
+// components (tabs, modals, toggles, skeletons…) inherit the design system.
+//
+// This replaces Ionic's stock light/dark palettes; do not import those.
+// =============================================================================
+
+@use 'sass:color';
+@use 'sass:map';
+@use 'sass:math';
+
+@function rgb-list($c) {
+  @return math.round(color.channel($c, 'red', $space: rgb)), math.round(color.channel($c, 'green', $space: rgb)),
+    math.round(color.channel($c, 'blue', $space: rgb));
+}
+
+@mixin ionic-named-color($name, $base, $contrast) {
+  --ion-color-#{$name}: #{$base};
+  --ion-color-#{$name}-rgb: #{rgb-list($base)};
+  --ion-color-#{$name}-contrast: #{$contrast};
+  --ion-color-#{$name}-contrast-rgb: #{rgb-list($contrast)};
+  --ion-color-#{$name}-shade: #{color.mix(#000, $base, 12%)};
+  --ion-color-#{$name}-tint: #{color.mix(#fff, $base, 10%)};
+}
+
+@mixin ionic-colors($p) {
+  $bg: map.get($p, bg);
+  $text: map.get($p, text);
+
+  --ion-font-family: var(--font-family-base);
+  --ion-background-color: #{$bg};
+  --ion-background-color-rgb: #{rgb-list($bg)};
+  --ion-text-color: #{$text};
+  --ion-text-color-rgb: #{rgb-list($text)};
+
+  // Ionic derives many neutral shades from these step scales.
+  @for $i from 1 through 19 {
+    $step: $i * 50;
+    --ion-background-color-step-#{$step}: #{color.mix($text, $bg, math.percentage(math.div($step, 1000)))};
+    --ion-text-color-step-#{$step}: #{color.mix($bg, $text, math.percentage(math.div($step, 1000)))};
+  }
+
+  @include ionic-named-color(primary, map.get($p, primary), map.get($p, on-primary));
+  @include ionic-named-color(success, map.get($p, success), map.get($p, on-success));
+  @include ionic-named-color(warning, map.get($p, warning), map.get($p, on-warning));
+  @include ionic-named-color(danger, map.get($p, danger), map.get($p, on-danger));
+  @include ionic-named-color(medium, map.get($p, text-secondary), map.get($p, surface));
+
+  --ion-border-color: #{map.get($p, border)};
+  --ion-placeholder-color: #{map.get($p, text-tertiary)};
+  --ion-item-background: #{map.get($p, surface)};
+  --ion-card-background: #{map.get($p, surface)};
+  --ion-toolbar-background: #{$bg};
+  --ion-toolbar-border-color: #{map.get($p, border)};
+  --ion-tab-bar-background: #{map.get($p, surface)};
+  --ion-tab-bar-background-focused: #{map.get($p, surface-muted)};
+  --ion-tab-bar-border-color: #{map.get($p, border)};
+  --ion-tab-bar-color: #{map.get($p, text-secondary)};
+  --ion-tab-bar-color-selected: #{map.get($p, primary-text)};
+  --ion-overlay-background-color: #{map.get($p, surface-elevated)};
+  --ion-backdrop-color: #{map.get($p, scrim)};
+}

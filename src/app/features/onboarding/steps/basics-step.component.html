@@ -1,0 +1,144 @@
+@let f = form();
+@let e = errors();
+
+<header class="header">
+  <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>A bit about you</h1>
+  <p class="helper">We use this to tailor your training and nutrition.</p>
+</header>
+
+<div class="fields">
+  <div class="field-group">
+    <!-- Visual label only; the control carries its own accessible legend. -->
+    <span class="group-label" aria-hidden="true">Units</span>
+    <fit-segmented-control
+      name="unit-system"
+      legend="Units"
+      [options]="unitOptions"
+      [value]="f.unitSystem"
+      (valueChange)="setUnitSystem($event)"
+    />
+  </div>
+
+  <!-- Date of birth (not age, which goes stale). Only derived age is ever displayed. -->
+  <fieldset class="field-group">
+    <legend class="group-label">Date of birth</legend>
+    <div class="date">
+      <fit-text-field
+        #birthDayField
+        label="Day"
+        inputMode="numeric"
+        autocomplete="bday-day"
+        [maxLength]="2"
+        [value]="f.birthDay"
+        (valueChange)="patch({ birthDay: $event })"
+        [invalid]="!!e.dateOfBirth"
+        describedBy="dob-message"
+      />
+      <fit-text-field
+        label="Month"
+        inputMode="numeric"
+        autocomplete="bday-month"
+        [maxLength]="2"
+        [value]="f.birthMonth"
+        (valueChange)="patch({ birthMonth: $event })"
+        [invalid]="!!e.dateOfBirth"
+        describedBy="dob-message"
+      />
+      <fit-text-field
+        label="Year"
+        inputMode="numeric"
+        autocomplete="bday-year"
+        [maxLength]="4"
+        [value]="f.birthYear"
+        (valueChange)="patch({ birthYear: $event })"
+        [invalid]="!!e.dateOfBirth"
+        describedBy="dob-message"
+      />
+    </div>
+    @if (e.dateOfBirth) {
+      <p class="message error" id="dob-message">
+        <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ e.dateOfBirth }}
+      </p>
+    } @else {
+      <p class="message" id="dob-message">Used to calculate your age. You must be 18 or older.</p>
+    }
+  </fieldset>
+
+  <div class="field-group">
+    <span class="group-label" id="sex-label">Sex</span>
+    <fit-choice-group
+      name="sex"
+      layout="chips"
+      labelledBy="sex-label"
+      [describedBy]="e.sex ? 'sex-error' : 'sex-hint'"
+      [invalid]="!!e.sex"
+      [options]="sexOptions"
+      [selected]="selectedSex()"
+      (optionToggled)="setSex($event)"
+    />
+    @if (e.sex) {
+      <p class="message error" id="sex-error">
+        <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ e.sex }}
+      </p>
+    } @else {
+      <p class="message" id="sex-hint">Used later to improve the accuracy of estimates.</p>
+    }
+  </div>
+
+  @if (isMetric()) {
+    <fit-text-field
+      #heightField
+      label="Height"
+      suffix="cm"
+      inputMode="decimal"
+      [maxLength]="5"
+      [value]="f.heightCm"
+      (valueChange)="patch({ heightCm: $event })"
+      [error]="e.height"
+    />
+  } @else {
+    <fieldset class="field-group">
+      <legend class="group-label">Height</legend>
+      <div class="pair">
+        <fit-text-field
+          #heightField
+          label="Feet"
+          suffix="ft"
+          inputMode="numeric"
+          [maxLength]="1"
+          [value]="f.heightFeet"
+          (valueChange)="patch({ heightFeet: $event })"
+          [invalid]="!!e.height"
+          [describedBy]="e.height ? 'height-error' : null"
+        />
+        <fit-text-field
+          label="Inches"
+          suffix="in"
+          inputMode="decimal"
+          [maxLength]="4"
+          [value]="f.heightInches"
+          (valueChange)="patch({ heightInches: $event })"
+          [invalid]="!!e.height"
+          [describedBy]="e.height ? 'height-error' : null"
+        />
+      </div>
+      @if (e.height) {
+        <p class="message error" id="height-error">
+          <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ e.height }}
+        </p>
+      }
+    </fieldset>
+  }
+
+  <fit-text-field
+    #weightField
+    label="Weight"
+    inputMode="decimal"
+    enterKeyHint="done"
+    [suffix]="weightUnit()"
+    [maxLength]="6"
+    [value]="f.weight"
+    (valueChange)="patch({ weight: $event })"
+    [error]="e.weight"
+  />
+</div>

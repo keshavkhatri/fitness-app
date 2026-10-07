@@ -1,0 +1,82 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <div class="toolbar">
+      @if (flow.canGoBack()) {
+        <button type="button" class="back" aria-label="Back" (click)="flow.back()">
+          <ion-icon name="chevron-back" aria-hidden="true" />
+        </button>
+      } @else {
+        <span class="back-placeholder" aria-hidden="true"></span>
+      }
+
+      @if (flow.position(); as position) {
+        <fit-progress
+          class="progress"
+          label="Onboarding progress"
+          [value]="position.current"
+          [max]="position.total"
+          [valueText]="'Step ' + position.current + ' of ' + position.total"
+        />
+        <span class="count" aria-hidden="true">{{ position.current }}/{{ position.total }}</span>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body" [attr.data-kind]="flow.step().kind">
+    @if (flow.ready()) {
+      @switch (flow.stepId()) {
+        @case ('welcome') {
+          <app-welcome-step />
+        }
+        @case ('goal') {
+          <app-single-choice-step [config]="choiceSteps.goal" />
+        }
+        @case ('basics') {
+          <app-basics-step />
+        }
+        @case ('experience') {
+          <app-single-choice-step [config]="choiceSteps.experience" />
+        }
+        @case ('frequency') {
+          <app-single-choice-step [config]="choiceSteps.frequency" />
+        }
+        @case ('location') {
+          <app-single-choice-step [config]="choiceSteps.location" />
+        }
+        @case ('equipment') {
+          <app-equipment-step />
+        }
+        @case ('activity') {
+          <app-single-choice-step [config]="choiceSteps.activity" />
+        }
+        @case ('goal-target') {
+          <app-goal-target-step />
+        }
+        @case ('summary') {
+          <app-summary-step />
+        }
+        @case ('finish') {
+          <app-finish-step />
+        }
+      }
+    }
+  </main>
+</ion-content>
+
+<ion-footer class="ion-no-border">
+  <div class="footer">
+    <button
+      fit-button
+      type="button"
+      size="lg"
+      block
+      [disabled]="saving() || !flow.ready()"
+      [loading]="saving()"
+      (click)="primaryAction()"
+    >
+      {{ saving() ? 'Creating your profile…' : flow.step().primaryAction }}
+    </button>
+  </div>
+</ion-footer>

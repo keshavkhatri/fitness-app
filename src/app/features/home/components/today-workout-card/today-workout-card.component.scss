@@ -1,0 +1,36 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.name {
+  @include fx.text(h2, semibold);
+}
+
+.focus {
+  @include fx.text(body-sm);
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.meta {
+  @include fx.text(body-sm, medium);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-4) 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  ion-icon {
+    font-size: 18px;
+    color: var(--color-text-secondary);
+  }
+}

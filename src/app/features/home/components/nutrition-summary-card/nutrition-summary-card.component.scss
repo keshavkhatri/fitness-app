@@ -1,0 +1,66 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.calories {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.ring-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+  display: block;
+}
+
+.ring-unit,
+.caption {
+  @include fx.text(caption, medium);
+  display: block;
+  color: var(--color-text-secondary);
+}
+
+.calorie-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.remaining {
+  @include fx.text(h1, bold);
+  @include fx.tabular-numbers;
+
+  .unit {
+    @include fx.text(body-sm, medium);
+    color: var(--color-text-secondary);
+  }
+}
+
+.macros {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-5) 0 0;
+  padding: var(--space-5) 0 0;
+  border-top: var(--border-hairline) solid var(--color-border);
+  list-style: none;
+}
+
+.macro-row {
+  @include fx.text(body-sm);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.macro-label {
+  font-weight: var(--font-weight-medium);
+}
+
+.macro-value {
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+}

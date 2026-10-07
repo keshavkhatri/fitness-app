@@ -1,0 +1,51 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+fieldset {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.segment {
+  @include fx.text(body-sm, medium);
+
+  position: relative;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  // 40px + the fieldset's 4px padding gives a 44px-tall control.
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-on-muted);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease);
+
+  &.selected {
+    background: var(--color-surface-elevated);
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+    box-shadow: var(--shadow-card);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+}
+
+input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}

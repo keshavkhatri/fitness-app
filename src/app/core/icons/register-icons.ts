@@ -1,0 +1,73 @@
+import { addIcons } from 'ionicons';
+import {
+  add,
+  alertCircleOutline,
+  barbell,
+  barbellOutline,
+  businessOutline,
+  cameraOutline,
+  checkmark,
+  chevronBack,
+  chevronForward,
+  close,
+  documentTextOutline,
+  flameOutline,
+  home,
+  homeOutline,
+  informationCircleOutline,
+  personCircle,
+  personCircleOutline,
+  playOutline,
+  pulse,
+  pulseOutline,
+  resizeOutline,
+  restaurant,
+  restaurantOutline,
+  scaleOutline,
+  swapHorizontalOutline,
+  syncOutline,
+  timeOutline,
+  trendingDown,
+  trendingUp,
+  trophyOutline,
+} from 'ionicons/icons';
+
+/**
+ * Registers every ionicon the app uses, once, at startup.
+ * Only icons listed here are bundled — add new ones explicitly.
+ * Templates reference icons by their kebab-case name, e.g. `name="barbell-outline"`.
+ */
+export function registerAppIcons(): void {
+  addIcons({
+    add,
+    alertCircleOutline,
+    barbell,
+    barbellOutline,
+    businessOutline,
+    cameraOutline,
+    checkmark,
+    chevronBack,
+    chevronForward,
+    close,
+    documentTextOutline,
+    flameOutline,
+    home,
+    homeOutline,
+    informationCircleOutline,
+    personCircle,
+    personCircleOutline,
+    playOutline,
+    pulse,
+    pulseOutline,
+    resizeOutline,
+    restaurant,
+    restaurantOutline,
+    scaleOutline,
+    swapHorizontalOutline,
+    syncOutline,
+    timeOutline,
+    trendingDown,
+    trendingUp,
+    trophyOutline,
+  });
+}

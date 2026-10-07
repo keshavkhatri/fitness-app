@@ -1,0 +1,37 @@
+<fit-page title="You">
+  <fit-card class="profile">
+    <div class="avatar" aria-hidden="true"><ion-icon name="person-circle-outline" /></div>
+    <div>
+      <h2 class="profile-title">Your profile</h2>
+      <p class="profile-text">Profile details, goals and body stats will live here once accounts are set up.</p>
+    </div>
+  </fit-card>
+
+  <section aria-labelledby="you-appearance">
+    <fit-section-header title="Appearance" headingId="you-appearance" />
+    <fit-card>
+      <fit-segmented-control
+        name="theme-preference"
+        legend="Theme"
+        [options]="themeOptions"
+        [value]="theme.preference()"
+        (valueChange)="theme.setPreference($event)"
+      />
+      <p class="hint">System follows your device's light or dark setting.</p>
+    </fit-card>
+  </section>
+
+  <section aria-labelledby="you-settings">
+    <fit-section-header title="Settings" headingId="you-settings" />
+    <fit-card padding="none">
+      <ul class="settings-list">
+        @for (setting of upcomingSettings; track setting) {
+          <li>
+            <span>{{ setting }}</span>
+            <fit-chip>Coming soon</fit-chip>
+          </li>
+        }
+      </ul>
+    </fit-card>
+  </section>
+</fit-page>

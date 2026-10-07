@@ -1,0 +1,80 @@
+// =============================================================================
+// Palette — the single source of truth for every color in the app.
+//
+// Components never reference these Sass maps or raw hex values directly.
+// They consume the CSS custom properties generated in `_tokens.scss`
+// (e.g. `var(--color-surface)`), which lets the theme switch at runtime.
+//
+// Values marked "derived" were not part of the original brand spec and were
+// chosen to fill gaps (tints, accessible text variants, dark-mode semantics).
+// =============================================================================
+
+$light: (
+  bg: #f7f8fa,
+  surface: #ffffff,
+  surface-elevated: #ffffff,
+  surface-muted: #f0f2f5, // derived — progress tracks, skeletons
+  text: #111318,
+  text-secondary: #6b7280,
+  text-tertiary: #9ca3af, // derived — placeholders, disabled only
+  // derived — secondary text on surface-muted; #6b7280 is only ~4.3:1 there.
+  text-on-muted: #5b6170,
+  border: #e5e7eb,
+  border-strong: #d1d5db, // derived
+
+  primary: #1f6bff,
+  primary-pressed: #1a5ce0, // derived
+  primary-soft: #eaf1ff,
+  primary-text: #1a5fe6, // derived — AA on bg for small text
+  on-primary: #ffffff,
+
+  success: #16a34a,
+  success-soft: #e8f6ee, // derived
+  success-text: #15803d, // derived — AA for small text
+  on-success: #111318, // derived — white on #16a34a is only ~3.3:1
+  warning: #f59e0b,
+  warning-soft: #fef4e2, // derived
+  warning-text: #b45309, // derived — amber itself fails contrast as text
+  on-warning: #111318, // derived
+  danger: #dc2626,
+  danger-soft: #fdecec, // derived
+  danger-text: #b91c1c, // derived
+  on-danger: #ffffff, // derived
+
+  scrim: #111318,
+);
+
+$dark: (
+  bg: #0b0d10,
+  surface: #15181d,
+  surface-elevated: #1c2027,
+  surface-muted: #22272f, // derived
+  text: #f5f7fa,
+  text-secondary: #9ca3af,
+  text-tertiary: #6b7280, // derived
+  text-on-muted: #9ca3af, // derived — already AA on dark surface-muted
+  border: #292e36,
+  border-strong: #3a404a, // derived
+
+  primary: #4d8dff,
+  primary-pressed: #3d7cf0, // derived
+  primary-soft: #16233b, // derived
+  primary-text: #6ea2ff, // derived
+  // Dark text on the brighter dark-mode blue: white on #4D8DFF is only ~3.2:1.
+  on-primary: #0b0d10,
+
+  success: #22c55e, // derived — brighter for dark surfaces
+  success-soft: #10291b, // derived
+  success-text: #4ade80, // derived
+  on-success: #0b0d10, // derived
+  warning: #fbbf24, // derived
+  warning-soft: #2e2410, // derived
+  warning-text: #fcd34d, // derived
+  on-warning: #0b0d10, // derived
+  danger: #f87171, // derived
+  danger-soft: #2f1517, // derived
+  danger-text: #fca5a5, // derived
+  on-danger: #0b0d10, // derived
+
+  scrim: #000000,
+);

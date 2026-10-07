@@ -1,0 +1,91 @@
+@use 'mixins' as fx;
+@use 'step';
+
+:host {
+  @include step.host;
+}
+
+.header {
+  @include step.header;
+}
+
+.eyebrow {
+  @include fx.text(caption, semibold);
+  color: var(--color-primary-text);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.title {
+  @include step.title;
+}
+
+.helper {
+  @include step.helper;
+}
+
+.save-error {
+  @include fx.text(body-sm, medium);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+
+  ion-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+  }
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.8fr) 2fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+
+  + .row {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.label {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  @include fx.text(body, semibold);
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.edit {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  min-width: var(--tap-target-min);
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-text);
+
+  &:active {
+    background: var(--color-primary-soft);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+  }
+}

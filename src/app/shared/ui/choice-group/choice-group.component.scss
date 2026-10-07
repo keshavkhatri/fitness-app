@@ -1,0 +1,177 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 64px;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  // Inset ring instead of border width changes, so selection doesn't shift layout.
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--color-border);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease),
+    box-shadow var(--motion-duration-fast) var(--motion-ease);
+
+  &.selected {
+    background: var(--color-primary-soft);
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+  }
+
+  &:has(.native:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Native control covers the whole card: it receives taps, focus and AT semantics.
+.native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-primary-text);
+  font-size: 22px;
+
+  .selected & {
+    background: var(--color-surface);
+  }
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  @include fx.text(body, semibold);
+}
+
+.description {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.indicator {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 2px var(--color-border-strong);
+  color: var(--color-on-primary);
+  font-size: 16px;
+
+  .selected & {
+    background: var(--color-primary);
+    box-shadow: none;
+  }
+}
+
+:host([data-mode='multiple']) .indicator {
+  border-radius: var(--radius-sm);
+}
+
+// --- Grid: compact tiles (e.g. days per week, location) ---------------------------
+[data-layout='grid'] {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+
+  .option {
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 96px;
+    text-align: center;
+  }
+
+  .text {
+    flex: 0;
+    align-items: center;
+  }
+
+  .title {
+    @include fx.text(h3, semibold);
+  }
+
+  .indicator {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+  }
+}
+
+// --- Chips: wrapping pills (e.g. equipment) ---------------------------------------
+[data-layout='chips'] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+
+  .option {
+    gap: var(--space-2);
+    min-height: var(--tap-target-min);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-pill);
+  }
+
+  .title {
+    @include fx.text(body-sm, semibold);
+  }
+
+  .text {
+    flex: 0 1 auto;
+  }
+
+  // Unselected chips show no indicator; selected chips lead with a check mark.
+  .indicator {
+    order: -1;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    box-shadow: none;
+    background: none;
+    color: var(--color-primary-text);
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .selected .indicator {
+    background: none;
+  }
+}

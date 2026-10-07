@@ -1,0 +1,52 @@
+@use 'mixins' as fx;
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  // Auto-height sheet: cap it so tall content scrolls on short/landscape screens.
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 auto;
+  padding: var(--space-6) var(--page-gutter) calc(var(--space-6) + var(--ion-safe-area-bottom, 0px));
+  color: var(--color-text);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sheet-title {
+  @include fx.text(h2, semibold);
+}
+
+.sheet-description {
+  @include fx.text(body-sm);
+  margin-top: calc(-1 * var(--space-2));
+  color: var(--color-text-secondary);
+}
+
+.close {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  margin-right: calc(-1 * var(--space-2));
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: 22px;
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}

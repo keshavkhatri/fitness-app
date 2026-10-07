@@ -1,0 +1,115 @@
+// =============================================================================
+// Theme entry point (loaded globally from angular.json).
+// =============================================================================
+
+@use 'tokens';
+@use 'mixins' as fx;
+
+html {
+  font-family: var(--font-family-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  @include fx.text(body);
+}
+
+// Ionic's typography.css sets heading margins/sizes; normalise to our scale.
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+// --- Typography utility classes ---------------------------------------------
+@each $name in fx.$type-styles {
+  .text-#{$name} {
+    @include fx.text($name);
+  }
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.font-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+.font-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
+.font-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+.tabular-nums {
+  @include fx.tabular-numbers;
+}
+
+// Hide content visually while keeping it available to assistive technology.
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// --- Page layout --------------------------------------------------------------
+// Standard scrollable page body: gutters + max width for larger phones/tablets.
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-10);
+}
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+// --- Ionic component overrides --------------------------------------------------
+// Kept intentionally small; prefer our own components over restyling Ionic.
+ion-toolbar {
+  --border-width: 0;
+}
+
+// Auto-height sheet used by <fit-bottom-sheet>. Global because Ionic moves
+// the modal's internal page element outside component style scope.
+ion-modal.bottom-sheet {
+  --height: auto;
+  --background: var(--color-surface-elevated);
+  --border-radius: var(--radius-lg);
+  --box-shadow: var(--shadow-sheet);
+  --backdrop-opacity: 0.4;
+
+  .ion-page {
+    position: relative;
+    display: block;
+    contain: content;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

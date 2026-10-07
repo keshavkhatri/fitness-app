@@ -1,0 +1,13 @@
+@use 'mixins' as fx;
+
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 28px;
+}
+
+.title {
+  @include fx.text(h3, semibold);
+}

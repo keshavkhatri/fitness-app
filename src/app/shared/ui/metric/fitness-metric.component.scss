@@ -1,0 +1,53 @@
+@use 'mixins' as fx;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.label {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.number {
+  @include fx.text(h3, semibold);
+  @include fx.tabular-numbers;
+}
+
+:host([data-size='lg']) .number {
+  @include fx.text(h1, bold);
+}
+
+.unit {
+  @include fx.text(body-sm, medium);
+  color: var(--color-text-secondary);
+}
+
+.trend {
+  @include fx.text(caption, medium);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    font-size: 14px;
+  }
+
+  &[data-sentiment='positive'] {
+    color: var(--color-success-text);
+  }
+
+  &[data-sentiment='negative'] {
+    color: var(--color-danger-text);
+  }
+}

@@ -1,0 +1,63 @@
+// =============================================================================
+// Shared Sass mixins for component stylesheets.
+// Usage in a component: `@use 'mixins' as fx;` (resolved via includePaths).
+// Mixins only reference CSS custom properties, so they stay theme-agnostic.
+// =============================================================================
+
+$type-styles: (display, h1, h2, h3, body, body-sm, caption);
+
+/// Applies a typography step from the scale.
+/// @param {String} $name - one of display, h1, h2, h3, body, body-sm, caption
+/// @param {String} $weight - regular | medium | semibold | bold
+@mixin text($name, $weight: null) {
+  font-size: var(--font-size-#{$name});
+  line-height: var(--line-height-#{$name});
+
+  @if $weight {
+    font-weight: var(--font-weight-#{$weight});
+  }
+
+  @if $name == display or $name == h1 {
+    letter-spacing: var(--letter-spacing-tight);
+  } @else if $name == h2 or $name == h3 {
+    letter-spacing: var(--letter-spacing-snug);
+  }
+}
+
+/// Visible, consistent keyboard focus indicator.
+@mixin focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+/// Resets a native <button> so it can be styled from scratch.
+@mixin button-reset {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/// Subtle pressed feedback (honours reduced motion via the duration tokens).
+@mixin pressable {
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease),
+    background-color var(--motion-duration-fast) var(--motion-ease);
+
+  &:active:not([disabled]):not([aria-disabled='true']) {
+    transform: scale(0.98);
+  }
+}
+
+/// Numbers that line up in columns (metrics, timers, weights).
+@mixin tabular-numbers {
+  font-variant-numeric: tabular-nums;
+}

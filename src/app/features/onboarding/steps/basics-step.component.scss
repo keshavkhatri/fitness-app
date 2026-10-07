@@ -1,0 +1,69 @@
+@use 'mixins' as fx;
+@use 'step';
+
+:host {
+  @include step.host;
+}
+
+.header {
+  @include step.header;
+}
+
+.title {
+  @include step.title;
+}
+
+.helper {
+  @include step.helper;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.group-label {
+  @include fx.text(body-sm, medium);
+  padding: 0;
+}
+
+.date {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  gap: var(--space-3);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.message {
+  @include fx.text(body-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 16px;
+  }
+}
+
+.error {
+  color: var(--color-danger-text);
+}

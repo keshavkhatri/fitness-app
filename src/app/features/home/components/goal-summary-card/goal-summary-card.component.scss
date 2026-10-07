@@ -1,0 +1,22 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.title {
+  @include fx.text(h3, semibold);
+}
+
+.description {
+  @include fx.text(body-sm);
+  margin: var(--space-1) 0 var(--space-4);
+  color: var(--color-text-secondary);
+}

@@ -1,0 +1,66 @@
+@use 'mixins' as fx;
+
+ion-tab-bar {
+  --border: var(--border-hairline) solid var(--color-border);
+  height: 56px;
+}
+
+ion-tab-button {
+  --color: var(--color-text-secondary);
+  --color-selected: var(--color-primary-text);
+  --ripple-color: transparent;
+  // Ionic md tab buttons default to min-width 80px + 12px side padding, which
+  // truncates five labels on 320–360px screens. Keep sizing mode-independent.
+  --padding-start: 0;
+  --padding-end: 0;
+  min-width: var(--tap-target-min);
+
+  ion-icon {
+    font-size: 24px;
+  }
+
+  ion-label {
+    @include fx.text(caption, medium);
+    margin-top: 2px;
+  }
+
+  &.tab-selected ion-label {
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.quick-add {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  // Icon box + gap matches the 24px icon + 2px label offset of the tab buttons.
+  gap: 0;
+  min-width: var(--tap-target-min);
+  height: 100%;
+  color: var(--color-text-secondary);
+}
+
+.quick-add-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 22px;
+  transition: transform var(--motion-duration-fast) var(--motion-ease);
+}
+
+.quick-add:active .quick-add-icon {
+  transform: scale(0.94);
+}
+
+.quick-add-label {
+  @include fx.text(caption, medium);
+}

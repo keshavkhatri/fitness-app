@@ -1,0 +1,44 @@
+@use 'mixins' as fx;
+
+// Let ion-header / ion-content participate directly in the routed page's
+// `.ion-page` flex layout, as Ionic expects.
+:host {
+  display: contents;
+}
+
+ion-toolbar {
+  --background: var(--color-bg);
+  --min-height: var(--toolbar-height);
+  --padding-start: var(--page-gutter);
+  --padding-end: var(--page-gutter);
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --border-style: solid;
+  --border-color: transparent;
+  // Ionic's own toolbar variable (not our --border-hairline token).
+  --border-width: 0 0 var(--border-hairline);
+}
+
+.scrolled ion-toolbar {
+  --border-color: var(--color-border);
+}
+
+// Centered in both modes (Ionic centers in ios, left-aligns in md).
+ion-title {
+  @include fx.text(body, semibold);
+  padding-inline: 0;
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--motion-duration-base) var(--motion-ease);
+}
+
+.scrolled ion-title {
+  opacity: 1;
+}
+
+.large-title {
+  @include fx.text(h1, bold);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-3);
+}

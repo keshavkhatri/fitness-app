@@ -1,0 +1,34 @@
+@use 'mixins' as fx;
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.hero-text {
+  min-width: 0;
+}
+
+.date {
+  @include fx.text(body-sm, medium);
+  color: var(--color-text-secondary);
+}
+
+.greeting {
+  @include fx.text(h2, semibold);
+  margin-top: var(--space-1);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

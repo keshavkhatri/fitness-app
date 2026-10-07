@@ -1,0 +1,70 @@
+:host {
+  --progress-color: var(--color-primary);
+  display: block;
+}
+
+:host([data-tone='success']) {
+  --progress-color: var(--color-success);
+}
+
+:host([data-tone='warning']) {
+  --progress-color: var(--color-warning);
+}
+
+:host([data-tone='danger']) {
+  --progress-color: var(--color-danger);
+}
+
+// --- Bar ----------------------------------------------------------------------
+div.track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+div.fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--progress-color);
+  transition: width var(--motion-duration-base) var(--motion-ease);
+}
+
+// --- Ring ---------------------------------------------------------------------
+:host([data-variant='ring']) {
+  position: relative;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  flex-shrink: 0;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+circle {
+  fill: none;
+  stroke-width: 3.5;
+}
+
+circle.track {
+  stroke: var(--color-surface-muted);
+}
+
+circle.fill {
+  stroke: var(--progress-color);
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--motion-duration-base) var(--motion-ease);
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}

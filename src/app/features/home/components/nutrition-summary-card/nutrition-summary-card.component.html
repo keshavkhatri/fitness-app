@@ -1,0 +1,44 @@
+@let n = nutrition();
+
+<fit-card>
+  <div class="calories">
+    <fit-progress
+      variant="ring"
+      label="Calories"
+      [ringSize]="92"
+      [value]="n.caloriesConsumed"
+      [max]="n.caloriesTarget"
+      [tone]="isOverTarget() ? 'warning' : 'primary'"
+      [valueText]="(n.caloriesConsumed | number) + ' of ' + (n.caloriesTarget | number) + ' kcal'"
+    >
+      <span class="ring-value">{{ n.caloriesConsumed | number }}</span>
+      <span class="ring-unit">eaten</span>
+    </fit-progress>
+
+    <div class="calorie-copy">
+      <span class="caption">{{ isOverTarget() ? 'Over target' : 'Remaining' }}</span>
+      <span class="remaining">
+        {{ caloriesDeltaAmount() | number }}
+        <span class="unit">kcal</span>
+      </span>
+      <span class="caption">Daily target {{ n.caloriesTarget | number }} kcal</span>
+    </div>
+  </div>
+
+  <ul class="macros">
+    @for (macro of n.macros; track macro.key) {
+      <li>
+        <div class="macro-row">
+          <span class="macro-label">{{ macro.label }}</span>
+          <span class="macro-value">{{ macro.consumedGrams }} / {{ macro.targetGrams }} g</span>
+        </div>
+        <fit-progress
+          [label]="macro.label"
+          [value]="macro.consumedGrams"
+          [max]="macro.targetGrams"
+          [valueText]="macro.consumedGrams + ' of ' + macro.targetGrams + ' grams'"
+        />
+      </li>
+    }
+  </ul>
+</fit-card>

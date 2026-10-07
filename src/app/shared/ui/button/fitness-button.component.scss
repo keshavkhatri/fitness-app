@@ -1,0 +1,87 @@
+@use 'mixins' as fx;
+
+:host {
+  @include fx.button-reset;
+  @include fx.text(body, semibold);
+  @include fx.pressable;
+  @include fx.focus-ring;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+:host(.block) {
+  display: flex;
+  width: 100%;
+}
+
+:host([data-size='lg']) {
+  min-height: 52px;
+  padding: 0 var(--space-6);
+}
+
+ion-icon {
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+:host([data-variant='primary']) {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+
+  &:active {
+    background: var(--color-primary-pressed);
+  }
+}
+
+:host([data-variant='secondary']) {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+:host([data-variant='outline']) {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+:host([data-variant='ghost']) {
+  background: transparent;
+  color: var(--color-primary-text);
+}
+
+.spinner {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-pill);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Busy buttons stay fully legible; only plain disabled buttons fade.
+:host([aria-busy='true']) {
+  pointer-events: none;
+}
+
+:host([disabled]:not([aria-busy='true'])),
+:host([aria-disabled='true']) {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}

@@ -1,0 +1,16 @@
+/**
+ * Contract between the onboarding page and the active step component.
+ *
+ * The page owns the Continue button; on press it calls `submit()` on the
+ * current step. The step validates its own input, shows inline errors,
+ * moves focus to the first problem and commits valid answers to the flow.
+ *
+ * Steps provide it with `{ provide: OnboardingStepForm, useExisting: MyStep }`.
+ */
+export abstract class OnboardingStepForm {
+  /** Returns true when the step's answers are valid and committed. */
+  abstract submit(): boolean;
+}
+
+/** Id of each step's main heading; also used to label its controls. */
+export const STEP_HEADING_ID = 'onboarding-step-heading';

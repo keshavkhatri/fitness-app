@@ -1,0 +1,73 @@
+@use 'mixins' as fx;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.label {
+  @include fx.text(body-sm, medium);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 var(--space-4);
+  border: var(--border-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition: border-color var(--motion-duration-fast) var(--motion-ease);
+
+  &:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
+  &.invalid {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 1px var(--color-danger);
+  }
+}
+
+.input {
+  @include fx.text(body, medium);
+  @include fx.tabular-numbers;
+
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 50px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.suffix {
+  @include fx.text(body, medium);
+  margin-left: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.message {
+  @include fx.text(body-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 16px;
+  }
+}
+
+.error {
+  color: var(--color-danger-text);
+}

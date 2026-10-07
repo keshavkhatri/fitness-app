@@ -1,0 +1,20 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Ionic structural CSS only. All visual styling (colors, typography, dark mode)
+ * lives in src/theme — see src/theme/theme.scss.
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/*
+ * Ionic's stock dark palettes are intentionally NOT imported.
+ * Light/dark mode is driven by our own tokens (src/theme/_tokens.scss).
+ */

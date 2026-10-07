@@ -1,0 +1,23 @@
+:host {
+  display: block;
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+:host([data-padding='sm']) {
+  padding: var(--space-4);
+}
+
+:host([data-padding='none']) {
+  padding: 0;
+  overflow: hidden;
+}
+
+:host([data-tone='muted']) {
+  background: var(--color-surface-muted);
+  border-color: transparent;
+  box-shadow: none;
+}

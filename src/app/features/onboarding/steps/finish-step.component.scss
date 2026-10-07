@@ -1,0 +1,34 @@
+@use 'mixins' as fx;
+
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+  font-size: 36px;
+}
+
+.title {
+  @include fx.text(h1, bold);
+  outline: none;
+}
+
+.text {
+  @include fx.text(body);
+  max-width: 30ch;
+  color: var(--color-text-secondary);
+}
