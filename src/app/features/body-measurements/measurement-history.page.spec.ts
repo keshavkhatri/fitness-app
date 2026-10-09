@@ -118,13 +118,44 @@ describe('Measurement history page', () => {
     const { el } = await renderHistory(envelope([OLDER, AM, PM]));
     expect(clean(el.querySelector('#measurement-latest'))).toBe('Latest');
     expect(latest(el)).toEqual([
-      'Waist 80.3 cm Yesterday',
+      'Waist 80.3 cm Yesterday −0.2 cm since Oct 8',
       'Chest Not measured yet',
       'Hips 99.0 cm Yesterday',
       'Arm 33.4 cm Thursday, Oct 1',
       'Thigh Not measured yet',
     ]);
     expect(byTestId(el, 'latest')?.tagName).toBe('DL');
+  });
+
+  it('shows the change since the site’s previous reading, per site, only when one exists', async () => {
+    const raw = envelope([
+      entry('sep', '2026-09-12', { waist: { centimeters: 82 }, arm: { centimeters: 33 } }),
+      entry('last-year', '2025-12-30', { hips: { centimeters: 101 } }),
+      entry('oct', '2026-10-01', { hips: { centimeters: 100.4 }, arm: { centimeters: 33 } }),
+      entry('now', '2026-10-08', { waist: { centimeters: 80.8 }, thigh: { centimeters: 58 } }),
+      entry('oldest', '2026-08-01', { waist: { centimeters: 90 } }),
+    ]);
+    const { el, storage } = await renderHistory(raw);
+    expect(latest(el)).toEqual([
+      'Waist 80.8 cm Yesterday −1.2 cm since Sep 12',
+      'Chest Not measured yet',
+      'Hips 100.4 cm Thursday, Oct 1 −0.6 cm since Dec 30, 2025',
+      'Arm 33.0 cm Thursday, Oct 1 No change since Sep 12',
+      'Thigh 58.0 cm Yesterday',
+    ]);
+    expect([...el.querySelectorAll('[data-testid=latest-change]')].map((d) => d.tagName)).toEqual(['DD', 'DD', 'DD']);
+    expect(el.textContent).not.toMatch(/lost|gained|progress|trend|better|worse|good|bad|%/i);
+    expect(storage.values.get(KEY)).toBe(raw);
+  });
+
+  it('shows increases with a plus sign and changes in inches for imperial profiles', async () => {
+    const raw = envelope([
+      entry('a', '2026-09-12', { waist: { centimeters: 81.28 } }),
+      entry('b', '2026-10-08', { waist: { centimeters: 82.55 } }),
+    ]);
+    const { el, storage } = await renderHistory(raw, { ...PROFILE, unitSystem: 'imperial' });
+    expect(latest(el)[0]).toBe('Waist 32.5 in Yesterday +0.5 in since Sep 12');
+    expect(storage.values.get(KEY)).toBe(raw);
   });
 
   it('displays in the profile’s unit; stored centimeters are unchanged', async () => {

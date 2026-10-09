@@ -20,6 +20,9 @@ export const MEASUREMENT_COPY = {
     latest: {
       title: 'Latest',
       notMeasured: 'Not measured yet',
+      /** `difference` is null when the two readings show the same value. */
+      change: (difference: string | null, previousDate: string) =>
+        difference === null ? `No change since ${previousDate}` : `${difference} since ${previousDate}`,
     },
     list: {
       title: 'History',

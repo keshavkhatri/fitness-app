@@ -38,6 +38,9 @@
                   @if (item.value) {
                     <dd class="latest-value">{{ item.value }}</dd>&ngsp;
                     <dd class="latest-date">{{ item.dateLabel }}</dd>
+                    @if (item.change) {
+                      &ngsp;<dd class="latest-change" data-testid="latest-change">{{ item.change }}</dd>
+                    }
                   } @else {
                     <dd class="latest-missing">{{ copy.latest.notMeasured }}</dd>
                   }

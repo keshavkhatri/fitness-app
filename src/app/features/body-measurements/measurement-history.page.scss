@@ -77,6 +77,7 @@
 }
 
 .latest-date,
+.latest-change,
 .latest-missing {
   @include fx.text(body-sm);
   grid-column: 1 / -1;
