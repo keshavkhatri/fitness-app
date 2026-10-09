@@ -113,3 +113,27 @@ ion-modal.bottom-sheet {
     scroll-behavior: auto !important;
   }
 }
+
+// Header of a pushed sub-page (back button + centered title), shared by
+// Workout Detail and Workout History screens.
+.subpage-header {
+  ion-toolbar {
+    --background: var(--color-bg);
+    --min-height: var(--toolbar-height);
+    --padding-start: var(--space-2);
+    --padding-end: var(--space-2);
+  }
+
+  ion-title {
+    @include fx.text(body, semibold);
+    padding-inline: 0;
+    text-align: center;
+  }
+
+  ion-back-button {
+    --color: var(--color-primary-text);
+    --min-height: var(--tap-target-min);
+    --min-width: var(--tap-target-min);
+    text-transform: none;
+  }
+}

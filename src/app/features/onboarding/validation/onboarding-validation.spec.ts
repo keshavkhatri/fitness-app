@@ -138,6 +138,60 @@ describe('onboarding validation', () => {
       expect(errorsOf(imperialForm({ heightInches: '12' })).height).toBe('Enter feet, and inches from 0 to 11.');
     });
 
+    describe('feet-and-inches height', () => {
+      const FORMAT = "Check number format. Use one decimal separator. Thousands separators aren't supported.";
+      const heightOf = (heightFeet: string, heightInches: string) => {
+        const result = validateBasicsForm(imperialForm({ heightFeet, heightInches }), NOW);
+        return result.ok ? result.value.height : null;
+      };
+
+      it('accepts ordinary and decimal inches (dot or comma); blank inches mean 0', () => {
+        expect(heightOf('5', '6')).toEqual({ centimeters: 167.6 });
+        expect(heightOf('5', '6.5')).toEqual(heightOf('5', '6,5'));
+        expect(heightOf('5', '6.5')).toEqual({ centimeters: 168.9 });
+        expect(heightOf('5', '0,25')).not.toBeNull();
+        expect(heightOf('6', '')).toEqual({ centimeters: 182.9 });
+        expect(heightOf('5', '0')).toEqual(heightOf('5', ''));
+      });
+
+      it('rejects ambiguous separators instead of reading them as small decimals', () => {
+        for (const inches of ['1,234', '1.234', '11.999', '1,234.5', '1.234,5']) {
+          expect(errorsOf(imperialForm({ heightInches: inches })).height).toBe(FORMAT);
+        }
+      });
+
+      it('rejects malformed and out-of-range inches with the existing message', () => {
+        for (const inches of ['abc', '-1', '-0', '.5', '5.', '1e1', '12', '12.5', '6 in']) {
+          expect(errorsOf(imperialForm({ heightInches: inches })).height).toBe('Enter feet, and inches from 0 to 11.');
+        }
+        expect(errorsOf(imperialForm({ heightFeet: '', heightInches: '6' })).height).toBe('Enter your height.');
+        expect(errorsOf(imperialForm({ heightFeet: '5.5' })).height).toBe('Enter feet, and inches from 0 to 11.');
+      });
+
+      it('keeps the existing height range boundaries', () => {
+        expect(heightOf('1', '7.7')).toEqual({ centimeters: 50 }); // 50 cm minimum
+        expect(errorsOf(imperialForm({ heightFeet: '1', heightInches: '7' })).height).toBe('Enter a height between 1 ft 8 in and 9 ft 0 in.');
+        expect(heightOf('9', '0')).not.toBeNull();
+        expect(errorsOf(imperialForm({ heightFeet: '9', heightInches: '1' })).height).toBe('Enter a height between 1 ft 8 in and 9 ft 0 in.');
+      });
+
+      it('an ambiguous value never reaches unit conversion', () => {
+        const form = imperialForm({ heightInches: '1,234' });
+        expect(convertBasicsForm(form, 'metric').heightCm).toBe('');
+      });
+    });
+
+    it('other numeric fields keep their lenient parsing', () => {
+      // Metric height and weight still read a comma as a decimal point; their ranges reject the small results.
+      expect(validateBasicsForm(metricForm({ heightCm: '168,5', weight: '82,5' }), NOW)).toMatchObject({
+        ok: true,
+        value: { height: { centimeters: 168.5 }, weight: { kilograms: 82.5 } },
+      });
+      expect(errorsOf(metricForm({ heightCm: '1,234' })).height).toBe('Enter a height between 50 and 275 cm.');
+      expect(errorsOf(metricForm({ weight: '1,234' })).weight).toBe('Enter a weight between 20 and 500 kg.');
+      expect(errorsOf(imperialForm({ weight: '176,5' })).weight).toBeUndefined();
+    });
+
     it('rejects implausible measurements with the range in the user’s units', () => {
       expect(errorsOf(metricForm({ heightCm: '20' })).height).toBe('Enter a height between 50 and 275 cm.');
       expect(errorsOf(imperialForm({ weight: '30' })).weight).toBe('Enter a weight between 45 and 1,102 lb.');

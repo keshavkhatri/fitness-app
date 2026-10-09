@@ -6,7 +6,8 @@ import { KeyValueStorage } from '../storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../storage/testing/memory-key-value-storage';
 import { FitnessProfileRepository } from './fitness-profile.repository';
 import { FitnessProfileService } from './fitness-profile.service';
-import { redirectIfOnboarded, requireOnboardingComplete } from './onboarding.guards';
+import { OnboardingStatusService } from './onboarding-status.service';
+import { redirectIfOnboarded, requireOnboardingComplete, requireProfile } from './onboarding.guards';
 
 const PROFILE: UserFitnessProfile = {
   primaryGoal: 'improve-fitness',
@@ -70,25 +71,70 @@ describe('onboarding completion', () => {
     expect(await repository.load()).toBeNull();
   });
 
-  it('sends users without a profile to onboarding', async () => {
-    setup();
-    expect(urlOf(await runGuard(requireOnboardingComplete))).toBe('/onboarding');
-    expect(await runGuard(redirectIfOnboarded)).toBe(true);
-  });
+  describe('first-run routing: onboarding → assessment → home', () => {
+    it('no profile: app and assessment send to onboarding; onboarding is allowed', async () => {
+      setup();
+      expect(urlOf(await runGuard(requireOnboardingComplete))).toBe('/onboarding');
+      expect(urlOf(await runGuard(requireProfile))).toBe('/onboarding');
+      expect(await runGuard(redirectIfOnboarded)).toBe(true);
+      expect(await TestBed.inject(OnboardingStatusService).status()).toBe('needs-onboarding');
+    });
 
-  it('sends users with a profile to the app, never back to onboarding', async () => {
-    setup();
-    await TestBed.inject(FitnessProfileService).save(PROFILE);
+    it('profile but assessment not reviewed: app and onboarding send to the assessment', async () => {
+      setup();
+      await TestBed.inject(FitnessProfileService).save(PROFILE);
 
-    expect(await runGuard(requireOnboardingComplete)).toBe(true);
-    expect(urlOf(await runGuard(redirectIfOnboarded))).toBe('/home');
-  });
+      expect(urlOf(await runGuard(requireOnboardingComplete))).toBe('/assessment');
+      expect(urlOf(await runGuard(redirectIfOnboarded))).toBe('/assessment');
+      expect(await runGuard(requireProfile)).toBe(true);
+    });
 
-  it('recognises a profile saved in an earlier session', async () => {
-    storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile: PROFILE }));
-    setup();
+    it('assessment reviewed: the app opens, onboarding redirects home, assessment stays reachable', async () => {
+      setup();
+      await TestBed.inject(FitnessProfileService).save(PROFILE);
+      await TestBed.inject(OnboardingStatusService).markAssessmentReviewed(PROFILE);
 
-    expect(await runGuard(requireOnboardingComplete)).toBe(true);
-    expect(TestBed.inject(FitnessProfileService).profile()).toEqual(PROFILE);
+      expect(await runGuard(requireOnboardingComplete)).toBe(true);
+      expect(urlOf(await runGuard(redirectIfOnboarded))).toBe('/home');
+      expect(await runGuard(requireProfile)).toBe(true);
+    });
+
+    it('a changed profile needs its assessment reviewed again', async () => {
+      setup();
+      const status = TestBed.inject(OnboardingStatusService);
+      await TestBed.inject(FitnessProfileService).save(PROFILE);
+      await status.markAssessmentReviewed(PROFILE);
+
+      await TestBed.inject(FitnessProfileService).save({ ...PROFILE, updatedAt: '2026-11-01T08:00:00.000Z' });
+      expect(await status.status()).toBe('needs-assessment');
+    });
+
+    it('stores only a version marker for the review, no health data', async () => {
+      setup();
+      await TestBed.inject(OnboardingStatusService).markAssessmentReviewed(PROFILE);
+      expect(JSON.parse(storage.values.get('fitness.assessment-reviewed')!)).toEqual({
+        version: 1,
+        profileUpdatedAt: PROFILE.updatedAt,
+      });
+    });
+
+    it('recognises a profile and review saved in an earlier session', async () => {
+      storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile: PROFILE }));
+      storage.values.set(
+        'fitness.assessment-reviewed',
+        JSON.stringify({ version: 1, profileUpdatedAt: PROFILE.updatedAt }),
+      );
+      setup();
+
+      expect(await runGuard(requireOnboardingComplete)).toBe(true);
+      expect(TestBed.inject(FitnessProfileService).profile()).toEqual(PROFILE);
+    });
+
+    it('treats a corrupt review marker as not reviewed', async () => {
+      storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile: PROFILE }));
+      storage.values.set('fitness.assessment-reviewed', '{oops');
+      setup();
+      expect(urlOf(await runGuard(requireOnboardingComplete))).toBe('/assessment');
+    });
   });
 });

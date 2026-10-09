@@ -1,0 +1,96 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+// Resistance days lead the page: a quiet primary accent along the top edge.
+.hero[data-kind='resistance'] {
+  border-top: 3px solid var(--color-primary);
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.eyebrow {
+  @include fx.text(caption, semibold);
+  color: var(--color-primary-text);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.title {
+  @include fx.text(h1, bold);
+  overflow-wrap: anywhere;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 22px;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.meta {
+  @include fx.text(body-sm, medium);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  ion-icon {
+    font-size: 18px;
+    color: var(--color-text-secondary);
+  }
+}
+
+.summary {
+  @include fx.text(body, medium);
+}
+
+.message {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}

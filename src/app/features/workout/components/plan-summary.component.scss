@@ -1,0 +1,42 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+  margin: 0;
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.label {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  @include fx.text(body, semibold);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  @include fx.text(caption);
+  display: block;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}

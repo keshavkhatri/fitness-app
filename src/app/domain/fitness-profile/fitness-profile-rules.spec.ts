@@ -64,6 +64,7 @@ describe('parseFitnessProfile', () => {
     ['impossible height', { height: { centimeters: 900 } }],
     ['missing weight', { weight: undefined }],
     ['unsupported training days', { trainingDaysPerWeek: 1 }],
+    ['7 training days (no longer offered)', { trainingDaysPerWeek: 7 }],
     ['no equipment', { equipment: [] }],
     ['missing timestamp', { updatedAt: undefined }],
   ])('rejects %s', (_, change) => {

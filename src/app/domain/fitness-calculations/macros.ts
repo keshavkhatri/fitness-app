@@ -1,105 +1,81 @@
-import { PrimaryGoal } from '../fitness-profile';
 import { FitnessCalculationConfig } from './calculation-config';
-import { ProteinMethod } from './fitness-assessment.model';
+import { MacroAnalysis, MacroTargets } from './fitness-assessment.model';
 
-// --- Protein -----------------------------------------------------------------
-
-/**
- * Inputs for the protein target. Today only body weight; a future
- * lean-body-mass method (InBody) adds an optional field and a new `method`
- * without changing callers.
- */
-export interface ProteinInput {
-  readonly goal: PrimaryGoal;
-  readonly bodyWeightKg: number;
+export interface FatTargets {
+  /** Preferred share of calories, whole grams (rounded). */
+  readonly preferredGrams: number;
+  /** Minimum share of calories, whole grams (rounded UP so it never undercuts the share). */
+  readonly minimumGrams: number;
 }
 
-export interface ProteinTarget {
-  /** Unrounded grams/day. */
-  readonly grams: number;
-  readonly method: ProteinMethod;
-  readonly gramsPerKg: number;
-  readonly basisWeightKg: number;
-}
-
-/** The single protein-target calculation; features must call this, not re-derive it. */
-export function calculateProteinTarget(input: ProteinInput, config: FitnessCalculationConfig): ProteinTarget {
-  const gramsPerKg = config.proteinGramsPerKg[input.goal].default;
+/** Fat targets as configured shares of the calorie target. */
+export function calculateFatTargets(calorieTargetKcal: number, config: FitnessCalculationConfig): FatTargets {
+  const kcalPerGram = config.kcalPerGram.fat;
   return {
-    grams: gramsPerKg * input.bodyWeightKg,
-    method: 'body-weight',
-    gramsPerKg,
-    basisWeightKg: input.bodyWeightKg,
+    preferredGrams: Math.round((calorieTargetKcal * config.fat.preferredShare) / kcalPerGram),
+    minimumGrams: Math.ceil((calorieTargetKcal * config.fat.minimumShare) / kcalPerGram),
   };
 }
 
-// --- Fat -----------------------------------------------------------------------
-
-/** Fat target as a configured share of calories (unrounded grams/day). */
-export function calculateFatTarget(calorieTargetKcal: number, config: FitnessCalculationConfig): number {
-  return (calorieTargetKcal * config.fat.fractionOfCalories) / config.kcalPerGram.fat;
-}
-
-// --- Carbohydrates (and constraint handling) -----------------------------------
-
-export interface MacroSplit {
-  readonly proteinGrams: number;
-  readonly fatGrams: number;
-  readonly carbohydrateGrams: number;
-  readonly constraint:
-    | { readonly adjustment: 'fat-reduced'; readonly unconstrainedFatGrams: number }
-    | { readonly adjustment: 'protein-capped'; readonly unconstrainedProteinGrams: number }
-    | null;
-}
-
 /**
- * Allocates whole-gram macros to a whole-kcal calorie target.
+ * Plans whole-gram macros for a whole-kcal calorie target, in priority order:
+ *   1. protein (as requested)
+ *   2. fat: preferred share, never below the minimum share
+ *   3. carbohydrates: remaining calories ÷ 4
  *
- * Priority: protein, then fat, then carbohydrates take what remains:
- *   carbohydrateGrams = (target − protein×4 − fat×9) / 4
+ * Outcomes:
+ * - feasible: everything fits at preferred fat.
+ * - constrained: fat lowered toward (not below) its minimum to fit; carbohydrates get any remainder.
+ * - infeasible: protein + minimum fat (or protein alone) exceed the target.
+ *   No gram targets are returned; the analysis records the conflict.
  *
- * Never returns negative grams. If protein + fat don't fit:
- *  1. fat is reduced to what fits and carbohydrates are 0;
- *  2. if protein alone doesn't fit, protein is capped and fat/carbohydrates are 0.
- * The constraint is reported so it can be surfaced as a safeguard.
- *
- * Inputs are rounded to whole grams first so the returned macros add up to
- * the presented calorie target (within rounding of the carbohydrate gram).
+ * Never returns negative grams and never cuts protein or minimum fat silently.
  */
-export function allocateMacros(
+export function planMacros(
   calorieTargetKcal: number,
-  proteinGrams: number,
-  fatGrams: number,
+  requestedProteinGrams: number,
   config: FitnessCalculationConfig,
-): MacroSplit {
+): MacroTargets {
   const kcal = config.kcalPerGram;
-  const protein = Math.round(proteinGrams);
-  const fat = Math.round(fatGrams);
+  const protein = Math.round(requestedProteinGrams);
+  const fat = calculateFatTargets(calorieTargetKcal, config);
 
-  const afterProtein = calorieTargetKcal - protein * kcal.protein;
-  if (afterProtein < 0) {
-    return {
-      proteinGrams: Math.floor(calorieTargetKcal / kcal.protein),
-      fatGrams: 0,
-      carbohydrateGrams: 0,
-      constraint: { adjustment: 'protein-capped', unconstrainedProteinGrams: protein },
-    };
+  const proteinKcal = protein * kcal.protein;
+  const analysis: MacroAnalysis = {
+    calorieTargetKcal,
+    requestedProteinGrams: protein,
+    preferredFatGrams: fat.preferredGrams,
+    minimumFatGrams: fat.minimumGrams,
+    shortfallKcal: Math.max(proteinKcal + fat.preferredGrams * kcal.fat - calorieTargetKcal, 0),
+    shortfallAtMinimumFatKcal: Math.max(proteinKcal + fat.minimumGrams * kcal.fat - calorieTargetKcal, 0),
+  };
+
+  if (proteinKcal > calorieTargetKcal) {
+    return { status: 'infeasible', reason: 'protein-exceeds-calories', analysis };
+  }
+  if (analysis.shortfallAtMinimumFatKcal > 0) {
+    return { status: 'infeasible', reason: 'protein-and-minimum-fat-exceed-calories', analysis };
   }
 
-  const remaining = afterProtein - fat * kcal.fat;
-  if (remaining < 0) {
+  const afterProtein = calorieTargetKcal - proteinKcal;
+  if (analysis.shortfallKcal > 0) {
+    // Largest whole-gram fat that fits; guaranteed ≥ minimum by the check above.
+    const fatGrams = Math.floor(afterProtein / kcal.fat);
     return {
+      status: 'constrained',
+      constraint: 'fat-reduced-toward-minimum',
       proteinGrams: protein,
-      fatGrams: Math.floor(afterProtein / kcal.fat),
-      carbohydrateGrams: 0,
-      constraint: { adjustment: 'fat-reduced', unconstrainedFatGrams: fat },
+      fatGrams,
+      carbohydrateGrams: Math.floor((afterProtein - fatGrams * kcal.fat) / kcal.carbohydrate),
+      analysis,
     };
   }
 
   return {
+    status: 'feasible',
     proteinGrams: protein,
-    fatGrams: fat,
-    carbohydrateGrams: Math.round(remaining / kcal.carbohydrate),
-    constraint: null,
+    fatGrams: fat.preferredGrams,
+    carbohydrateGrams: Math.round((afterProtein - fat.preferredGrams * kcal.fat) / kcal.carbohydrate),
+    analysis,
   };
 }

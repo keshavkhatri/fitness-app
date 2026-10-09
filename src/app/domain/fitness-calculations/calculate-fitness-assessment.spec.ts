@@ -1,7 +1,7 @@
 import { UserFitnessProfile } from '../fitness-profile';
-import { DEFAULT_CALCULATION_CONFIG, FitnessCalculationConfig } from './calculation-config';
+import { DEFAULT_CALCULATION_CONFIG as DEFAULTS, FitnessCalculationConfig, validateCalculationConfig } from './calculation-config';
 import { calculateFitnessAssessment } from './calculate-fitness-assessment';
-import { FitnessAssessment, FitnessAssessmentResult } from './fitness-assessment.model';
+import { FitnessAssessment, FitnessAssessmentResult, MacroTargets } from './fitness-assessment.model';
 
 const AS_OF = '2026-10-07';
 
@@ -35,28 +35,42 @@ function assess(
 }
 
 const errorCode = (result: FitnessAssessmentResult) => (result.ok ? null : result.error.code);
+const grams = (macros: MacroTargets) =>
+  macros.status === 'infeasible' ? null : [macros.proteinGrams, macros.fatGrams, macros.carbohydrateGrams];
 
 describe('calculateFitnessAssessment', () => {
   describe('worked example (male, 36, 180 cm, 80 kg, moderately active, fat loss)', () => {
     // BMR  = 800 + 1125 − 180 + 5            = 1750
     // TDEE = 1750 × 1.55                     = 2712.5 → 2713
-    // goal = 2712.5 × 0.85                   = 2305.625 → 2306
-    // protein = 1.8 × 80                     = 144 g
-    // fat  = 2306 × 0.30 / 9                 = 76.87 → 77 g
+    // target = 2712.5 × 0.85                 = 2305.625 → 2306 (above 1500 threshold)
+    // protein = 1.8 × 80 (body weight)       = 144 g
+    // fat = 2306 × 0.30 / 9                  = 76.87 → 77 g  (minimum 20% → 52 g)
     // carbs = (2306 − 144×4 − 77×9) / 4      = 259.25 → 259 g
-    it('produces the expected, rounded numbers', () => {
-      expect(assess()).toMatchObject({
-        ageYears: 36,
+    it('separates estimated physiological values from initial targets', () => {
+      const result = assess();
+      expect(result.estimates).toEqual({
         bmrKcal: 1750,
         tdeeKcal: 2713,
-        calorieTargetKcal: 2306,
-        proteinGrams: 144,
-        fatGrams: 77,
-        carbohydrateGrams: 259,
-        goal: 'lose-fat',
-        goalDirection: 'deficit',
-        activityLevel: 'moderately-active',
+        confidence: { level: 'moderate', reasons: ['formula-based-estimate'] },
       });
+      expect(result.targets).toEqual({
+        calories: { calculatedKcal: 2306, finalKcal: 2306, status: 'normal', productSafetyThresholdKcal: 1500 },
+        macros: {
+          status: 'feasible',
+          proteinGrams: 144,
+          fatGrams: 77,
+          carbohydrateGrams: 259,
+          analysis: {
+            calorieTargetKcal: 2306,
+            requestedProteinGrams: 144,
+            preferredFatGrams: 77,
+            minimumFatGrams: 52,
+            shortfallKcal: 0,
+            shortfallAtMinimumFatKcal: 0,
+          },
+        },
+      });
+      expect(result).toMatchObject({ ageYears: 36, goal: 'lose-fat', goalDirection: 'deficit', safeguardsApplied: [] });
     });
 
     it('explains how every number was derived (structured, no display strings)', () => {
@@ -64,12 +78,10 @@ describe('calculateFitnessAssessment', () => {
         bmr: { method: 'mifflin-st-jeor', sexBasis: 'male', inputs: { weightKg: 80, heightCm: 180, ageYears: 36 } },
         activity: { level: 'moderately-active', multiplier: 1.55 },
         goalAdjustment: { goal: 'lose-fat', fraction: -0.15 },
-        calorieFloor: { floorKcal: 1500, applied: false },
-        protein: { method: 'body-weight', gramsPerKg: 1.8, basisWeightKg: 80 },
-        fat: { method: 'fraction-of-calories', fractionOfCalories: 0.3 },
+        protein: { type: 'body-weight', gramsPerKg: 1.8, basisWeightKg: 80 },
+        fat: { method: 'share-of-calories', preferredShare: 0.3, minimumShare: 0.2, maximumShare: 0.35 },
         carbohydrate: { method: 'remaining-calories' },
       });
-      expect(assess().safeguardsApplied).toEqual([]);
     });
 
     it('carries the calculation version and as-of date', () => {
@@ -91,7 +103,7 @@ describe('calculateFitnessAssessment', () => {
     it('uses the age in the BMR (5 kcal less per year)', () => {
       const today = assess(profile({ dateOfBirth: '1990-10-07' }));
       const tomorrow = assess(profile({ dateOfBirth: '1990-10-08' }));
-      expect(tomorrow.bmrKcal - today.bmrKcal).toBe(5);
+      expect(tomorrow.estimates.bmrKcal - today.estimates.bmrKcal).toBe(5);
     });
 
     it('rejects 17-year-olds', () => {
@@ -101,20 +113,27 @@ describe('calculateFitnessAssessment', () => {
     });
   });
 
-  describe('sex', () => {
-    it('female uses the female equation and floor', () => {
+  describe('sex and confidence', () => {
+    it('female uses the female equation and threshold; formula-only stays moderate', () => {
       const result = assess(profile({ sex: 'female' }));
-      expect(result.bmrKcal).toBe(1584); // 1750 − 166
+      expect(result.estimates.bmrKcal).toBe(1584); // 1750 − 166
       expect(result.explanation.bmr.sexBasis).toBe('female');
-      expect(result.explanation.calorieFloor.floorKcal).toBe(1200);
-      expect(result.confidence.level).toBe('moderate');
+      expect(result.targets.calories.productSafetyThresholdKcal).toBe(1200);
+      expect(result.estimates.confidence.level).toBe('moderate');
     });
 
-    it('prefer-not-to-say uses the midpoint and is marked lower confidence', () => {
+    it('prefer-not-to-say uses the midpoint and is marked low confidence', () => {
       const result = assess(profile({ sex: 'prefer-not-to-say' }));
-      expect(result.bmrKcal).toBe(1667); // (1750 + 1584) / 2
+      expect(result.estimates.bmrKcal).toBe(1667); // (1750 + 1584) / 2
       expect(result.explanation.bmr.sexBasis).toBe('sex-neutral-midpoint');
-      expect(result.confidence).toEqual({ level: 'low', reasons: ['equation-based-estimate', 'sex-neutral-bmr'] });
+      expect(result.estimates.confidence).toEqual({ level: 'low', reasons: ['formula-based-estimate', 'sex-neutral-bmr'] });
+      expect(result.targets.calories.productSafetyThresholdKcal).toBe(1500);
+    });
+
+    it('never reports high confidence for formula-only estimates', () => {
+      for (const sex of ['male', 'female', 'prefer-not-to-say'] as const) {
+        expect(assess(profile({ sex })).estimates.confidence.level).not.toBe('high');
+      }
     });
   });
 
@@ -126,12 +145,12 @@ describe('calculateFitnessAssessment', () => {
       ['very-active', 3019],
     ] as const)('%s: TDEE = BMR × multiplier', (activityLevel, tdee) => {
       const result = assess(profile({ activityLevel }));
-      expect(result.tdeeKcal).toBe(tdee);
-      expect(result.tdeeKcal).toBe(Math.round(1750 * DEFAULT_CALCULATION_CONFIG.activityMultipliers[activityLevel]));
+      expect(result.estimates.tdeeKcal).toBe(tdee);
+      expect(result.estimates.tdeeKcal).toBe(Math.round(1750 * DEFAULTS.activityMultipliers[activityLevel]));
     });
 
     it('does not factor in training days per week', () => {
-      expect(assess(profile({ trainingDaysPerWeek: 7 }))).toEqual(assess(profile({ trainingDaysPerWeek: 2 })));
+      expect(assess(profile({ trainingDaysPerWeek: 6 }))).toEqual(assess(profile({ trainingDaysPerWeek: 2 })));
     });
   });
 
@@ -144,9 +163,9 @@ describe('calculateFitnessAssessment', () => {
       ['improve-fitness', 2713, 'maintenance', 128],
     ] as const)('%s → %s kcal (%s), %s g protein', (primaryGoal, kcal, direction, protein) => {
       const result = assess(profile({ primaryGoal }));
-      expect(result.calorieTargetKcal).toBe(kcal);
+      expect(result.targets.calories.finalKcal).toBe(kcal);
       expect(result.goalDirection).toBe(direction);
-      expect(result.proteinGrams).toBe(protein);
+      expect(grams(result.targets.macros)?.[0]).toBe(protein);
     });
 
     it('does not use the target weight in v1', () => {
@@ -154,60 +173,126 @@ describe('calculateFitnessAssessment', () => {
     });
   });
 
-  describe('calorie floor safeguard', () => {
-    // Small, older, sedentary woman cutting: 45 kg, 150 cm, 70 y.
-    // BMR = 450 + 937.5 − 350 − 161 = 876.5; TDEE = 1051.8; −15% = 894.03 → below 1200.
-    const small = profile({
-      sex: 'female',
-      dateOfBirth: '1956-01-01',
-      height: { centimeters: 150 },
-      weight: { kilograms: 45 },
-      activityLevel: 'sedentary',
-    });
-
-    it('returns the floor and records the safeguard when the target is below it', () => {
-      const result = assess(small);
-      expect(result.calorieTargetKcal).toBe(1200);
-      expect(result.safeguardsApplied).toEqual([
-        { kind: 'calorie-floor', floorKcal: 1200, unconstrainedTargetKcal: 894 },
-      ]);
-      expect(result.explanation.calorieFloor).toEqual({ floorKcal: 1200, applied: true });
-      expect(result.tdeeKcal).toBe(1052); // maintenance estimate itself is not altered
-    });
-
-    it('leaves a target exactly at the floor alone', () => {
-      // Set the floor to the exact unrounded target.
-      const config: FitnessCalculationConfig = {
-        ...DEFAULT_CALCULATION_CONFIG,
-        calorieFloorKcal: { ...DEFAULT_CALCULATION_CONFIG.calorieFloorKcal, female: 894.03 },
-      };
-      const result = assess(small, { config });
-      expect(result.explanation.calorieFloor.applied).toBe(false);
-      expect(result.safeguardsApplied).toEqual([]);
-      expect(result.calorieTargetKcal).toBe(894);
-    });
-
-    it('does not apply when the target is above the floor', () => {
-      expect(assess().explanation.calorieFloor.applied).toBe(false);
+  describe('protein method in the pipeline', () => {
+    it('uses adjusted weight above the threshold, with metadata', () => {
+      // 150 kg, 180 cm (BMI 46.3): reference = 97.2 + 0.25 × 52.8 = 110.4 kg → 198.72 → 199 g (not 270 g)
+      const result = assess(profile({ weight: { kilograms: 150 } }));
+      expect(grams(result.targets.macros)?.[0]).toBe(199);
+      expect(result.explanation.protein).toEqual({
+        type: 'adjusted-weight',
+        gramsPerKg: 1.8,
+        actualWeightKg: 150,
+        referenceWeightKg: 110.4,
+        thresholdWeightKg: 97.2,
+        thresholdBmi: 30,
+        excessWeightFraction: 0.25,
+      });
+      // Energy estimates still use actual body weight.
+      expect(result.explanation.bmr.inputs.weightKg).toBe(150);
     });
   });
 
-  describe('macro constraint safeguard', () => {
-    it('reduces fat instead of returning negative carbohydrates, and records it', () => {
-      // Deliberately extreme (test-only) protein setting: 6 g/kg × 80 kg = 480 g = 1920 kcal.
+  describe('calorie target safety handling', () => {
+    it('normal: threshold not triggered', () => {
+      expect(assess().targets.calories.status).toBe('normal');
+      expect(assess().safeguardsApplied).not.toContain('calorie-safety-threshold');
+    });
+
+    it('floor-applied: deficit dips below the threshold while maintenance is above it', () => {
+      // Female, 60 y, 155 cm, 50 kg, sedentary:
+      // BMR 1007.75; TDEE 1209.3 (≥ 1200); target 1027.9 (< 1200)
+      const result = assess(
+        profile({
+          sex: 'female',
+          dateOfBirth: '1966-01-01',
+          height: { centimeters: 155 },
+          weight: { kilograms: 50 },
+          activityLevel: 'sedentary',
+        }),
+      );
+      expect(result.estimates.tdeeKcal).toBe(1209);
+      expect(result.targets.calories).toEqual({
+        calculatedKcal: 1028, // original preserved
+        finalKcal: 1200,
+        status: 'floor-applied',
+        productSafetyThresholdKcal: 1200,
+      });
+      expect(result.safeguardsApplied).toEqual(['calorie-safety-threshold']);
+      expect(grams(result.targets.macros)).toEqual([90, 40, 120]); // macros planned on the final target
+    });
+
+    describe('review-required: estimated maintenance is below the threshold', () => {
+      // Female, 70 y, 150 cm, 45 kg, sedentary: BMR 876.5; TDEE 1051.8 (< 1200)
+      const small = profile({
+        sex: 'female',
+        dateOfBirth: '1956-01-01',
+        height: { centimeters: 150 },
+        weight: { kilograms: 45 },
+        activityLevel: 'sedentary',
+      });
+
+      it('for a deficit goal', () => {
+        const result = assess(small);
+        expect(result.targets.calories).toEqual({
+          calculatedKcal: 894, // 1051.8 × 0.85, preserved
+          finalKcal: 1200,
+          status: 'review-required',
+          productSafetyThresholdKcal: 1200,
+        });
+        expect(result.estimates.tdeeKcal).toBe(1052); // the estimate itself is not altered
+        expect(result.safeguardsApplied).toEqual(['calorie-safety-threshold']);
+      });
+
+      it('for a maintenance goal', () => {
+        const result = assess({ ...small, primaryGoal: 'recomposition' });
+        expect(result.targets.calories).toMatchObject({ calculatedKcal: 1052, finalKcal: 1200, status: 'review-required' });
+      });
+
+      it('deterministically', () => {
+        expect(assess(small)).toEqual(assess(structuredClone(small)));
+      });
+    });
+
+    it('a target exactly at the threshold is normal', () => {
+      // Sedentary maintenance target is exactly 1750 × 1.2 = 2100; set the threshold to that value.
       const config: FitnessCalculationConfig = {
-        ...DEFAULT_CALCULATION_CONFIG,
-        proteinGramsPerKg: {
-          ...DEFAULT_CALCULATION_CONFIG.proteinGramsPerKg,
-          'lose-fat': { min: 1.6, max: 6, default: 6 },
-        },
+        ...DEFAULTS,
+        calorieTarget: { productSafetyThresholdKcal: { male: 2100, female: 1200, sexNeutral: 1500 } },
       };
-      const result = assess(PROFILE, { config });
-      expect(result.carbohydrateGrams).toBe(0);
-      expect(result.fatGrams).toBe(42); // (2306 − 1920) / 9 = 42.9 → 42
-      expect(result.safeguardsApplied).toEqual([
-        { kind: 'macro-constraint', adjustment: 'fat-reduced', unconstrainedFatGrams: 77 },
-      ]);
+      const result = assess(profile({ primaryGoal: 'recomposition', activityLevel: 'sedentary' }), { config });
+      expect(result.targets.calories).toMatchObject({ calculatedKcal: 2100, finalKcal: 2100, status: 'normal' });
+    });
+  });
+
+  describe('macro feasibility in the pipeline', () => {
+    // Default configuration never produces these for valid profiles; an unusual
+    // energy density is used purely to exercise the wiring.
+    const withProteinKcal = (protein: number): FitnessCalculationConfig => ({
+      ...DEFAULTS,
+      kcalPerGram: { ...DEFAULTS.kcalPerGram, protein },
+    });
+
+    it('constrained: recorded as a safeguard, fat never below minimum', () => {
+      const result = assess(PROFILE, { config: withProteinKcal(12) }); // 144 g × 12 = 1728 kcal
+      expect(result.targets.macros).toMatchObject({ status: 'constrained', fatGrams: 64, carbohydrateGrams: 0 });
+      expect(result.safeguardsApplied).toEqual(['fat-reduced-toward-minimum']);
+    });
+
+    it('infeasible: no gram targets, conflict explained', () => {
+      const result = assess(PROFILE, { config: withProteinKcal(20) }); // 144 g × 20 = 2880 kcal > 2306
+      expect(result.targets.macros).toEqual({
+        status: 'infeasible',
+        reason: 'protein-exceeds-calories',
+        analysis: {
+          calorieTargetKcal: 2306,
+          requestedProteinGrams: 144,
+          preferredFatGrams: 77,
+          minimumFatGrams: 52,
+          shortfallKcal: 1267, // 2880 + 693 − 2306
+          shortfallAtMinimumFatKcal: 1042, // 2880 + 468 − 2306
+        },
+      });
+      expect(result.safeguardsApplied).toEqual(['macros-infeasible']);
     });
   });
 
@@ -221,69 +306,87 @@ describe('calculateFitnessAssessment', () => {
 
     it('does not mutate the profile or the configuration', () => {
       const p = structuredClone(PROFILE);
-      const config = structuredClone(DEFAULT_CALCULATION_CONFIG);
+      const config = structuredClone(DEFAULTS);
       calculateFitnessAssessment(p, { asOfDate: AS_OF, config });
       expect(p).toEqual(PROFILE);
-      expect(config).toEqual(DEFAULT_CALCULATION_CONFIG);
+      expect(config).toEqual(DEFAULTS);
     });
   });
 
-  describe('configuration', () => {
-    const withConfig = (patch: Partial<FitnessCalculationConfig>) => assess(PROFILE, {
-      config: { ...DEFAULT_CALCULATION_CONFIG, ...patch },
+  describe('configuration changes', () => {
+    const withConfig = (patch: Partial<FitnessCalculationConfig>, p = PROFILE) =>
+      assess(p, { config: { ...DEFAULTS, ...patch } });
+
+    it('activity multiplier changes TDEE proportionally', () => {
+      const result = withConfig({ activityMultipliers: { ...DEFAULTS.activityMultipliers, 'moderately-active': 1.5 } });
+      expect(result.estimates.tdeeKcal).toBe(2625); // 1750 × 1.5
     });
 
-    it('changing the activity multiplier changes TDEE proportionally', () => {
+    it('fat-loss adjustment changes the target predictably', () => {
+      const result = withConfig({ goalCalorieAdjustments: { ...DEFAULTS.goalCalorieAdjustments, 'lose-fat': -0.1 } });
+      expect(result.targets.calories.finalKcal).toBe(2441); // 2712.5 × 0.9 = 2441.25
+    });
+
+    it('preferred fat share changes fat and, in turn, carbohydrates', () => {
+      const result = withConfig({ fat: { ...DEFAULTS.fat, preferredShare: 0.25 } });
+      expect(grams(result.targets.macros)).toEqual([144, 64, 289]); // fat 64.06 → 64; (2306 − 576 − 576)/4 = 288.5 → 289
+    });
+
+    it('protein threshold changes the protein method', () => {
+      const heavy = profile({ weight: { kilograms: 105 } }); // BMI 32.4
+      expect(assess(heavy).explanation.protein.type).toBe('adjusted-weight');
+      const raised = withConfig({ protein: { ...DEFAULTS.protein, adjustedWeight: { thresholdBmi: 35, excessWeightFraction: 0.25 } } }, heavy);
+      expect(raised.explanation.protein.type).toBe('body-weight');
+    });
+
+    it('product safety threshold changes when the guard applies', () => {
       const result = withConfig({
-        activityMultipliers: { ...DEFAULT_CALCULATION_CONFIG.activityMultipliers, 'moderately-active': 1.5 },
+        calorieTarget: { productSafetyThresholdKcal: { male: 2400, female: 1200, sexNeutral: 1500 } },
       });
-      expect(result.tdeeKcal).toBe(2625); // 1750 × 1.5
-      expect(result.explanation.activity.multiplier).toBe(1.5);
+      expect(result.targets.calories).toMatchObject({ calculatedKcal: 2306, finalKcal: 2400, status: 'floor-applied' });
     });
+  });
 
-    it('changing the fat-loss adjustment changes the target predictably', () => {
-      const result = withConfig({
-        goalCalorieAdjustments: { ...DEFAULT_CALCULATION_CONFIG.goalCalorieAdjustments, 'lose-fat': -0.1 },
-      });
-      expect(result.calorieTargetKcal).toBe(2441); // 2712.5 × 0.9 = 2441.25
-      expect(result.explanation.goalAdjustment.fraction).toBe(-0.1);
-    });
-
-    it('changing the fat fraction changes fat and, in turn, carbohydrates', () => {
-      const result = withConfig({ fat: { ...DEFAULT_CALCULATION_CONFIG.fat, fractionOfCalories: 0.25 } });
-      expect(result.fatGrams).toBe(64); // 2306 × 0.25 / 9 = 64.06
-      expect(result.carbohydrateGrams).toBe(289); // (2306 − 64×9 − 144×4) / 4 = 288.5 → 289
-    });
-
-    it('changing the protein default changes protein', () => {
-      const result = withConfig({
-        proteinGramsPerKg: {
-          ...DEFAULT_CALCULATION_CONFIG.proteinGramsPerKg,
-          'lose-fat': { min: 1.6, max: 2.0, default: 2.0 },
-        },
-      });
-      expect(result.proteinGrams).toBe(160);
-    });
-
-    it('rejects configurations outside approved ranges', () => {
-      const invalid: FitnessCalculationConfig[] = [
-        { ...DEFAULT_CALCULATION_CONFIG, fat: { ...DEFAULT_CALCULATION_CONFIG.fat, fractionOfCalories: 0.6 } },
+  describe('invalid configuration is rejected', () => {
+    const variants: [string, FitnessCalculationConfig][] = [
+      ['unknown version', { ...DEFAULTS, version: 'v0' as never }],
+      ['activity multiplier < 1', { ...DEFAULTS, activityMultipliers: { ...DEFAULTS.activityMultipliers, sedentary: 0.5 } }],
+      [
+        'goal adjustment outside approved range',
+        { ...DEFAULTS, goalCalorieAdjustments: { ...DEFAULTS.goalCalorieAdjustments, 'lose-fat': -0.4 } },
+      ],
+      [
+        'protein default outside its range',
         {
-          ...DEFAULT_CALCULATION_CONFIG,
-          goalCalorieAdjustments: { ...DEFAULT_CALCULATION_CONFIG.goalCalorieAdjustments, 'lose-fat': -0.4 },
+          ...DEFAULTS,
+          protein: {
+            ...DEFAULTS.protein,
+            gramsPerKg: { ...DEFAULTS.protein.gramsPerKg, 'lose-fat': { min: 1.6, max: 2.0, default: 2.5 } },
+          },
         },
-        {
-          ...DEFAULT_CALCULATION_CONFIG,
-          activityMultipliers: { ...DEFAULT_CALCULATION_CONFIG.activityMultipliers, sedentary: 0.5 },
-        },
-        { ...DEFAULT_CALCULATION_CONFIG, calorieFloorKcal: { male: 0, female: 1200, sexNeutral: 1500 } },
-        { ...DEFAULT_CALCULATION_CONFIG, version: 'v0' as never },
-      ];
-      for (const config of invalid) {
-        expect(errorCode(calculateFitnessAssessment(PROFILE, { asOfDate: AS_OF, config }))).toBe(
-          'invalid-configuration',
-        );
-      }
+      ],
+      ['protein threshold BMI too low', { ...DEFAULTS, protein: { ...DEFAULTS.protein, adjustedWeight: { thresholdBmi: 18, excessWeightFraction: 0.25 } } }],
+      ['protein threshold BMI too high', { ...DEFAULTS, protein: { ...DEFAULTS.protein, adjustedWeight: { thresholdBmi: 60, excessWeightFraction: 0.25 } } }],
+      ['protein threshold BMI NaN', { ...DEFAULTS, protein: { ...DEFAULTS.protein, adjustedWeight: { thresholdBmi: Number.NaN, excessWeightFraction: 0.25 } } }],
+      ['negative excess-weight fraction', { ...DEFAULTS, protein: { ...DEFAULTS.protein, adjustedWeight: { thresholdBmi: 30, excessWeightFraction: -0.1 } } }],
+      ['excess-weight fraction above 1', { ...DEFAULTS, protein: { ...DEFAULTS.protein, adjustedWeight: { thresholdBmi: 30, excessWeightFraction: 1.5 } } }],
+      ['fat minimum above preferred', { ...DEFAULTS, fat: { minimumShare: 0.32, preferredShare: 0.3, maximumShare: 0.35 } }],
+      ['fat maximum below preferred', { ...DEFAULTS, fat: { minimumShare: 0.2, preferredShare: 0.3, maximumShare: 0.25 } }],
+      ['fat minimum below limit', { ...DEFAULTS, fat: { minimumShare: 0.05, preferredShare: 0.3, maximumShare: 0.35 } }],
+      ['fat maximum above limit', { ...DEFAULTS, fat: { minimumShare: 0.2, preferredShare: 0.3, maximumShare: 0.6 } }],
+      ['zero calorie threshold', { ...DEFAULTS, calorieTarget: { productSafetyThresholdKcal: { male: 0, female: 1200, sexNeutral: 1500 } } }],
+      ['implausibly low calorie threshold', { ...DEFAULTS, calorieTarget: { productSafetyThresholdKcal: { male: 1500, female: 500, sexNeutral: 1500 } } }],
+      ['implausibly high calorie threshold', { ...DEFAULTS, calorieTarget: { productSafetyThresholdKcal: { male: 1500, female: 1200, sexNeutral: 5000 } } }],
+      ['NaN calorie threshold', { ...DEFAULTS, calorieTarget: { productSafetyThresholdKcal: { male: Number.NaN, female: 1200, sexNeutral: 1500 } } }],
+    ];
+
+    it.each(variants)('%s', (_, config) => {
+      expect(validateCalculationConfig(config)).not.toEqual([]);
+      expect(errorCode(calculateFitnessAssessment(PROFILE, { asOfDate: AS_OF, config }))).toBe('invalid-configuration');
+    });
+
+    it('accepts the default configuration', () => {
+      expect(validateCalculationConfig(DEFAULTS)).toEqual([]);
     });
   });
 

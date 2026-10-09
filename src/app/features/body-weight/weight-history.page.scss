@@ -1,0 +1,93 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-10);
+}
+
+.intro,
+.section,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.intro {
+  gap: var(--space-2);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.subtitle {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.row {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+
+  ion-icon {
+    flex: none;
+    font-size: 18px;
+    color: var(--color-text-secondary);
+  }
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+.row-text {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-3);
+  min-width: 0;
+}
+
+.row-weight {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+}
+
+.row-date {
+  @include fx.text(body-sm, medium);
+  color: var(--color-text-secondary);
+  text-align: end;
+}
+
+.row-change {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+}

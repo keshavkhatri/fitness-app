@@ -61,3 +61,54 @@ section {
     }
   }
 }
+
+.entry {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-card);
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+.entry-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 22px;
+}
+
+.entry-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.entry-title {
+  @include fx.text(body, semibold);
+}
+
+.entry-description {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.entry-chevron {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: var(--color-text-tertiary);
+}

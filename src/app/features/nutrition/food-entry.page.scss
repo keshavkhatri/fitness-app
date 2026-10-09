@@ -1,0 +1,100 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-8);
+}
+
+.intro,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.day {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-primary-text);
+}
+
+.form,
+.choice,
+.values {
+  display: flex;
+  flex-direction: column;
+}
+
+.form {
+  gap: var(--space-5);
+}
+
+.choice {
+  gap: var(--space-2);
+}
+
+.choice-label {
+  @include fx.text(body-sm, semibold);
+}
+
+.values {
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.values-title {
+  @include fx.text(h3, semibold);
+  margin-bottom: var(--space-1);
+  padding: 0;
+}
+
+.values-hint {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+}
+
+ion-footer {
+  background: var(--color-bg);
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+// Above the tab bar, which already reserves the device's bottom safe area.
+.footer {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-gutter);
+}
+
+.status {
+  @include fx.text(body-sm, medium);
+  color: var(--color-danger-text);
+  text-align: center;
+
+  &.shown {
+    margin-bottom: var(--space-3);
+  }
+}
+
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

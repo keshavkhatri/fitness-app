@@ -1,0 +1,97 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.foods {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meal-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.meal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.meal-title {
+  @include fx.text(h3, semibold);
+}
+
+.meal-subtotal {
+  @include fx.text(body-sm, semibold);
+  @include fx.tabular-numbers;
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.foods li + li {
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.food,
+.add-food {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.food {
+  gap: var(--space-3);
+}
+
+.food-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.food-name {
+  @include fx.text(body, medium);
+  overflow-wrap: anywhere;
+}
+
+.food-detail {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.food-kcal {
+  @include fx.text(body-sm, semibold);
+  @include fx.tabular-numbers;
+  flex: none;
+}
+
+.add-food {
+  @include fx.text(body-sm, semibold);
+
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  border-top: var(--border-hairline) solid var(--color-border);
+  color: var(--color-primary-text);
+
+  ion-icon {
+    font-size: 20px;
+  }
+
+  &.compact {
+    width: auto;
+    padding-inline: var(--space-1);
+    border: 0;
+  }
+}

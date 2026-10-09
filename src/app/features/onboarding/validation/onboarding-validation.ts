@@ -20,6 +20,7 @@ import {
   isValidCalendarDate,
   isWithin,
   parseDecimal,
+  parseDecimalInput,
   parseIsoCalendarDate,
   parseWholeNumber,
   toFeetInches,
@@ -200,6 +201,8 @@ export function validateBasicsForm(
     input.unitSystem === 'metric' ? input.heightCm.trim() === '' : input.heightFeet.trim() === '';
   if (heightBlank) {
     errors.height = 'Enter your height.';
+  } else if (input.unitSystem === 'imperial' && parseInches(input.heightInches).kind === 'ambiguous') {
+    errors.height = AMBIGUOUS_NUMBER;
   } else if (!height) {
     errors.height =
       input.unitSystem === 'metric' ? 'Enter your height in centimeters.' : 'Enter feet, and inches from 0 to 11.';
@@ -228,11 +231,32 @@ function parseHeight(input: BasicsFormInput) {
     return cm === null ? null : heightFromCentimeters(cm);
   }
   const feet = parseWholeNumber(input.heightFeet);
-  const inches = input.heightInches.trim() === '' ? 0 : parseDecimal(input.heightInches);
-  if (feet === null || inches === null || inches >= 12) {
+  const inches = parseInches(input.heightInches);
+  if (feet === null || inches.kind !== 'ok' || inches.value >= 12) {
     return null;
   }
-  return heightFromFeetInches(feet, inches);
+  return heightFromFeetInches(feet, inches.value);
+}
+
+const AMBIGUOUS_NUMBER = "Check number format. Use one decimal separator. Thousands separators aren't supported.";
+
+type InchesInput = { readonly kind: 'ok'; readonly value: number } | { readonly kind: 'ambiguous' } | { readonly kind: 'invalid' };
+
+/**
+ * The inches part of a feet-and-inches height. Blank means 0. Uses the strict
+ * shared parser so "1,234" or "1.234" is never read as 1.234 inches; decimal
+ * inches with a dot or comma ("5.5", "5,5") stay valid. Negative is invalid.
+ */
+function parseInches(text: string): InchesInput {
+  const parsed = parseDecimalInput(text);
+  switch (parsed.kind) {
+    case 'empty':
+      return { kind: 'ok', value: 0 };
+    case 'number':
+      return text.trim().startsWith('-') ? { kind: 'invalid' } : { kind: 'ok', value: parsed.value };
+    default:
+      return { kind: parsed.kind };
+  }
 }
 
 function parseWeightInput(text: string, unitSystem: UnitSystem): BodyWeight | null {

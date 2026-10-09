@@ -84,6 +84,42 @@ export function parseDecimal(text: string): number | null {
   return /^\d+(\.\d+)?$/.test(normalized) ? Number(normalized) : null;
 }
 
+/** Outcome of reading a typed number; range and precision checks are left to domain validation. */
+export type DecimalInput =
+  | { readonly kind: 'number'; readonly value: number }
+  | { readonly kind: 'empty' }
+  /** Could be a thousands separator ("1,234", "1.234", "1,234.5"): never guessed. */
+  | { readonly kind: 'ambiguous' }
+  | { readonly kind: 'invalid' };
+
+/**
+ * Strict, locale-independent reading of a typed decimal (food values).
+ *
+ * - Digits with at most one decimal separator, "." or ",": "32.5", "32,5", "0,125", "1234,5".
+ * - A leading "-" is read as a negative number (for validation to reject with its own message).
+ * - Ambiguous, rejected rather than guessed: more than one separator ("1,234.5", "1.234,5"),
+ *   or exactly three digits after a separator following 1–3 digits that don't start with 0
+ *   ("1,234", "1.234", "10,000"): a thousands-separated number in some locales.
+ * - Anything else ("", "abc", "1e3", "Infinity", "NaN", "+5", ".5", "1 234") is empty or invalid.
+ */
+export function parseDecimalInput(text: string): DecimalInput {
+  const trimmed = text.trim();
+  if (trimmed === '') {
+    return { kind: 'empty' };
+  }
+  const negative = trimmed.startsWith('-');
+  const body = negative ? trimmed.slice(1) : trimmed;
+  if (/^\d+([.,]\d+){2,}$/.test(body) || /^\d+(,\d+\.\d+|\.\d+,\d+)$/.test(body) || /^[1-9]\d{0,2}[.,]\d{3}$/.test(body)) {
+    return { kind: 'ambiguous' };
+  }
+  const match = /^(\d+)(?:[.,](\d+))?$/.exec(body);
+  if (!match) {
+    return { kind: 'invalid' };
+  }
+  const value = Number(`${match[1]}.${match[2] ?? '0'}`);
+  return Number.isFinite(value) ? { kind: 'number', value: negative && value !== 0 ? -value : value } : { kind: 'invalid' };
+}
+
 /** Parses a user-typed whole number. */
 export function parseWholeNumber(text: string): number | null {
   const normalized = text.trim();

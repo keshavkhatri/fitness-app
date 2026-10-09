@@ -144,3 +144,23 @@ export function sanitizeDraft(value: unknown): OnboardingDraft {
     goalTarget: normalizeGoalTarget(primaryGoal, parseGoalTarget(raw['goalTarget'])),
   };
 }
+
+/** Prefills a draft from an existing profile (used when reviewing details). */
+export function draftFromProfile(profile: UserFitnessProfile): OnboardingDraft {
+  return {
+    primaryGoal: profile.primaryGoal,
+    unitSystem: profile.unitSystem,
+    basics: {
+      dateOfBirth: profile.dateOfBirth,
+      sex: profile.sex,
+      height: profile.height,
+      weight: profile.weight,
+    },
+    trainingExperience: profile.trainingExperience,
+    trainingDaysPerWeek: profile.trainingDaysPerWeek,
+    trainingLocation: profile.trainingLocation,
+    equipment: [...profile.equipment],
+    activityLevel: profile.activityLevel,
+    goalTarget: profile.goalTarget,
+  };
+}

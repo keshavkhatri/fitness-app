@@ -1,0 +1,184 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button [defaultHref]="nutritionPath" [text]="copy.back" />
+    </ion-buttons>
+    <!-- Navigation label only; the page heading (h1) is below. -->
+    <ion-title aria-hidden="true">{{ title() }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    @let l = loaded();
+    @if (l && (l.kind === 'new' || l.kind === 'edit')) {
+      @let f = form();
+      @let e = errors();
+      <header class="intro">
+        <h1 class="title">{{ title() }}</h1>
+        <p class="day" data-testid="form-day">{{ dayLabel() }}</p>
+      </header>
+
+      <form id="food-form" class="form" novalidate data-testid="food-form" (submit)="$event.preventDefault(); save()">
+        <fit-text-field
+          #nameField
+          [label]="copy.name"
+          [hint]="copy.namePlaceholderHint"
+          [value]="f.name"
+          [error]="e.name ?? null"
+          [maxLength]="80"
+          autocomplete="off"
+          data-testid="field-name"
+          (valueChange)="update('name', $event)"
+        />
+
+        <fit-text-field
+          #quantityField
+          [label]="copy.quantity"
+          inputMode="decimal"
+          [value]="f.quantity"
+          [error]="e.quantity ?? null"
+          data-testid="field-quantity"
+          (valueChange)="update('quantity', $event)"
+        />
+
+        <div class="choice">
+          <p class="choice-label" id="food-unit-label">{{ copy.unit }}</p>
+          <fit-choice-group
+            name="food-unit"
+            labelledBy="food-unit-label"
+            layout="chips"
+            [options]="unitOptions"
+            [selected]="[f.unit]"
+            data-testid="field-unit"
+            (optionToggled)="update('unit', $event)"
+          />
+        </div>
+
+        <div class="choice">
+          <p class="choice-label" id="food-meal-label">{{ copy.meal }}</p>
+          <fit-choice-group
+            name="food-meal"
+            labelledBy="food-meal-label"
+            layout="chips"
+            [options]="mealOptions"
+            [selected]="[f.meal]"
+            data-testid="field-meal"
+            (optionToggled)="update('meal', $event)"
+          />
+        </div>
+
+        <fieldset class="values">
+          <legend class="values-title">{{ copy.nutritionTitle }}</legend>
+          <p class="values-hint">{{ copy.nutritionHint }}</p>
+          <div class="grid">
+            <fit-text-field
+              #caloriesField
+              [label]="copy.calories"
+              suffix="kcal"
+              inputMode="decimal"
+              [value]="f.calories"
+              [error]="e.calories ?? null"
+              data-testid="field-calories"
+              (valueChange)="update('calories', $event)"
+            />
+            <fit-text-field
+              #proteinField
+              [label]="copy.protein"
+              suffix="g"
+              inputMode="decimal"
+              [value]="f.proteinGrams"
+              [error]="e.proteinGrams ?? null"
+              data-testid="field-protein"
+              (valueChange)="update('proteinGrams', $event)"
+            />
+            <fit-text-field
+              #carbsField
+              [label]="copy.carbs"
+              suffix="g"
+              inputMode="decimal"
+              [value]="f.carbohydrateGrams"
+              [error]="e.carbohydrateGrams ?? null"
+              data-testid="field-carbs"
+              (valueChange)="update('carbohydrateGrams', $event)"
+            />
+            <fit-text-field
+              #fatField
+              [label]="copy.fat"
+              suffix="g"
+              inputMode="decimal"
+              enterKeyHint="done"
+              [value]="f.fatGrams"
+              [error]="e.fatGrams ?? null"
+              data-testid="field-fat"
+              (valueChange)="update('fatGrams', $event)"
+            />
+          </div>
+        </fieldset>
+      </form>
+
+      @if (l.kind === 'edit') {
+        <button fit-button type="button" variant="ghost" icon="trash-outline" block [disabled]="saving()" data-testid="delete" (click)="askDelete()">
+          {{ copy.delete }}
+        </button>
+      }
+    } @else if (l?.kind === 'not-found') {
+      <h1 class="visually-hidden">{{ title() }}</h1>
+      <fit-card data-testid="not-found">
+        <fit-empty-state icon="restaurant-outline" [title]="copy.notFound.title" [description]="copy.notFound.message">
+          <button fit-button type="button" (click)="backToNutrition()">{{ copy.backToNutrition }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else if (l?.kind === 'error') {
+      <h1 class="visually-hidden">{{ title() }}</h1>
+      <fit-card data-testid="load-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.loadFailed.title" [description]="copy.loadFailed.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.loadFailed.retry }}</button>
+          <button fit-button type="button" variant="ghost" (click)="backToNutrition()">{{ copy.backToNutrition }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <h1 class="visually-hidden">{{ title() }}</h1>
+      <p class="visually-hidden" role="status">{{ copy.loadingEntry }}</p>
+      <div class="loading" aria-busy="true" data-testid="loading">
+        <fit-skeleton width="50%" height="34px" />
+        <fit-skeleton height="72px" radius="card" />
+        <fit-skeleton height="72px" radius="card" />
+        <fit-skeleton height="160px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>
+
+@let ready = loaded();
+@if (ready && (ready.kind === 'new' || ready.kind === 'edit')) {
+  <ion-footer class="ion-no-border">
+    <div class="footer">
+      <!-- Always rendered with Save so its message is announced when it appears. -->
+      <p class="status" role="status" data-testid="form-status" [class.shown]="status() !== ''">{{ status() }}</p>
+      <button
+        fit-button
+        type="submit"
+        form="food-form"
+        size="lg"
+        block
+        [disabled]="saving()"
+        [loading]="saving()"
+        data-testid="save"
+      >
+        {{ ready.kind === 'edit' ? copy.saveChanges : copy.save }}
+      </button>
+    </div>
+  </ion-footer>
+}
+
+<fit-bottom-sheet
+  [title]="copy.deleteConfirm.title"
+  [description]="copy.deleteConfirm.message(editing()?.name ?? '')"
+  [(open)]="confirmOpen"
+>
+  <div class="sheet-actions" data-testid="delete-confirm">
+    <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
+    <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
+  </div>
+</fit-bottom-sheet>

@@ -14,15 +14,16 @@ import {
 } from '../fitness-profile';
 import { DEFAULT_CALCULATION_CONFIG, FitnessCalculationConfig, validateCalculationConfig } from './calculation-config';
 import { estimateBmr } from './bmr';
-import { applyCalorieFloor, calorieFloorFor, estimateTdee, goalCalorieTarget, goalDirectionOf } from './energy';
+import { estimateTdee, goalCalorieTarget, goalDirectionOf, productSafetyThresholdFor, resolveCalorieTarget } from './energy';
 import {
-  AppliedSafeguard,
-  AssessmentConfidence,
+  EstimateConfidence,
   FitnessAssessmentResult,
   FitnessCalculationError,
   FitnessCalculationErrorCode,
+  SafeguardKind,
 } from './fitness-assessment.model';
-import { allocateMacros, calculateFatTarget, calculateProteinTarget } from './macros';
+import { planMacros } from './macros';
+import { calculateProteinTarget } from './protein';
 
 export interface CalculationOptions {
   /**
@@ -36,14 +37,18 @@ export interface CalculationOptions {
 /**
  * Calculates an initial, equation-based fitness assessment from a profile.
  *
- * Pipeline (all unrounded until the end):
- *   age          = completed years from dateOfBirth on asOfDate
- *   BMR          = Mifflin-St Jeor (sex-neutral midpoint for "prefer not to say")
- *   TDEE         = BMR × activity multiplier
- *   target       = TDEE × (1 + goal adjustment), raised to the calorie floor if below it
- *   protein      = g/kg (goal default) × body weight
- *   fat          = target × fat fraction ÷ 9
- *   carbohydrate = remaining calories ÷ 4 (never negative; see allocateMacros)
+ * Pipeline (unrounded until the output boundary):
+ *   Estimated physiological values
+ *     age          = completed years from dateOfBirth on asOfDate
+ *     BMR          = Mifflin-St Jeor (sex-neutral midpoint for "prefer not to say")
+ *     TDEE         = BMR × activity multiplier
+ *   Initial planning targets
+ *     calories     = TDEE × (1 + goal adjustment), then the product safety threshold
+ *                    (see resolveCalorieTarget; calculated value always preserved)
+ *     protein      = g/kg × body weight, or × adjusted weight above the threshold (protein.ts)
+ *     fat          = preferred share of calories, never below the minimum share
+ *     carbohydrate = remaining calories ÷ 4
+ *     → macros are feasible / constrained / infeasible (planMacros); never negative
  *
  * `goalTarget` (e.g. target weight) is intentionally not used in v1: there is
  * no rate/timeline model yet, so it would not change any number.
@@ -101,32 +106,33 @@ export function calculateFitnessAssessment(
   const bmr = estimateBmr({ weightKg, heightCm, ageYears, sex: profile.sex });
   const tdee = estimateTdee(bmr.kcal, profile.activityLevel, config);
   const adjustment = config.goalCalorieAdjustments[goal];
-  const unconstrainedTarget = goalCalorieTarget(tdee, goal, config);
-  const target = applyCalorieFloor(unconstrainedTarget, calorieFloorFor(bmr.sexBasis, config));
-  const calorieTargetKcal = Math.round(target.kcal);
+  const calories = resolveCalorieTarget(
+    goalCalorieTarget(tdee, goal, config),
+    tdee,
+    productSafetyThresholdFor(bmr.sexBasis, config),
+  );
+  const finalCalorieKcal = Math.round(calories.finalKcal);
 
   // --- Macros ----------------------------------------------------------------
-  const protein = calculateProteinTarget({ goal, bodyWeightKg: weightKg }, config);
-  const fatGrams = calculateFatTarget(calorieTargetKcal, config);
-  const macros = allocateMacros(calorieTargetKcal, protein.grams, fatGrams, config);
+  const protein = calculateProteinTarget({ goal, bodyWeightKg: weightKg, heightCm }, config);
+  const macros = planMacros(finalCalorieKcal, protein.grams, config);
 
   // --- Metadata --------------------------------------------------------------
-  const safeguardsApplied: AppliedSafeguard[] = [];
-  if (target.floorApplied) {
-    safeguardsApplied.push({
-      kind: 'calorie-floor',
-      floorKcal: target.floorKcal,
-      unconstrainedTargetKcal: Math.round(unconstrainedTarget),
-    });
+  const safeguardsApplied: SafeguardKind[] = [];
+  if (calories.status !== 'normal') {
+    safeguardsApplied.push('calorie-safety-threshold');
   }
-  if (macros.constraint) {
-    safeguardsApplied.push({ kind: 'macro-constraint', ...macros.constraint });
+  if (macros.status === 'constrained') {
+    safeguardsApplied.push('fat-reduced-toward-minimum');
+  } else if (macros.status === 'infeasible') {
+    safeguardsApplied.push('macros-infeasible');
   }
 
-  const sexNeutral = bmr.sexBasis === 'sex-neutral-midpoint';
-  const confidence: AssessmentConfidence = sexNeutral
-    ? { level: 'low', reasons: ['equation-based-estimate', 'sex-neutral-bmr'] }
-    : { level: 'moderate', reasons: ['equation-based-estimate'] };
+  // Formula-only estimates are never "high" (reserved for measurement-backed methods).
+  const confidence: EstimateConfidence =
+    bmr.sexBasis === 'sex-neutral-midpoint'
+      ? { level: 'low', reasons: ['formula-based-estimate', 'sex-neutral-bmr'] }
+      : { level: 'moderate', reasons: ['formula-based-estimate'] };
 
   return {
     ok: true,
@@ -137,21 +143,23 @@ export function calculateFitnessAssessment(
       goal,
       goalDirection: goalDirectionOf(adjustment),
       activityLevel: profile.activityLevel,
-      bmrKcal: Math.round(bmr.kcal),
-      tdeeKcal: Math.round(tdee),
-      calorieTargetKcal,
-      proteinGrams: macros.proteinGrams,
-      fatGrams: macros.fatGrams,
-      carbohydrateGrams: macros.carbohydrateGrams,
-      confidence,
+      estimates: { bmrKcal: Math.round(bmr.kcal), tdeeKcal: Math.round(tdee), confidence },
+      targets: {
+        calories: {
+          calculatedKcal: Math.round(calories.calculatedKcal),
+          finalKcal: finalCalorieKcal,
+          status: calories.status,
+          productSafetyThresholdKcal: calories.thresholdKcal,
+        },
+        macros,
+      },
       safeguardsApplied,
       explanation: {
         bmr: { method: bmr.method, sexBasis: bmr.sexBasis, inputs: { weightKg, heightCm, ageYears } },
         activity: { level: profile.activityLevel, multiplier: config.activityMultipliers[profile.activityLevel] },
         goalAdjustment: { goal, fraction: adjustment },
-        calorieFloor: { floorKcal: target.floorKcal, applied: target.floorApplied },
-        protein: { method: protein.method, gramsPerKg: protein.gramsPerKg, basisWeightKg: protein.basisWeightKg },
-        fat: { method: 'fraction-of-calories', fractionOfCalories: config.fat.fractionOfCalories },
+        protein: protein.method,
+        fat: { method: 'share-of-calories', ...config.fat },
         carbohydrate: { method: 'remaining-calories' },
       },
     },

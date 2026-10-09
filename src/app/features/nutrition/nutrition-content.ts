@@ -1,0 +1,186 @@
+import { FoodEntryField, FoodEntryProblem, MealCategory, QuantityUnit } from '../../domain/nutrition';
+
+/**
+ * User-facing copy for Nutrition. The domain speaks in codes and numbers;
+ * everything a user reads is phrased here.
+ */
+
+export const MEAL_LABELS: Readonly<Record<MealCategory, string>> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snacks: 'Snacks',
+};
+
+/** Short unit shown after a quantity ("150 g", "2 servings"). */
+export const UNIT_LABELS: Readonly<Record<QuantityUnit, { readonly option: string; readonly one: string; readonly many: string }>> = {
+  g: { option: 'Grams (g)', one: 'g', many: 'g' },
+  ml: { option: 'Millilitres (ml)', one: 'ml', many: 'ml' },
+  serving: { option: 'Serving', one: 'serving', many: 'servings' },
+  piece: { option: 'Piece', one: 'piece', many: 'pieces' },
+};
+
+export const NUTRITION_COPY = {
+  title: 'Nutrition',
+  loading: 'Loading nutrition',
+
+  date: {
+    previous: 'Previous day',
+    next: 'Next day',
+    today: 'Today',
+    backToToday: 'Back to Today',
+  },
+
+  calories: {
+    title: 'Calories',
+    progressLabel: 'Calories eaten',
+    eatenOnly: (eaten: string) => `${eaten} kcal eaten`,
+    noTarget: 'No calorie target yet',
+  },
+
+  macros: {
+    title: 'Macros',
+    protein: 'Protein',
+    carbs: 'Carbs',
+    fat: 'Fat',
+  },
+
+  meals: {
+    add: 'Add Food',
+    addTo: (meal: string) => `Add food to ${meal}`,
+    empty: 'Nothing logged',
+  },
+
+  emptyDay: {
+    title: 'Start with your first meal',
+    message: 'Log what you eat to see your daily nutrition here.',
+    action: 'Log Food',
+  },
+
+  notices: {
+    noProfile: {
+      title: 'Set up your profile for targets',
+      message: 'Your daily calorie and macro targets come from your fitness profile. You can still log food in the meantime.',
+      action: 'Set up profile',
+    },
+    calorieReview: {
+      title: 'Your targets need a second look',
+      message:
+        "We couldn't establish a calorie target with enough confidence. Review your profile details to see targets. You can still log food.",
+      action: 'Review my details',
+    },
+    calorieAdjusted: {
+      title: 'A steadier starting target',
+      message: 'Your calorie target is a little less aggressive than your goal alone would suggest, to give you a sustainable place to begin.',
+    },
+    macrosConstrained: {
+      title: 'Macro balance is limited',
+      message: 'Your calorie target leaves limited room for all three macros, so these targets are a constrained starting point.',
+    },
+    macrosInfeasible: {
+      title: 'Macro targets are on hold',
+      message:
+        "Your calorie and protein targets don't leave enough room for the minimum fat target. Review your goal or profile details to see macro targets.",
+      action: 'Review my details',
+    },
+    unavailable: {
+      title: "Targets aren't available right now",
+      message: "We couldn't calculate your targets from your profile. Your food log is unaffected.",
+      action: 'Review my details',
+    },
+  },
+
+  /** One-line versions of the target notices, for compact cards (Home). */
+  brief: {
+    'no-profile': 'Set up your profile to see your daily targets.',
+    unavailable: "Targets aren't available right now.",
+    'calorie-review': 'Your targets need review.',
+    'macros-infeasible': 'Your macro targets need review.',
+  },
+
+  error: {
+    title: "We couldn't load your food log",
+    message: 'Something went wrong while reading your saved food. Nothing has been changed.',
+    retry: 'Try again',
+  },
+
+  form: {
+    addTitle: 'Add food',
+    editTitle: 'Edit food',
+    back: 'Nutrition',
+    name: 'Food name',
+    namePlaceholderHint: 'For example: Greek yogurt',
+    quantity: 'Quantity',
+    unit: 'Unit',
+    meal: 'Meal',
+    nutritionTitle: 'Nutrition for this amount',
+    nutritionHint: 'Enter the values for the quantity you ate.',
+    calories: 'Calories',
+    protein: 'Protein',
+    carbs: 'Carbohydrates',
+    fat: 'Fat',
+    save: 'Save',
+    saveChanges: 'Save changes',
+    saving: 'Saving',
+    delete: 'Delete food',
+    fixErrors: 'Check the highlighted fields.',
+    saveFailed: "Your food couldn't be saved. Please try again.",
+    deleteFailed: "This food couldn't be deleted. Please try again.",
+    loadingEntry: 'Loading food',
+    notFound: {
+      title: 'Food not found',
+      message: 'This food may already have been deleted.',
+    },
+    loadFailed: {
+      title: "We couldn't load this food",
+      message: 'Something went wrong while reading your saved food.',
+      retry: 'Try again',
+    },
+    backToNutrition: 'Back to Nutrition',
+    deleteConfirm: {
+      title: 'Delete this food?',
+      message: (name: string) => `“${name}” will be removed from this day. This can't be undone.`,
+      confirm: 'Delete',
+      cancel: 'Cancel',
+    },
+  },
+} as const;
+
+/** Shown for ambiguous number formats such as "1,234" (never guessed as 1.234 or 1234). */
+export const NUMBER_FORMAT_ERROR = "Check number format. Use one decimal separator. Thousands separators aren't supported.";
+
+export const FIELD_ERRORS: Readonly<Record<FoodEntryField, Partial<Record<FoodEntryProblem, string>>>> = {
+  name: { required: 'Enter a food name.', 'too-long': 'Use 80 characters or fewer.' },
+  quantity: {
+    required: 'Enter a quantity.',
+    'not-positive': 'Enter a quantity above 0.',
+    'not-a-number': 'Enter a number, like 150 or 1.5.',
+    'too-large': 'Enter 10,000 or less.',
+  },
+  unit: { 'invalid-option': 'Choose a unit.' },
+  meal: { 'invalid-option': 'Choose a meal.' },
+  calories: {
+    required: 'Enter calories (0 is fine).',
+    negative: 'Calories can’t be negative.',
+    'not-a-number': 'Enter a number, like 250 or 99.5.',
+    'too-large': 'Enter 10,000 kcal or less.',
+  },
+  proteinGrams: {
+    required: 'Enter protein (0 is fine).',
+    negative: 'Protein can’t be negative.',
+    'not-a-number': 'Enter a number, like 12 or 3.5.',
+    'too-large': 'Enter 1,000 g or less.',
+  },
+  carbohydrateGrams: {
+    required: 'Enter carbohydrates (0 is fine).',
+    negative: 'Carbohydrates can’t be negative.',
+    'not-a-number': 'Enter a number, like 12 or 3.5.',
+    'too-large': 'Enter 1,000 g or less.',
+  },
+  fatGrams: {
+    required: 'Enter fat (0 is fine).',
+    negative: 'Fat can’t be negative.',
+    'not-a-number': 'Enter a number, like 12 or 3.5.',
+    'too-large': 'Enter 1,000 g or less.',
+  },
+};

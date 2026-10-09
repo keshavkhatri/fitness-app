@@ -1,0 +1,66 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/you" [text]="copy.back" />
+    </ion-buttons>
+    <!-- Navigation label only; the page heading (h1) is below. -->
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <header class="intro">
+      <h1 class="title">{{ copy.title }}</h1>
+      <p class="subtitle">{{ copy.intro }}</p>
+    </header>
+    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+
+    @let s = screen();
+    @switch (s.kind) {
+      @case ('ready') {
+        <button fit-button type="button" block icon="add" data-testid="add-weight" (click)="add()">{{ copy.add }}</button>
+        <app-weight-trend [(range)]="range" [trend]="trend()" [chart]="chart()" [emptyTitle]="emptyRangeTitle()" (addWeight)="add()" />
+        <section class="section" aria-labelledby="weight-history-list">
+          <h2 class="section-title" id="weight-history-list">{{ copy.list.title }}</h2>
+          <fit-card padding="none">
+            <ul class="rows">
+              @for (row of s.rows; track row.id) {
+                <li>
+                  <button type="button" class="row" [attr.aria-label]="row.ariaLabel" data-testid="weight-row" (click)="edit(row.id)">
+                    <span class="row-text">
+                      <span class="row-weight">{{ row.weight }}</span>&ngsp;
+                      <span class="row-date">{{ row.dateLabel }}</span>&ngsp;
+                      <span class="row-change" data-testid="weight-change">{{ row.change }}</span>
+                    </span>
+                    <ion-icon name="chevron-forward" aria-hidden="true" />
+                  </button>
+                </li>
+              }
+            </ul>
+          </fit-card>
+        </section>
+      }
+      @case ('empty') {
+        <fit-card data-testid="weight-empty">
+          <fit-empty-state icon="scale-outline" [title]="copy.empty.title" [description]="copy.empty.message">
+            <button fit-button type="button" icon="add" (click)="add()">{{ copy.add }}</button>
+          </fit-empty-state>
+        </fit-card>
+      }
+      @case ('error') {
+        <fit-card data-testid="weight-error">
+          <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+            <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+          </fit-empty-state>
+        </fit-card>
+      }
+      @default {
+        <div class="loading" aria-busy="true" data-testid="loading">
+          <fit-skeleton height="52px" radius="md" />
+          <fit-skeleton height="240px" radius="card" />
+        </div>
+      }
+    }
+  </main>
+</ion-content>

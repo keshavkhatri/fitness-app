@@ -1,0 +1,16 @@
+// Shared typography for assessment cards. `@use 'assessment-card' as card;`
+@use 'mixins' as fx;
+
+@mixin eyebrow {
+  @include fx.text(caption, semibold);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+@mixin caption {
+  @include fx.text(body-sm);
+  display: block;
+  margin: 0;
+  color: var(--color-text-secondary);
+}

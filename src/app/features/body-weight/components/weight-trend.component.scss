@@ -1,0 +1,64 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.trend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.title {
+  @include fx.text(h3, semibold);
+}
+
+.note {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-4);
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  dt {
+    @include fx.text(caption, semibold);
+    color: var(--color-text-secondary);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  dd {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  &.change {
+    grid-column: 1 / -1;
+  }
+}
+
+.value {
+  @include fx.text(h3, semibold);
+  @include fx.tabular-numbers;
+}
+
+.date,
+.caption {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}

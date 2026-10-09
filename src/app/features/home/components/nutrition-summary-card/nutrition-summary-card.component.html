@@ -1,4 +1,5 @@
-@let n = nutrition();
+@let n = summary();
+@let c = n.calories;
 
 <fit-card>
   <div class="calories">
@@ -6,38 +7,47 @@
       variant="ring"
       label="Calories"
       [ringSize]="92"
-      [value]="n.caloriesConsumed"
-      [max]="n.caloriesTarget"
-      [tone]="isOverTarget() ? 'warning' : 'primary'"
-      [valueText]="(n.caloriesConsumed | number) + ' of ' + (n.caloriesTarget | number) + ' kcal'"
+      [value]="c.progress?.value ?? 0"
+      [max]="c.progress?.max ?? 1"
+      [tone]="c.over ? 'warning' : 'primary'"
+      [valueText]="c.progress?.valueText ?? c.headline"
     >
-      <span class="ring-value">{{ n.caloriesConsumed | number }}</span>
+      <span class="ring-value" data-testid="calories-eaten">{{ c.eaten }}</span>
       <span class="ring-unit">eaten</span>
     </fit-progress>
 
     <div class="calorie-copy">
-      <span class="caption">{{ isOverTarget() ? 'Over target' : 'Remaining' }}</span>
-      <span class="remaining">
-        {{ caloriesDeltaAmount() | number }}
-        <span class="unit">kcal</span>
-      </span>
-      <span class="caption">Daily target {{ n.caloriesTarget | number }} kcal</span>
+      @if (c.balance) {
+        <span class="caption">{{ c.over ? 'Over target' : 'Remaining' }}</span>
+        <span class="remaining" data-testid="calories-balance">
+          {{ c.balance }}
+          <span class="unit">kcal</span>
+        </span>
+        <span class="caption" data-testid="calories-target">Daily target {{ c.target }} kcal</span>
+      } @else {
+        <span class="caption">Daily target</span>
+        <span class="no-target" data-testid="calories-target">Not available</span>
+      }
     </div>
   </div>
 
+  @if (n.targetNote; as note) {
+    <div class="note" data-testid="target-note">
+      <p>{{ note }}</p>
+      <button fit-button type="button" variant="outline" (click)="openNutrition.emit()">Review in Nutrition</button>
+    </div>
+  }
+
   <ul class="macros">
     @for (macro of n.macros; track macro.key) {
-      <li>
+      <li [attr.data-testid]="'home-macro-' + macro.key">
         <div class="macro-row">
           <span class="macro-label">{{ macro.label }}</span>
-          <span class="macro-value">{{ macro.consumedGrams }} / {{ macro.targetGrams }} g</span>
+          <span class="macro-value">{{ macro.eaten }}@if (macro.target) { / {{ macro.target }}}</span>
         </div>
-        <fit-progress
-          [label]="macro.label"
-          [value]="macro.consumedGrams"
-          [max]="macro.targetGrams"
-          [valueText]="macro.consumedGrams + ' of ' + macro.targetGrams + ' grams'"
-        />
+        @if (macro.progress; as p) {
+          <fit-progress [label]="macro.label" [value]="p.value" [max]="p.max" [valueText]="p.valueText" />
+        }
       </li>
     }
   </ul>

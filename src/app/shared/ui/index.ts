@@ -7,6 +7,7 @@ export * from './choice-group/choice-group.component';
 export * from './chip/fitness-chip.component';
 export * from './empty-state/empty-state.component';
 export * from './metric/fitness-metric.component';
+export * from './notice/notice.component';
 export * from './page/page-layout.component';
 export * from './progress/fitness-progress.component';
 export * from './section-header/section-header.component';

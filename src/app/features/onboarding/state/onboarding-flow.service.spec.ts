@@ -4,6 +4,7 @@ import { FitnessProfileService } from '../../../core/profile/fitness-profile.ser
 import { KeyValueStorage } from '../../../core/storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../../../core/storage/testing/memory-key-value-storage';
 import { completeDraft } from '../testing/draft-fixtures';
+import { toFitnessProfile } from './onboarding-draft';
 import { OnboardingFlow } from './onboarding-flow.service';
 import { OnboardingProgress } from './onboarding-progress.store';
 
@@ -143,6 +144,43 @@ describe('OnboardingFlow', () => {
       flow.edit('frequency');
       flow.back();
       expect(flow.stepId()).toBe('summary');
+    });
+  });
+
+  describe('review mode (editing an existing profile)', () => {
+    async function reviewFlow() {
+      const flow = await createFlow();
+      const profile = toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!;
+      flow.startReview(profile);
+      return { flow, profile };
+    }
+
+    it('opens the summary prefilled from the profile', async () => {
+      const { flow } = await reviewFlow();
+      expect(flow.mode()).toBe('review');
+      expect(flow.stepId()).toBe('summary');
+      expect(flow.draft()).toEqual(completeDraft());
+    });
+
+    it('does not persist in-progress edits', async () => {
+      const { flow } = await reviewFlow();
+      flow.edit('activity');
+      flow.update({ activityLevel: 'very-active' });
+      flow.next();
+      expect(storage.values.has(PROGRESS_KEY)).toBe(false);
+    });
+
+    it('saves an updated profile without moving to the new-user finish step', async () => {
+      const { flow, profile } = await reviewFlow();
+      flow.edit('activity');
+      flow.update({ activityLevel: 'very-active' });
+      flow.next();
+
+      expect(await flow.complete()).toBe(true);
+      expect(flow.stepId()).toBe('summary');
+      const saved = TestBed.inject(FitnessProfileService).profile();
+      expect(saved?.activityLevel).toBe('very-active');
+      expect(saved?.updatedAt).not.toBe(profile.updatedAt); // so the assessment is shown again
     });
   });
 

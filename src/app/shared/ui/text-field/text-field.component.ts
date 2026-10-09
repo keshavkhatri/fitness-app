@@ -18,7 +18,8 @@ let nextId = 0;
       <input
         #input
         class="input"
-        type="text"
+        [type]="type()"
+        [attr.max]="max() ?? null"
         [id]="ids.input"
         [value]="value()"
         (input)="value.set($any($event.target).value)"
@@ -54,6 +55,10 @@ export class TextFieldComponent {
   readonly error = input<string | null>();
   /** Drives the mobile keyboard: use 'numeric' for whole numbers, 'decimal' for measurements. */
   readonly inputMode = input<'text' | 'numeric' | 'decimal'>('text');
+  /** 'date' uses the platform date picker; the value is then YYYY-MM-DD. */
+  readonly type = input<'text' | 'date'>('text');
+  /** Latest allowed value (date fields, YYYY-MM-DD). */
+  readonly max = input<string>();
   readonly autocomplete = input('off');
   readonly enterKeyHint = input<'next' | 'done'>('next');
   readonly maxLength = input<number>();

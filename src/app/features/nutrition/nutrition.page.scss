@@ -1,0 +1,129 @@
+@use 'mixins' as fx;
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: calc(-1 * var(--space-3));
+}
+
+.day-step {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: 20px;
+
+  &[disabled] {
+    color: var(--color-text-tertiary);
+    cursor: default;
+  }
+}
+
+.date {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.date-label {
+  @include fx.text(body, semibold);
+}
+
+.today-link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-3);
+  color: var(--color-primary-text);
+}
+
+.notice-action {
+  margin-top: var(--space-3);
+}
+
+.summary,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.card-title {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-text-secondary);
+}
+
+.kcal {
+  @include fx.tabular-numbers;
+  overflow-wrap: anywhere;
+}
+
+.kcal-eaten {
+  @include fx.text(display, bold);
+}
+
+.kcal-target {
+  @include fx.text(body, medium);
+  color: var(--color-text-secondary);
+}
+
+.kcal-status,
+.macro-status {
+  @include fx.text(body-sm, medium);
+  color: var(--color-text-secondary);
+}
+
+.kcal-status.over {
+  color: var(--color-text);
+}
+
+.macros {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.macro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.macro-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.macro-label {
+  @include fx.text(body, semibold);
+}
+
+.macro-amount {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+  text-align: end;
+}
+
+.macro-target {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}

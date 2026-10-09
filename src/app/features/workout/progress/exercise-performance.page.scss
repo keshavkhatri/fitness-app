@@ -1,0 +1,119 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-10);
+}
+
+.title {
+  @include fx.text(h1, bold);
+  overflow-wrap: anywhere;
+}
+
+.note {
+  @include fx.text(body-sm);
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.highlight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+
+  dt {
+    @include fx.text(caption, semibold);
+    color: var(--color-text-secondary);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  dd {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+  }
+}
+
+.value {
+  @include fx.text(h3, semibold);
+  @include fx.tabular-numbers;
+}
+
+.meta {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.sessions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+}
+
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+}
+
+.session-date {
+  @include fx.text(body, semibold);
+}
+
+.sets {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.set {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 28px;
+}
+
+.set-label {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.set-value {
+  @include fx.text(body-sm, semibold);
+  @include fx.tabular-numbers;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

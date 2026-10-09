@@ -1,0 +1,31 @@
+@let m = meal();
+<section class="meal" [attr.aria-labelledby]="'meal-' + m.meal" [attr.data-testid]="'meal-' + m.meal">
+  <header class="meal-header">
+    <h2 class="meal-title" [id]="'meal-' + m.meal">{{ m.title }}</h2>
+    <span class="meal-subtotal" data-testid="meal-subtotal">{{ m.subtotal }}</span>
+  </header>
+  @if (m.entries.length > 0) {
+    <fit-card padding="none">
+      <ul class="foods">
+        @for (food of m.entries; track food.id) {
+          <li>
+            <button type="button" class="food" [attr.aria-label]="food.ariaLabel" data-testid="food-row" (click)="editFood.emit(food.id)">
+              <span class="food-text">
+                <span class="food-name">{{ food.name }}</span>&ngsp;
+                <span class="food-detail">{{ food.detail }}</span>
+              </span>&ngsp;
+              <span class="food-kcal">{{ food.calories }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+      <button type="button" class="add-food" [attr.aria-label]="m.addLabel" data-testid="add-food" (click)="addFood.emit()">
+        <ion-icon name="add" aria-hidden="true" />{{ addText() }}
+      </button>
+    </fit-card>
+  } @else {
+    <button type="button" class="add-food compact" [attr.aria-label]="m.addLabel" data-testid="add-food" (click)="addFood.emit()">
+      <ion-icon name="add" aria-hidden="true" />{{ addText() }}
+    </button>
+  }
+</section>

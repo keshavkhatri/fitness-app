@@ -2,14 +2,14 @@
   <ion-toolbar>
     <div class="toolbar">
       @if (flow.canGoBack()) {
-        <button type="button" class="back" aria-label="Back" (click)="flow.back()">
+        <button type="button" class="back" aria-label="Back" (click)="back()">
           <ion-icon name="chevron-back" aria-hidden="true" />
         </button>
       } @else {
         <span class="back-placeholder" aria-hidden="true"></span>
       }
 
-      @if (flow.position(); as position) {
+      @if (!reviewing() && flow.position(); as position) {
         <fit-progress
           class="progress"
           label="Onboarding progress"
@@ -76,7 +76,7 @@
       [loading]="saving()"
       (click)="primaryAction()"
     >
-      {{ saving() ? 'Creating your profile…' : flow.step().primaryAction }}
+      {{ primaryLabel() }}
     </button>
   </div>
 </ion-footer>

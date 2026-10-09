@@ -1,0 +1,51 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-8);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.form,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+ion-footer {
+  background: var(--color-bg);
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+// Above the tab bar, which already reserves the device's bottom safe area.
+.footer {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-gutter);
+}
+
+.status {
+  @include fx.text(body-sm, medium);
+  color: var(--color-danger-text);
+  text-align: center;
+
+  &.shown {
+    margin-bottom: var(--space-3);
+  }
+}
+
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

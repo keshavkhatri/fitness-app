@@ -1,0 +1,117 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.exercises {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.exercise {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+
+  & + & {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.thumb {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-on-muted);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.name {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.metadata {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+// Sets / reps / rest as equal columns; values never wrap internally.
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 2px;
+  // Tight horizontal padding: at 320px each column is ~80px wide.
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  min-width: 0;
+}
+
+.value {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.label {
+  @include fx.text(caption);
+  color: var(--color-text-on-muted);
+  white-space: nowrap;
+}
+
+.substitution {
+  @include fx.text(caption);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 16px;
+    color: var(--color-primary-text);
+  }
+
+  strong {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+  }
+}

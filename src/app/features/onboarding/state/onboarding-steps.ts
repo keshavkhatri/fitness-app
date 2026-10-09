@@ -51,7 +51,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
     isApplicable: (draft) => draft.primaryGoal === null || hasApplicableGoalTargets(draft.primaryGoal),
   },
   { id: 'summary', kind: 'review', primaryAction: 'Create My Profile' },
-  { id: 'finish', kind: 'done', primaryAction: 'Go to Home' },
+  { id: 'finish', kind: 'done', primaryAction: 'See my starting point' },
 ];
 
 export function applicableSteps(draft: OnboardingDraft): readonly OnboardingStep[] {

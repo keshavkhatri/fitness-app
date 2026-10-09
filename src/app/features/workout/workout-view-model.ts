@@ -1,0 +1,282 @@
+import { WorkoutPlanState } from '../../core/workout/workout-plan.service';
+import {
+  ActivitySession,
+  EXERCISE_LIBRARY,
+  Exercise,
+  PlanSession,
+  PlannedExercise,
+  WorkoutFrequency,
+  WorkoutPlan,
+  WorkoutSession,
+} from '../../domain/workout-programming';
+import { NoticeTone } from '../../shared/ui';
+import {
+  EXPERIENCE_LABELS,
+  GOAL_LABELS,
+  LOCATION_LABELS,
+  MUSCLE_LABELS,
+  STYLE_DESCRIPTORS,
+  WEEKDAYS,
+  WORKOUT_COPY,
+} from './workout-content';
+import {
+  activityGuidance,
+  activitySuggestions,
+  activitySummary,
+  activityTitle,
+  formatMinutes,
+  formatPrescription,
+  plural,
+  prescriptionParts,
+  sessionTitle,
+} from './workout-formatting';
+
+/**
+ * Presentation model for the Workout screen, built by a pure adapter from the
+ * plan state. Templates render it as-is: no engine codes, no programming logic.
+ */
+export type WorkoutScreen =
+  | {
+      readonly kind: 'ready';
+      readonly today: DayView;
+      /** Seven days, Monday first. */
+      readonly week: readonly DayView[];
+      /** The next training day after today (for rest days), if any. */
+      readonly upNext: DayView | null;
+      readonly plan: readonly PlanFactView[];
+      readonly notices: readonly NoticeView[];
+    }
+  | { readonly kind: 'no-profile' }
+  | { readonly kind: 'unavailable' };
+
+export interface DayView {
+  readonly key: (typeof WEEKDAYS)[number]['key'];
+  /** The plan session's id (the Workout Detail route parameter); null on rest days. */
+  readonly sessionId: string | null;
+  readonly weekday: string;
+  readonly shortWeekday: string;
+  readonly isToday: boolean;
+  readonly session: SessionView;
+  /** Full sentence for assistive tech, e.g. "Monday, today. Upper Body A. 7 exercises, about 45 minutes." */
+  readonly accessibleLabel: string;
+}
+
+export type SessionView = ResistanceView | ActivityView | RestView;
+
+export interface ResistanceView {
+  readonly kind: 'resistance';
+  readonly title: string;
+  readonly descriptor: string;
+  readonly estimatedMinutes: number;
+  /** e.g. "7 exercises" */
+  readonly countLabel: string;
+  /** e.g. "About 45 min" */
+  readonly durationLabel: string;
+  /** e.g. "7 exercises · ~45 min" */
+  readonly summary: string;
+  readonly exercises: readonly ExerciseView[];
+}
+
+export interface ActivityView {
+  readonly kind: 'activity';
+  readonly title: string;
+  readonly optional: boolean;
+  readonly durationMinutes: { readonly min: number; readonly max: number };
+  /** e.g. "Recovery · 20–30 min" */
+  readonly summary: string;
+  /** e.g. "Walking, easy cycling or mobility work." */
+  readonly suggestions: string;
+  readonly guidance: string;
+}
+
+export interface RestView {
+  readonly kind: 'rest';
+  readonly title: string;
+  readonly summary: string;
+}
+
+export interface ExerciseView {
+  readonly order: number;
+  readonly name: string;
+  /** e.g. "4 sets · 6–10 reps · 120 sec rest" */
+  readonly prescription: string;
+  /** The same, as parts that should not break across lines: ["4 sets", "6–10 reps", "120 sec rest"]. */
+  readonly prescriptionParts: readonly string[];
+  /** Primary muscles, e.g. "Hamstrings · Glutes"; null when unknown. */
+  readonly focus: string | null;
+  /** Shown when the engine had to use a substitute (honest limitation). */
+  readonly note: string | null;
+}
+
+export interface PlanFactView {
+  readonly label: string;
+  readonly value: string;
+  readonly detail: string | null;
+}
+
+export interface NoticeView {
+  readonly tone: NoticeTone;
+  readonly title: string;
+  readonly message: string;
+}
+
+// --- Weekly layout --------------------------------------------------------------------
+
+/** 0 = Monday … 6 = Sunday. */
+export type WeekdayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/**
+ * Where the plan's training days fall in a calendar week (product default).
+ * The engine orders training days but deliberately does not assign weekdays
+ * (`day-order-not-weekday-schedule`); this layout keeps the plan's order,
+ * spreads days across the week and leaves the rest as rest days.
+ */
+export const WEEKLY_LAYOUT: Readonly<Record<WorkoutFrequency, readonly WeekdayIndex[]>> = {
+  2: [0, 3],
+  3: [0, 2, 4],
+  4: [0, 1, 3, 4],
+  5: [0, 1, 2, 3, 4],
+  6: [0, 1, 2, 3, 4, 5],
+};
+
+/** Monday-first weekday of a local date. */
+export function weekdayIndexOf(date: Date): WeekdayIndex {
+  return ((date.getDay() + 6) % 7) as WeekdayIndex;
+}
+
+/** Seven slots, Monday first: the plan session placed on that weekday, or null for rest. */
+export function scheduleWeek(plan: WorkoutPlan): (PlanSession | null)[] {
+  const slots: (PlanSession | null)[] = Array.from({ length: 7 }, () => null);
+  WEEKLY_LAYOUT[plan.daysPerWeek].forEach((weekday, index) => {
+    slots[weekday] = plan.sessions[index] ?? null;
+  });
+  return slots;
+}
+
+// --- Adapter --------------------------------------------------------------------------
+
+export const CATALOG: ReadonlyMap<string, Exercise> = new Map(EXERCISE_LIBRARY.map((e) => [e.id, e]));
+
+export function toWorkoutScreen(
+  state: WorkoutPlanState,
+  today: Date,
+  catalog: ReadonlyMap<string, Exercise> = CATALOG,
+): WorkoutScreen {
+  if (state.kind !== 'ready') {
+    return { kind: state.kind };
+  }
+  const { plan } = state;
+  const todayIndex = weekdayIndexOf(today);
+  const week = scheduleWeek(plan).map((session, index) => toDay(session, index as WeekdayIndex, todayIndex, plan, catalog));
+  const later = [...week.slice(todayIndex + 1), ...week.slice(0, todayIndex)];
+
+  const notices: NoticeView[] = [];
+  if (state.origin === 'regenerated') {
+    notices.push({ tone: 'info', ...WORKOUT_COPY.notices.regenerated });
+  }
+  if (!state.saved) {
+    notices.push({ tone: 'warning', ...WORKOUT_COPY.notices.notSaved });
+  }
+
+  return {
+    kind: 'ready',
+    today: week[todayIndex],
+    week,
+    upNext: later.find((day) => day.session.kind !== 'rest') ?? null,
+    plan: toPlanFacts(plan),
+    notices,
+  };
+}
+
+function toDay(
+  session: PlanSession | null,
+  index: WeekdayIndex,
+  todayIndex: WeekdayIndex,
+  plan: WorkoutPlan,
+  catalog: ReadonlyMap<string, Exercise>,
+): DayView {
+  const day = WEEKDAYS[index];
+  const isToday = index === todayIndex;
+  const view: SessionView =
+    session === null
+      ? { kind: 'rest', title: WORKOUT_COPY.today.restTitle, summary: WORKOUT_COPY.week.rest }
+      : session.kind === 'resistance'
+        ? toResistance(session, plan, catalog)
+        : toActivity(session);
+
+  const spoken =
+    view.kind === 'resistance'
+      ? `${view.title}. ${plural(view.exercises.length, 'exercise', 'exercises')}, about ${view.estimatedMinutes} minutes.`
+      : view.kind === 'activity'
+        ? `${view.title}. ${view.durationMinutes.min} to ${view.durationMinutes.max} minutes${view.optional ? ', optional' : ''}.`
+        : 'Rest day.';
+  return {
+    key: day.key,
+    sessionId: session?.id ?? null,
+    weekday: day.name,
+    shortWeekday: day.short,
+    isToday,
+    session: view,
+    accessibleLabel: `${day.name}${isToday ? ', today' : ''}. ${spoken}`,
+  };
+}
+
+function toResistance(session: WorkoutSession, plan: WorkoutPlan, catalog: ReadonlyMap<string, Exercise>): ResistanceView {
+  return {
+    kind: 'resistance',
+    title: sessionTitle(session),
+    descriptor: STYLE_DESCRIPTORS[plan.programStyle],
+    estimatedMinutes: session.estimatedDurationMinutes,
+    countLabel: plural(session.exercises.length, 'exercise', 'exercises'),
+    durationLabel: `About ${session.estimatedDurationMinutes} min`,
+    summary: `${plural(session.exercises.length, 'exercise', 'exercises')} · ${formatMinutes(session.estimatedDurationMinutes)}`,
+    exercises: session.exercises.map((planned) => toExercise(planned, catalog)),
+  };
+}
+
+function toExercise(planned: PlannedExercise, catalog: ReadonlyMap<string, Exercise>): ExerciseView {
+  const exercise = catalog.get(planned.exerciseId);
+  const muscles = exercise?.primaryMuscles.map((m) => MUSCLE_LABELS[m]) ?? [];
+  return {
+    order: planned.order,
+    name: exercise?.name ?? planned.exerciseId,
+    prescription: formatPrescription(planned),
+    prescriptionParts: prescriptionParts(planned),
+    focus: muscles.length > 0 ? muscles.join(' · ') : null,
+    note: planned.selection.substitute ? WORKOUT_COPY.exercises.substitute : null,
+  };
+}
+
+function toActivity(session: ActivitySession): ActivityView {
+  return {
+    kind: 'activity',
+    title: activityTitle(session),
+    optional: session.optional,
+    durationMinutes: session.durationMinutes,
+    summary: activitySummary(session),
+    suggestions: activitySuggestions(session),
+    guidance: activityGuidance(session),
+  };
+}
+
+function toPlanFacts(plan: WorkoutPlan): PlanFactView[] {
+  const { resistanceSessions, activityDays } = plan.explanation.split;
+  const locations = plan.explanation.availability.locations.map((l, i) => (i === 0 ? LOCATION_LABELS[l] : LOCATION_LABELS[l].toLowerCase()));
+  return [
+    { label: WORKOUT_COPY.plan.goal, value: GOAL_LABELS[plan.goal], detail: STYLE_DESCRIPTORS[plan.programStyle] },
+    {
+      label: WORKOUT_COPY.plan.days,
+      value: `${plan.daysPerWeek} days a week`,
+      detail:
+        activityDays > 0
+          ? `${plural(resistanceSessions, 'workout', 'workouts')} · ${plural(activityDays, 'activity day', 'activity days')}`
+          : null,
+    },
+    { label: WORKOUT_COPY.plan.experience, value: EXPERIENCE_LABELS[plan.experience], detail: null },
+    {
+      label: WORKOUT_COPY.plan.location,
+      value: locations.length > 0 ? locations.join(' and ') : '—',
+      detail: null,
+    },
+  ];
+}

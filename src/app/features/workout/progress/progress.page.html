@@ -1,0 +1,93 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/you" [text]="copy.back" />
+    </ion-buttons>
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <header class="intro">
+      <h1 class="title">{{ copy.title }}</h1>
+      <p class="subtitle">{{ copy.subtitle }}</p>
+    </header>
+    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+
+    @let s = screen();
+    @if (s && s.kind === 'ready') {
+      <section aria-labelledby="progress-overview">
+        <h2 class="visually-hidden" id="progress-overview">{{ copy.overview.title }}</h2>
+        <dl class="overview" data-testid="overview">
+          @for (tile of s.overview; track tile.key) {
+            <div class="tile" [attr.data-key]="tile.key">
+              <dt>{{ tile.label }}</dt>
+              <dd><span class="count">{{ tile.count }}</span>&ngsp;<span class="unit">{{ tile.unit }}</span></dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      <section class="section" aria-labelledby="progress-week">
+        <div class="section-head">
+          <h2 class="section-title" id="progress-week">{{ copy.week.title }}</h2>
+          <span class="section-value" data-testid="week-summary">{{ s.week.summary }}</span>
+        </div>
+        <ol class="week" data-testid="week-days">
+          @for (day of s.week.days; track day.key) {
+            <li class="day" [attr.data-status]="day.status" [class.today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
+              <span class="visually-hidden">{{ day.spoken }}</span>
+              <span class="letter" aria-hidden="true">{{ day.letter }}</span>
+              <span class="mark" aria-hidden="true">
+                @if (day.status === 'done') {
+                  <ion-icon name="checkmark" />
+                }
+              </span>
+            </li>
+          }
+        </ol>
+        <p class="note">{{ copy.week.note }}</p>
+      </section>
+
+      <section class="section" aria-labelledby="progress-activity">
+        <h2 class="section-title" id="progress-activity">{{ copy.activity.title }}</h2>
+        <dl class="facts" data-testid="activity">
+          @for (fact of s.activity; track fact.key) {
+            <div class="fact">
+              <dt>{{ fact.label }}</dt>
+              <dd>{{ fact.value }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      <section class="section" aria-labelledby="progress-recent">
+        <h2 class="section-title" id="progress-recent">{{ copy.recent.title }}</h2>
+        <p class="note">{{ copy.recent.note }}</p>
+        <app-performance-card-list [items]="s.recent" (openExercise)="openExercise($event)" />
+        @if (s.hasMoreExercises) {
+          <button fit-button type="button" variant="outline" block (click)="viewAll()">{{ copy.recent.viewAll }}</button>
+        }
+      </section>
+    } @else if (s?.kind === 'empty') {
+      <fit-card data-testid="progress-empty">
+        <fit-empty-state icon="trending-up" [title]="copy.empty.title" [description]="copy.empty.message">
+          <button fit-button type="button" (click)="viewWorkout()">{{ copy.empty.action }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else if (s?.kind === 'error') {
+      <fit-card data-testid="progress-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div class="loading" aria-busy="true" data-testid="progress-loading">
+        <fit-skeleton height="76px" radius="card" />
+        <fit-skeleton height="96px" radius="card" />
+        <fit-skeleton height="140px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>

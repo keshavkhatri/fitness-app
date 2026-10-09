@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { IonIcon } from '@ionic/angular';
+import { IonIcon, NavController } from '@ionic/angular';
 
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
+import { WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
 import {
   FitnessCardComponent,
   FitnessChipComponent,
@@ -39,4 +40,14 @@ export class YouPage {
   protected readonly theme = inject(ThemeService);
   protected readonly themeOptions = THEME_OPTIONS;
   protected readonly upcomingSettings = UPCOMING_SETTINGS;
+
+  private readonly nav = inject(NavController);
+
+  protected openProgress(): void {
+    void this.nav.navigateForward(['/you', 'progress']);
+  }
+
+  protected openWeightHistory(): void {
+    void this.nav.navigateForward(WEIGHT_HISTORY_PATH);
+  }
 }

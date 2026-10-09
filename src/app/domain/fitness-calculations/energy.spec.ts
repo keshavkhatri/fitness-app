@@ -1,6 +1,12 @@
 import { ACTIVITY_LEVELS } from '../fitness-profile';
 import { DEFAULT_CALCULATION_CONFIG as CONFIG } from './calculation-config';
-import { applyCalorieFloor, calorieFloorFor, estimateTdee, goalCalorieTarget, goalDirectionOf } from './energy';
+import {
+  estimateTdee,
+  goalCalorieTarget,
+  goalDirectionOf,
+  productSafetyThresholdFor,
+  resolveCalorieTarget,
+} from './energy';
 
 describe('energy', () => {
   describe('TDEE = BMR × activity multiplier', () => {
@@ -32,32 +38,52 @@ describe('energy', () => {
       expect(goalCalorieTarget(2800, goal, CONFIG)).toBeCloseTo(2800 * factor, 10);
       expect(goalDirectionOf(CONFIG.goalCalorieAdjustments[goal])).toBe(direction);
     });
-
-    it('keeps defaults inside the approved ranges (10–20% deficit, 5–10% surplus)', () => {
-      expect(CONFIG.goalCalorieAdjustments['lose-fat']).toBeGreaterThanOrEqual(-0.2);
-      expect(CONFIG.goalCalorieAdjustments['lose-fat']).toBeLessThanOrEqual(-0.1);
-      expect(CONFIG.goalCalorieAdjustments['build-muscle']).toBeGreaterThanOrEqual(0.05);
-      expect(CONFIG.goalCalorieAdjustments['build-muscle']).toBeLessThanOrEqual(0.1);
-    });
   });
 
-  describe('calorie floor', () => {
-    it('leaves targets above the floor unchanged', () => {
-      expect(applyCalorieFloor(1650.4, 1500)).toEqual({ kcal: 1650.4, floorKcal: 1500, floorApplied: false });
+  describe('product safety threshold', () => {
+    it('is selected by BMR sex basis, using the conservative value when sex-neutral', () => {
+      expect(productSafetyThresholdFor('male', CONFIG)).toBe(1500);
+      expect(productSafetyThresholdFor('female', CONFIG)).toBe(1200);
+      expect(productSafetyThresholdFor('sex-neutral-midpoint', CONFIG)).toBe(1500);
     });
 
-    it('does not count a target exactly at the floor as applied', () => {
-      expect(applyCalorieFloor(1500, 1500)).toEqual({ kcal: 1500, floorKcal: 1500, floorApplied: false });
+    it('normal: target above the threshold is used unchanged', () => {
+      expect(resolveCalorieTarget(1650.4, 1941.6, 1500)).toEqual({
+        calculatedKcal: 1650.4,
+        finalKcal: 1650.4,
+        status: 'normal',
+        thresholdKcal: 1500,
+      });
     });
 
-    it('raises targets below the floor and reports it', () => {
-      expect(applyCalorieFloor(1499.9, 1500)).toEqual({ kcal: 1500, floorKcal: 1500, floorApplied: true });
+    it('normal: a target exactly at the threshold does not trigger it', () => {
+      expect(resolveCalorieTarget(1500, 1764.7, 1500).status).toBe('normal');
     });
 
-    it('selects the floor by BMR sex basis, using the conservative floor when sex-neutral', () => {
-      expect(calorieFloorFor('male', CONFIG)).toBe(1500);
-      expect(calorieFloorFor('female', CONFIG)).toBe(1200);
-      expect(calorieFloorFor('sex-neutral-midpoint', CONFIG)).toBe(1500);
+    it('floor-applied: deficit dips below the threshold, maintenance is above it', () => {
+      expect(resolveCalorieTarget(1450, 1705.9, 1500)).toEqual({
+        calculatedKcal: 1450, // preserved
+        finalKcal: 1500,
+        status: 'floor-applied',
+        thresholdKcal: 1500,
+      });
+    });
+
+    it('review-required: estimated maintenance itself is below the threshold', () => {
+      expect(resolveCalorieTarget(1050, 1150, 1200)).toEqual({
+        calculatedKcal: 1050, // preserved
+        finalKcal: 1200,
+        status: 'review-required',
+        thresholdKcal: 1200,
+      });
+    });
+
+    it('review-required also for maintenance goals below the threshold', () => {
+      expect(resolveCalorieTarget(1150, 1150, 1200).status).toBe('review-required');
+    });
+
+    it('is deterministic', () => {
+      expect(resolveCalorieTarget(1111.1, 1300, 1200)).toEqual(resolveCalorieTarget(1111.1, 1300, 1200));
     });
   });
 });

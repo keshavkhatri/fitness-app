@@ -6,4 +6,16 @@ export default [
     title: 'Nutrition',
     loadComponent: () => import('./nutrition.page').then((m) => m.NutritionPage),
   },
+  {
+    // Query parameters: `meal` (breakfast|lunch|dinner|snacks), `date` (YYYY-MM-DD).
+    path: 'food/new',
+    title: 'Add food',
+    loadComponent: () => import('./food-entry.page').then((m) => m.FoodEntryPage),
+  },
+  {
+    // `entryId` is the food entry's stable id; query parameter `date` (YYYY-MM-DD).
+    path: 'food/:entryId',
+    title: 'Edit food',
+    loadComponent: () => import('./food-entry.page').then((m) => m.FoodEntryPage),
+  },
 ] satisfies Routes;

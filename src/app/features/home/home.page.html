@@ -1,54 +1,91 @@
 <fit-page title="Today">
-  @if (summary.hasValue()) {
-    @let s = summary.value();
-
-    <header class="hero">
-      <div class="hero-text">
-        <p class="date">{{ today | date: 'EEEE, MMMM d' }}</p>
-        <p class="greeting">{{ greeting }}, {{ s.user.firstName }}</p>
-      </div>
-      @if (isDemo) {
-        <fit-chip icon="information-circle-outline">Demo data</fit-chip>
-      }
-    </header>
-
-    <section aria-labelledby="home-goal">
-      <fit-section-header title="Your goal" headingId="home-goal" />
-      <app-goal-summary-card [goal]="s.goal" />
-    </section>
-
-    <section aria-labelledby="home-workout">
-      <fit-section-header title="Today's workout" headingId="home-workout" />
-      <app-today-workout-card [workout]="s.todayWorkout" />
-    </section>
-
-    <section aria-labelledby="home-nutrition">
-      <fit-section-header title="Nutrition" headingId="home-nutrition" />
-      <app-nutrition-summary-card [nutrition]="s.nutrition" />
-    </section>
-
-    <section aria-labelledby="home-progress">
-      <fit-section-header title="Progress" headingId="home-progress" />
-      <app-progress-summary-card [progress]="s.progress" />
-    </section>
-  } @else if (summary.error()) {
-    <fit-card>
-      <fit-empty-state
-        icon="information-circle-outline"
-        title="Couldn't load your summary"
-        description="Something went wrong while loading today's overview."
-      >
-        <button fit-button type="button" variant="secondary" (click)="summary.reload()">Try again</button>
-      </fit-empty-state>
-    </fit-card>
-  } @else {
-    <div class="loading" aria-busy="true">
-      <span class="visually-hidden" role="status">Loading your summary</span>
-      <fit-skeleton width="40%" height="16px" />
-      <fit-skeleton width="70%" height="28px" />
-      <fit-skeleton height="140px" radius="card" />
-      <fit-skeleton height="200px" radius="card" />
-      <fit-skeleton height="240px" radius="card" />
+  <header class="hero">
+    <div class="hero-text">
+      <p class="date">{{ today | date: 'EEEE, MMMM d' }}</p>
+      <p class="greeting">{{ greeting }}</p>
     </div>
-  }
+  </header>
+
+  <section aria-labelledby="home-goal">
+    <fit-section-header title="Your goal" headingId="home-goal" />
+    @if (goal.hasValue()) {
+      <app-goal-summary-card [goal]="goal.value()" (reviewProfile)="reviewProfile()" (setUpProfile)="setUpProfile()" />
+    } @else if (goal.error()) {
+      <fit-card data-testid="home-goal-error">
+        <fit-empty-state icon="alert-circle-outline" title="Couldn't load your goal" description="Your profile couldn't be read right now.">
+          <button fit-button type="button" variant="secondary" (click)="goal.reload()">Try again</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div aria-busy="true" data-testid="home-goal-loading">
+        <span class="visually-hidden">Loading your goal</span>
+        <fit-skeleton height="140px" radius="card" />
+      </div>
+    }
+  </section>
+
+  <section aria-labelledby="home-workout">
+    <fit-section-header title="Today's workout" headingId="home-workout" />
+    @if (workout(); as w) {
+      <app-today-workout-card
+        [workout]="w"
+        (openSession)="openSession($event)"
+        (resumeSession)="resumeSession($event)"
+        (openPlan)="openWorkoutTab()"
+      />
+    } @else if (plan.error()) {
+      <fit-card data-testid="home-workout-error">
+        <fit-empty-state icon="alert-circle-outline" title="Couldn't load your plan" description="Your training plan couldn't be read right now.">
+          <button fit-button type="button" variant="secondary" (click)="plan.reload()">Try again</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div aria-busy="true" data-testid="home-workout-loading">
+        <span class="visually-hidden">Loading today's workout</span>
+        <fit-skeleton height="200px" radius="card" />
+      </div>
+    }
+  </section>
+
+  <section aria-labelledby="home-nutrition">
+    <fit-section-header title="Nutrition" headingId="home-nutrition" />
+    @if (nutrition.hasValue()) {
+      <app-nutrition-summary-card [summary]="nutrition.value()" (openNutrition)="openNutrition()" />
+    } @else if (nutrition.error()) {
+      <!-- Only this card: the rest of Home doesn't depend on Nutrition. -->
+      <fit-card data-testid="home-nutrition-error">
+        <fit-empty-state
+          icon="alert-circle-outline"
+          title="Couldn't load nutrition"
+          description="Your food log couldn't be read right now."
+        >
+          <button fit-button type="button" variant="secondary" (click)="nutrition.reload()">Try again</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div aria-busy="true" data-testid="home-nutrition-loading">
+        <span class="visually-hidden">Loading nutrition</span>
+        <fit-skeleton height="200px" radius="card" />
+      </div>
+    }
+  </section>
+
+  <section aria-labelledby="home-progress">
+    <fit-section-header title="Progress" headingId="home-progress" />
+    @let p = progress();
+    @if (p && p.kind !== 'error') {
+      <app-progress-summary-card [progress]="p" (openWorkout)="openFinishedWorkout($event)" (openProgress)="openProgress()" />
+    } @else if (p?.kind === 'error') {
+      <fit-card data-testid="home-progress-error">
+        <fit-empty-state icon="alert-circle-outline" title="Couldn't load your progress" description="Your workout history couldn't be read right now.">
+          <button fit-button type="button" variant="secondary" (click)="history.reload()">Try again</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div aria-busy="true" data-testid="home-progress-loading">
+        <span class="visually-hidden">Loading progress</span>
+        <fit-skeleton height="180px" radius="card" />
+      </div>
+    }
+  </section>
 </fit-page>

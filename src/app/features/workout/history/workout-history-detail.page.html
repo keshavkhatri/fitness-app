@@ -1,0 +1,53 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/workout/history" [text]="copy.back" />
+    </ion-buttons>
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <p class="visually-hidden" role="status">{{ state.isLoading() ? copy.loading : '' }}</p>
+
+    @if (view(); as v) {
+      <header class="summary" data-testid="history-detail">
+        <p class="when" data-testid="completed-label"><span class="visually-hidden">{{ copy.detail.completedAt }}: </span>{{ v.completedLabel }}</p>
+        <h1 class="title">{{ v.title }}</h1>
+        <p class="status" [attr.data-status]="v.status" data-testid="detail-status">
+          <ion-icon [name]="v.status === 'complete' ? 'checkmark-circle' : 'flag-outline'" aria-hidden="true" />
+          <span>{{ v.statusLabel }}</span>
+        </p>
+        <dl class="facts">
+          @for (fact of v.facts; track fact.key) {
+            <div class="fact" [attr.data-key]="fact.key">
+              <dt>{{ fact.label }}</dt>
+              <dd>{{ fact.value }}</dd>
+            </div>
+          }
+        </dl>
+      </header>
+
+      <section class="exercises" aria-labelledby="history-exercises">
+        <h2 class="section-title" id="history-exercises">{{ copy.detail.exercisesTitle }}</h2>
+        <app-history-exercise-list [exercises]="v.exercises" />
+      </section>
+    } @else if (state.isLoading()) {
+      <h1 class="visually-hidden">{{ copy.title }}</h1>
+      <div class="loading" aria-busy="true" data-testid="history-detail-loading">
+        <fit-skeleton width="40%" height="16px" />
+        <fit-skeleton width="70%" height="34px" />
+        <fit-skeleton height="140px" radius="card" />
+        <fit-skeleton height="200px" radius="card" />
+      </div>
+    } @else {
+      <h1 class="visually-hidden">{{ copy.detail.notFound.title }}</h1>
+      <fit-card data-testid="history-detail-not-found">
+        <fit-empty-state icon="barbell-outline" [title]="copy.detail.notFound.title" [description]="copy.detail.notFound.message">
+          <button fit-button type="button" (click)="backToHistory()">{{ copy.detail.notFound.action }}</button>
+        </fit-empty-state>
+      </fit-card>
+    }
+  </main>
+</ion-content>

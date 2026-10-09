@@ -113,4 +113,27 @@ describe('BasicsStepComponent', () => {
     expect(submit()).toBe(false);
     expect(flow.draft().basics).toBeNull();
   });
+
+  it('shows an ambiguous inches value as a height error and keeps it out of the draft', () => {
+    const { el, field, type, choose, submit, flow } = setup();
+    choose('Imperial');
+    type('Day', '3');
+    type('Month', '4');
+    type('Year', '1990');
+    choose('Male');
+    type('Feet', '5');
+    type('Inches', '1,234'); // e.g. pasted past the field's length limit
+    type('Weight', '190');
+
+    expect(submit()).toBe(false);
+    expect(el.querySelector('#height-error')?.textContent?.trim()).toBe("Check number format. Use one decimal separator. Thousands separators aren't supported.");
+    expect(field('Inches').getAttribute('aria-invalid')).toBe('true');
+    expect(field('Inches').getAttribute('aria-describedby')).toContain('height-error');
+    expect(document.activeElement).toBe(field('Feet')); // the height group's first field, as before
+    expect(flow.draft().basics).toBeNull();
+
+    type('Inches', '1.5');
+    expect(submit()).toBe(true);
+    expect(flow.draft().basics?.height).toEqual({ centimeters: 156.2 });
+  });
 });

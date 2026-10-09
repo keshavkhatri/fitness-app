@@ -1,19 +1,55 @@
+@use 'mixins' as fx;
+
 :host {
   display: block;
 }
 
-.week {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+.last {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: var(--border-hairline) solid var(--color-border);
 }
 
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
-  margin: var(--space-5) 0 0;
-  padding: var(--space-5) 0 0;
-  border-top: var(--border-hairline) solid var(--color-border);
-  list-style: none;
+.last-label {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.last-item {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) 0;
+
+  ion-icon {
+    flex: none;
+    font-size: 18px;
+    color: var(--color-text-secondary);
+  }
+}
+
+.last-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.last-title {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.last-meta {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.cta {
+  margin-top: var(--space-4);
 }

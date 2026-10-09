@@ -1,0 +1,139 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-10);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.consistency {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-primary-soft);
+}
+
+.stat-label {
+  @include fx.text(caption, semibold);
+  color: var(--color-primary-text);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.stat-value {
+  @include fx.text(h3, semibold);
+  @include fx.tabular-numbers;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.day-label {
+  @include fx.text(body, semibold);
+  color: var(--color-text-secondary);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.item-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.item-title {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.item-meta {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+}
+
+.item-status {
+  @include fx.text(caption, semibold);
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 2px;
+  color: var(--color-success-text);
+
+  ion-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+}
+
+.item[data-status='partial'] .item-status {
+  color: var(--color-warning-text);
+}
+
+.item-skipped {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: var(--color-text-tertiary);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+// Lines break between parts ("45 min · 7 of 7 exercises · 22 sets"), never inside one.
+.part {
+  white-space: nowrap;
+}

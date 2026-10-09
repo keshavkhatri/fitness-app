@@ -21,8 +21,8 @@ fieldset {
   flex: 1;
   display: grid;
   place-items: center;
-  // 40px + the fieldset's 4px padding gives a 44px-tall control.
-  min-height: 40px;
+  // Each segment is itself a full touch target (the fieldset's padding isn't tappable).
+  min-height: var(--tap-target-min);
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   color: var(--color-text-on-muted);

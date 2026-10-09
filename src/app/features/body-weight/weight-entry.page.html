@@ -1,0 +1,96 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button [defaultHref]="historyPath" [text]="copy.back" />
+    </ion-buttons>
+    <!-- Navigation label only; the page heading (h1) is below. -->
+    <ion-title aria-hidden="true">{{ title() }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    @let l = loaded();
+    @if (l && (l.kind === 'new' || l.kind === 'edit')) {
+      @let f = form();
+      @let e = errors();
+      <h1 class="title">{{ title() }}</h1>
+
+      <form id="weight-form" class="form" novalidate data-testid="weight-form" (submit)="$event.preventDefault(); save()">
+        <fit-text-field
+          #weightField
+          [label]="copy.weight"
+          [suffix]="unit()"
+          inputMode="decimal"
+          [maxLength]="6"
+          [value]="f.weight"
+          [hint]="copy.weightHint"
+          [error]="e.weight ?? null"
+          data-testid="field-weight"
+          (valueChange)="update('weight', $event)"
+        />
+        <fit-text-field
+          #dateField
+          type="date"
+          [label]="copy.date"
+          [max]="today"
+          enterKeyHint="done"
+          [value]="f.date"
+          [hint]="copy.dateHint"
+          [error]="e.date ?? null"
+          data-testid="field-date"
+          (valueChange)="update('date', $event)"
+        />
+      </form>
+
+      @if (l.kind === 'edit') {
+        <button fit-button type="button" variant="ghost" icon="trash-outline" block [disabled]="saving()" data-testid="delete" (click)="askDelete()">
+          {{ copy.delete }}
+        </button>
+      }
+    } @else if (l?.kind === 'not-found') {
+      <h1 class="visually-hidden">{{ title() }}</h1>
+      <fit-card data-testid="not-found">
+        <fit-empty-state icon="scale-outline" [title]="copy.notFound.title" [description]="copy.notFound.message">
+          <button fit-button type="button" (click)="backToHistory()">{{ copy.backToHistory }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else if (l?.kind === 'error') {
+      <h1 class="visually-hidden">{{ title() }}</h1>
+      <fit-card data-testid="load-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.loadFailed.title" [description]="copy.loadFailed.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.loadFailed.retry }}</button>
+          <button fit-button type="button" variant="ghost" (click)="backToHistory()">{{ copy.backToHistory }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <h1 class="visually-hidden">{{ title() }}</h1>
+      <p class="visually-hidden" role="status">{{ copy.loadingEntry }}</p>
+      <div class="loading" aria-busy="true" data-testid="loading">
+        <fit-skeleton width="50%" height="34px" />
+        <fit-skeleton height="80px" radius="card" />
+        <fit-skeleton height="80px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>
+
+@let ready = loaded();
+@if (ready && (ready.kind === 'new' || ready.kind === 'edit')) {
+  <ion-footer class="ion-no-border">
+    <div class="footer">
+      <!-- Always rendered with Save so its message is announced when it appears. -->
+      <p class="status" role="status" data-testid="form-status" [class.shown]="status() !== ''">{{ status() }}</p>
+      <button fit-button type="submit" form="weight-form" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="save">
+        {{ ready.kind === 'edit' ? copy.saveChanges : copy.save }}
+      </button>
+    </div>
+  </ion-footer>
+}
+
+<fit-bottom-sheet [title]="copy.deleteConfirm.title" [description]="copy.deleteConfirm.message(entrySummary())" [(open)]="confirmOpen">
+  <div class="sheet-actions" data-testid="delete-confirm">
+    <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
+    <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
+  </div>
+</fit-bottom-sheet>

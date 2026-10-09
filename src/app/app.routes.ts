@@ -10,11 +10,26 @@ import { requireOnboardingComplete } from './core/profile/onboarding.guards';
  *   `workout/plans/:id` are added there without touching this file.
  * - Full-screen flows that should hide the tab bar (e.g. onboarding, a future
  *   active workout) go as siblings of the shell route, above the wildcard.
- * - The shell requires a completed fitness profile; onboarding redirects to
- *   Home once one exists (see core/profile/onboarding.guards.ts).
+ * - First run: onboarding → assessment → home. The shell requires a profile
+ *   and a reviewed assessment; guards send users to whichever step is
+ *   outstanding (see core/profile/onboarding.guards.ts).
  */
 export const routes: Routes = [
   { path: 'onboarding', loadChildren: () => import('./features/onboarding/onboarding.routes') },
+  { path: 'assessment', loadChildren: () => import('./features/assessment/assessment.routes') },
+  // Full-screen workout flows (no tab bar). Declared before the shell so they match first.
+  {
+    path: 'workout/session/:sessionId/active',
+    title: 'Workout',
+    canActivate: [requireOnboardingComplete],
+    loadComponent: () => import('./features/workout/active/active-workout.page').then((m) => m.ActiveWorkoutPage),
+  },
+  {
+    path: 'workout/summary/:workoutId',
+    title: 'Workout summary',
+    canActivate: [requireOnboardingComplete],
+    loadComponent: () => import('./features/workout/summary/workout-summary.page').then((m) => m.WorkoutSummaryPage),
+  },
   {
     path: '',
     canActivate: [requireOnboardingComplete],

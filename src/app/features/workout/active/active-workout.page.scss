@@ -1,0 +1,162 @@
+@use 'mixins' as fx;
+
+ion-toolbar {
+  --background: var(--color-bg);
+  --min-height: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --border-style: solid;
+  --border-color: var(--color-border);
+  --border-width: 0 0 var(--border-hairline);
+}
+
+// Compact header: exit · workout name + position · (balance).
+.bar {
+  display: grid;
+  grid-template-columns: var(--tap-target-min) minmax(0, 1fr) var(--tap-target-min);
+  align-items: center;
+  gap: var(--space-2);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-2) var(--space-1);
+}
+
+.icon-button {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: grid;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-size: 24px;
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+.heading {
+  min-width: 0;
+  text-align: center;
+}
+
+.title {
+  @include fx.text(body, semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.position {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.progress {
+  display: block;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) var(--space-3);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-4) var(--page-gutter) var(--space-6);
+}
+
+.exercise {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.exercise-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.exercise-name {
+  @include fx.text(h1, bold);
+  overflow-wrap: anywhere;
+}
+
+.metadata {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.planned {
+  @include fx.text(body-sm, medium);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text-on-muted);
+}
+
+.planned-label {
+  @include fx.text(caption, semibold);
+  align-self: center;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+ion-footer {
+  background: var(--color-bg);
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+// Full-screen flow (no tab bar): respect the device's bottom safe area.
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-gutter) calc(var(--space-3) + var(--ion-safe-area-bottom, 0px));
+}
+
+.nav {
+  display: grid;
+  // Previous takes the width its label needs; the main action gets the rest.
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2);
+
+  button {
+    min-width: 0;
+    padding: 0 var(--space-3);
+  }
+}
+
+.dialog-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

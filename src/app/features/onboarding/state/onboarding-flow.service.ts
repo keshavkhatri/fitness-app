@@ -1,12 +1,20 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { FitnessProfileService } from '../../../core/profile/fitness-profile.service';
+import { UserFitnessProfile } from '../../../domain/fitness-profile';
 import { firstIncompleteStep, validateStep } from '../validation/onboarding-validation';
-import { OnboardingDraft, applyDraftChange, toFitnessProfile } from './onboarding-draft';
+import { OnboardingDraft, applyDraftChange, draftFromProfile, toFitnessProfile } from './onboarding-draft';
 import { INITIAL_PROGRESS, OnboardingProgress, OnboardingProgressStore } from './onboarding-progress.store';
 import { OnboardingStepId, applicableSteps, stepById } from './onboarding-steps';
 
 export type ProfileSaveStatus = 'idle' | 'saving' | 'error';
+
+/**
+ * - new: first-run onboarding; progress is persisted so it can be resumed.
+ * - review: editing an existing profile from its summary; nothing is
+ *   persisted until the profile is saved (the stored profile is the source).
+ */
+export type OnboardingMode = 'new' | 'review';
 
 /**
  * When a section is edited from the summary, these steps are revisited next
@@ -31,6 +39,7 @@ export class OnboardingFlow {
   private readonly state = signal<OnboardingProgress>(INITIAL_PROGRESS);
 
   readonly ready = signal(false);
+  readonly mode = signal<OnboardingMode>('new');
   readonly saveStatus = signal<ProfileSaveStatus>('idle');
 
   readonly draft = computed(() => this.state().draft);
@@ -56,6 +65,13 @@ export class OnboardingFlow {
       return;
     }
     this.state.set(await this.store.load());
+    this.ready.set(true);
+  }
+
+  /** Opens the summary of an existing profile for review/editing. */
+  startReview(profile: UserFitnessProfile): void {
+    this.mode.set('review');
+    this.state.set({ stepId: 'summary', draft: draftFromProfile(profile), editingFromSummary: false });
     this.ready.set(true);
   }
 
@@ -103,8 +119,9 @@ export class OnboardingFlow {
   }
 
   /**
-   * Creates the profile from the current answers. On success the saved
-   * progress is discarded and the flow moves to the finish step.
+   * Creates (or, in review mode, updates) the profile from the current
+   * answers. On success saved progress is discarded; new users move to the
+   * finish step, reviewers stay put and the page navigates on.
    */
   async complete(): Promise<boolean> {
     if (this.saveStatus() === 'saving') {
@@ -127,8 +144,10 @@ export class OnboardingFlow {
     }
     this.saveStatus.set('idle');
     await this.store.clear().catch(() => undefined);
-    // Not persisted: progress was just cleared and the profile now exists.
-    this.state.set({ ...this.state(), stepId: 'finish', editingFromSummary: false });
+    if (this.mode() === 'new') {
+      // Not persisted: progress was just cleared and the profile now exists.
+      this.state.set({ ...this.state(), stepId: 'finish', editingFromSummary: false });
+    }
     return true;
   }
 
@@ -139,6 +158,8 @@ export class OnboardingFlow {
 
   private setState(progress: OnboardingProgress): void {
     this.state.set(progress);
-    void this.store.save(progress);
+    if (this.mode() === 'new') {
+      void this.store.save(progress);
+    }
   }
 }

@@ -1,0 +1,88 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-10);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.when {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-primary-text);
+}
+
+.title {
+  @include fx.text(h1, bold);
+  overflow-wrap: anywhere;
+}
+
+.status {
+  @include fx.text(body-sm, semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-success-text);
+
+  &[data-status='partial'] {
+    color: var(--color-warning-text);
+  }
+
+  ion-icon {
+    font-size: 18px;
+  }
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+
+  dt {
+    @include fx.text(caption);
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    @include fx.text(h3, semibold);
+    @include fx.tabular-numbers;
+    margin: 0;
+  }
+}
+
+.exercises {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

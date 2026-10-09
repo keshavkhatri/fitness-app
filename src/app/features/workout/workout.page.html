@@ -1,0 +1,97 @@
+<fit-page [title]="copy.title">
+  <p class="subtitle">{{ copy.subtitle }}</p>
+
+  @let s = screen();
+  @if (s && s.kind === 'ready') {
+    @if (resume(); as r) {
+      <section class="resume" aria-labelledby="workout-resume" data-testid="resume">
+        <div class="resume-text">
+          <h2 class="resume-eyebrow" id="workout-resume">{{ copy.resume.eyebrow }}</h2>
+          <p class="resume-title">{{ r.title }}</p>
+          <p class="resume-progress">{{ r.progress }}</p>
+        </div>
+        <button fit-button type="button" icon="play-outline" (click)="resumeWorkout(r.sessionId)">{{ copy.resume.action }}</button>
+      </section>
+    }
+
+    @for (notice of s.notices; track notice.title) {
+      <fit-notice [tone]="notice.tone" [headingLevel]="2" [title]="notice.title" data-testid="plan-notice">
+        {{ notice.message }}
+      </fit-notice>
+    }
+
+    <app-today-hero [day]="s.today" [upNext]="s.upNext" (openSession)="openDay($event)" />
+
+    <section class="section" aria-labelledby="workout-week">
+      <fit-section-header [title]="copy.week.title" headingId="workout-week" />
+      <p class="caption">{{ copy.week.caption }}</p>
+      <app-week-schedule [week]="s.week" (selectDay)="openDay($event)" />
+    </section>
+
+    @if (s.today.session.kind === 'resistance') {
+      <section class="section" aria-labelledby="workout-exercises">
+        <fit-section-header [title]="copy.exercises.title" headingId="workout-exercises" />
+        <app-exercise-list [exercises]="s.today.session.exercises" />
+      </section>
+    }
+
+    @if (recent(); as items) {
+      <section class="section" aria-labelledby="workout-recent" data-testid="recent">
+        <fit-section-header [title]="copy.history.recent.title" headingId="workout-recent">
+          @if (items.length > 0) {
+            <button fit-button type="button" variant="ghost" (click)="openHistory()">{{ copy.history.recent.viewAll }}</button>
+          }
+        </fit-section-header>
+        @if (items.length > 0) {
+          <ol class="recent">
+            @for (item of items; track item.id) {
+              <li>
+                <button type="button" class="recent-item" data-testid="recent-item" [attr.data-status]="item.status" (click)="openWorkoutLog(item.id)">
+                  <span class="recent-text">
+                    <span class="recent-title">{{ item.title }}</span>&ngsp;
+                    <span class="recent-meta">{{ item.meta }}</span>
+                  </span>&ngsp;
+                  <span class="recent-status">
+                    <ion-icon [name]="item.status === 'complete' ? 'checkmark-circle' : 'flag-outline'" aria-hidden="true" />
+                    <span>{{ item.statusLabel }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="caption recent-empty">{{ copy.history.recent.empty }}</p>
+          <button fit-button type="button" variant="outline" (click)="openHistory()">{{ copy.history.recent.viewAll }}</button>
+        }
+      </section>
+    }
+
+    <section class="section" aria-labelledby="workout-plan">
+      <fit-section-header [title]="copy.plan.title" headingId="workout-plan" />
+      <app-plan-summary [facts]="s.plan" />
+    </section>
+  } @else if (s?.kind === 'no-profile') {
+    <fit-card data-testid="no-profile">
+      <fit-empty-state icon="person-circle-outline" [title]="copy.noProfile.title" [description]="copy.noProfile.message">
+        <button fit-button type="button" (click)="setUpProfile()">{{ copy.noProfile.action }}</button>
+      </fit-empty-state>
+    </fit-card>
+  } @else if (s?.kind === 'unavailable') {
+    <fit-card data-testid="unavailable">
+      <fit-empty-state icon="alert-circle-outline" [title]="copy.unavailable.title" [description]="copy.unavailable.message">
+        <button fit-button type="button" [disabled]="retrying()" [loading]="retrying()" (click)="retry()">
+          {{ copy.unavailable.retry }}
+        </button>
+        <button fit-button type="button" variant="ghost" (click)="reviewProfile()">{{ copy.unavailable.review }}</button>
+      </fit-empty-state>
+    </fit-card>
+  } @else {
+    <div class="loading" aria-busy="true" data-testid="loading">
+      <span class="visually-hidden" role="status">{{ copy.loading }}</span>
+      <fit-skeleton height="248px" radius="card" />
+      <fit-skeleton width="40%" height="24px" />
+      <fit-skeleton height="200px" radius="card" />
+    </div>
+  }
+</fit-page>
+

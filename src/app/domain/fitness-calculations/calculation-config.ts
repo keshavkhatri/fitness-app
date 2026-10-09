@@ -10,43 +10,70 @@ import { ACTIVITY_LEVELS, ActivityLevel, PRIMARY_GOALS, PrimaryGoal } from '../f
 export const CALCULATION_VERSIONS = ['v1'] as const;
 export type CalculationVersion = (typeof CALCULATION_VERSIONS)[number];
 
-export interface GramsPerKgRange {
+export interface NumberRange {
   readonly min: number;
   readonly max: number;
+}
+
+export interface GramsPerKgRange extends NumberRange {
   /** Deterministic value used by the engine; must lie within [min, max]. */
   readonly default: number;
 }
 
-export interface FractionRange {
-  readonly min: number;
-  readonly max: number;
-}
-
-/** Lowest calorie target the engine will return, by the sex basis used for BMR. */
-export interface CalorieFloorConfig {
-  readonly male: number;
-  readonly female: number;
-  /** Used for sex-neutral estimates; the higher (more conservative) floor. */
-  readonly sexNeutral: number;
-}
-
 export interface FitnessCalculationConfig {
   readonly version: CalculationVersion;
+
   /** TDEE = BMR × multiplier. Training frequency is deliberately NOT included. */
   readonly activityMultipliers: Readonly<Record<ActivityLevel, number>>;
+
   /** Fractional change applied to TDEE (−0.15 = 15% below). */
   readonly goalCalorieAdjustments: Readonly<Record<PrimaryGoal, number>>;
-  /** Approved goal adjustment ranges; defaults above must fall within them. */
-  readonly goalCalorieAdjustmentRanges: Readonly<Record<PrimaryGoal, FractionRange>>;
-  /** Protein per kg of body weight, by goal. */
-  readonly proteinGramsPerKg: Readonly<Record<PrimaryGoal, GramsPerKgRange>>;
-  readonly fat: {
-    /** Share of the calorie target allocated to fat. */
-    readonly fractionOfCalories: number;
-    /** Allowed bounds for `fractionOfCalories` (prevents fat consuming an unreasonable share). */
-    readonly allowedFraction: FractionRange;
+  /** Approved goal adjustment ranges; the adjustments above must fall within them. */
+  readonly goalCalorieAdjustmentRanges: Readonly<Record<PrimaryGoal, NumberRange>>;
+
+  readonly calorieTarget: {
+    /**
+     * PRODUCT SAFETY GUARD, not medical guidance. Calorie targets are never
+     * set below this value by the app; a target at or above it is NOT thereby
+     * "safe" or appropriate for any individual. Selected by the sex basis
+     * used for BMR; the sex-neutral value is the more conservative one.
+     */
+    readonly productSafetyThresholdKcal: { readonly male: number; readonly female: number; readonly sexNeutral: number };
   };
-  readonly calorieFloorKcal: CalorieFloorConfig;
+
+  readonly protein: {
+    /** Protein per kg of the method's basis weight, by goal. */
+    readonly gramsPerKg: Readonly<Record<PrimaryGoal, GramsPerKgRange>>;
+    /**
+     * Adjusted-weight method for higher body weights.
+     *
+     * Rationale: g/kg protein recommendations are derived mostly from people
+     * near typical body composition. Multiplying total weight indefinitely
+     * gives very high targets at higher body weights, where the extra weight
+     * is largely not lean tissue. Above a height-relative threshold
+     * (threshold weight = thresholdBmi × height²), only a fraction of the
+     * excess weight counts:
+     *
+     *   referenceWeight = thresholdWeight + excessWeightFraction × (weight − thresholdWeight)
+     *
+     * This is continuous at the threshold (no jump in protein when crossing
+     * it) and still rises gently with weight. A lean-mass method (InBody)
+     * will replace this when body-composition data exists.
+     */
+    readonly adjustedWeight: {
+      readonly thresholdBmi: number;
+      readonly excessWeightFraction: number;
+    };
+  };
+
+  /** Fat as a share of the final calorie target. min ≤ preferred ≤ max. */
+  readonly fat: {
+    readonly preferredShare: number;
+    /** Never silently undercut: if it can't be met, macros are reported infeasible. */
+    readonly minimumShare: number;
+    readonly maximumShare: number;
+  };
+
   /** Energy density used for macro ↔ calorie conversion. */
   readonly kcalPerGram: { readonly protein: number; readonly carbohydrate: number; readonly fat: number };
 }
@@ -77,60 +104,99 @@ export const DEFAULT_CALCULATION_CONFIG: FitnessCalculationConfig = {
     'get-stronger': { min: 0, max: 0 },
     'improve-fitness': { min: 0, max: 0 },
   },
-  proteinGramsPerKg: {
-    'lose-fat': { min: 1.6, max: 2.0, default: 1.8 },
-    recomposition: { min: 1.6, max: 2.0, default: 1.8 },
-    'build-muscle': { min: 1.6, max: 2.2, default: 1.9 },
-    'get-stronger': { min: 1.6, max: 2.2, default: 1.9 },
-    'improve-fitness': { min: 1.4, max: 1.8, default: 1.6 },
+  calorieTarget: {
+    productSafetyThresholdKcal: { male: 1500, female: 1200, sexNeutral: 1500 },
   },
-  fat: {
-    fractionOfCalories: 0.3,
-    allowedFraction: { min: 0.2, max: 0.35 },
+  protein: {
+    gramsPerKg: {
+      'lose-fat': { min: 1.6, max: 2.0, default: 1.8 },
+      recomposition: { min: 1.6, max: 2.0, default: 1.8 },
+      'build-muscle': { min: 1.6, max: 2.2, default: 1.9 },
+      'get-stronger': { min: 1.6, max: 2.2, default: 1.9 },
+      'improve-fitness': { min: 1.4, max: 1.8, default: 1.6 },
+    },
+    adjustedWeight: { thresholdBmi: 30, excessWeightFraction: 0.25 },
   },
-  // Conservative lower bounds, NOT individual medical recommendations.
-  calorieFloorKcal: { male: 1500, female: 1200, sexNeutral: 1500 },
+  fat: { preferredShare: 0.3, minimumShare: 0.2, maximumShare: 0.35 },
   kcalPerGram: { protein: 4, carbohydrate: 4, fat: 9 },
 };
 
 /**
- * Sanity-checks a configuration. Returns human-readable problems for
- * developers (empty when valid); the engine refuses to run on a bad config.
+ * Outer sanity limits for configuration values. Not tuning knobs: they stop a
+ * typo (e.g. fat share 3.0, threshold BMI 3) from reaching users.
+ */
+export const CONFIG_LIMITS = {
+  activityMultiplier: { min: 1, max: 2.5 },
+  goalAdjustment: { min: -0.3, max: 0.2 },
+  proteinGramsPerKg: { min: 0.8, max: 3 },
+  proteinThresholdBmi: { min: 25, max: 40 },
+  excessWeightFraction: { min: 0, max: 1 },
+  fatShare: { min: 0.15, max: 0.45 },
+  productSafetyThresholdKcal: { min: 800, max: 2500 },
+} as const satisfies Record<string, NumberRange>;
+
+/**
+ * Sanity-checks a configuration. Returns developer-facing problems (empty when
+ * valid); the engine refuses to run on a bad config.
  */
 export function validateCalculationConfig(config: FitnessCalculationConfig): string[] {
   const problems: string[] = [];
-  const positive = (value: number) => Number.isFinite(value) && value > 0;
-  const within = (value: number, range: FractionRange) =>
+  const within = (value: number, range: NumberRange) =>
     Number.isFinite(value) && value >= range.min && value <= range.max;
+  const check = (ok: boolean, problem: string) => {
+    if (!ok) {
+      problems.push(problem);
+    }
+  };
 
-  if (!(CALCULATION_VERSIONS as readonly string[]).includes(config.version)) {
-    problems.push(`Unknown calculation version "${config.version}".`);
-  }
+  check((CALCULATION_VERSIONS as readonly string[]).includes(config.version), `Unknown version "${config.version}".`);
+
   for (const level of ACTIVITY_LEVELS) {
-    const multiplier = config.activityMultipliers[level];
-    if (!Number.isFinite(multiplier) || multiplier < 1 || multiplier > 2.5) {
-      problems.push(`Activity multiplier for "${level}" must be between 1 and 2.5.`);
-    }
+    check(
+      within(config.activityMultipliers[level], CONFIG_LIMITS.activityMultiplier),
+      `Activity multiplier for "${level}" is outside ${CONFIG_LIMITS.activityMultiplier.min}–${CONFIG_LIMITS.activityMultiplier.max}.`,
+    );
   }
+
   for (const goal of PRIMARY_GOALS) {
-    if (!within(config.goalCalorieAdjustments[goal], config.goalCalorieAdjustmentRanges[goal])) {
-      problems.push(`Calorie adjustment for "${goal}" is outside its approved range.`);
-    }
-    const protein = config.proteinGramsPerKg[goal];
-    if (!positive(protein.min) || !within(protein.default, protein)) {
-      problems.push(`Protein default for "${goal}" must be positive and within its range.`);
-    }
+    const range = config.goalCalorieAdjustmentRanges[goal];
+    check(
+      within(range.min, CONFIG_LIMITS.goalAdjustment) && within(range.max, CONFIG_LIMITS.goalAdjustment) && range.min <= range.max,
+      `Approved calorie adjustment range for "${goal}" is invalid.`,
+    );
+    check(within(config.goalCalorieAdjustments[goal], range), `Calorie adjustment for "${goal}" is outside its approved range.`);
+
+    const protein = config.protein.gramsPerKg[goal];
+    check(
+      within(protein.min, CONFIG_LIMITS.proteinGramsPerKg) &&
+        within(protein.max, CONFIG_LIMITS.proteinGramsPerKg) &&
+        within(protein.default, protein),
+      `Protein g/kg for "${goal}" is invalid or its default is outside its range.`,
+    );
   }
-  if (!within(config.fat.fractionOfCalories, config.fat.allowedFraction) || config.fat.allowedFraction.max >= 1) {
-    problems.push('Fat fraction must be within its allowed range (and below 1).');
-  }
-  const floors = config.calorieFloorKcal;
-  if (![floors.male, floors.female, floors.sexNeutral].every(positive)) {
-    problems.push('Calorie floors must be positive.');
-  }
-  const { protein, carbohydrate, fat } = config.kcalPerGram;
-  if (![protein, carbohydrate, fat].every(positive)) {
-    problems.push('Energy densities must be positive.');
-  }
+
+  const { thresholdBmi, excessWeightFraction } = config.protein.adjustedWeight;
+  check(within(thresholdBmi, CONFIG_LIMITS.proteinThresholdBmi), 'Protein adjustment threshold BMI is out of range.');
+  check(within(excessWeightFraction, CONFIG_LIMITS.excessWeightFraction), 'Protein excess-weight fraction must be 0–1.');
+
+  const fat = config.fat;
+  check(
+    [fat.minimumShare, fat.preferredShare, fat.maximumShare].every((share) => within(share, CONFIG_LIMITS.fatShare)) &&
+      fat.minimumShare <= fat.preferredShare &&
+      fat.preferredShare <= fat.maximumShare,
+    'Fat shares must satisfy minimum ≤ preferred ≤ maximum within the allowed limits.',
+  );
+
+  const thresholds = config.calorieTarget.productSafetyThresholdKcal;
+  check(
+    [thresholds.male, thresholds.female, thresholds.sexNeutral].every((kcal) =>
+      within(kcal, CONFIG_LIMITS.productSafetyThresholdKcal),
+    ),
+    'Product safety thresholds are out of range.',
+  );
+
+  const { protein, carbohydrate, fat: fatKcal } = config.kcalPerGram;
+  check([protein, carbohydrate, fatKcal].every((kcal) => Number.isFinite(kcal) && kcal > 0), 'Energy densities must be positive.');
+
   return problems;
 }

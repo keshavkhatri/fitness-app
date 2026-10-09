@@ -1,0 +1,50 @@
+@use 'mixins' as fx;
+
+:host {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+:host([data-tone='warning']) {
+  background: var(--color-warning-soft);
+}
+
+:host([data-tone='danger']) {
+  background: var(--color-danger-soft);
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 22px;
+  color: var(--color-primary-text);
+
+  :host([data-tone='warning']) & {
+    color: var(--color-warning-text);
+  }
+
+  :host([data-tone='danger']) & {
+    color: var(--color-danger-text);
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.title {
+  @include fx.text(body, semibold);
+}
+
+.message {
+  @include fx.text(body-sm);
+  // Secondary gray is under 4.5:1 on the tinted backgrounds; this token is AA on them.
+  color: var(--color-text-on-muted);
+}

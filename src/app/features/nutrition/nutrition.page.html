@@ -1,0 +1,116 @@
+<fit-page [title]="copy.title">
+  <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+
+  @let h = header();
+  <nav class="date-nav" aria-label="Day" data-testid="date-nav">
+    <button type="button" class="day-step" [attr.aria-label]="copy.date.previous" data-testid="previous-day" (click)="previousDay()">
+      <ion-icon name="chevron-back" aria-hidden="true" />
+    </button>
+    <div class="date">
+      <p class="date-label" data-testid="date-label">{{ h.label }}</p>
+      @if (!h.isToday) {
+        <button type="button" class="today-link" data-testid="go-today" (click)="goToToday()">{{ copy.date.backToToday }}</button>
+      }
+    </div>
+    <button
+      type="button"
+      class="day-step"
+      [attr.aria-label]="copy.date.next"
+      [disabled]="!h.canGoNext"
+      data-testid="next-day"
+      (click)="nextDay()"
+    >
+      <ion-icon name="chevron-forward" aria-hidden="true" />
+    </button>
+  </nav>
+
+  @let s = screen();
+  @switch (s.kind) {
+    @case ('ready') {
+      @for (notice of s.notices; track notice.id) {
+        <fit-notice [title]="notice.title" [tone]="notice.tone" [headingLevel]="2" [attr.data-testid]="'notice-' + notice.id">
+          <p>{{ notice.message }}</p>
+          @if (notice.action; as action) {
+            <button fit-button type="button" variant="outline" class="notice-action" (click)="noticeAction(action.kind)">
+              {{ action.label }}
+            </button>
+          }
+        </fit-notice>
+      }
+
+      <fit-card data-testid="calorie-summary">
+        <section class="summary" aria-labelledby="nutrition-calories">
+          <h2 class="card-title" id="nutrition-calories">{{ copy.calories.title }}</h2>
+          @let c = s.calories;
+          <p class="kcal" data-testid="calorie-headline">
+            @if (c.target) {
+              <span class="kcal-eaten">{{ c.eaten }}</span>&ngsp;<span class="kcal-target">/ {{ c.target }} kcal</span>
+            } @else {
+              <span class="kcal-eaten">{{ c.eaten }}</span>&ngsp;<span class="kcal-target">kcal eaten</span>
+            }
+          </p>
+          @if (c.status; as status) {
+            <p class="kcal-status" [class.over]="c.over" data-testid="calorie-status">{{ status }}</p>
+          } @else {
+            <p class="kcal-status" data-testid="calorie-status">{{ copy.calories.noTarget }}</p>
+          }
+          @if (c.progress; as p) {
+            <fit-progress [value]="p.value" [max]="p.max" [label]="copy.calories.progressLabel" [valueText]="p.valueText" />
+          }
+        </section>
+      </fit-card>
+
+      <fit-card data-testid="macro-summary">
+        <section class="summary" aria-labelledby="nutrition-macros">
+          <h2 class="card-title" id="nutrition-macros">{{ copy.macros.title }}</h2>
+          <ul class="macros">
+            @for (m of s.macros; track m.key) {
+              <li class="macro" [attr.data-testid]="'macro-' + m.key">
+                <div class="macro-line">
+                  <span class="macro-label">{{ m.label }}</span>&ngsp;
+                  <span class="macro-amount">
+                    {{ m.eaten }}
+                    @if (m.target) {
+                      <span class="macro-target">/ {{ m.target }}</span>
+                    }
+                  </span>
+                </div>&ngsp;
+                @if (m.progress; as p) {
+                  <fit-progress [value]="p.value" [max]="p.max" [label]="m.label" [valueText]="p.valueText" />
+                  <p class="macro-status">{{ m.status }}</p>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      </fit-card>
+
+      @if (s.isEmpty) {
+        <fit-card data-testid="empty-day">
+          <fit-empty-state icon="restaurant-outline" [title]="copy.emptyDay.title" [description]="copy.emptyDay.message">
+            <button fit-button type="button" icon="add" (click)="addFood()">{{ copy.emptyDay.action }}</button>
+          </fit-empty-state>
+        </fit-card>
+      }
+
+      @for (meal of s.meals; track meal.meal) {
+        <app-meal-section [meal]="meal" [addText]="copy.meals.add" (addFood)="addFood(meal.meal)" (editFood)="editFood($event)" />
+      }
+    }
+    @case ('error') {
+      <fit-card data-testid="error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+        </fit-empty-state>
+      </fit-card>
+    }
+    @default {
+      <div class="loading" aria-busy="true" data-testid="loading">
+        <fit-skeleton height="132px" radius="card" />
+        <fit-skeleton height="176px" radius="card" />
+        <fit-skeleton width="40%" height="22px" />
+        <fit-skeleton height="56px" radius="card" />
+      </div>
+    }
+  }
+</fit-page>

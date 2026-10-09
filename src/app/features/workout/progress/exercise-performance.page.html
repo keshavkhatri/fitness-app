@@ -1,0 +1,81 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/you/progress" [text]="copy.back" />
+    </ion-buttons>
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    @let s = screen();
+    <p class="visually-hidden" role="status">
+      {{ s === null ? copy.loading : s.kind === 'error' ? copy.error.title : s.kind === 'not-found' ? copy.detail.notFound.title : '' }}
+    </p>
+
+    @if (s && s.kind === 'ready') {
+      @let v = s.view;
+      <header class="intro">
+        <h1 class="title">{{ v.name }}</h1>
+        <p class="note">{{ copy.detail.actualNote }}</p>
+      </header>
+
+      <dl class="highlights" data-testid="highlights">
+        <div class="highlight">
+          <dt>{{ copy.detail.latest }}</dt>
+          <dd>
+            <span class="value" data-testid="latest">{{ v.latest.value }}</span>
+            <span class="meta">{{ v.latest.date }}</span>
+          </dd>
+        </div>
+        @if (v.recentBest; as best) {
+          <div class="highlight">
+            <dt>{{ copy.detail.recentBest }}</dt>
+            <dd>
+              <span class="value" data-testid="recent-best">{{ best.value }}</span>
+              <span class="meta">{{ best.date }} · {{ best.note }}</span>
+            </dd>
+          </div>
+        }
+      </dl>
+
+      <section class="sessions" aria-labelledby="performance-sessions">
+        <h2 class="section-title" id="performance-sessions">{{ copy.detail.sessionsTitle }}</h2>
+        @for (session of v.sessions; track session.key) {
+          <article class="session" data-testid="performance-session">
+            <h3 class="session-date">{{ session.dateLabel }}</h3>
+            <ol class="sets" [attr.aria-label]="copy.detail.sets(session.dateLabel)">
+              @for (set of session.sets; track set.key) {
+                <li class="set">
+                  <span class="set-label">{{ set.label }}</span>&ngsp;<span class="set-value">{{ set.value }}</span>
+                </li>
+              }
+            </ol>
+          </article>
+        }
+      </section>
+    } @else if (s?.kind === 'not-found') {
+      <h1 class="visually-hidden">{{ copy.detail.notFound.title }}</h1>
+      <fit-card data-testid="performance-not-found">
+        <fit-empty-state icon="barbell-outline" [title]="copy.detail.notFound.title" [description]="copy.detail.notFound.message">
+          <button fit-button type="button" (click)="backToProgress()">{{ copy.detail.notFound.action }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else if (s?.kind === 'error') {
+      <h1 class="visually-hidden">{{ copy.error.title }}</h1>
+      <fit-card data-testid="performance-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+          <button fit-button type="button" (click)="state.reload()">{{ copy.error.retry }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <h1 class="visually-hidden">{{ copy.title }}</h1>
+      <div class="loading" aria-busy="true">
+        <fit-skeleton width="60%" height="34px" />
+        <fit-skeleton height="96px" radius="card" />
+        <fit-skeleton height="200px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>

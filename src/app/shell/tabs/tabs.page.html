@@ -22,4 +22,4 @@
   </ion-tab-bar>
 </ion-tabs>
 
-<app-quick-add-sheet [actions]="quickAddActions" [(open)]="quickAddOpen" />
+<app-quick-add-sheet [actions]="quickAddActions" [(open)]="quickAddOpen" (actionSelected)="runQuickAdd($event)" />

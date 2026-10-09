@@ -1,5 +1,5 @@
 import { completeDraft } from '../testing/draft-fixtures';
-import { EMPTY_DRAFT, applyDraftChange, sanitizeDraft, toFitnessProfile } from './onboarding-draft';
+import { EMPTY_DRAFT, applyDraftChange, draftFromProfile, sanitizeDraft, toFitnessProfile } from './onboarding-draft';
 
 describe('onboarding draft', () => {
   describe('applyDraftChange', () => {
@@ -49,6 +49,13 @@ describe('onboarding draft', () => {
     });
   });
 
+  it('draftFromProfile round-trips with toFitnessProfile', () => {
+    const now = new Date('2026-10-07T12:00:00Z');
+    const profile = toFitnessProfile(completeDraft(), now)!;
+    expect(draftFromProfile(profile)).toEqual(completeDraft());
+    expect(toFitnessProfile(draftFromProfile(profile), now)).toEqual(profile);
+  });
+
   describe('sanitizeDraft (restoring untrusted data)', () => {
     it('restores a valid draft unchanged', () => {
       const draft = completeDraft();
@@ -59,7 +66,7 @@ describe('onboarding draft', () => {
       const restored = sanitizeDraft({
         ...completeDraft(),
         primaryGoal: 'get-huge',
-        trainingDaysPerWeek: 9,
+        trainingDaysPerWeek: 7,
         unitSystem: 'cubits',
         equipment: ['dumbbells', 'teleporter'],
         basics: { dateOfBirth: '1991-02-30', sex: 'female', height: { centimeters: 168 }, weight: { kilograms: 80 } },

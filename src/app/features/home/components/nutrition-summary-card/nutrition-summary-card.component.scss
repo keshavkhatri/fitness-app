@@ -64,3 +64,17 @@
   @include fx.tabular-numbers;
   color: var(--color-text-secondary);
 }
+
+.no-target {
+  @include fx.text(body, semibold);
+}
+
+.note {
+  @include fx.text(body-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  color: var(--color-text-secondary);
+}

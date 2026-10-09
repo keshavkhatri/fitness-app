@@ -1,0 +1,81 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/workout" [text]="copy.back" />
+    </ion-buttons>
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <h1 class="title">{{ copy.title }}</h1>
+    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+
+    @let s = screen();
+    @if (s && s.kind === 'ready') {
+      <section class="consistency" [attr.aria-label]="copy.consistencyLabel" data-testid="consistency">
+        <div class="stat">
+          <span class="stat-label">{{ copy.thisWeek }}</span>&ngsp;
+          <span class="stat-value">{{ s.consistency.thisWeek }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">{{ copy.thisMonth }}</span>&ngsp;
+          <span class="stat-value">{{ s.consistency.thisMonth }}</span>
+        </div>
+      </section>
+
+      @for (group of s.groups; track group.key) {
+        <section class="day" [attr.aria-labelledby]="'history-day-' + group.key" data-testid="history-day">
+          <h2 class="day-label" [id]="'history-day-' + group.key">{{ group.label }}</h2>
+          <ol class="items">
+            @for (item of group.items; track item.id) {
+              <li>
+                <button type="button" class="item" data-testid="history-item" [attr.data-status]="item.status" (click)="open(item.id)">
+                  <span class="item-main">
+                    <span class="item-title">{{ item.title }}</span>&ngsp;
+                    <span class="item-meta">
+                      @for (part of item.metaParts; track $index; let first = $first) {
+                @if (!first) {
+                  <span class="separator" aria-hidden="true"> · </span>
+                }
+                <span class="part">{{ part }}</span>
+              }
+                    </span>&ngsp;
+                    <span class="item-status">
+                      <ion-icon [name]="item.status === 'complete' ? 'checkmark-circle' : 'flag-outline'" aria-hidden="true" />
+                      <span>{{ item.statusLabel }}</span>&ngsp;
+                      @if (item.skippedLabel; as skipped) {
+                        <span class="item-skipped">· {{ skipped }}</span>
+                      }
+                    </span>
+                  </span>
+                  <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+                </button>
+              </li>
+            }
+          </ol>
+        </section>
+      }
+    } @else if (s?.kind === 'empty') {
+      <fit-card data-testid="history-empty">
+        <fit-empty-state icon="barbell-outline" [title]="copy.empty.title" [description]="copy.empty.message">
+          <button fit-button type="button" (click)="viewWorkout()">{{ copy.empty.action }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else if (s?.kind === 'error') {
+      <fit-card data-testid="history-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div class="loading" aria-busy="true" data-testid="history-loading">
+        <fit-skeleton height="72px" radius="card" />
+        <fit-skeleton width="30%" height="20px" />
+        <fit-skeleton height="84px" radius="card" />
+        <fit-skeleton height="84px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>

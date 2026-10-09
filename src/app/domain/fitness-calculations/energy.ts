@@ -1,6 +1,6 @@
 import { ActivityLevel, PrimaryGoal } from '../fitness-profile';
 import { FitnessCalculationConfig } from './calculation-config';
-import { BmrSexBasis, GoalDirection } from './fitness-assessment.model';
+import { BmrSexBasis, CalorieTargetStatus, GoalDirection } from './fitness-assessment.model';
 
 /** TDEE = BMR × activity multiplier (unrounded). Training days are intentionally not a factor. */
 export function estimateTdee(bmrKcal: number, activityLevel: ActivityLevel, config: FitnessCalculationConfig): number {
@@ -19,31 +19,48 @@ export function goalCalorieTarget(tdeeKcal: number, goal: PrimaryGoal, config: F
   return tdeeKcal * (1 + config.goalCalorieAdjustments[goal]);
 }
 
-export function calorieFloorFor(sexBasis: BmrSexBasis, config: FitnessCalculationConfig): number {
-  const floors = config.calorieFloorKcal;
+/** Product safety threshold for the BMR sex basis (not medical guidance). */
+export function productSafetyThresholdFor(sexBasis: BmrSexBasis, config: FitnessCalculationConfig): number {
+  const thresholds = config.calorieTarget.productSafetyThresholdKcal;
   switch (sexBasis) {
     case 'male':
-      return floors.male;
+      return thresholds.male;
     case 'female':
-      return floors.female;
+      return thresholds.female;
     default:
-      return floors.sexNeutral;
+      return thresholds.sexNeutral;
   }
 }
 
-export interface FlooredTarget {
-  readonly kcal: number;
-  readonly floorKcal: number;
-  readonly floorApplied: boolean;
+export interface ResolvedCalorieTarget {
+  readonly calculatedKcal: number;
+  readonly finalKcal: number;
+  readonly status: CalorieTargetStatus;
+  readonly thresholdKcal: number;
 }
 
 /**
- * Conservative lower-bound safeguard: a target below the floor is raised to
- * the floor. A target exactly at the floor is left as-is (not "applied").
- * The floor is a product safety limit, not individual medical advice.
+ * Applies the PRODUCT SAFETY GUARD to a calculated target (all unrounded).
+ *
+ * - calculated ≥ threshold                  → normal (a target exactly at the threshold is normal)
+ * - calculated < threshold ≤ maintenance    → floor-applied (the deficit was limited)
+ * - maintenance < threshold                 → review-required (even maintenance is below the guard)
+ *
+ * The final target is never below the threshold; the calculated value is
+ * always preserved so the UI can explain what happened.
  */
-export function applyCalorieFloor(targetKcal: number, floorKcal: number): FlooredTarget {
-  return targetKcal < floorKcal
-    ? { kcal: floorKcal, floorKcal, floorApplied: true }
-    : { kcal: targetKcal, floorKcal, floorApplied: false };
+export function resolveCalorieTarget(
+  calculatedKcal: number,
+  tdeeKcal: number,
+  thresholdKcal: number,
+): ResolvedCalorieTarget {
+  if (calculatedKcal >= thresholdKcal) {
+    return { calculatedKcal, finalKcal: calculatedKcal, status: 'normal', thresholdKcal };
+  }
+  return {
+    calculatedKcal,
+    finalKcal: thresholdKcal,
+    status: tdeeKcal >= thresholdKcal ? 'floor-applied' : 'review-required',
+    thresholdKcal,
+  };
 }

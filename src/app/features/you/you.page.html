@@ -7,6 +7,34 @@
     </div>
   </fit-card>
 
+  <section aria-labelledby="you-activity">
+    <fit-section-header title="Activity" headingId="you-activity" />
+    <fit-card padding="none">
+      <button type="button" class="entry" data-testid="progress-entry" (click)="openProgress()">
+        <span class="entry-icon" aria-hidden="true"><ion-icon name="trending-up" /></span>
+        <span class="entry-text">
+          <span class="entry-title">Progress</span>&ngsp;
+          <span class="entry-description">Training activity and performance</span>
+        </span>
+        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
+      </button>
+    </fit-card>
+  </section>
+
+  <section aria-labelledby="you-body">
+    <fit-section-header title="Body" headingId="you-body" />
+    <fit-card padding="none">
+      <button type="button" class="entry" data-testid="weight-history-entry" (click)="openWeightHistory()">
+        <span class="entry-icon" aria-hidden="true"><ion-icon name="scale-outline" /></span>
+        <span class="entry-text">
+          <span class="entry-title">Body weight</span>&ngsp;
+          <span class="entry-description">Your recorded weigh-ins</span>
+        </span>
+        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
+      </button>
+    </fit-card>
+  </section>
+
   <section aria-labelledby="you-appearance">
     <fit-section-header title="Appearance" headingId="you-appearance" />
     <fit-card>

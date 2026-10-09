@@ -34,3 +34,20 @@
     color: var(--color-text-secondary);
   }
 }
+
+.eyebrow {
+  @include fx.text(caption, semibold);
+  margin-bottom: var(--space-1);
+  color: var(--color-primary-text);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.next {
+  @include fx.text(body-sm, medium);
+  margin-top: var(--space-2);
+}
+
+.cta {
+  margin-top: var(--space-5);
+}

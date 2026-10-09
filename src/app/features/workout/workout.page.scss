@@ -1,0 +1,133 @@
+@use 'mixins' as fx;
+
+// Sits directly under the large page title.
+.subtitle {
+  @include fx.text(body);
+  margin-top: calc(-1 * var(--space-5));
+  color: var(--color-text-secondary);
+}
+
+.section,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.caption {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.section .caption {
+  margin-top: calc(-1 * var(--space-2));
+}
+
+// Interrupted workout: always offered first, never lost silently.
+.resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-primary-soft);
+}
+
+.resume-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resume-eyebrow {
+  @include fx.text(caption, semibold);
+  color: var(--color-primary-text);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.resume-title {
+  @include fx.text(h3, semibold);
+}
+
+.resume-progress {
+  @include fx.text(body-sm);
+  color: var(--color-text-on-muted);
+}
+
+// Recent workouts: compact and secondary to today's plan.
+.recent {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+
+  li + li {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.recent-item {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-3) var(--space-4);
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+.recent-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recent-title {
+  @include fx.text(body, semibold);
+}
+
+.recent-meta {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.recent-status {
+  @include fx.text(caption, semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-success-text);
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+.recent-item[data-status='partial'] .recent-status {
+  color: var(--color-warning-text);
+}
+
+.recent-empty {
+  margin-top: calc(-1 * var(--space-1));
+}

@@ -1,0 +1,76 @@
+<!-- Toolbar only reserves the status-bar safe area; the page title lives in the content. -->
+<ion-header class="ion-no-border">
+  <ion-toolbar></ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <header class="intro">
+      <h1 class="title">{{ copy.title }}</h1>
+      <p class="lead">{{ copy.intro }}</p>
+    </header>
+
+    @if (screen.error()) {
+      <fit-notice tone="danger" [headingLevel]="2" [title]="copy.notices.error.title" data-testid="error">
+        {{ copy.notices.error.message }}
+      </fit-notice>
+    } @else if (view(); as v) {
+      <app-goal-summary [goal]="v.goal" />
+
+      <section class="section" aria-labelledby="assessment-energy">
+        <h2 class="section-title" id="assessment-energy">Daily energy</h2>
+        <app-energy-summary [energy]="v.energy" />
+      </section>
+
+      <section class="section" aria-labelledby="assessment-macros">
+        <h2 class="section-title" id="assessment-macros">Daily macro targets</h2>
+        <app-macro-summary [macros]="v.macros" />
+      </section>
+
+      <section class="section" aria-labelledby="assessment-why">
+        <h2 class="section-title" id="assessment-why">Why these numbers?</h2>
+        @for (paragraph of v.why; track $index) {
+          <p class="prose">{{ paragraph }}</p>
+        }
+      </section>
+
+      <section class="section" aria-labelledby="assessment-confidence">
+        <h2 class="section-title" id="assessment-confidence">Estimate confidence</h2>
+        <fit-card tone="muted">
+          <p class="confidence-label" data-testid="confidence-label">{{ v.confidence.label }}</p>
+          <p class="prose">{{ v.confidence.description }}</p>
+        </fit-card>
+      </section>
+    } @else if (screen.hasValue()) {
+      <fit-notice tone="warning" [headingLevel]="2" [title]="copy.notices.incomplete.title" data-testid="incomplete">
+        {{ copy.notices.incomplete.message }}
+      </fit-notice>
+    } @else {
+      <div class="loading" aria-busy="true">
+        <span class="visually-hidden" role="status">Calculating your starting point</span>
+        <fit-skeleton height="96px" radius="card" />
+        <fit-skeleton height="240px" radius="card" />
+        <fit-skeleton height="180px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>
+
+<ion-footer class="ion-no-border">
+  <div class="footer">
+    @for (action of actions(); track action; let first = $first) {
+      <button
+        fit-button
+        type="button"
+        size="lg"
+        block
+        [variant]="first ? 'primary' : 'ghost'"
+        [disabled]="navigating() || screen.isLoading()"
+        [loading]="first && navigating()"
+        (click)="run(action)"
+      >
+        {{ actionLabels[action] }}
+      </button>
+    }
+  </div>
+</ion-footer>

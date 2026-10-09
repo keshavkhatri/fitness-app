@@ -1,0 +1,127 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.exercise-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.exercise {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+
+  & + & {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.exercise-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.exercise-name {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.exercise-progress {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+// Planned (the prescription at the time) and actual (what was logged) are labelled separately.
+.planned {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+
+  dt {
+    @include fx.text(caption, semibold);
+    align-self: center;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+  }
+
+  dd {
+    @include fx.text(body-sm, medium);
+    margin: 0;
+    color: var(--color-text-on-muted);
+  }
+}
+
+.actual-label {
+  @include fx.text(caption, semibold);
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.sets {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.set {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+}
+
+.set-label {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.set-value {
+  @include fx.text(body-sm, semibold);
+  @include fx.tabular-numbers;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  ion-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+    color: var(--color-success-text);
+  }
+}
+
+.set[data-status='skipped'] .set-value,
+.set[data-status='pending'] .set-value {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+
+  ion-icon {
+    color: var(--color-text-tertiary);
+  }
+}
+
+// Lines break between parts ("45 min · 7 of 7 exercises · 22 sets"), never inside one.
+.part {
+  white-space: nowrap;
+}

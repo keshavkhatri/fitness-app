@@ -1,0 +1,44 @@
+@use 'mixins' as fx;
+@use 'assessment-card' as card;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.rows {
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-5);
+
+  + .row {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.label {
+  @include fx.text(body, semibold);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.share {
+  @include card.caption;
+  font-weight: var(--font-weight-regular);
+}
+
+.grams {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+  margin: 0;
+  white-space: nowrap;
+}

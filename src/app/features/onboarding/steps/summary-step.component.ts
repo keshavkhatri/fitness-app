@@ -13,7 +13,13 @@ import { buildSummaryRows } from './summary-rows';
     <header class="header">
       <p class="eyebrow">Your fitness profile</p>
       <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>Does this look right?</h1>
-      <p class="helper">Review your answers. You can edit anything before creating your profile.</p>
+      <p class="helper">
+        @if (flow.mode() === 'review') {
+          Review your answers. Edit anything that has changed, then save.
+        } @else {
+          Review your answers. You can edit anything before creating your profile.
+        }
+      </p>
     </header>
 
     @if (flow.saveStatus() === 'error') {

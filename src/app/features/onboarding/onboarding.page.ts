@@ -6,14 +6,18 @@ import {
   Injector,
   afterNextRender,
   computed,
+  OnInit,
   effect,
   inject,
+  input,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, Platform } from '@ionic/angular';
 
-import { HOME_PATH } from '../../core/profile/onboarding.guards';
+import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
+import { ASSESSMENT_PATH, ONBOARDING_PATH } from '../../core/profile/onboarding.guards';
+import { OnboardingMode } from './state/onboarding-flow.service';
 import { FitnessButtonComponent, FitnessProgressComponent } from '../../shared/ui';
 import { OnboardingFlow } from './state/onboarding-flow.service';
 import { BasicsStepComponent } from './steps/basics-step.component';
@@ -30,6 +34,9 @@ import { WelcomeStepComponent } from './steps/welcome-step.component';
  * Full-screen onboarding host (no tab bar). Renders the current step and
  * owns the shared chrome: back, progress and the primary action. All flow
  * decisions live in `OnboardingFlow`.
+ *
+ * Route data `mode: 'review'` (/onboarding/review) opens the summary of the
+ * existing profile instead; saving or backing out returns to the assessment.
  */
 @Component({
   selector: 'app-onboarding',
@@ -54,21 +61,30 @@ import { WelcomeStepComponent } from './steps/welcome-step.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(keydown.enter)': 'onEnter($event)' },
 })
-export class OnboardingPage {
+export class OnboardingPage implements OnInit {
+  /** Bound from route data. */
+  readonly mode = input<OnboardingMode>('new');
+
   protected readonly flow = inject(OnboardingFlow);
+  private readonly profiles = inject(FitnessProfileService);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly choiceSteps = CHOICE_STEPS;
   protected readonly saving = computed(() => this.flow.saveStatus() === 'saving');
+  protected readonly reviewing = computed(() => this.flow.mode() === 'review');
+  protected readonly primaryLabel = computed(() => {
+    if (this.saving()) {
+      return this.reviewing() ? 'Saving your details…' : 'Creating your profile…';
+    }
+    return this.reviewing() && this.flow.step().kind === 'review' ? 'Save my details' : this.flow.step().primaryAction;
+  });
 
   private readonly content = viewChild.required(IonContent);
   private readonly stepForm = viewChild(OnboardingStepForm);
 
   constructor() {
-    void this.flow.restore();
-
     // On every step change: start at the top and move focus to the new heading
     // so screen-reader and keyboard users land on the new question.
     effect(() => {
@@ -81,7 +97,7 @@ export class OnboardingPage {
     // Android hardware back steps back through onboarding before leaving it.
     const backButton = inject(Platform).backButton.subscribeWithPriority(10, (processNextHandler) => {
       if (this.flow.canGoBack()) {
-        this.flow.back();
+        void this.back();
       } else {
         processNextHandler();
       }
@@ -89,13 +105,28 @@ export class OnboardingPage {
     inject(DestroyRef).onDestroy(() => backButton.unsubscribe());
   }
 
+  ngOnInit(): void {
+    void this.start();
+  }
+
+  protected async back(): Promise<void> {
+    // Backing out of a review (from its summary) returns to the assessment unchanged.
+    if (this.flow.mode() === 'review' && this.flow.stepId() === 'summary' && !this.flow.editingFromSummary()) {
+      await this.router.navigateByUrl(ASSESSMENT_PATH, { replaceUrl: true });
+      return;
+    }
+    this.flow.back();
+  }
+
   protected async primaryAction(): Promise<void> {
     switch (this.flow.step().kind) {
       case 'done':
-        await this.router.navigateByUrl(HOME_PATH, { replaceUrl: true });
+        await this.router.navigateByUrl(ASSESSMENT_PATH, { replaceUrl: true });
         return;
       case 'review':
-        await this.flow.complete();
+        if ((await this.flow.complete()) && this.flow.mode() === 'review') {
+          await this.router.navigateByUrl(ASSESSMENT_PATH, { replaceUrl: true });
+        }
         return;
       default:
         if (this.stepForm()?.submit() ?? true) {
@@ -109,6 +140,19 @@ export class OnboardingPage {
     if (event.target instanceof HTMLInputElement && event.target.type === 'text') {
       event.preventDefault();
       void this.primaryAction();
+    }
+  }
+
+  private async start(): Promise<void> {
+    if (this.mode() !== 'review') {
+      await this.flow.restore();
+      return;
+    }
+    const profile = await this.profiles.load();
+    if (profile) {
+      this.flow.startReview(profile);
+    } else {
+      await this.router.navigateByUrl(ONBOARDING_PATH, { replaceUrl: true });
     }
   }
 

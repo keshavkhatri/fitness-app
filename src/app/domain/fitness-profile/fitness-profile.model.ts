@@ -26,7 +26,8 @@ export type UnitSystem = (typeof UNIT_SYSTEMS)[number];
 export const TRAINING_EXPERIENCE_LEVELS = ['beginner', 'intermediate', 'advanced'] as const;
 export type TrainingExperience = (typeof TRAINING_EXPERIENCE_LEVELS)[number];
 
-export const TRAINING_DAYS_PER_WEEK = [2, 3, 4, 5, 6, 7] as const;
+/** Matches what workout programming supports (2–6). There is deliberately no 7-day option. */
+export const TRAINING_DAYS_PER_WEEK = [2, 3, 4, 5, 6] as const;
 export type TrainingDaysPerWeek = (typeof TRAINING_DAYS_PER_WEEK)[number];
 
 export const TRAINING_LOCATIONS = ['gym', 'home', 'both'] as const;

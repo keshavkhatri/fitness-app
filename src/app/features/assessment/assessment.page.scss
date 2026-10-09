@@ -1,0 +1,57 @@
+@use 'mixins' as fx;
+
+ion-toolbar {
+  --background: var(--color-bg);
+  --min-height: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--page-gutter) var(--space-8);
+}
+
+.intro,
+.section,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.lead,
+.prose {
+  @include fx.text(body);
+  color: var(--color-text-secondary);
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+}
+
+.confidence-label {
+  @include fx.text(h3, semibold);
+  margin-bottom: var(--space-1);
+}
+
+ion-footer {
+  background: var(--color-bg);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-gutter) calc(var(--space-4) + var(--ion-safe-area-bottom, 0px));
+}
