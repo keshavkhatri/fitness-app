@@ -1,7 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, resource, signal, viewChild } from '@angular/core';
 import { IonBackButton, IonButtons, IonContent, IonFooter, IonHeader, IonTitle, IonToolbar, NavController } from '@ionic/angular';
 
+import { ProfileWeightPreview, ProfileWeightService, ProfileWeightUnavailable } from '../../core/body-measurements/profile-weight.service';
 import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
+import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
+import { ASSESSMENT_PATH } from '../../core/profile/onboarding.guards';
 import { WeightEntry, validateWeightEntryInput } from '../../domain/body-measurements';
 import { UnitSystem, weightUnitLabel } from '../../domain/fitness-profile';
 import {
@@ -17,9 +20,11 @@ import { WEIGHT_HISTORY_PATH } from './weight-history-paths';
 import {
   WeightFormErrors,
   WeightFormValues,
+  ProfileWeightView,
   describeEntry,
   emptyWeightForm,
   readWeightForm,
+  toProfileWeightView,
   weightFormErrorsOf,
   weightFormOf,
 } from './weight-history-view-model';
@@ -30,9 +35,19 @@ type Loaded =
   | { readonly kind: 'not-found' }
   | { readonly kind: 'error' };
 
+/** The "Use as profile weight" sheet. */
+type ProfileWeightSheet =
+  | { readonly kind: 'checking' }
+  | { readonly kind: 'confirm' | 'saving' | 'failed'; readonly entryId: string; readonly view: ProfileWeightView }
+  | { readonly kind: 'same'; readonly view: ProfileWeightView }
+  | { readonly kind: 'unavailable'; readonly reason: ProfileWeightUnavailable };
+
 /**
  * Add or edit one weigh-in: `/you/weight-history/new` or `/you/weight-history/:entryId`.
  * Saves to the history only; nothing is shown as saved or deleted until storage confirmed it.
+ *
+ * An existing entry can also be used as the profile's weight, after a
+ * confirmation. Like any profile edit, the updated assessment is shown next.
  */
 @Component({
   selector: 'app-weight-entry',
@@ -61,6 +76,8 @@ export class WeightEntryPage {
 
   private readonly history = inject(WeightHistoryService);
   private readonly nav = inject(NavController);
+  private readonly profiles = inject(FitnessProfileService);
+  private readonly profileWeight = inject(ProfileWeightService);
 
   protected readonly copy = WEIGHT_HISTORY_COPY.form;
   protected readonly historyPath = WEIGHT_HISTORY_PATH;
@@ -98,9 +115,40 @@ export class WeightEntryPage {
   });
   protected readonly errors = signal<WeightFormErrors>({});
   protected readonly saving = signal(false);
+  /** The profile weight is being updated. */
+  protected readonly profileSaving = signal(false);
+  /** Any write in progress: every action waits for it. */
+  protected readonly busy = computed(() => this.saving() || this.profileSaving());
   /** Announced above Save: validation summary or a failed save/delete. */
   protected readonly status = signal('');
   protected readonly confirmOpen = signal(false);
+
+  protected readonly profileCopy = this.copy.profileWeight;
+  /** Only offered for a saved entry while a profile exists. */
+  protected readonly canUseAsProfileWeight = computed(() => this.loaded()?.kind === 'edit' && this.profiles.hasProfile());
+  protected readonly profileSheetOpen = signal(false);
+  protected readonly profileSheet = signal<ProfileWeightSheet>({ kind: 'checking' });
+  protected readonly profileSheetTitle = computed(() => {
+    switch (this.profileSheet().kind) {
+      case 'same':
+        return this.profileCopy.same.title;
+      case 'unavailable':
+        return this.profileCopy.unavailableTitle;
+      default:
+        return this.profileCopy.title;
+    }
+  });
+  /** The form differs from the saved entry (which is what gets used). */
+  protected readonly unsavedChanges = computed(() => {
+    const l = this.loaded();
+    if (l?.kind !== 'edit') {
+      return false;
+    }
+    const saved = weightFormOf(l.entry, l.unitSystem);
+    const f = this.form();
+    return f.weight !== saved.weight || f.date !== saved.date;
+  });
+  private previewToken = 0;
 
   /** "80.4 kg, Yesterday" for the delete confirmation. */
   protected readonly entrySummary = computed(() => {
@@ -110,6 +158,7 @@ export class WeightEntryPage {
 
   private readonly weightField = viewChild<TextFieldComponent>('weightField');
   private readonly dateField = viewChild<TextFieldComponent>('dateField');
+  private readonly profileSheetRef = viewChild<BottomSheetComponent>('profileWeightSheet');
 
   protected update(field: keyof WeightFormValues, value: string): void {
     this.form.update((f) => ({ ...f, [field]: value }));
@@ -120,7 +169,7 @@ export class WeightEntryPage {
 
   protected async save(): Promise<void> {
     const l = this.loaded();
-    if (this.saving() || !l || (l.kind !== 'new' && l.kind !== 'edit')) {
+    if (this.busy() || !l || (l.kind !== 'new' && l.kind !== 'edit')) {
       return; // no double submit
     }
     const original = l.kind === 'edit' ? l.entry : undefined;
@@ -148,7 +197,7 @@ export class WeightEntryPage {
   }
 
   protected askDelete(): void {
-    if (!this.saving()) {
+    if (!this.busy()) {
       this.confirmOpen.set(true);
     }
   }
@@ -160,7 +209,7 @@ export class WeightEntryPage {
   protected async confirmDelete(): Promise<void> {
     const l = this.loaded();
     this.confirmOpen.set(false);
-    if (l?.kind !== 'edit' || this.saving()) {
+    if (l?.kind !== 'edit' || this.busy()) {
       return;
     }
     this.saving.set(true);
@@ -176,12 +225,71 @@ export class WeightEntryPage {
     }
   }
 
+  /** Opens the confirmation with what would change; nothing is saved yet. */
+  protected async askUseAsProfileWeight(): Promise<void> {
+    const l = this.loaded();
+    if (l?.kind !== 'edit' || this.busy()) {
+      return;
+    }
+    const token = ++this.previewToken;
+    this.profileSheet.set({ kind: 'checking' });
+    this.profileSheetOpen.set(true);
+    const preview = await this.profileWeight.preview(l.entry.id);
+    if (token === this.previewToken && this.profileSheet().kind === 'checking') {
+      this.profileSheet.set(this.sheetFor(preview));
+    }
+  }
+
+  protected closeProfileSheet(): void {
+    if (!this.profileSaving()) {
+      this.profileSheetOpen.set(false);
+    }
+  }
+
+  protected async confirmUseAsProfileWeight(): Promise<void> {
+    const sheet = this.profileSheet();
+    if ((sheet.kind !== 'confirm' && sheet.kind !== 'failed') || this.busy()) {
+      return; // no double submit
+    }
+    this.profileSaving.set(true);
+    this.profileSheet.set({ ...sheet, kind: 'saving' });
+    try {
+      const result = await this.profileWeight.apply(sheet.entryId);
+      if (result.ok && result.kind === 'updated') {
+        // Dismissed before leaving: this page's bindings stop updating once it's no longer active.
+        await this.profileSheetRef()?.dismiss().catch(() => false);
+        this.profileSheetOpen.set(false);
+        // As after any profile edit: review the recalculated assessment next.
+        void this.nav.navigateForward(ASSESSMENT_PATH);
+      } else if (result.ok) {
+        this.profileSheet.set({ kind: 'same', view: sheet.view });
+      } else if (result.kind === 'save-failed') {
+        this.profileSheet.set({ ...sheet, kind: 'failed' });
+        if (!this.profileSheetOpen()) {
+          this.status.set(this.profileCopy.saveFailed); // the sheet was swiped away meanwhile
+        }
+      } else {
+        this.profileSheet.set({ kind: 'unavailable', reason: result.kind });
+      }
+    } finally {
+      this.profileSaving.set(false);
+    }
+  }
+
   protected retry(): void {
     this.state.reload();
   }
 
   protected backToHistory(): void {
     void this.nav.navigateBack(WEIGHT_HISTORY_PATH);
+  }
+
+  private sheetFor(preview: ProfileWeightPreview): ProfileWeightSheet {
+    if (preview.kind !== 'ready' && preview.kind !== 'same') {
+      return { kind: 'unavailable', reason: preview.kind };
+    }
+    const view = toProfileWeightView(preview.entry, preview.current, preview.unitSystem, this.today);
+    return preview.kind === 'same' ? { kind: 'same', view } : { kind: 'confirm', entryId: preview.entry.id, view };
   }
 
   private showErrors(errors: WeightFormErrors): void {

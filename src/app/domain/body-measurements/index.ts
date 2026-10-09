@@ -2,3 +2,4 @@
 export * from './weight-entry';
 export * from './weight-history';
 export * from './weight-trends';
+export * from './profile-weight';

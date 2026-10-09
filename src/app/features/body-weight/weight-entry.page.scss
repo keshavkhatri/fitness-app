@@ -14,7 +14,8 @@
 }
 
 .form,
-.loading {
+.loading,
+.entry-actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -34,6 +35,10 @@ ion-footer {
   padding: var(--space-3) var(--page-gutter);
 }
 
+.entry-actions {
+  gap: var(--space-2);
+}
+
 .status {
   @include fx.text(body-sm, medium);
   color: var(--color-danger-text);
@@ -48,4 +53,47 @@ ion-footer {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.profile-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sheet-text {
+  @include fx.text(body);
+}
+
+.sheet-note {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  dt {
+    @include fx.text(body-sm);
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    @include fx.text(body-sm, semibold);
+    margin: 0;
+    text-align: end;
+  }
+
+  .next {
+    color: var(--color-text);
+  }
 }

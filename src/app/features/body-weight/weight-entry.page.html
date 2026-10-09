@@ -44,9 +44,26 @@
       </form>
 
       @if (l.kind === 'edit') {
-        <button fit-button type="button" variant="ghost" icon="trash-outline" block [disabled]="saving()" data-testid="delete" (click)="askDelete()">
-          {{ copy.delete }}
-        </button>
+        <div class="entry-actions">
+          @if (canUseAsProfileWeight()) {
+            <button
+              fit-button
+              type="button"
+              variant="outline"
+              icon="person-circle-outline"
+              block
+              aria-haspopup="dialog"
+              [disabled]="busy()"
+              data-testid="use-as-profile-weight"
+              (click)="askUseAsProfileWeight()"
+            >
+              {{ profileCopy.action }}
+            </button>
+          }
+          <button fit-button type="button" variant="ghost" icon="trash-outline" block [disabled]="busy()" data-testid="delete" (click)="askDelete()">
+            {{ copy.delete }}
+          </button>
+        </div>
       }
     } @else if (l?.kind === 'not-found') {
       <h1 class="visually-hidden">{{ title() }}</h1>
@@ -81,7 +98,7 @@
     <div class="footer">
       <!-- Always rendered with Save so its message is announced when it appears. -->
       <p class="status" role="status" data-testid="form-status" [class.shown]="status() !== ''">{{ status() }}</p>
-      <button fit-button type="submit" form="weight-form" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="save">
+      <button fit-button type="submit" form="weight-form" size="lg" block [disabled]="busy()" [loading]="saving()" data-testid="save">
         {{ ready.kind === 'edit' ? copy.saveChanges : copy.save }}
       </button>
     </div>
@@ -92,5 +109,66 @@
   <div class="sheet-actions" data-testid="delete-confirm">
     <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
     <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
+  </div>
+</fit-bottom-sheet>
+
+<fit-bottom-sheet #profileWeightSheet [title]="profileSheetTitle()" [(open)]="profileSheetOpen">
+  @let p = profileSheet();
+  <div class="profile-sheet" data-testid="profile-weight-sheet">
+    @switch (p.kind) {
+      @case ('checking') {
+        <p class="sheet-text" role="status" aria-busy="true">{{ profileCopy.checking }}</p>
+      }
+      @case ('unavailable') {
+        <p class="sheet-text" role="status" data-testid="profile-weight-unavailable">{{ profileCopy.unavailable[p.reason] }}</p>
+        <button fit-button type="button" size="lg" block variant="ghost" (click)="closeProfileSheet()">{{ profileCopy.close }}</button>
+      }
+      @case ('same') {
+        <p class="sheet-text" role="status" data-testid="profile-weight-same">{{ profileCopy.same.message(p.view.current) }}</p>
+        <button fit-button type="button" size="lg" block variant="ghost" (click)="closeProfileSheet()">{{ profileCopy.close }}</button>
+      }
+      @default {
+        <p class="sheet-text">{{ profileCopy.message }}</p>
+        <dl class="details" data-testid="profile-weight-details">
+          <div>
+            <dt>{{ profileCopy.measured }}</dt>
+            <dd>{{ p.view.measured }}</dd>
+          </div>
+          <div>
+            <dt>{{ profileCopy.current }}</dt>
+            <dd>{{ p.view.current }}</dd>
+          </div>
+          <div>
+            <dt>{{ profileCopy.next }}</dt>
+            <dd class="next">{{ p.view.next }}</dd>
+          </div>
+        </dl>
+        <p class="sheet-note">{{ profileCopy.historyKept }}</p>
+        @if (unsavedChanges()) {
+          <p class="sheet-note" data-testid="profile-weight-unsaved">{{ profileCopy.unsaved }}</p>
+        }
+        <!-- Always rendered so a failure is announced when it appears. -->
+        <p class="status" role="status" data-testid="profile-weight-status" [class.shown]="p.kind === 'failed'">
+          {{ p.kind === 'failed' ? profileCopy.saveFailed : '' }}
+        </p>
+        <div class="sheet-actions">
+          <button
+            fit-button
+            type="button"
+            size="lg"
+            block
+            [disabled]="profileSaving()"
+            [loading]="profileSaving()"
+            data-testid="confirm-profile-weight"
+            (click)="confirmUseAsProfileWeight()"
+          >
+            {{ p.kind === 'failed' ? profileCopy.tryAgain : profileCopy.confirm }}
+          </button>
+          <button fit-button type="button" size="lg" block variant="ghost" [disabled]="profileSaving()" (click)="closeProfileSheet()">
+            {{ profileCopy.cancel }}
+          </button>
+        </div>
+      }
+    }
   </div>
 </fit-bottom-sheet>

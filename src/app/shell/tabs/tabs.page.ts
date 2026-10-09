@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { IonIcon, IonLabel, IonTabBar, IonTabButton, IonTabs, NavController } from '@ionic/angular';
 
 import { CLOCK, localIsoDate } from '../../core/time/clock';
+import { NEW_WEIGHT_PATH } from '../../features/body-weight/weight-history-paths';
 import { NEW_FOOD_PATH } from '../../features/nutrition/nutrition-paths';
 
 import { QuickAddSheetComponent } from '../quick-add/quick-add-sheet.component';
@@ -65,6 +66,9 @@ export class TabsPage {
         case 'add-food':
           // Today (local); the form preselects the meal by time of day.
           navigated = await this.nav.navigateForward(NEW_FOOD_PATH, { queryParams: { date: localIsoDate(this.clock()) } });
+          break;
+        case 'log-weight':
+          navigated = await this.nav.navigateForward(NEW_WEIGHT_PATH);
           break;
         default:
           return;

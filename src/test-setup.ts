@@ -20,3 +20,25 @@ if (!window.matchMedia) {
 // Mirror the app initializer so <ion-icon> resolves names instead of trying
 // to fetch SVGs (which jsdom cannot do) and flooding output with warnings.
 registerAppIcons();
+
+// Spec files share one document (the unit-test builder runs Vitest with
+// `isolate: false`). Ionic moves a sheet to <body> when presenting it. When
+// the element the sheet was declared in is removed (test teardown), Ionic
+// dismisses the sheet only asynchronously, or not at all if the sheet is
+// presented after that removal; meanwhile its focus trap takes focus in the
+// tests that run next. So remove such leftovers as soon as either happens.
+// (`cachedOriginalParent` is where Ionic records that element.)
+// This setup file can run once per spec file; observe only once.
+const leftoverModalsKey = '__removeLeftoverModals';
+if (!(leftoverModalsKey in globalThis)) {
+  const observer = new MutationObserver(() => {
+    for (const modal of document.body.querySelectorAll(':scope > ion-modal')) {
+      const declaredIn = (modal as { cachedOriginalParent?: Node }).cachedOriginalParent;
+      if (declaredIn?.isConnected === false) {
+        modal.remove();
+      }
+    }
+  });
+  observer.observe(document.body, { childList: true });
+  Object.assign(globalThis, { [leftoverModalsKey]: observer });
+}

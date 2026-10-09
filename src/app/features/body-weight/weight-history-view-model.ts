@@ -1,6 +1,15 @@
 import { WeightHistoryState } from '../../core/body-measurements/weight-history.service';
 import { WeightEntry, WeightEntryErrors, WeightEntryInput, weightHistory } from '../../domain/body-measurements';
-import { IsoCalendarDate, UnitSystem, parseDecimalInput, parseIsoCalendarDate, weightInUnit, weightUnitLabel } from '../../domain/fitness-profile';
+import {
+  BodyWeight,
+  IsoCalendarDate,
+  POUNDS_PER_KILOGRAM,
+  UnitSystem,
+  parseDecimalInput,
+  parseIsoCalendarDate,
+  weightInUnit,
+  weightUnitLabel,
+} from '../../domain/fitness-profile';
 import { NUMBER_FORMAT_ERROR } from '../nutrition/nutrition-content';
 import { weightRangeText } from '../onboarding/validation/onboarding-validation';
 import { dayLabel } from '../workout/history/history-view-model';
@@ -132,10 +141,40 @@ export function weightFormErrorsOf(errors: WeightEntryErrors, unitSystem: UnitSy
   return formatError ? { ...messages, weight: formatError } : messages;
 }
 
-/** "80.4 kg, Yesterday": how an entry is named in the delete confirmation. */
-export function describeEntry(entry: WeightEntry, unitSystem: UnitSystem, today: IsoCalendarDate): string {
+/** "Today", "Yesterday", "Thursday, Oct 1". */
+function entryDateLabel(entry: WeightEntry, today: IsoCalendarDate): string {
   const date = parseIsoCalendarDate(entry.date);
   const todayDate = parseIsoCalendarDate(today);
-  const dateLabel = date && todayDate ? dayLabel(date, todayDate) : entry.date;
-  return `${formatDisplayWeight(weightInUnit(entry.weight, unitSystem), unitSystem)}, ${dateLabel}`;
+  return date && todayDate ? dayLabel(date, todayDate) : entry.date;
+}
+
+/** "80.4 kg, Yesterday": how an entry is named in the delete confirmation. */
+export function describeEntry(entry: WeightEntry, unitSystem: UnitSystem, today: IsoCalendarDate): string {
+  return `${formatDisplayWeight(weightInUnit(entry.weight, unitSystem), unitSystem)}, ${entryDateLabel(entry, today)}`;
+}
+
+/** The "Use as profile weight" confirmation details, in the profile's unit. */
+export interface ProfileWeightView {
+  readonly measured: string;
+  readonly current: string;
+  readonly next: string;
+}
+
+export function toProfileWeightView(entry: WeightEntry, current: BodyWeight, unitSystem: UnitSystem, today: IsoCalendarDate): ProfileWeightView {
+  const measured = entryDateLabel(entry, today);
+  const now = formatDisplayWeight(weightInUnit(current, unitSystem), unitSystem);
+  const next = formatDisplayWeight(weightInUnit(entry.weight, unitSystem), unitSystem);
+  if (now !== next || current.kilograms === entry.weight.kilograms) {
+    return { measured, current: now, next };
+  }
+  // Different stored weights that look the same at one decimal: show the actual change.
+  return { measured, current: formatPreciseWeight(current, unitSystem), next: formatPreciseWeight(entry.weight, unitSystem) };
+}
+
+const twoDecimals = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** "180.78 lb": only where one decimal would hide a difference. */
+function formatPreciseWeight(weight: BodyWeight, unitSystem: UnitSystem): string {
+  const value = unitSystem === 'metric' ? weight.kilograms : weight.kilograms * POUNDS_PER_KILOGRAM;
+  return `${twoDecimals.format(value)} ${weightUnitLabel(unitSystem)}`;
 }

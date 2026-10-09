@@ -1,14 +1,17 @@
+import { WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { NavController, provideIonicAngular } from '@ionic/angular';
 
 import { WeightHistoryRepository } from '../../core/body-measurements/weight-history.repository';
 import { WEIGHT_ENTRY_ID, WeightHistoryService } from '../../core/body-measurements/weight-history.service';
+import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { KeyValueStorage } from '../../core/storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../../core/storage/testing/memory-key-value-storage';
 import { CLOCK } from '../../core/time/clock';
 import { WeightEntry } from '../../domain/body-measurements';
 import { UserFitnessProfile } from '../../domain/fitness-profile';
+import { BottomSheetComponent } from '../../shared/ui';
 import { YouPage } from '../you/you.page';
 import { WeightEntryPage } from './weight-entry.page';
 import { WeightHistoryPage } from './weight-history.page';
@@ -481,6 +484,236 @@ describe('Weight entry page', () => {
     await service.update(saved, { weight: 74, unitSystem: 'metric', date: '2026-10-09' });
     await service.remove(saved);
     await settle(fixture);
+    expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
+  });
+});
+
+describe('Use as profile weight (weight entry page)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  type Page = {
+    profileSheetOpen: WritableSignal<boolean>;
+    closeProfileSheet(): void;
+    confirmUseAsProfileWeight(): Promise<void>;
+  };
+
+  async function renderEntry(entries: readonly WeightEntry[], entryId: string, profile: UserFitnessProfile | null = PROFILE) {
+    const spies = configure(entries, profile);
+    const fixture = TestBed.createComponent(WeightEntryPage);
+    fixture.componentRef.setInput('entryId', entryId);
+    await settle(fixture);
+    const el = fixture.nativeElement as HTMLElement;
+    const page = fixture.componentInstance as unknown as Page;
+    /** The sheet renders in an Ionic overlay outside the fixture. */
+    const sheet = () => document.querySelector('[data-testid="profile-weight-sheet"]')!;
+    const sheetTitle = () => clean(sheet().closest('.sheet')?.querySelector('.sheet-title'));
+    const details = () => [...byTestId(sheet(), 'profile-weight-details')!.querySelectorAll('div')].map((row) => [clean(row.querySelector('dt')), clean(row.querySelector('dd'))]);
+    const open = async () => {
+      (byTestId(el, 'use-as-profile-weight') as HTMLButtonElement).click();
+      await settle(fixture);
+    };
+    const confirm = async () => {
+      await page.confirmUseAsProfileWeight();
+      await settle(fixture);
+    };
+    return { ...spies, fixture, el, page, sheet, sheetTitle, details, open, confirm };
+  }
+  const profileOf = (storage: MemoryKeyValueStorage): UserFitnessProfile => JSON.parse(storage.values.get(PROFILE_KEY)!).profile;
+  const ENTRIES = [entry('a', '2026-10-01', 82.0), entry('b', '2026-10-08', 80.45)];
+  const FAILED = "Your profile weight couldn't be updated. Your saved profile hasn't changed.";
+
+  it('is offered on a saved entry as a labelled button; not when adding', async () => {
+    const { el } = await renderEntry(ENTRIES, 'b');
+    const button = byTestId(el, 'use-as-profile-weight') as HTMLButtonElement;
+    expect(clean(button)).toBe('Use as profile weight');
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(button.disabled).toBe(false);
+
+    TestBed.resetTestingModule();
+    configure([]);
+    const add = TestBed.createComponent(WeightEntryPage);
+    await settle(add);
+    expect(byTestId(add.nativeElement, 'weight-form')).not.toBeNull();
+    expect(byTestId(add.nativeElement, 'use-as-profile-weight')).toBeNull();
+  });
+
+  it('is not offered without a profile (the entry stays editable)', async () => {
+    const { el } = await renderEntry(ENTRIES, 'b', null);
+    expect(byTestId(el, 'weight-form')).not.toBeNull();
+    expect(byTestId(el, 'use-as-profile-weight')).toBeNull();
+  });
+
+  it('asks for confirmation first, showing the date, current and new weight; nothing is saved yet', async () => {
+    const { open, sheet, sheetTitle, details, page, storage, profileBefore, forward } = await renderEntry(ENTRIES, 'b');
+    await open();
+    expect(page.profileSheetOpen()).toBe(true);
+    expect(sheetTitle()).toBe('Use as profile weight?');
+    const text = clean(sheet());
+    expect(text).toContain('This updates the weight saved in your profile. Your calorie and macro targets may change');
+    expect(details()).toEqual([
+      ['Measured', 'Yesterday'],
+      ['Profile weight now', '82.0 kg'],
+      ['New profile weight', '80.5 kg'],
+    ]);
+    expect(text).toContain('Your weight history stays as it is.');
+    expect(clean(byTestId(sheet(), 'confirm-profile-weight'))).toBe('Update profile weight');
+    expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
+    expect(forward).not.toHaveBeenCalled();
+  });
+
+  it('shows weights in the profile’s unit', async () => {
+    const { open, details } = await renderEntry(ENTRIES, 'b', { ...PROFILE, unitSystem: 'imperial' });
+    await open();
+    expect(details()).toEqual([
+      ['Measured', 'Yesterday'],
+      ['Profile weight now', '180.8 lb'],
+      ['New profile weight', '177.4 lb'],
+    ]);
+  });
+
+  it('weights that differ but look the same at one decimal show the actual change', async () => {
+    // 82.00 kg and 82.01 kg are both "180.8 lb".
+    const { open, sheetTitle, details } = await renderEntry([entry('c', '2026-10-08', 82.01)], 'c', { ...PROFILE, unitSystem: 'imperial' });
+    await open();
+    expect(sheetTitle()).toBe('Use as profile weight?');
+    expect(details()).toEqual([
+      ['Measured', 'Yesterday'],
+      ['Profile weight now', '180.78 lb'],
+      ['New profile weight', '180.80 lb'],
+    ]);
+  });
+
+  it('a profile edit saved while the confirmation is open is kept', async () => {
+    const { open, confirm, storage, forward } = await renderEntry(ENTRIES, 'b');
+    await open();
+    const edited: UserFitnessProfile = { ...PROFILE, activityLevel: 'very-active', updatedAt: '2026-10-09T07:00:00.000Z' };
+    await TestBed.inject(FitnessProfileService).save(edited);
+    await confirm();
+    expect(profileOf(storage)).toEqual({ ...edited, weight: { kilograms: 80.45 }, updatedAt: NOW.toISOString() });
+    expect(forward).toHaveBeenCalledWith('/assessment');
+  });
+
+  it('cancelling leaves the profile unchanged', async () => {
+    const { open, page, fixture, storage, profileBefore, forward } = await renderEntry(ENTRIES, 'b');
+    await open();
+    page.closeProfileSheet();
+    await settle(fixture);
+    expect(page.profileSheetOpen()).toBe(false);
+    expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
+    expect(forward).not.toHaveBeenCalled();
+  });
+
+  it('confirming saves only the weight (exact kilograms) and opens the updated assessment; the history is untouched', async () => {
+    const { open, confirm, page, storage, forward } = await renderEntry(ENTRIES, 'b');
+    const historyBefore = storage.values.get(KEY);
+    await open();
+    const dismiss = vi.spyOn(BottomSheetComponent.prototype, 'dismiss');
+    await confirm();
+    // Closed before leaving (the page stops updating its bindings once inactive).
+    expect(dismiss.mock.invocationCallOrder[0]).toBeLessThan(forward.mock.invocationCallOrder[0]);
+    expect(profileOf(storage)).toEqual({ ...PROFILE, weight: { kilograms: 80.45 }, updatedAt: NOW.toISOString() });
+    expect(storage.values.get(KEY)).toBe(historyBefore);
+    expect(page.profileSheetOpen()).toBe(false);
+    expect(forward).toHaveBeenCalledWith('/assessment');
+  });
+
+  it('the same weight says so and writes nothing', async () => {
+    const { open, sheet, sheetTitle, storage, profileBefore, forward } = await renderEntry(ENTRIES, 'a');
+    const set = vi.spyOn(storage, 'set');
+    await open();
+    expect(sheetTitle()).toBe('Already your profile weight');
+    expect(clean(byTestId(sheet(), 'profile-weight-same'))).toBe('Your profile weight is already 82.0 kg. Nothing needs to change.');
+    expect(byTestId(sheet(), 'confirm-profile-weight')).toBeNull();
+    expect(set).not.toHaveBeenCalled();
+    expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
+    expect(forward).not.toHaveBeenCalled();
+  });
+
+  it('a failed save is reported honestly and can be retried; nothing changes meanwhile', async () => {
+    const { open, confirm, sheet, page, storage, profileBefore, forward } = await renderEntry(ENTRIES, 'b');
+    await open();
+    storage.failWrites = true;
+    await confirm();
+    expect(page.profileSheetOpen()).toBe(true);
+    const status = byTestId(sheet(), 'profile-weight-status')!;
+    expect(status.getAttribute('role')).toBe('status');
+    expect(clean(status)).toBe(FAILED);
+    expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
+    expect(forward).not.toHaveBeenCalled();
+
+    storage.failWrites = false;
+    expect(clean(byTestId(sheet(), 'confirm-profile-weight'))).toBe('Try again');
+    await confirm();
+    expect(profileOf(storage).weight).toEqual({ kilograms: 80.45 });
+    expect(forward).toHaveBeenCalledWith('/assessment');
+  });
+
+  it('a failure after the sheet was swiped away is shown on the page', async () => {
+    const { open, page, fixture, el, storage } = await renderEntry(ENTRIES, 'b');
+    await open();
+    storage.failWrites = true;
+    const pending = page.confirmUseAsProfileWeight();
+    page.profileSheetOpen.set(false);
+    await pending;
+    await settle(fixture);
+    expect(clean(byTestId(el, 'form-status'))).toBe(FAILED);
+  });
+
+  it('prevents double submission; other actions wait for it', async () => {
+    const { open, page, fixture, el, storage } = await renderEntry(ENTRIES, 'b');
+    await open();
+    const save = vi.spyOn(TestBed.inject(FitnessProfileService), 'save');
+    const first = page.confirmUseAsProfileWeight();
+    fixture.detectChanges();
+    expect((byTestId(el, 'save') as HTMLButtonElement).disabled).toBe(true);
+    expect((byTestId(el, 'delete') as HTMLButtonElement).disabled).toBe(true);
+    await page.confirmUseAsProfileWeight();
+    await first;
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(profileOf(storage).weight).toEqual({ kilograms: 80.45 });
+  });
+
+  it('an entry deleted meanwhile is reported and nothing changes', async () => {
+    const { open, confirm, sheet, storage, profileBefore, forward } = await renderEntry(ENTRIES, 'b');
+    await open();
+    storage.values.set(KEY, JSON.stringify({ version: 1, entries: [ENTRIES[0]] }));
+    await confirm();
+    expect(clean(byTestId(sheet(), 'profile-weight-unavailable'))).toBe('This weigh-in may have been deleted, so nothing was changed.');
+    expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
+    expect(forward).not.toHaveBeenCalled();
+  });
+
+  it('a profile read failure is reported in the sheet; the history stays usable', async () => {
+    const { open, sheet, el, storage, fixture } = await renderEntry(ENTRIES, 'b');
+    const profiles = TestBed.inject(FitnessProfileService);
+    vi.spyOn(profiles, 'read').mockRejectedValue(new Error('read'));
+    await open();
+    expect(clean(byTestId(sheet(), 'profile-weight-unavailable'))).toBe("Your profile couldn't be read, so nothing was changed. Please try again later.");
+    fixture.detectChanges();
+    expect((byTestId(el, 'save') as HTMLButtonElement).disabled).toBe(false);
+    expect(stored(storage)).toEqual(ENTRIES);
+  });
+
+  it('notes that unsaved form changes aren’t used', async () => {
+    const { el, fixture, open, sheet, details } = await renderEntry(ENTRIES, 'b');
+    const input = byTestId(el, 'field-weight')!.querySelector('input')!;
+    input.value = '79';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    await open();
+    expect(clean(byTestId(sheet(), 'profile-weight-unsaved'))).toContain('this uses the saved weigh-in');
+    expect(details()).toContainEqual(['New profile weight', '80.5 kg']);
+  });
+
+  it('ordinary add, edit and delete still never touch the profile', async () => {
+    const { storage, profileBefore } = await renderEntry(ENTRIES, 'b');
+    const service = TestBed.inject(WeightHistoryService);
+    const added = await service.add({ weight: 70, unitSystem: 'metric', date: '2026-10-09' });
+    expect(added.ok).toBe(true);
+    if (added.ok) {
+      await service.update(added.entry, { weight: 71, unitSystem: 'metric', date: '2026-10-09' });
+      await service.remove(added.entry);
+    }
     expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
   });
 });

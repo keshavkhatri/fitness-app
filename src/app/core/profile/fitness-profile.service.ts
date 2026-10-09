@@ -18,20 +18,35 @@ export class FitnessProfileService {
   readonly profile = this.state.asReadonly();
   readonly hasProfile = computed(() => this.state() !== null);
 
-  /** Loads the profile once; later calls reuse the result. */
+  /** Loads the profile once; later calls reuse the result. Resolves null if it couldn't be read. */
   load(): Promise<UserFitnessProfile | null> {
+    return this.read().catch(() => null);
+  }
+
+  /** Like `load()`, but rejects when the profile couldn't be read (so callers can tell that from "no profile"). */
+  read(): Promise<UserFitnessProfile | null> {
     this.loadPromise ??= this.repository.load().then(
       (profile) => {
         this.state.set(profile);
         return profile;
       },
-      () => {
+      (error: unknown) => {
         // Allow a retry on the next call rather than caching the failure.
         this.loadPromise = null;
-        return null;
+        throw error;
       },
     );
     return this.loadPromise;
+  }
+
+  /**
+   * Like `read()`, but always reads the saved profile again (and caches it),
+   * so a read-modify-write isn't based on a copy that's stale because storage
+   * changed outside this service (e.g. another tab).
+   */
+  refresh(): Promise<UserFitnessProfile | null> {
+    this.loadPromise = null;
+    return this.read();
   }
 
   async hasCompletedOnboarding(): Promise<boolean> {
