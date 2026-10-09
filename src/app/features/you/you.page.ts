@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { IonIcon, NavController } from '@ionic/angular';
 
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
+import { MEASUREMENT_HISTORY_PATH } from '../body-measurements/measurement-paths';
 import { WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
 import {
   FitnessCardComponent,
@@ -49,5 +50,9 @@ export class YouPage {
 
   protected openWeightHistory(): void {
     void this.nav.navigateForward(WEIGHT_HISTORY_PATH);
+  }
+
+  protected openMeasurements(): void {
+    void this.nav.navigateForward(MEASUREMENT_HISTORY_PATH);
   }
 }

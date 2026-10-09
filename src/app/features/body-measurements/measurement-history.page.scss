@@ -1,0 +1,144 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-10);
+}
+
+.intro,
+.section,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.intro {
+  gap: var(--space-2);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.subtitle {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+}
+
+.notice {
+  @include fx.text(body-sm);
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex: none;
+    font-size: 20px;
+  }
+}
+
+.latest {
+  margin: 0;
+}
+
+.latest-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-3);
+  padding: var(--space-3) var(--space-4);
+
+  & + & {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.latest-site {
+  @include fx.text(body, medium);
+}
+
+.latest-value {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+  text-align: end;
+}
+
+.latest-date,
+.latest-missing {
+  @include fx.text(body-sm);
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+}
+
+.latest-missing {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: end;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.row {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+
+  ion-icon {
+    flex: none;
+    font-size: 18px;
+    color: var(--color-text-secondary);
+  }
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+.row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: start;
+}
+
+.row-date {
+  @include fx.text(body, semibold);
+}
+
+.row-values {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-3);
+  color: var(--color-text-secondary);
+}

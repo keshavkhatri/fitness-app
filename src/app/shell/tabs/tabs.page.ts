@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { IonIcon, IonLabel, IonTabBar, IonTabButton, IonTabs, NavController } from '@ionic/angular';
 
 import { CLOCK, localIsoDate } from '../../core/time/clock';
+import { NEW_MEASUREMENT_PATH } from '../../features/body-measurements/measurement-paths';
 import { NEW_WEIGHT_PATH } from '../../features/body-weight/weight-history-paths';
 import { NEW_FOOD_PATH } from '../../features/nutrition/nutrition-paths';
 
@@ -69,6 +70,9 @@ export class TabsPage {
           break;
         case 'log-weight':
           navigated = await this.nav.navigateForward(NEW_WEIGHT_PATH);
+          break;
+        case 'add-measurement':
+          navigated = await this.nav.navigateForward(NEW_MEASUREMENT_PATH);
           break;
         default:
           return;

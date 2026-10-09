@@ -1,0 +1,94 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/you" [text]="copy.back" />
+    </ion-buttons>
+    <!-- Navigation label only; the page heading (h1) is below. -->
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <header class="intro">
+      <h1 class="title">{{ copy.title }}</h1>
+      <p class="subtitle">{{ copy.intro }}</p>
+    </header>
+    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+
+    @let s = screen();
+    @if ((s.kind === 'ready' || s.kind === 'empty') && unsupportedCount() > 0) {
+      <fit-card data-testid="unsupported-notice">
+        <p class="notice">
+          <ion-icon name="information-circle-outline" aria-hidden="true" />
+          <span>{{ unsupportedMessage() }}</span>
+        </p>
+      </fit-card>
+    }
+    @switch (s.kind) {
+      @case ('ready') {
+        <button fit-button type="button" block icon="add" data-testid="add-measurement" (click)="add()">{{ copy.add }}</button>
+        <section class="section" aria-labelledby="measurement-latest">
+          <h2 class="section-title" id="measurement-latest">{{ copy.latest.title }}</h2>
+          <fit-card padding="none">
+            <dl class="latest" data-testid="latest">
+              @for (item of s.latest; track item.site) {
+                <div class="latest-row" data-testid="latest-site">
+                  <dt class="latest-site">{{ item.site }}</dt>&ngsp;
+                  @if (item.value) {
+                    <dd class="latest-value">{{ item.value }}</dd>&ngsp;
+                    <dd class="latest-date">{{ item.dateLabel }}</dd>
+                  } @else {
+                    <dd class="latest-missing">{{ copy.latest.notMeasured }}</dd>
+                  }
+                </div>
+              }
+            </dl>
+          </fit-card>
+        </section>
+        <section class="section" aria-labelledby="measurement-history-list">
+          <h2 class="section-title" id="measurement-history-list">{{ copy.list.title }}</h2>
+          <fit-card padding="none">
+            <ul class="rows">
+              @for (row of s.rows; track row.id) {
+                <li>
+                  <button type="button" class="row" [attr.aria-label]="row.ariaLabel" data-testid="measurement-row" (click)="edit(row.id)">
+                    <span class="row-text">
+                      <span class="row-date">{{ row.dateLabel }}</span>&ngsp;
+                      <span class="row-values">
+                        @for (v of row.values; track v.site) {
+                          <span class="row-value">{{ v.site }} {{ v.value }}</span>&ngsp;
+                        }
+                      </span>
+                    </span>
+                    <ion-icon name="chevron-forward" aria-hidden="true" />
+                  </button>
+                </li>
+              }
+            </ul>
+          </fit-card>
+        </section>
+      }
+      @case ('empty') {
+        <fit-card data-testid="measurement-empty">
+          <fit-empty-state icon="resize-outline" [title]="copy.empty.title" [description]="copy.empty.message">
+            <button fit-button type="button" icon="add" (click)="add()">{{ copy.add }}</button>
+          </fit-empty-state>
+        </fit-card>
+      }
+      @case ('error') {
+        <fit-card data-testid="measurement-error">
+          <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+            <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+          </fit-empty-state>
+        </fit-card>
+      }
+      @default {
+        <div class="loading" aria-busy="true" data-testid="loading">
+          <fit-skeleton height="52px" radius="md" />
+          <fit-skeleton height="240px" radius="card" />
+        </div>
+      }
+    }
+  </main>
+</ion-content>

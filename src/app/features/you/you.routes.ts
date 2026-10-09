@@ -8,4 +8,5 @@ export default [
   },
   { path: 'progress', loadChildren: () => import('../workout/progress/progress.routes') },
   { path: 'weight-history', loadChildren: () => import('../body-weight/weight-history.routes') },
+  { path: 'measurements', loadChildren: () => import('../body-measurements/measurements.routes') },
 ] satisfies Routes;

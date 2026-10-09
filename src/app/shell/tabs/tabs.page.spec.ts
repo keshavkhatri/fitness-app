@@ -29,12 +29,12 @@ async function render(now: Date, navigate: () => Promise<boolean> = () => Promis
 }
 
 describe('Quick Add (tabs shell)', () => {
-  it('Add food and Log weight are available; other actions keep their state', () => {
+  it('Add food, Log weight and Add measurement are available; other actions keep their state', () => {
     expect(QUICK_ADD_ACTIONS.map((a) => [a.id, a.available])).toEqual([
       ['start-workout', false],
       ['add-food', true],
       ['log-weight', true],
-      ['add-measurement', false],
+      ['add-measurement', true],
       ['upload-inbody', false],
       ['add-progress-photo', false],
     ]);
@@ -78,9 +78,28 @@ describe('Quick Add (tabs shell)', () => {
     expect(failing.sheet.open()).toBe(true);
   });
 
-  it('unavailable actions do nothing', async () => {
+  it('Add measurement closes the sheet and opens the existing new measurement form', async () => {
     const { sheet, forward, choose } = await render(new Date(2026, 9, 8, 12));
     await choose('add-measurement');
+    expect(sheet.open()).toBe(false);
+    expect(forward).toHaveBeenCalledTimes(1);
+    expect(forward).toHaveBeenCalledWith(['/you', 'measurements', 'new']);
+  });
+
+  it('if Add measurement navigation doesn’t happen, the sheet reopens', async () => {
+    const { sheet, choose } = await render(new Date(2026, 9, 8, 12), () => Promise.resolve(false));
+    await choose('add-measurement');
+    expect(sheet.open()).toBe(true);
+
+    TestBed.resetTestingModule();
+    const failing = await render(new Date(2026, 9, 8, 12), () => Promise.reject(new Error('nav')));
+    await failing.choose('add-measurement');
+    expect(failing.sheet.open()).toBe(true);
+  });
+
+  it('unavailable actions do nothing', async () => {
+    const { sheet, forward, choose } = await render(new Date(2026, 9, 8, 12));
+    await choose('upload-inbody');
     expect(forward).not.toHaveBeenCalled();
     expect(sheet.open()).toBe(true);
   });

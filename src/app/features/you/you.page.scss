@@ -77,6 +77,10 @@ section {
   &:active {
     background: var(--color-surface-muted);
   }
+
+  & + & {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
 }
 
 .entry-icon {
