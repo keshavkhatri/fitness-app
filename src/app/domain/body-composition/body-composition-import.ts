@@ -1,8 +1,10 @@
 import { IsoCalendarDate } from '../fitness-profile';
 import {
   BODY_COMPOSITION_METRICS,
+  BodyCompositionInput,
   BodyCompositionMetric,
   BodyCompositionProblem,
+  ImportProvenance,
   ReportedValue,
   validateBodyCompositionInput,
 } from './body-composition-assessment';
@@ -29,18 +31,6 @@ export interface RawReport {
   /** Declared media type, e.g. `application/pdf`. */
   readonly mediaType: string;
   readonly content: string | Uint8Array;
-}
-
-/**
- * Where imported values came from. Manual entries keep `BodyCompositionSource`
- * and have no parser metadata.
- */
-export interface ImportProvenance {
-  readonly device: 'inbody';
-  readonly entryMethod: 'import';
-  /** The report format the parser recognised (an identifier the parser defines). */
-  readonly format: string;
-  readonly parser: { readonly name: string; readonly version: string };
 }
 
 /** One field exactly as the report prints it. */
@@ -118,4 +108,21 @@ export function unmappedFields(report: ParsedReport): ReportedField[] {
     used.add(report.normalized.date.field);
   }
   return report.fields.filter((_, index) => !used.has(index));
+}
+
+/**
+ * The assessment input for a report: the normalized date and values (field
+ * references dropped) with the report's provenance as source. Reported
+ * fields and raw content are not carried over. Creating the assessment
+ * validates the input again.
+ */
+export function bodyCompositionInputFromReport(report: ParsedReport): BodyCompositionInput {
+  const values: Partial<Record<BodyCompositionMetric, ReportedValue>> = {};
+  for (const metric of BODY_COMPOSITION_METRICS) {
+    const value = report.normalized.values[metric];
+    if (value) {
+      values[metric] = { value: value.value, unit: value.unit };
+    }
+  }
+  return { date: report.normalized.date?.value ?? '', source: report.provenance, values };
 }

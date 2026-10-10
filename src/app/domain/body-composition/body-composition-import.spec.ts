@@ -1,4 +1,11 @@
-import { ImportProvenance, ParsedReport, ReportReadResult, reportImportOutcome, unmappedFields } from './body-composition-import';
+import { ImportProvenance, createBodyCompositionAssessment, parseBodyCompositionAssessment } from './body-composition-assessment';
+import {
+  ParsedReport,
+  ReportReadResult,
+  bodyCompositionInputFromReport,
+  reportImportOutcome,
+  unmappedFields,
+} from './body-composition-import';
 
 const TODAY = '2026-10-09';
 const PROVENANCE: ImportProvenance = {
@@ -58,5 +65,37 @@ describe('body composition import contract', () => {
   it('lists reported fields that were not normalized, so none is silently dropped', () => {
     expect(unmappedFields(report())).toEqual([{ label: 'Visceral Fat Level', text: '7' }]);
     expect(unmappedFields(report({ date: null, values: {} }))).toHaveLength(4);
+  });
+
+  describe('assessment from a report', () => {
+    it('keeps the normalized values as stated and the provenance as source, without field references', () => {
+      expect(bodyCompositionInputFromReport(report())).toEqual({
+        date: '2026-10-08',
+        source: PROVENANCE,
+        values: { weight: { value: 80.2, unit: 'kg' }, 'body-fat-percentage': { value: 22.4, unit: '%' } },
+      });
+    });
+
+    it('leaves a missing date for assessment validation to reject', () => {
+      const created = createBodyCompositionAssessment(bodyCompositionInputFromReport(report({ date: null })), {
+        id: 'bc1',
+        now: '2026-10-09T07:30:00.000Z',
+        today: TODAY,
+      });
+      expect(created).toEqual({ ok: false, errors: { date: 'required' } });
+    });
+
+    it('stores and reads back an imported assessment with its provenance', () => {
+      const created = createBodyCompositionAssessment(bodyCompositionInputFromReport(report()), {
+        id: 'bc1',
+        now: '2026-10-09T07:30:00.000Z',
+        today: TODAY,
+      });
+      expect(created.ok).toBe(true);
+      if (created.ok) {
+        expect(created.value.source).toEqual(PROVENANCE);
+        expect(parseBodyCompositionAssessment(JSON.parse(JSON.stringify(created.value)))).toEqual(created.value);
+      }
+    });
   });
 });

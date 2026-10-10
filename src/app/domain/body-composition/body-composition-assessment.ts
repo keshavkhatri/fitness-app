@@ -14,8 +14,8 @@ import { IsoCalendarDate, POUNDS_PER_KILOGRAM, WEIGHT_KG, isOneOf, isWithin, par
  * Provisional on purpose (no report format is established yet):
  * - the metric catalogue holds only general body-composition quantities;
  *   further report fields need a confirmed report format;
- * - `source` records only a manual entry from an InBody report; parsed
- *   imports need their own provenance (file, parser version) once designed.
+ * - `source` is a manual entry from an InBody report or an import with its
+ *   provenance (see body-composition-import.ts); no parser exists yet.
  */
 
 /** Supported metrics, in display order. Each has one quantity kind, which decides its allowed units. */
@@ -54,13 +54,25 @@ export interface ReportedValue {
 
 export type BodyCompositionValues = Readonly<Partial<Record<BodyCompositionMetric, ReportedValue>>>;
 
-/** Where the values came from. Only manual entry from an InBody report exists today. */
-export interface BodyCompositionSource {
+/** Values typed in by hand from an InBody report: no parser metadata. */
+export interface ManualSource {
   readonly device: 'inbody';
   readonly entryMethod: 'manual';
 }
 
-export const MANUAL_INBODY_SOURCE: BodyCompositionSource = { device: 'inbody', entryMethod: 'manual' };
+/** Values read from a report by a parser. */
+export interface ImportProvenance {
+  readonly device: 'inbody';
+  readonly entryMethod: 'import';
+  /** The report format the parser recognised (an identifier the parser defines). */
+  readonly format: string;
+  readonly parser: { readonly name: string; readonly version: string };
+}
+
+/** Where the values came from. */
+export type BodyCompositionSource = ManualSource | ImportProvenance;
+
+export const MANUAL_INBODY_SOURCE: ManualSource = { device: 'inbody', entryMethod: 'manual' };
 
 /**
  * - `date` is the user's local calendar date of the assessment.
@@ -187,8 +199,26 @@ export function updateBodyCompositionAssessment(
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '';
+
 function parseSource(value: unknown): BodyCompositionSource | null {
-  return isRecord(value) && value['device'] === 'inbody' && value['entryMethod'] === 'manual' ? MANUAL_INBODY_SOURCE : null;
+  if (!isRecord(value) || value['device'] !== 'inbody') {
+    return null;
+  }
+  if (value['entryMethod'] === 'manual') {
+    return MANUAL_INBODY_SOURCE;
+  }
+  const parser = value['parser'];
+  if (
+    value['entryMethod'] !== 'import' ||
+    !isNonEmptyString(value['format']) ||
+    !isRecord(parser) ||
+    !isNonEmptyString(parser['name']) ||
+    !isNonEmptyString(parser['version'])
+  ) {
+    return null;
+  }
+  return { device: 'inbody', entryMethod: 'import', format: value['format'], parser: { name: parser['name'], version: parser['version'] } };
 }
 
 function parseReported(value: unknown): BodyCompositionValues | null {

@@ -133,6 +133,12 @@ describe('body composition domain', () => {
       ['bad date', (v) => (v['date'] = '2026-13-01')],
       ['unknown source device', (v) => (v['source'] = { device: 'other', entryMethod: 'manual' })],
       ['unknown entry method', (v) => (v['source'] = { device: 'inbody', entryMethod: 'ocr' })],
+      ['an import without parser metadata', (v) => (v['source'] = { device: 'inbody', entryMethod: 'import', format: 'f' })],
+      [
+        'an import with a blank parser version',
+        (v) => (v['source'] = { device: 'inbody', entryMethod: 'import', format: 'f', parser: { name: 'p', version: ' ' } }),
+      ],
+      ['an import without a format', (v) => (v['source'] = { device: 'inbody', entryMethod: 'import', parser: { name: 'p', version: '1' } })],
       ['unknown metric', (v) => (v['reported']['skeletal-muscle-mass'] = { value: 35, unit: 'kg' })],
       ['unknown unit', (v) => (v['reported']['weight'] = { value: 80, unit: 'st' })],
       ['unit of the wrong quantity', (v) => (v['reported']['weight'] = { value: 80, unit: '%' })],
