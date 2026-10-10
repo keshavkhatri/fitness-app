@@ -2,7 +2,22 @@
 
 Cross-platform (iOS / Android) fitness app built with **Ionic 9 + Angular 22 (standalone, zoneless, signals) + Capacitor 8**.
 
-Implemented so far: app shell, navigation, design system, placeholder screens (phase 1), **onboarding + fitness profile** (phase 2) the **fitness calculation engine** (phase 3), the **assessment screen** (onboarding → "Your starting point" → Home) the **workout generation engine** (v2, frozen) and its **application integration** (the user's current plan is generated from the profile, persisted and kept in sync; no Workout UI yet). Auth, backend/API, workout/nutrition engines, InBody, AI coaching, payments and health integrations are deliberately not implemented yet. Each will arrive as a separate, reviewed phase.
+All data is stored on this device only (no account, backend or sync yet).
+
+Implemented so far:
+
+- **Onboarding + fitness profile**, then the **assessment** ("Your starting point": estimated BMR/maintenance and starting calorie and macro targets from the fitness calculation engine). The profile can be reviewed and edited later from the assessment or the You tab.
+- **Home**: greeting, today's workout card (open, start or resume), the plan's week strip with finished workouts, goal summary, latest recorded weight with its last-30-days change, today's nutrition against targets, and a progress summary. Each card loads independently; pull to refresh.
+- **Workout planning**: the deterministic workout generation engine (v2, frozen) builds the user's plan from the profile; the plan is persisted and kept in sync as the profile changes. The Workout tab shows today, the week, today's exercises and the plan; each session opens Workout Detail.
+- **Active workout logging** (full screen): one exercise at a time, set logging, rest timer, resumable after the app is closed, one workout in progress at a time, then a workout summary.
+- **Workout history and progress**: finished workouts and their details; Progress (You → Progress) shows weekly activity and per-exercise actual performance (latest and recent best top sets). No estimates, scores or streaks.
+- **Nutrition**: a daily food log with manually entered values, by meal and day, against the day's calculated targets.
+- **Body-weight history** (You → Weight history): add, edit and delete weigh-ins; a chart and first/latest summary per range. Recording a weight never changes the profile; an entry becomes the profile's weight only through the explicit, confirmed "Use as profile weight" action (after which the updated assessment is shown).
+- **Body measurements** (You → Measurements): tape circumferences (waist, chest, hips, arm, thigh), any subset per entry; history newest first, the latest value per site and the change between a site's two most recent readings. Separate from the profile and the weight history.
+- **Quick Add**: Start workout, Add food, Log weight and Add measurement work; Upload InBody and Progress photo are shown as "Coming soon".
+- **You**: profile review, Progress, Weight history, Measurements, appearance (System/Light/Dark) and **Units** (metric/imperial). Notifications, connected health apps and subscription are listed but not built.
+
+Not implemented yet: auth, backend/API and sync, InBody / body-composition data, progress photos, notifications, health-app integrations, AI coaching and payments/subscriptions. Each will arrive as a separate, reviewed phase.
 
 ## Requirements
 
@@ -43,11 +58,20 @@ src/
                             (does a stored plan still fit the profile?) and a strict stored-plan parser
       fitness-calculations/ Deterministic engine: profile → FitnessAssessment (BMR, TDEE, calorie and
                             macro targets, safeguards, explanation). All coefficients in calculation-config.ts
+      workout-session/      Performed workouts: log rules, stored-log parser, history and progress facts
+      nutrition/            Food entries, day totals and targets
+      body-measurements/    Weight entries, history and trends; tape measurements, their history and changes;
+                            the explicit profile-weight change
     core/                   App-wide singletons (no UI)
-      profile/              FitnessProfileRepository (local today), FitnessProfileService, OnboardingStatusService, guards
+      profile/              FitnessProfileRepository (local today), FitnessProfileService, OnboardingStatusService,
+                            UnitPreferenceService, guards
       calculations/         FITNESS_CALCULATION_CONFIG injection token for the domain engine
       workout/              WorkoutPlanRepository (local snapshot today), WorkoutPlanService (create / keep /
-                            regenerate the plan as the profile changes), WORKOUT_PROGRAMMING_CONFIG token
+                            regenerate the plan as the profile changes), WORKOUT_PROGRAMMING_CONFIG token,
+                            WorkoutLogRepository/Service (active workout + finished workouts), WorkoutHistoryService
+      nutrition/            NutritionRepository (local food log), NutritionService (day log + calculated targets)
+      body-measurements/    Weight and measurement history repositories/services; ProfileWeightService
+                            (explicit "use as profile weight")
       time/                 CLOCK token + local calendar date helper (deterministic tests)
       storage/              KeyValueStorage: async device-local preference store (localStorage today)
       theme/                ThemeService: system/light/dark preference
@@ -55,11 +79,16 @@ src/
     shared/ui/              Design-system components (selector prefix `fit-`), import via `shared/ui`
     shell/
       tabs/                 Bottom tab bar (Home, Workout, Quick Add, Nutrition, You)
-      quick-add/            Quick Add sheet + action registry (all actions "coming soon")
+      quick-add/            Quick Add sheet + action registry (InBody and progress photo still "coming soon")
     features/
-      home/                 Dashboard: page, routes, view models, section cards (all real data: profile goal, plan, history, nutrition)
-      workout/ nutrition/   Section shells (empty states)
-      you/                  Profile/settings shell (working appearance setting)
+      home/                 Dashboard: page, routes, view models, section cards (all real data: profile goal, plan,
+                            workout history, nutrition, recorded weight)
+      workout/              Plan, Workout Detail, active workout (full screen), summary, history; progress/ is
+                            mounted under You (/you/progress)
+      nutrition/            Daily food log and food entry form
+      body-weight/          Weight history (/you/weight-history) and weigh-in entry
+      body-measurements/    Measurement history (/you/measurements) and entry
+      you/                  Profile review, links to progress and body tracking, appearance and units settings
       assessment/           "Your starting point": profile → engine → view model (pure adapter) → thin page
       onboarding/           Full-screen onboarding flow (no tab bar); /onboarding/review edits an existing profile
         state/              OnboardingFlow (signals), draft model, step definitions, resumable progress store
@@ -77,8 +106,9 @@ src/
 - **Data:** pages load from core services with `resource()` (e.g. Home reads the profile, plan, history and nutrition services). If demo data is ever needed, it lives only in `*.demo.ts` files (enforced by lint, `no-restricted-imports`) and must be labelled in the UI.
 - **Routing:** add nested pages to the feature's own `<area>.routes.ts`. Full-screen flows that hide the tab bar go next to the shell route in `app.routes.ts`.
 - **First run:** onboarding → assessment → home. `OnboardingStatusService` derives `needs-onboarding` (no profile) / `needs-assessment` (profile whose assessment wasn't reviewed; marker stores only the profile's `updatedAt`) / `complete`. `requireOnboardingComplete` guards the tab shell, `redirectIfOnboarded` guards `/onboarding`, `requireProfile` guards `/assessment` and `/onboarding/review`. Editing the profile changes `updatedAt`, so its assessment is shown again.
-- **Onboarding:** Answers are stored canonically in metric (cm/kg); `unitSystem` is display-only. The profile stores `dateOfBirth` (ISO `YYYY-MM-DD`), never age; derive age with `currentAge()` from `domain/fitness-profile/date-of-birth.ts`, and display age rather than the birth date. The app is adults-only (18+, `AGE_YEARS` in `profile-rules.ts`). `weight` is the starting/current weight at profile creation, not a history; weight tracking will get its own measurement model. No fitness calculations happen here; engines consume `UserFitnessProfile` later.
+- **Onboarding:** Answers are stored canonically in metric (cm/kg); `unitSystem` is display-only. The profile stores `dateOfBirth` (ISO `YYYY-MM-DD`), never age; derive age with `currentAge()` from `domain/fitness-profile/date-of-birth.ts`, and display age rather than the birth date. The app is adults-only (18+, `AGE_YEARS` in `profile-rules.ts`). `weight` is the profile's current weight, not a history; recorded weigh-ins live in the separate weight history and change the profile only through the explicit "Use as profile weight" action. No fitness calculations happen here; engines consume `UserFitnessProfile` later.
 - **Domain layer** (`src/app/domain`): framework-free TypeScript, enforced by lint (no Angular/Ionic/Capacitor/rxjs or app-layer imports). Calculations take an explicit `asOfDate` (no hidden clock) and return `{ ok, value | error }`. Formula/coefficient changes require a new `calculationVersion` in `calculation-config.ts`. Results are estimates; UI copy must say "estimated maintenance", "starting calorie target", "initial protein target". Assessments separate `estimates` (BMR, TDEE) from `targets`; consumers must handle `targets.calories.status` (`normal` / `floor-applied` / `review-required`) and `targets.macros.status` (`feasible` / `constrained` / `infeasible`, which has no gram targets). The calorie threshold is a product safety guard, not medical guidance.
+- **Units:** changing Units (You tab, `UnitPreferenceService`) only changes the profile's `unitSystem`: stored values stay metric and nothing is converted, the plan is kept, and an already reviewed assessment stays reviewed. A workout records its weight unit (kg/lb) when it starts.
 - **Quick Add:** the sheet only renders the actions it is given and emits the chosen one; the host (`TabsPage`) decides what happens. Ship an action by flipping `available` and handling `(actionSelected)`.
 - **Accessibility:** touch targets ≥ 40–44px, secondary text on muted surfaces uses `--color-text-on-muted` (AA), every progress bar has a label/value text, state never relies on color alone (filled icons for the active tab, text for trends and "Coming soon"), and reduced-motion is honoured via the motion tokens.
 
@@ -88,4 +118,5 @@ Known items that must be resolved before a production release:
 
 - **Profile data is stored unencrypted.** `LocalFitnessProfileRepository` and `OnboardingProgressStore` keep personal and body data (date of birth, sex, height, weight, goals) as plain JSON in device storage (`localStorage` via `KeyValueStorage`). Review profile persistence (platform secure storage / encrypted local store, server as source of truth once the API exists) before release. Marked with `TODO(security, before production)` in both files.
 - **The workout plan is stored unencrypted too.** `LocalWorkoutPlanRepository` keeps the plan (goal, experience, training setup; no body data) as plain JSON in device storage. Covered by the same persistence review.
+- **Logs and histories are stored unencrypted too.** Workout logs, the food log, weight history and body measurements are plain JSON in device storage (same caveat in each repository). Covered by the same persistence review.
 - **Minimum age (18) is enforced client-side only.** It must also be enforced by the backend once profiles are persisted server-side.
