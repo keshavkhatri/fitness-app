@@ -2,3 +2,4 @@
 // apart from body-weight history, tape measurements and the profile.
 export * from './body-composition-assessment';
 export * from './body-composition-history';
+export * from './body-composition-import';

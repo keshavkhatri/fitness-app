@@ -119,7 +119,10 @@ function valueProblem(metric: BodyCompositionMetric, reported: ReportedValue): B
 const isInstant = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
 
 /** Field-level validation; `today` is the user's local date (no future assessments). */
-export function validateBodyCompositionInput(input: BodyCompositionInput, today: IsoCalendarDate): BodyCompositionErrors {
+export function validateBodyCompositionInput(
+  input: Pick<BodyCompositionInput, 'date' | 'values'>,
+  today: IsoCalendarDate,
+): BodyCompositionErrors {
   const errors: Partial<Record<BodyCompositionMetric | 'values' | 'date', BodyCompositionProblem>> = {};
   let filled = 0;
   for (const metric of BODY_COMPOSITION_METRICS) {
