@@ -60,6 +60,25 @@
     </fit-card>
   </section>
 
+  @if (unitSystem(); as units) {
+    <section aria-labelledby="you-units">
+      <fit-section-header title="Units" headingId="you-units" />
+      <fit-card>
+        <fit-segmented-control
+          name="unit-system"
+          legend="Units"
+          [options]="unitOptions"
+          [value]="units"
+          (valueChange)="setUnits($event)"
+        />
+        <p class="hint">Weights and measurements are shown in kg and cm, or lb and in. Your recorded values stay the same.</p>
+        @if (unitsError()) {
+          <p class="error" role="alert" data-testid="units-error">Couldn't change your units. Try again.</p>
+        }
+      </fit-card>
+    </section>
+  }
+
   <section aria-labelledby="you-settings">
     <fit-section-header title="Settings" headingId="you-settings" />
     <fit-card padding="none">

@@ -12,6 +12,12 @@ section {
   color: var(--color-text-secondary);
 }
 
+.error {
+  @include fx.text(body-sm, medium);
+  margin-top: var(--space-2);
+  color: var(--color-danger-text);
+}
+
 .settings-list {
   margin: 0;
   padding: 0;
