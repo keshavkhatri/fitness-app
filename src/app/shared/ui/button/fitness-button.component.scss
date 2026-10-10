@@ -58,6 +58,24 @@ ion-icon {
   color: var(--color-primary-text);
 }
 
+:host([data-variant='on-ink']) {
+  background: var(--color-on-ink);
+  color: var(--color-ink);
+  // The default primary ring disappears against white-on-ink.
+  &:focus-visible {
+    outline-color: var(--color-on-ink);
+  }
+}
+
+:host([data-variant='ghost-ink']) {
+  background: var(--color-ink-track);
+  color: var(--color-on-ink);
+
+  &:focus-visible {
+    outline-color: var(--color-on-ink);
+  }
+}
+
 .spinner {
   flex-shrink: 0;
   width: 18px;

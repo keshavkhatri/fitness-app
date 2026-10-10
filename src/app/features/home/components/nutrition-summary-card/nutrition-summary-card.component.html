@@ -6,19 +6,23 @@
     <fit-progress
       variant="ring"
       label="Calories"
-      [ringSize]="92"
+      [ringSize]="112"
       [value]="c.progress?.value ?? 0"
       [max]="c.progress?.max ?? 1"
       [tone]="c.over ? 'warning' : 'primary'"
       [valueText]="c.progress?.valueText ?? c.headline"
     >
       <span class="ring-value" data-testid="calories-eaten">{{ c.eaten }}</span>
-      <span class="ring-unit">eaten</span>
+      <span class="ring-unit">kcal eaten</span>
     </fit-progress>
 
     <div class="calorie-copy">
       @if (c.balance) {
-        <span class="caption">{{ c.over ? 'Over target' : 'Remaining' }}</span>
+        @if (c.over) {
+          <span class="caption over"><ion-icon name="alert-circle-outline" aria-hidden="true" />Over target</span>
+        } @else {
+          <span class="caption">Remaining</span>
+        }
         <span class="remaining" data-testid="calories-balance">
           {{ c.balance }}
           <span class="unit">kcal</span>
@@ -38,17 +42,20 @@
     </div>
   }
 
-  <ul class="macros">
+  <ul class="macros" aria-label="Macros">
     @for (macro of n.macros; track macro.key) {
+      <!-- With a bar, the bar's label and value text carry the macro; the visible copy isn't read twice. -->
       <li [attr.data-testid]="'home-macro-' + macro.key">
-        <div class="macro-row">
-          <span class="macro-label">{{ macro.label }}</span>
-          <span class="macro-value">{{ macro.eaten }}@if (macro.target) { / {{ macro.target }}}</span>
-        </div>
+        <span class="macro-label" [attr.aria-hidden]="macro.progress ? 'true' : null">{{ macro.label }}</span>
+        <span class="macro-value" [attr.aria-hidden]="macro.progress ? 'true' : null">
+          {{ macro.eaten }}@if (macro.target) {<span class="macro-target"> / {{ macro.target }}</span>}
+        </span>
         @if (macro.progress; as p) {
-          <fit-progress [label]="macro.label" [value]="p.value" [max]="p.max" [valueText]="p.valueText" />
+          <fit-progress class="macro-bar" [label]="macro.label" [value]="p.value" [max]="p.max" [valueText]="p.valueText" />
         }
       </li>
     }
   </ul>
+
+  <button fit-button type="button" variant="secondary" block icon="add" class="log-food" (click)="logFood.emit()">Log food</button>
 </fit-card>

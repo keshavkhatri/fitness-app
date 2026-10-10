@@ -8,7 +8,8 @@
 }
 
 :host([data-tone='warning']) {
-  --progress-color: var(--color-warning);
+  // Amber itself is ~2.2:1 on white (fails WCAG 1.4.11); the text shade is 5:1.
+  --progress-color: var(--color-warning-text);
 }
 
 :host([data-tone='danger']) {
@@ -19,7 +20,7 @@
 div.track {
   height: 8px;
   border-radius: var(--radius-pill);
-  background: var(--color-surface-muted);
+  background: var(--color-track);
   overflow: hidden;
 }
 
@@ -27,7 +28,7 @@ div.fill {
   height: 100%;
   border-radius: inherit;
   background: var(--progress-color);
-  transition: width var(--motion-duration-base) var(--motion-ease);
+  transition: width var(--motion-duration-ring) var(--motion-ease);
 }
 
 // --- Ring ---------------------------------------------------------------------
@@ -50,13 +51,13 @@ circle {
 }
 
 circle.track {
-  stroke: var(--color-surface-muted);
+  stroke: var(--color-track);
 }
 
 circle.fill {
   stroke: var(--progress-color);
   stroke-linecap: round;
-  transition: stroke-dashoffset var(--motion-duration-base) var(--motion-ease);
+  transition: stroke-dashoffset var(--motion-duration-ring) var(--motion-ease);
 }
 
 .center {

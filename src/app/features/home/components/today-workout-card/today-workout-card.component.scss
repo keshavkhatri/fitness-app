@@ -4,48 +4,169 @@
   display: block;
 }
 
-.name {
-  @include fx.text(h2, semibold);
+fit-card {
+  padding: var(--space-5);
 }
 
-.focus {
-  @include fx.text(body-sm);
-  margin-top: var(--space-1);
-  color: var(--color-text-secondary);
+// Decorative ember arcs in the top-right corner.
+.arcs {
+  position: absolute;
+  top: -54px;
+  right: -54px;
+  width: 210px;
+  height: 210px;
+  pointer-events: none;
+
+  circle {
+    fill: none;
+    stroke: var(--color-ink-accent);
+    stroke-width: 14;
+    stroke-linecap: round;
+  }
 }
 
-.meta {
-  @include fx.text(body-sm, medium);
+.content {
+  position: relative;
+}
+
+.top {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
-  margin: var(--space-4) 0 var(--space-5);
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  ion-icon {
-    font-size: 18px;
-    color: var(--color-text-secondary);
-  }
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .eyebrow {
   @include fx.text(caption, semibold);
-  margin-bottom: var(--space-1);
-  color: var(--color-primary-text);
-  letter-spacing: var(--letter-spacing-wide);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink-accent);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+.chip {
+  @include fx.text(caption, semibold);
+  padding: var(--space-1) 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink-track);
+}
+
+.name {
+  @include fx.text(display, bold);
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+
+// Longer titles (rest, setup, unavailable) use the smaller step.
+fit-card:not([data-kind='resistance']):not([data-kind='resume']) .name {
+  @include fx.text(h1, bold);
+}
+
+.focus,
+.next {
+  @include fx.text(body-sm);
+  margin-top: 6px;
+  color: var(--color-on-ink-secondary);
 }
 
 .next {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-ink);
+}
+
+.meta {
+  @include fx.text(body-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-on-ink-secondary);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+.exercises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include fx.text(caption, medium);
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--color-ink-track);
+  }
+
+  .more {
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--color-ink-track);
+    color: var(--color-on-ink-secondary);
+  }
+}
+
+.sets {
+  margin-top: 14px;
+  // Ember fill on the ink track.
+  --color-primary: var(--color-ink-accent);
+  --color-track: var(--color-ink-track);
+}
+
+.steps {
+  display: grid;
+  gap: 10px;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include fx.text(body, medium);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+}
+
+.step-number {
+  @include fx.text(caption, semibold);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--color-ink-track);
+}
+
+.steps li:first-child .step-number {
+  background: var(--color-ink-accent);
+  color: var(--color-ink);
+  box-shadow: none;
+}
+
+.status {
   @include fx.text(body-sm, medium);
-  margin-top: var(--space-2);
+  margin-top: var(--space-4);
+  color: var(--color-on-ink);
 }
 
 .cta {

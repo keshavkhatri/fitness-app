@@ -1,0 +1,61 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.value {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+  font-size: 24px;
+  line-height: 30px;
+  overflow-wrap: anywhere;
+
+  small {
+    @include fx.text(body-sm, semibold);
+    margin-left: 2px;
+    color: var(--color-text-secondary);
+  }
+}
+
+.title {
+  @include fx.text(h3, bold);
+}
+
+.sub {
+  @include fx.text(caption);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-text-secondary);
+}
+
+.spark {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin: var(--space-2) 0 var(--space-1);
+  overflow: visible;
+
+  polyline {
+    fill: none;
+    stroke: var(--color-body);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+}
+
+.foot {
+  @include fx.text(caption, medium);
+  @include fx.tabular-numbers;
+  margin-top: auto;
+  padding-top: var(--space-2);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-text-secondary);
+
+  &.action {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary-text);
+  }
+}

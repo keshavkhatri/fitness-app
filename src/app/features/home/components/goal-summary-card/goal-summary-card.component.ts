@@ -1,40 +1,42 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { FitnessButtonComponent, FitnessCardComponent } from '../../../../shared/ui';
 import { HomeGoalView } from '../../home-goal';
+import { StatTileComponent } from '../stat-tile/stat-tile.component';
 
 /**
- * The user's goal as saved in their profile, with a way to review it.
- * No progress is shown: the app doesn't track goal progress yet.
+ * The user's goal as saved in their profile, as a bento tile that opens the
+ * profile review. No progress is shown: the app doesn't track goal progress yet.
  */
 @Component({
   selector: 'app-goal-summary-card',
   template: `
     @let g = goal();
-    <fit-card>
-      @if (g.kind === 'ready') {
-        <h3 class="title" data-testid="goal-title">{{ g.title }}</h3>
-        <p class="description">{{ g.description }}</p>
+    @if (g.kind === 'ready') {
+      <button app-stat-tile type="button" icon="flag-outline" heading="Goal" tone="goal" [label]="label()" (click)="reviewProfile.emit()">
+        <span class="title" data-testid="goal-title">{{ g.title }}</span>
         @if (g.target; as t) {
-          <div class="target-block" data-testid="goal-target">
+          <span class="target" data-testid="goal-target">
             @if (t.kind === 'target') {
-              <p class="target">{{ t.detail }}</p>
-              <p class="target-change">{{ t.change }}</p>
+              <span class="sub">{{ t.detail }}</span>
+              <span class="sub">{{ t.change }}</span>
             } @else {
-              <p class="target-change">No target weight set</p>
+              <span class="sub">No target weight set</span>
             }
-          </div>
+          </span>
+        } @else {
+          <span class="sub">{{ g.description }}</span>
         }
-        <button fit-button type="button" variant="outline" block class="cta" (click)="reviewProfile.emit()">Review my details</button>
-      } @else {
-        <h3 class="title">Set your goal</h3>
-        <p class="description">Complete your profile to choose a goal and get your plan and targets.</p>
-        <button fit-button type="button" block class="cta" (click)="setUpProfile.emit()">Set up profile</button>
-      }
-    </fit-card>
+        <span class="foot">Review</span>
+      </button>
+    } @else {
+      <button app-stat-tile type="button" icon="flag-outline" heading="Goal" tone="goal" label="Set your goal. Set up profile." (click)="setUpProfile.emit()">
+        <span class="title">Set your goal</span>
+        <span class="foot">Set up profile</span>
+      </button>
+    }
   `,
   styleUrl: './goal-summary-card.component.scss',
-  imports: [FitnessButtonComponent, FitnessCardComponent],
+  imports: [StatTileComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GoalSummaryCardComponent {
@@ -43,4 +45,13 @@ export class GoalSummaryCardComponent {
   readonly reviewProfile = output<void>();
   /** No profile yet: start onboarding. */
   readonly setUpProfile = output<void>();
+
+  protected readonly label = computed(() => {
+    const g = this.goal();
+    if (g.kind !== 'ready') {
+      return '';
+    }
+    const target = g.target?.kind === 'target' ? ` ${g.target.detail}, ${g.target.change}.` : g.target ? ' No target weight set.' : ` ${g.description}.`;
+    return `Goal: ${g.title}.${target} Review my details.`;
+  });
 }

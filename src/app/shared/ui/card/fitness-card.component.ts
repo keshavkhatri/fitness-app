@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 export type FitnessCardPadding = 'none' | 'sm' | 'md';
-export type FitnessCardTone = 'default' | 'muted';
+/** `ink`: the single dark hero surface of a screen. */
+export type FitnessCardTone = 'default' | 'muted' | 'ink';
 
 /** Base surface for grouped content. Purely presentational. */
 @Component({

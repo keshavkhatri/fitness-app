@@ -2,9 +2,11 @@
 
 :host {
   display: flex;
+  // Wraps at large text sizes instead of clipping the title or its action.
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: 0 var(--space-3);
   min-height: 28px;
 }
 

@@ -15,18 +15,38 @@ $light: (
   surface-elevated: #ffffff,
   surface-muted: #f0f2f5, // derived — progress tracks, skeletons
   text: #111318,
-  text-secondary: #6b7280,
+  // Approved app-wide (was #6b7280, only ~4.3:1 on surface-muted).
+  text-secondary: #5b6170,
   text-tertiary: #9ca3af, // derived — placeholders, disabled only
   // derived — secondary text on surface-muted; #6b7280 is only ~4.3:1 there.
   text-on-muted: #5b6170,
   border: #e5e7eb,
   border-strong: #d1d5db, // derived
+  track: #eceef2, // ring and bar tracks
 
   primary: #1f6bff,
   primary-pressed: #1a5ce0, // derived
   primary-soft: #eaf1ff,
   primary-text: #1a5fe6, // derived — AA on bg for small text
   on-primary: #ffffff,
+
+  // Ink: the one dark hero surface per screen (today's workout on Home).
+  ink: #14161c,
+  on-ink: #ffffff,
+  on-ink-secondary: #a3a9b6,
+  ink-accent: #ff7a52, // ember on ink
+  ink-track: rgba(255, 255, 255, 0.14),
+
+  // Domain hues: each appears only on its own data, always with an icon and label.
+  // Cobalt (primary) = actions and nutrition, ember = training, teal = body.
+  train: #e5482a,
+  train-text: #c2381a,
+  train-soft: #fdece7,
+  on-train: #ffffff, // check marks on ember (3:1 graphic)
+  ink-outline: transparent, // ink already stands out on light surfaces
+  body: #0d8a79,
+  body-text: #0b7a6b,
+  body-soft: #e3f5f2,
 
   success: #16a34a,
   success-soft: #e8f6ee, // derived
@@ -55,6 +75,7 @@ $dark: (
   text-on-muted: #9ca3af, // derived — already AA on dark surface-muted
   border: #292e36,
   border-strong: #3a404a, // derived
+  track: #262b34,
 
   primary: #4d8dff,
   primary-pressed: #3d7cf0, // derived
@@ -62,6 +83,21 @@ $dark: (
   primary-text: #6ea2ff, // derived
   // Dark text on the brighter dark-mode blue: white on #4D8DFF is only ~3.2:1.
   on-primary: #0b0d10,
+
+  ink: #20242e,
+  on-ink: #ffffff,
+  on-ink-secondary: #a3a9b6,
+  ink-accent: #ff7a52,
+  ink-track: rgba(255, 255, 255, 0.12),
+
+  train: #ff7a52,
+  train-text: #ff8f6b,
+  train-soft: #2e1a14,
+  on-train: #14161c, // white on bright ember is too faint
+  ink-outline: #6b7280, // dark ink is ~1.15:1 on the dark surface; outline it (3.2:1)
+  body: #2dd4bf,
+  body-text: #5eead4,
+  body-soft: #0f2a27,
 
   success: #22c55e, // derived — brighter for dark surfaces
   success-soft: #10291b, // derived

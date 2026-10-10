@@ -41,6 +41,10 @@ import {
   refreshOutline,
   removeCircleOutline,
   ellipseOutline,
+  listOutline,
+  play,
+  sparklesOutline,
+  trendingUpOutline,
 } from 'ionicons/icons';
 
 /**
@@ -91,5 +95,9 @@ export function registerAppIcons(): void {
     refreshOutline,
     removeCircleOutline,
     ellipseOutline,
+    listOutline,
+    play,
+    sparklesOutline,
+    trendingUpOutline,
   });
 }

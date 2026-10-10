@@ -1,9 +1,9 @@
 import { calendarDateOf } from '../../domain/fitness-profile';
-import { WorkoutLog, startWorkoutLog, trainingOverview } from '../../domain/workout-session';
+import { WorkoutLog, startWorkoutLog, trainingOverview, weeklyActivity } from '../../domain/workout-session';
 import { finishedLog } from '../../domain/workout-session/testing/workout-log-fixtures';
 import { ACTIVITY_PROFILE, PROFILE, REST_PROFILE, SUNDAY, THURSDAY, planFor } from '../workout/testing/workout-fixtures';
 import { toWorkoutScreen } from '../workout/workout-view-model';
-import { toHomeProgress, toHomeWorkout } from './home-training';
+import { toHomeProgress, toHomeWeek, toHomeWorkout } from './home-training';
 
 const ready = (profile = PROFILE) => ({ kind: 'ready' as const, plan: planFor(profile), origin: 'stored' as const, saved: true });
 const screen = (profile = PROFILE, today = THURSDAY) => toWorkoutScreen(ready(profile), today);
@@ -25,7 +25,9 @@ describe('Home training summaries', () => {
         descriptor: s.today.session.descriptor,
         countLabel: s.today.session.countLabel,
         durationLabel: s.today.session.durationLabel,
+        exercises: s.today.session.exercises.map((e) => e.name),
       });
+      expect(s.today.session.exercises.length).toBeGreaterThan(0);
     });
 
     it('an activity day opens the activity, never a workout', () => {
@@ -59,6 +61,8 @@ describe('Home training summaries', () => {
         sessionId: 'day-1-upper',
         title: 'Upper Body A',
         progress: '0 of 22 sets done',
+        setsDone: 0,
+        setsTotal: 22,
       });
       expect(toHomeWorkout({ kind: 'unavailable' }, started.value).kind).toBe('resume');
     });
@@ -94,6 +98,38 @@ describe('Home training summaries', () => {
 
     it('history that can’t be read is an error', () => {
       expect(toHomeProgress(null, THURSDAY)).toEqual({ kind: 'error' });
+    });
+  });
+
+  describe('week strip', () => {
+    const at = (day: number, hour = 18) => new Date(2026, 9, day, hour, 0);
+    const weekOf = (logs: readonly WorkoutLog[], now: Date) => weeklyActivity(logs, calendarDateOf(now), localDate);
+
+    it('lays the plan’s week over this week’s finished workouts', () => {
+      const logs = [finishedLog({ startedAt: at(5), minutes: 50 }), finishedLog({ startedAt: at(6), minutes: 40 })]; // Mon, Tue
+      const view = toHomeWeek(screen(), weekOf(logs, THURSDAY), overviewOf(logs, THURSDAY))!;
+      // 4-day plan: Mon, Tue, Thu, Fri. Thursday 8 October is today.
+      expect(view.days.map((d) => `${d.letter}${d.date}:${d.state}${d.isToday ? '*' : ''}`)).toEqual([
+        'M5:done',
+        'T6:done',
+        'W7:rest',
+        'T8:planned*',
+        'F9:planned',
+        'S10:rest',
+        'S11:rest',
+      ]);
+      expect(view.countLabel).toBe('2 of 4 workouts');
+      expect(view.accessibleLabel).toMatch(/^This week: 2 of 4 workouts done\. Today, Thursday: .+\. Open your weekly plan\.$/);
+    });
+
+    it('a rest day today is named as such', () => {
+      const view = toHomeWeek(screen(PROFILE, SUNDAY), weekOf([], SUNDAY), overviewOf([], SUNDAY))!;
+      expect(view.accessibleLabel).toContain('Today, Sunday: rest day.');
+      expect(view.countLabel).toBe('0 of 4 workouts');
+    });
+
+    it('without a plan there is no week to show', () => {
+      expect(toHomeWeek({ kind: 'no-profile' }, weekOf([], THURSDAY), overviewOf([], THURSDAY))).toBeNull();
     });
   });
 });

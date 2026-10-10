@@ -1,48 +1,40 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, FitnessMetricComponent } from '../../../../shared/ui';
+import { FitnessCardComponent } from '../../../../shared/ui';
 import { HomeProgressView } from '../../home-training';
 
-/** Workouts this week and the latest finished workout, from workout history. Presentational only. */
+/** The latest finished workout, from workout history. Presentational only. */
 @Component({
   selector: 'app-progress-summary-card',
   template: `
     @let p = progress();
-    <fit-card>
+    <fit-card padding="none">
       @if (p.kind === 'ready') {
-        <fit-metric label="Workouts this week" [value]="p.thisWeek.count" [unit]="p.thisWeek.unit" size="lg" data-testid="home-week-count" />
-
         @let last = p.lastWorkout;
-        <div class="last">
-          <p class="last-label" id="home-last-workout">Last workout</p>
-          <button
-            type="button"
-            class="last-item"
-            aria-describedby="home-last-workout"
-            data-testid="home-last-workout"
-            (click)="openWorkout.emit(last.id)"
-          >
-            <span class="last-text">
-              <span class="last-title">{{ last.title }}</span>&ngsp;
-              <span class="last-meta">{{ last.meta }} · {{ last.statusLabel }}</span>
-            </span>
-            <ion-icon name="chevron-forward" aria-hidden="true" />
-          </button>
-        </div>
-
-        <button fit-button type="button" block variant="outline" class="cta" (click)="openProgress.emit()">View progress</button>
+        <button type="button" class="row" data-testid="home-last-workout" (click)="openWorkout.emit(last.id)">
+          <span class="icon" [attr.data-status]="last.status" aria-hidden="true">
+            <ion-icon [name]="last.status === 'complete' ? 'checkmark' : 'ellipse-outline'" />
+          </span>
+          <span class="text">
+            <span class="title">{{ last.title }}</span>&ngsp;
+            <span class="meta">{{ last.meta }} · {{ last.statusLabel }}</span>
+          </span>
+          <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+        </button>
       } @else {
-        <fit-empty-state
-          icon="trophy-outline"
-          title="No completed workouts yet"
-          description="Finish your first workout and your progress will appear here."
-        />
+        <div class="empty">
+          <span class="icon" aria-hidden="true"><ion-icon name="trending-up-outline" /></span>
+          <span class="text">
+            <span class="title">No completed workouts yet</span>
+            <span class="meta">Finish your first workout to see it here.</span>
+          </span>
+        </div>
       }
     </fit-card>
   `,
   styleUrl: './progress-summary-card.component.scss',
-  imports: [IonIcon, EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, FitnessMetricComponent],
+  imports: [IonIcon, FitnessCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProgressSummaryCardComponent {
@@ -50,5 +42,4 @@ export class ProgressSummaryCardComponent {
   readonly progress = input.required<Exclude<HomeProgressView, { kind: 'error' }>>();
   /** Finished workout id → its history detail. */
   readonly openWorkout = output<string>();
-  readonly openProgress = output<void>();
 }

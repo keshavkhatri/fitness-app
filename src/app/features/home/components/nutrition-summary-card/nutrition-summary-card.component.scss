@@ -4,14 +4,19 @@
   display: block;
 }
 
+fit-card {
+  padding: var(--space-4);
+}
+
 .calories {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .ring-value {
-  @include fx.text(body, bold);
+  @include fx.text(h2, bold);
   @include fx.tabular-numbers;
   display: block;
 }
@@ -23,46 +28,70 @@
   color: var(--color-text-secondary);
 }
 
+.caption.over {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-text);
+
+  ion-icon {
+    font-size: 14px;
+  }
+}
+
 .calorie-copy {
   display: flex;
+  flex: 1 1 9em;
   flex-direction: column;
-  gap: var(--space-1);
   min-width: 0;
 }
 
 .remaining {
-  @include fx.text(h1, bold);
+  @include fx.text(display, bold);
   @include fx.tabular-numbers;
+  margin: 2px 0;
+  letter-spacing: -0.025em;
 
   .unit {
-    @include fx.text(body-sm, medium);
+    @include fx.text(body-sm, semibold);
+    margin-left: 3px;
+    letter-spacing: 0;
     color: var(--color-text-secondary);
   }
 }
 
+// Columns have an em minimum, so they drop from three to fewer as text grows.
 .macros {
   display: grid;
-  gap: var(--space-4);
-  margin: var(--space-5) 0 0;
-  padding: var(--space-5) 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.75em), 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: 14px 0 0;
   border-top: var(--border-hairline) solid var(--color-border);
   list-style: none;
 }
 
-.macro-row {
-  @include fx.text(body-sm);
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--space-2);
-}
-
 .macro-label {
-  font-weight: var(--font-weight-medium);
+  @include fx.text(caption, semibold);
+  display: block;
+  color: var(--color-text-secondary);
 }
 
 .macro-value {
+  @include fx.text(body-sm, semibold);
   @include fx.tabular-numbers;
+  display: block;
+  margin-top: 2px;
+}
+
+.macro-target {
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
+}
+
+.macro-bar {
+  margin-top: 6px;
 }
 
 .no-target {
@@ -77,4 +106,8 @@
   gap: var(--space-3);
   margin-top: var(--space-4);
   color: var(--color-text-secondary);
+}
+
+.log-food {
+  margin-top: var(--space-4);
 }

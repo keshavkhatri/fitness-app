@@ -13,6 +13,7 @@ import { WorkoutHistoryService } from '../../core/workout/workout-history.servic
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
 import { UserFitnessProfile } from '../../domain/fitness-profile';
+import { WeightEntry, createWeightEntry } from '../../domain/body-measurements';
 import { FoodEntry, FoodEntryInput, createFoodEntry } from '../../domain/nutrition';
 import { WorkoutLog } from '../../domain/workout-session';
 import { finishedLog } from '../../domain/workout-session/testing/workout-log-fixtures';
@@ -31,6 +32,13 @@ const food = (id: string, date: string, overrides: Partial<FoodEntryInput> = {})
   }
   return r.value;
 };
+const weighIn = (id: string, date: string, weight: number): WeightEntry => {
+  const r = createWeightEntry({ weight, unitSystem: 'metric', date }, { id, now: `${date}T07:00:00.000Z`, today: '2026-10-08' });
+  if (!r.ok) {
+    throw new Error('fixture');
+  }
+  return r.value;
+};
 /** Only the fields the nutrition target mapping reads. */
 const assessment = (calories: object, macros: object): CurrentAssessment =>
   ({ kind: 'ready', profile: {} as never, assessment: { targets: { calories, macros } } as never });
@@ -43,6 +51,7 @@ interface Options {
   readonly targets?: CurrentAssessment;
   readonly profile?: UserFitnessProfile | null;
   readonly history?: readonly WorkoutLog[];
+  readonly weights?: readonly WeightEntry[];
   /** Starts a workout for this plan session before rendering. */
   readonly activeSession?: string;
   readonly before?: () => void;
@@ -59,7 +68,7 @@ async function settle(fixture: ComponentFixture<unknown>) {
 }
 
 async function render(
-  { entries = [], targets = NORMAL, profile = PROFILE, history = [], activeSession, before, unsettled = false }: Options = {},
+  { entries = [], targets = NORMAL, profile = PROFILE, history = [], weights = [], activeSession, before, unsettled = false }: Options = {},
 ) {
   const storage = new MemoryKeyValueStorage();
   if (entries.length) {
@@ -70,6 +79,9 @@ async function render(
   }
   if (history.length) {
     storage.values.set(LOGS_KEY, JSON.stringify({ version: 1, logs: history }));
+  }
+  if (weights.length) {
+    storage.values.set('fitness.body-weight-entries', JSON.stringify({ version: 1, entries: weights }));
   }
   const current = vi.fn<() => Promise<CurrentAssessment>>().mockResolvedValue(targets);
   TestBed.configureTestingModule({
@@ -108,11 +120,12 @@ const buttonIn = (root: Element | null, label: string) =>
 describe('HomePage', () => {
   it('renders every dashboard section', async () => {
     const { el } = await render();
-    for (const heading of ['Your goal', "Today's workout", 'Nutrition', 'Progress']) {
+    for (const heading of ['This week', "Today's workout", 'Nutrition', 'Weight', 'Goal', 'Recent']) {
       expect(el.textContent).toContain(heading);
     }
-    // No made-up name in the greeting (the profile has none).
-    expect(clean(el.querySelector('.greeting'))).toBe('Good afternoon');
+    // No made-up name in the greeting (the profile has none); the date sits above it.
+    expect(clean(el.querySelector('h1'))).toBe('Good afternoon');
+    expect(clean(el.querySelector('.kicker'))).toBe('Thursday, October 8');
   });
 
   describe('goal (real profile)', () => {
@@ -122,15 +135,15 @@ describe('HomePage', () => {
       const { el } = await render(); // build-muscle, no target weight
       const card = goalCard(el)!;
       expect(clean(card.querySelector('[data-testid=goal-title]'))).toBe('Build muscle');
-      expect(clean(card.querySelector('.description'))).toBe('Add muscle size and definition');
       expect(clean(card.querySelector('[data-testid=goal-target]'))).toBe('No target weight set');
+      expect(card.querySelector('button')?.getAttribute('aria-label')).toBe('Goal: Build muscle. No target weight set. Review my details.');
     });
 
     it('shows a saved target weight in the profile’s units, measured from the profile weight', async () => {
       const metric = await render({ profile: profileWith({ primaryGoal: 'lose-fat', goalTarget: { targetWeight: { kilograms: 74 } } }) });
       const card = goalCard(metric.el)!;
       expect(clean(card.querySelector('[data-testid=goal-title]'))).toBe('Lose fat');
-      expect([...card.querySelectorAll('[data-testid=goal-target] p')].map((p) => clean(p))).toEqual([
+      expect([...card.querySelectorAll('[data-testid=goal-target] .sub')].map((p) => clean(p))).toEqual([
         'Target weight 74 kg',
         'Lose 6 kg from your profile weight',
       ]);
@@ -139,7 +152,7 @@ describe('HomePage', () => {
       const imperial = await render({
         profile: profileWith({ primaryGoal: 'lose-fat', unitSystem: 'imperial', goalTarget: { targetWeight: { kilograms: 74 } } }),
       });
-      expect(clean(goalCard(imperial.el)!.querySelector('[data-testid=goal-target] p'))).toBe('Target weight 163.1 lb');
+      expect(clean(goalCard(imperial.el)!.querySelector('[data-testid=goal-target] .sub'))).toBe('Target weight 163.1 lb');
     });
 
     it('goals without targets show no target line at all', async () => {
@@ -147,6 +160,8 @@ describe('HomePage', () => {
       const card = goalCard(el)!;
       expect(clean(card.querySelector('[data-testid=goal-title]'))).toBe('Build strength');
       expect(card.querySelector('[data-testid=goal-target]')).toBeNull();
+      // Without targets, the goal's own description fills the tile.
+      expect(clean(card.querySelector('.sub'))).not.toBe('');
     });
 
     it('never shows fabricated progress, timelines or a Sample/demo label', async () => {
@@ -160,16 +175,16 @@ describe('HomePage', () => {
 
     it('Review my details opens the profile review', async () => {
       const { el, fixture, navigateByUrl } = await render();
-      buttonIn(goalCard(el), 'Review my details')!.click();
+      goalCard(el)!.querySelector('button')!.click();
       await fixture.whenStable();
       expect(navigateByUrl).toHaveBeenCalledWith('/onboarding/review');
     });
 
-    it('without a profile, offers to set one up', async () => {
+    it('without a profile, the goal tile gives way to the setup hero', async () => {
       const { el, fixture, navigateByUrl } = await render({ profile: null });
-      const card = goalCard(el)!;
-      expect(clean(card.querySelector('.title'))).toBe('Set your goal');
-      buttonIn(card, 'Set up profile')!.click();
+      expect(goalCard(el)).toBeNull();
+      expect(clean(el.querySelector('h1'))).toBe('Welcome');
+      buttonIn(workoutCard(el), 'Set up profile')!.click();
       await fixture.whenStable();
       expect(navigateByUrl).toHaveBeenCalledWith('/onboarding');
     });
@@ -178,13 +193,13 @@ describe('HomePage', () => {
       const { el, fixture } = await render({
         before: () => vi.spyOn(TestBed.inject(FitnessProfileService), 'load').mockRejectedValueOnce(new Error('storage')),
       });
-      const error = el.querySelector('[data-testid=home-goal-error]')!;
+      const error = el.querySelector<HTMLButtonElement>('[data-testid=home-goal-error]')!;
       expect(clean(error)).toContain("Couldn't load your goal");
       expect(goalCard(el)).toBeNull();
       expect(workoutCard(el)).not.toBeNull();
       expect(nutritionCard(el)).not.toBeNull();
       expect(progressCard(el)).not.toBeNull();
-      buttonIn(error, 'Try again')!.click();
+      error.click();
       await settle(fixture);
       expect(clean(goalCard(el)?.querySelector('[data-testid=goal-title]'))).toBe('Build muscle');
     });
@@ -200,23 +215,37 @@ describe('HomePage', () => {
   });
 
   describe('today’s workout (real plan)', () => {
-    it('shows the session the plan assigns to today and opens its detail', async () => {
+    it('shows the session the plan assigns to today and starts it directly', async () => {
       const { el, fixture, forward } = await render();
       const card = workoutCard(el)!;
       expect(card.querySelector('fit-card')?.getAttribute('data-kind')).toBe('resistance');
+      expect(card.querySelector('fit-card')?.getAttribute('data-tone')).toBe('ink');
       const title = clean(card.querySelector('.name'));
       expect(title).not.toBe('');
       expect([...card.querySelectorAll('.meta li')].map((li) => clean(li))).toEqual([
         expect.stringMatching(/^\d+ exercises$/),
         expect.stringMatching(/^About \d+ min$/),
       ]);
-      buttonIn(card, 'View Workout')!.click();
-      await fixture.whenStable();
+      expect(clean(card.querySelector('[data-testid=home-workout-exercises]'))).toMatch(/\+\d+ more$/);
+      buttonIn(card, 'Start workout')!.click();
+      await settle(fixture);
       const [path] = forward.mock.calls[0] as unknown as [string[]];
       expect(path.slice(0, 2)).toEqual(['/workout', 'session']);
-      // The same session the Workout tab shows for today.
+      expect(path[3]).toBe('active');
+      // The same session the Workout tab shows for today, now in progress.
       const plan = TestBed.inject(WorkoutPlanService).plan();
       expect(plan?.sessions.find((s) => s.id === path[2])?.kind).toBe('resistance');
+      expect(TestBed.inject(WorkoutLogService).active()?.source.sessionId).toBe(path[2]);
+    });
+
+    it('a start that fails stays on Home and says so', async () => {
+      const { el, fixture, forward } = await render({
+        before: () => vi.spyOn(TestBed.inject(WorkoutLogService), 'start').mockResolvedValueOnce({ kind: 'unavailable' }),
+      });
+      buttonIn(workoutCard(el), 'Start workout')!.click();
+      await settle(fixture);
+      expect(forward).not.toHaveBeenCalled();
+      expect(clean(workoutCard(el)!.querySelector('[role=status]'))).toBe("We couldn't start this workout. Please try again.");
     });
 
     it('a rest day shows rest and the next session, with a way to the plan', async () => {
@@ -248,26 +277,30 @@ describe('HomePage', () => {
         'Upper Body A',
         '0 of 22 sets done',
       ]);
-      buttonIn(card, 'Resume Workout')!.click();
+      expect(card.querySelector('[role=progressbar]')?.getAttribute('aria-valuetext')).toBe('0 of 22 sets done');
+      const resume = buttonIn(card, 'Resume')!;
+      expect(resume.getAttribute('aria-label')).toBe('Resume Upper Body A');
+      resume.click();
       await fixture.whenStable();
       expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-1-upper', 'active']);
     });
 
     it('follows the log service when a workout starts or is discarded (no separate state on Home)', async () => {
       const { el, fixture } = await render();
-      expect(buttonIn(workoutCard(el), 'Resume Workout')).toBeUndefined();
+      expect(buttonIn(workoutCard(el), 'Resume')).toBeUndefined();
       const logs = TestBed.inject(WorkoutLogService);
       await logs.start('day-1-upper');
       fixture.detectChanges();
-      expect(buttonIn(workoutCard(el), 'Resume Workout')).toBeDefined();
+      expect(buttonIn(workoutCard(el), 'Resume')).toBeDefined();
       await logs.discard();
       fixture.detectChanges();
-      expect(buttonIn(workoutCard(el), 'View Workout')).toBeDefined();
+      expect(buttonIn(workoutCard(el), 'Start workout')).toBeDefined();
     });
 
-    it('without a profile, says there is no plan yet (rest of Home still renders)', async () => {
+    it('without a profile, the hero offers setup (rest of Home still renders)', async () => {
       const { el } = await render({ profile: null });
-      expect(clean(workoutCard(el)?.querySelector('.name'))).toBe('No plan yet');
+      expect(clean(workoutCard(el)?.querySelector('.name'))).toBe('Let’s build your plan');
+      expect(el.querySelector('app-week-strip')).toBeNull();
       expect(nutritionCard(el)).not.toBeNull();
     });
 
@@ -283,7 +316,7 @@ describe('HomePage', () => {
       expect(nutritionCard(el)).not.toBeNull();
       buttonIn(error, 'Try again')!.click();
       await settle(fixture);
-      expect(buttonIn(workoutCard(el), 'View Workout')).toBeDefined();
+      expect(buttonIn(workoutCard(el), 'Start workout')).toBeDefined();
     });
 
     it('shows a loading state while the plan is read', async () => {
@@ -300,13 +333,14 @@ describe('HomePage', () => {
       const history = [workoutAt(4, 40), workoutAt(5, 50), workoutAt(7, 45)]; // Sun (last week), Mon, Wed
       const { el, fixture, forward } = await render({ history });
       const card = progressCard(el)!;
-      expect(clean(card.querySelector('[data-testid=home-week-count]'))).toMatch(/2\s*workouts/);
+      expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('2 of 4 workouts');
+      expect(el.querySelector('[data-testid=home-week]')?.getAttribute('aria-label')).toMatch(/^This week: 2 of 4 workouts done\. Today, Thursday: /);
       const last = card.querySelector<HTMLButtonElement>('[data-testid=home-last-workout]')!;
       expect(clean(last)).toMatch(/Yesterday · 45 min · Completed$/);
       last.click();
       await fixture.whenStable();
       expect(forward).toHaveBeenCalledWith(['/workout', 'history', history[2].id]);
-      buttonIn(card, 'View progress')!.click();
+      buttonIn(el.querySelector('[aria-labelledby=home-recent]'), 'Progress')!.click();
       await fixture.whenStable();
       expect(forward).toHaveBeenCalledWith('/you/progress');
     });
@@ -315,17 +349,17 @@ describe('HomePage', () => {
       const { el } = await render();
       const card = progressCard(el)!;
       expect(clean(card)).toContain('No completed workouts yet');
-      expect(card.querySelector('[data-testid=home-week-count]')).toBeNull();
       expect(card.querySelector('[data-testid=home-last-workout]')).toBeNull();
+      expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('0 of 4 workouts');
     });
 
-    it('reads history once per load (overview), not the full progress analysis', async () => {
+    it('reads history once per load (week overview), not the full progress analysis', async () => {
       let spies: { overview: ReturnType<typeof vi.spyOn>; progress: ReturnType<typeof vi.spyOn> } | null = null;
       await render({
         history: [workoutAt(7)],
         before: () => {
           const history = TestBed.inject(WorkoutHistoryService);
-          spies = { overview: vi.spyOn(history, 'overview'), progress: vi.spyOn(history, 'progress') };
+          spies = { overview: vi.spyOn(history, 'weekOverview'), progress: vi.spyOn(history, 'progress') };
         },
       });
       expect(spies!.overview).toHaveBeenCalledTimes(1);
@@ -335,7 +369,7 @@ describe('HomePage', () => {
     it('a history failure only affects the progress card, and can be retried', async () => {
       const { el, fixture } = await render({
         history: [workoutAt(7)],
-        before: () => vi.spyOn(TestBed.inject(WorkoutHistoryService), 'overview').mockResolvedValueOnce(null),
+        before: () => vi.spyOn(TestBed.inject(WorkoutHistoryService), 'weekOverview').mockResolvedValueOnce(null),
       });
       const error = el.querySelector('[data-testid=home-progress-error]')!;
       expect(clean(error)).toContain("Couldn't load your progress");
@@ -350,14 +384,58 @@ describe('HomePage', () => {
   it('re-entering Home re-reads workout and progress (e.g. after finishing a workout)', async () => {
     const { el, fixture, storage } = await render({ history: [workoutAt(5)] });
     fixture.componentInstance.ionViewWillEnter(); // first entry: no reload
-    expect(clean(progressCard(el)?.querySelector('[data-testid=home-week-count]'))).toMatch(/1\s*workout$/);
+    expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('1 of 4 workouts');
 
     storage.values.set(LOGS_KEY, JSON.stringify({ version: 1, logs: [workoutAt(5), workoutAt(7)] }));
     const plans = vi.spyOn(TestBed.inject(WorkoutPlanService), 'load');
     fixture.componentInstance.ionViewWillEnter(); // back on Home
     await settle(fixture);
-    expect(clean(progressCard(el)?.querySelector('[data-testid=home-week-count]'))).toMatch(/2\s*workouts/);
+    expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('2 of 4 workouts');
     expect(plans).toHaveBeenCalledTimes(1);
+  });
+
+  describe('weight (recorded weigh-ins)', () => {
+    const tile = (el: HTMLElement) => el.querySelector('app-weight-tile');
+
+    it('shows the latest weigh-in and the 30-day change, and opens weight history', async () => {
+      const { el, fixture, forward } = await render({ weights: [weighIn('a', '2026-09-20', 79.6), weighIn('b', '2026-10-07', 78.4)] });
+      expect(clean(tile(el)!.querySelector('[data-testid=home-weight-value]'))).toBe('78.4kg');
+      expect(clean(tile(el)!.querySelector('[data-testid=home-weight-change]'))).toBe('−1.2 kg · 30 days');
+      expect(tile(el)!.querySelector('polyline')).not.toBeNull();
+      tile(el)!.querySelector('button')!.click();
+      await fixture.whenStable();
+      expect(forward).toHaveBeenCalledWith('/you/weight-history');
+    });
+
+    it('no weigh-ins: offers to log one (the profile weight is never shown as a weigh-in)', async () => {
+      const { el, fixture, forward } = await render();
+      expect(clean(tile(el))).toContain('No weigh-ins yet');
+      tile(el)!.querySelector('button')!.click();
+      await fixture.whenStable();
+      expect(forward).toHaveBeenCalledWith(['/you', 'weight-history', 'new']);
+    });
+  });
+
+  it('Log food opens a new entry for today', async () => {
+    const { el, fixture, forward } = await render();
+    buttonIn(nutritionCard(el), 'Log food')!.click();
+    await fixture.whenStable();
+    expect(forward).toHaveBeenCalledWith(['/nutrition', 'food', 'new'], { queryParams: { date: '2026-10-08' } });
+  });
+
+  it('pull to refresh re-reads every card and completes once they have settled', async () => {
+    const { el, fixture } = await render();
+    await TestBed.inject(NutritionService).add(
+      { name: 'Wrap', quantity: 1, unit: 'piece', meal: 'lunch', calories: 455, proteinGrams: 30, carbohydrateGrams: 50, fatGrams: 12 },
+      '2026-10-08',
+    );
+    const complete = vi.fn();
+    const page = fixture.componentInstance as unknown as { refresh(e: { complete(): void }): Promise<void> };
+    const done = page.refresh({ complete });
+    await settle(fixture);
+    await done;
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(clean(nutritionCard(el)!.querySelector('[data-testid=calories-eaten]'))).toBe('455');
   });
 
   describe('nutrition (real data)', () => {
@@ -430,7 +508,7 @@ describe('HomePage', () => {
       });
       expect(clean(el.querySelector('[data-testid=home-nutrition-error]'))).toContain("Couldn't load nutrition");
       expect(nutritionCard(el)).toBeNull();
-      for (const heading of ['Your goal', "Today's workout", 'Progress']) {
+      for (const heading of ['Goal', "Today's workout", 'Recent']) {
         expect(el.textContent).toContain(heading);
       }
       el.querySelector<HTMLButtonElement>('[data-testid=home-nutrition-error] button')!.click();
@@ -444,7 +522,7 @@ describe('HomePage', () => {
         before: () => vi.spyOn(TestBed.inject(NutritionRepository), 'loadDay').mockReturnValue(new Promise(() => undefined)),
       });
       expect(el.querySelector('[data-testid=home-nutrition-loading]')?.getAttribute('aria-busy')).toBe('true');
-      expect(el.textContent).toContain('Your goal');
+      expect(el.textContent).toContain('Goal');
     });
 
     it('reading Home never changes the day selected in Nutrition', async () => {

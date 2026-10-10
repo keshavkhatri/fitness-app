@@ -4,52 +4,67 @@
   display: block;
 }
 
-.last {
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
-  border-top: var(--border-hairline) solid var(--color-border);
-}
-
-.last-label {
-  @include fx.text(caption, medium);
-  color: var(--color-text-secondary);
-}
-
-.last-item {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
+.row,
+.empty {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  min-height: var(--tap-target-min);
-  padding: var(--space-2) 0;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+}
 
-  ion-icon {
-    flex: none;
-    font-size: 18px;
-    color: var(--color-text-secondary);
+.row {
+  @include fx.button-reset;
+  @include fx.pressable;
+  // After the reset, which zeroes padding.
+  padding: var(--space-3) var(--space-4);
+  border-radius: inherit;
+
+  // Inset ring: the card clips anything drawn outside it.
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
   }
 }
 
-.last-text {
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  font-size: 16px;
+
+  &[data-status='complete'] {
+    background: var(--color-success-soft);
+    color: var(--color-success-text);
+  }
+}
+
+.text {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
 }
 
-.last-title {
+.title {
   @include fx.text(body, semibold);
   overflow-wrap: anywhere;
 }
 
-.last-meta {
+.meta {
   @include fx.text(body-sm);
+  @include fx.tabular-numbers;
   color: var(--color-text-secondary);
 }
 
-.cta {
-  margin-top: var(--space-4);
+.chevron {
+  flex: none;
+  font-size: 18px;
+  color: var(--color-text-secondary);
 }

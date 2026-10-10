@@ -1,34 +1,82 @@
 @use 'mixins' as fx;
 
+// Breakpoints are container queries on the content width, in em: with large
+// text the layout stays one column longer, before anything gets cramped.
+.dashboard {
+  container-type: inline-size;
+}
+
+.grid,
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+// Phones: one column, DOM order = visual order.
+.col {
+  display: contents;
+}
+
+@container (min-width: 37.5em) {
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .col {
+    display: flex;
+    min-width: 0;
+  }
+}
+
+@container (min-width: 56.25em) {
+  .grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    column-gap: var(--space-8);
+  }
+}
+
 section {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
-.hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+.link {
+  @include fx.button-reset;
+  @include fx.text(body-sm, semibold);
+  @include fx.focus-ring;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--tap-target-min);
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-3)) calc(-1 * var(--space-2)) 0;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-text);
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+// Two columns down to 320px; one column once text grows past ~130%.
+.bento {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5em), 1fr));
   gap: var(--space-3);
 }
 
-.hero-text {
-  min-width: 0;
+.tile-title {
+  @include fx.text(h3, bold);
 }
 
-.date {
-  @include fx.text(body-sm, medium);
-  color: var(--color-text-secondary);
-}
-
-.greeting {
-  @include fx.text(h2, semibold);
-  margin-top: var(--space-1);
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+.tile-action {
+  @include fx.text(caption, semibold);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  color: var(--color-primary-text);
 }

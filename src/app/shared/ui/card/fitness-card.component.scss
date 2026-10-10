@@ -21,3 +21,12 @@
   border-color: transparent;
   box-shadow: none;
 }
+:host([data-tone='ink']) {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+  border-color: transparent;
+  border-radius: var(--radius-hero);
+  box-shadow: var(--shadow-hero);
+}

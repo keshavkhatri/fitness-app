@@ -1,0 +1,59 @@
+@use 'mixins' as fx;
+
+:host {
+  @include fx.button-reset;
+  @include fx.pressable;
+  @include fx.focus-ring;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 14px;
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.head {
+  @include fx.text(caption, semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    font-size: 16px;
+  }
+
+  &[data-tone='body'] {
+    background: var(--color-body-soft);
+    color: var(--color-body-text);
+  }
+
+  &[data-tone='goal'] {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-text);
+  }
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin-top: var(--space-3);
+}

@@ -80,6 +80,19 @@ export class WorkoutHistoryService {
     return result.ok ? trainingOverview(result.workouts, calendarDateOf(this.clock()), localCalendarDateOf) : null;
   }
 
+  /** The overview plus this week's finished workouts per day (Home), from one read of the history. */
+  async weekOverview(): Promise<{ readonly overview: TrainingOverview; readonly week: readonly ActivityDay[] } | null> {
+    const result = await this.list();
+    if (!result.ok) {
+      return null;
+    }
+    const today = calendarDateOf(this.clock());
+    return {
+      overview: trainingOverview(result.workouts, today, localCalendarDateOf),
+      week: weeklyActivity(result.workouts, today, localCalendarDateOf),
+    };
+  }
+
   /** Everything the Progress screen needs, from one read of the history. */
   async progress(): Promise<ProgressResult> {
     const result = await this.list();

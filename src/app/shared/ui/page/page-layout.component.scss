@@ -36,9 +36,29 @@ ion-title {
   opacity: 1;
 }
 
-.large-title {
-  @include fx.text(h1, bold);
+.large-title-block {
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--space-2) var(--page-gutter) var(--space-3);
+
+  &.wide {
+    max-width: var(--page-max-width-wide);
+  }
+}
+
+.kicker {
+  @include fx.text(body-sm, medium);
+  color: var(--color-text-secondary);
+}
+
+.large-title {
+  @include fx.text(h1, bold);
+}
+
+.page-body.wide {
+  max-width: var(--page-max-width-wide);
+}
+
+ion-refresher-content {
+  --color: var(--color-text-secondary);
 }

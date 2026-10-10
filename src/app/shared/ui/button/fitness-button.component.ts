@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, booleanAttribute, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
-export type FitnessButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
+/** `on-ink`: the main action on an ink (hero) surface. */
+export type FitnessButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'on-ink' | 'ghost-ink';
 export type FitnessButtonSize = 'md' | 'lg';
 
 /**
