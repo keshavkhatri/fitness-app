@@ -47,6 +47,49 @@
   }
 }
 
+.latest {
+  margin: 0;
+}
+
+.latest-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-3);
+  padding: var(--space-3) var(--space-4);
+
+  & + & {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.latest-metric {
+  @include fx.text(body, medium);
+}
+
+.latest-value {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+  text-align: end;
+}
+
+.latest-date,
+.latest-change,
+.latest-missing {
+  @include fx.text(body-sm);
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+}
+
+.latest-missing {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: end;
+}
+
 .rows {
   margin: 0;
   padding: 0;

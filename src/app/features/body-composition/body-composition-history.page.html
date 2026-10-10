@@ -28,6 +28,27 @@
     @switch (s.kind) {
       @case ('ready') {
         <button fit-button type="button" block icon="add" data-testid="add-assessment" (click)="add()">{{ copy.add }}</button>
+        <section class="section" aria-labelledby="body-composition-latest">
+          <h2 class="section-title" id="body-composition-latest">{{ copy.latest.title }}</h2>
+          <fit-card padding="none">
+            <dl class="latest" data-testid="latest">
+              @for (item of s.latest; track item.metric) {
+                <div class="latest-row" data-testid="latest-metric">
+                  <dt class="latest-metric">{{ item.metric }}</dt>&ngsp;
+                  @if (item.value) {
+                    <dd class="latest-value">{{ item.value }}</dd>&ngsp;
+                    <dd class="latest-date">{{ item.dateLabel }}</dd>
+                    @if (item.change) {
+                      &ngsp;<dd class="latest-change" data-testid="latest-change">{{ item.change }}</dd>
+                    }
+                  } @else {
+                    <dd class="latest-missing">{{ copy.latest.notRecorded }}</dd>
+                  }
+                </div>
+              }
+            </dl>
+          </fit-card>
+        </section>
         <section class="section" aria-labelledby="body-composition-history-list">
           <h2 class="section-title" id="body-composition-history-list">{{ copy.list.title }}</h2>
           <fit-card padding="none">

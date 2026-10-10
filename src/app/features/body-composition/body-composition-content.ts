@@ -16,6 +16,15 @@ export const BODY_COMPOSITION_COPY = {
     entry: { title: 'Body composition', description: 'Your recorded InBody assessments' },
     loading: 'Loading your body composition',
     add: 'Add assessment',
+    latest: {
+      title: 'Latest',
+      notRecorded: 'Not recorded yet',
+      /** `difference` is null when the two reports show the same value. A difference between reports, not progress. */
+      change: (difference: string | null, previousDate: string) =>
+        difference === null ? `No change since ${previousDate}` : `${difference} since ${previousDate}`,
+      /** Reported values are never converted, so readings in different units aren't compared. */
+      differentUnits: (previousDate: string) => `Not compared with ${previousDate} (different units)`,
+    },
     list: { title: 'Assessments' },
     sources: {
       manual: 'Entered by hand',

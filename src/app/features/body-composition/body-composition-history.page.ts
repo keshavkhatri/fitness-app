@@ -8,7 +8,8 @@ import { toBodyCompositionHistoryScreen } from './body-composition-history-view-
 import { NEW_BODY_COMPOSITION_PATH } from './body-composition-paths';
 
 /**
- * Recorded body-composition assessments, newest first, with the values each
+ * Recorded body-composition assessments: the latest reported value of each
+ * metric, and every readable assessment newest first, with the values each
  * report stated in the unit it used. Only reads: nothing here changes the
  * profile, weight history or measurements, and assessments can't be edited
  * or deleted yet. Stored assessments this version can't read are counted

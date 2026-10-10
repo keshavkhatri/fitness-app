@@ -66,6 +66,7 @@ async function settle(fixture: ComponentFixture<unknown>) {
 const clean = (node: Element | null | undefined) => node?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 const byTestId = (root: Element, id: string) => root.querySelector(`[data-testid="${id}"]`);
 const rows = (el: HTMLElement) => [...el.querySelectorAll('[data-testid=assessment-row]')];
+const latest = (el: HTMLElement) => [...el.querySelectorAll('[data-testid=latest-metric]')].map((r) => clean(r));
 
 async function renderHistory(raw: string | null, before?: () => void) {
   const spies = configure(raw);
@@ -100,8 +101,54 @@ describe('Body composition history page', () => {
       'Thursday, Oct 1 Entered by hand Weight 176.83 lb Body fat percentage 22.4%',
     ]);
     expect(rows(el)[0].querySelector('dl')?.querySelectorAll('dt')).toHaveLength(2);
-    // No conversion, changes or interpretation.
-    expect(el.textContent).not.toMatch(/80\.2|lost|gained|change|progress|trend|healthy|range|good|bad/i);
+    // No conversion or interpretation.
+    expect(el.textContent).not.toMatch(/80\.2|lost|gained|progress|trend|healthy|range|good|bad/i);
+  });
+
+  it('shows each metric’s latest reported value and date, or that it wasn’t recorded yet', async () => {
+    const { el } = await renderHistory(envelope([AM, OLDER, PM]));
+    expect(clean(el.querySelector('#body-composition-latest'))).toBe('Latest');
+    expect(byTestId(el, 'latest')?.tagName).toBe('DL');
+    // Weight: kg now, lb before — not converted, so not compared.
+    expect(latest(el)).toEqual([
+      'Weight 81.37 kg Yesterday Not compared with Oct 1 (different units)',
+      'Body fat mass 18.25 kg Yesterday',
+      'Lean body mass 62 kg Yesterday',
+      'Body fat percentage 22.4% Thursday, Oct 1',
+    ]);
+  });
+
+  it('shows the difference since a metric’s previous report in the same unit, only when one exists', async () => {
+    const raw = envelope([
+      assessment('last-year', '2025-12-30', { 'body-fat-percentage': { value: 24, unit: '%' } }),
+      assessment('sep', '2026-09-12', { weight: { value: 82.1, unit: 'kg' }, 'lean-body-mass': { value: 62, unit: 'kg' } }),
+      assessment('oct', '2026-10-01', {
+        'body-fat-percentage': { value: 22.8, unit: '%' },
+        'lean-body-mass': { value: 62, unit: 'kg' },
+        'body-fat-mass': { value: 18, unit: 'kg' },
+      }),
+      assessment('now', '2026-10-08', { weight: { value: 81.37, unit: 'kg' }, 'body-fat-mass': { value: 18.35, unit: 'kg' } }, IMPORT_SOURCE),
+    ]);
+    const { el, storage } = await renderHistory(raw);
+    expect(latest(el)).toEqual([
+      'Weight 81.37 kg Yesterday −0.73 kg since Sep 12',
+      'Body fat mass 18.35 kg Yesterday +0.35 kg since Oct 1',
+      'Lean body mass 62 kg Thursday, Oct 1 No change since Sep 12',
+      'Body fat percentage 22.8% Thursday, Oct 1 −1.2 percentage points since Dec 30, 2025',
+    ]);
+    expect([...el.querySelectorAll('[data-testid=latest-change]')].map((d) => d.tagName)).toEqual(['DD', 'DD', 'DD', 'DD']);
+    expect(el.textContent).not.toMatch(/lost|gained|progress|trend|better|worse|good|bad|healthy|range/i);
+    expect(storage.values.get(KEY)).toBe(raw);
+  });
+
+  it('shows metrics no assessment reported as not recorded yet', async () => {
+    const { el } = await renderHistory(envelope([AM]));
+    expect(latest(el)).toEqual([
+      'Weight Not recorded yet',
+      'Body fat mass Not recorded yet',
+      'Lean body mass 62 kg Yesterday',
+      'Body fat percentage Not recorded yet',
+    ]);
   });
 
   it('only reads: no edit or delete, and imported provenance is kept exactly', async () => {
@@ -174,6 +221,8 @@ describe('Body composition history page', () => {
       '2 saved assessments can’t be shown because they contain details this version of the app doesn’t support. They have been kept exactly as they are.',
     );
     expect(rows(el)).toHaveLength(1);
+    // The unreadable assessment's weight isn't counted as the latest weight.
+    expect(latest(el)[0]).toBe('Weight 176.83 lb Thursday, Oct 1');
     expect(storage.values.get(KEY)).toBe(raw);
   });
 
