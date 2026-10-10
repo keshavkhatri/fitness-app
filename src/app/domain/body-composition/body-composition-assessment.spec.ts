@@ -146,10 +146,42 @@ describe('body composition domain', () => {
       ['non-numeric value', (v) => (v['reported']['weight'] = { value: '80', unit: 'kg' })],
       ['empty values', (v) => (v['reported'] = {})],
       ['bad createdAt', (v) => (v['createdAt'] = 'yesterday')],
+      ['an unknown top-level field', (v) => (v['notes'] = 'after lunch')],
+      ['an unknown field on a reported value', (v) => (v['reported']['weight']['printed'] = '80.2 kg')],
+      ['an unknown field on a manual source', (v) => (v['source']['format'] = 'f')],
+      [
+        'an import with unknown provenance',
+        (v) =>
+          (v['source'] = { device: 'inbody', entryMethod: 'import', format: 'f', parser: { name: 'p', version: '1' }, fileHash: 'abc' }),
+      ],
+      [
+        'an import with unknown parser metadata',
+        (v) => (v['source'] = { device: 'inbody', entryMethod: 'import', format: 'f', parser: { name: 'p', version: '1', build: 7 } }),
+      ],
     ])('rejects %s', (_, mutate) => {
       const v = stored();
       mutate(v);
       expect(parseBodyCompositionAssessment(v)).toBeNull();
+    });
+
+    it('round-trips an imported assessment: provenance and values exactly as stated', () => {
+      const source = { device: 'inbody', entryMethod: 'import', format: 'inbody-570-pdf', parser: { name: 'inbody-pdf', version: '0.1.0' } } as const;
+      const imported = created({ date: '2026-10-08', source, values: { weight: lb(176.83), 'body-fat-percentage': pct(22.45) } });
+      expect(parseBodyCompositionAssessment(JSON.parse(JSON.stringify(imported)))).toEqual(imported);
+      expect(imported.source).toEqual(source);
+    });
+
+    it('stores only the defined provenance fields, so a created assessment always reads back', () => {
+      const source = {
+        device: 'inbody',
+        entryMethod: 'import',
+        format: 'f',
+        parser: { name: 'p', version: '1', extra: true },
+        extra: true,
+      } as unknown as BodyCompositionInput['source'];
+      const a = created({ date: '2026-10-08', source, values: { weight: kg(80) } });
+      expect(a.source).toEqual({ device: 'inbody', entryMethod: 'import', format: 'f', parser: { name: 'p', version: '1' } });
+      expect(parseBodyCompositionAssessment(JSON.parse(JSON.stringify(a)))).toEqual(a);
     });
 
     it('rejects non-objects', () => {

@@ -183,8 +183,19 @@ export function createBodyCompositionAssessment(
       reported[metric] = { value: value.value, unit: value.unit };
     }
   }
-  return { ok: true, value: { id, date: input.date, source: input.source, reported, createdAt: now, updatedAt: now } };
+  return { ok: true, value: { id, date: input.date, source: copySource(input.source), reported, createdAt: now, updatedAt: now } };
 }
+
+/** Only the defined provenance fields, so what is stored is exactly what the stored-data parser reads back. */
+const copySource = (source: BodyCompositionSource): BodyCompositionSource =>
+  source.entryMethod === 'manual'
+    ? MANUAL_INBODY_SOURCE
+    : {
+        device: source.device,
+        entryMethod: source.entryMethod,
+        format: source.format,
+        parser: { name: source.parser.name, version: source.parser.version },
+      };
 
 /** A new version of an assessment: same id and creation time; everything else replaced. */
 export function updateBodyCompositionAssessment(
@@ -201,18 +212,29 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '';
 
+/**
+ * Whether a stored object has no fields beyond `allowed`. A field this
+ * version doesn't know (e.g. extra provenance from a newer version) makes
+ * the assessment unreadable, so it is kept as stored instead of being shown
+ * without that field.
+ */
+const hasOnlyKeys = (value: Record<string, unknown>, allowed: readonly string[]): boolean =>
+  Object.keys(value).every((key) => allowed.includes(key));
+
 function parseSource(value: unknown): BodyCompositionSource | null {
   if (!isRecord(value) || value['device'] !== 'inbody') {
     return null;
   }
   if (value['entryMethod'] === 'manual') {
-    return MANUAL_INBODY_SOURCE;
+    return hasOnlyKeys(value, ['device', 'entryMethod']) ? MANUAL_INBODY_SOURCE : null;
   }
   const parser = value['parser'];
   if (
     value['entryMethod'] !== 'import' ||
+    !hasOnlyKeys(value, ['device', 'entryMethod', 'format', 'parser']) ||
     !isNonEmptyString(value['format']) ||
     !isRecord(parser) ||
+    !hasOnlyKeys(parser, ['name', 'version']) ||
     !isNonEmptyString(parser['name']) ||
     !isNonEmptyString(parser['version'])
   ) {
@@ -228,7 +250,13 @@ function parseReported(value: unknown): BodyCompositionValues | null {
   const reported: Partial<Record<BodyCompositionMetric, ReportedValue>> = {};
   for (const [metric, raw] of Object.entries(value)) {
     // An unknown metric or unit (e.g. from a newer app version) makes the whole assessment unreadable rather than silently dropped on edit.
-    if (!isBodyCompositionMetric(metric) || !isRecord(raw) || typeof raw['value'] !== 'number' || !isReportedUnit(raw['unit'])) {
+    if (
+      !isBodyCompositionMetric(metric) ||
+      !isRecord(raw) ||
+      !hasOnlyKeys(raw, ['value', 'unit']) ||
+      typeof raw['value'] !== 'number' ||
+      !isReportedUnit(raw['unit'])
+    ) {
       return null;
     }
     const candidate: ReportedValue = { value: raw['value'], unit: raw['unit'] };
@@ -242,7 +270,7 @@ function parseReported(value: unknown): BodyCompositionValues | null {
 
 /** Strict parser for a stored assessment; null when anything is missing, unknown or out of range. */
 export function parseBodyCompositionAssessment(value: unknown): BodyCompositionAssessment | null {
-  if (!isRecord(value)) {
+  if (!isRecord(value) || !hasOnlyKeys(value, ['id', 'date', 'source', 'reported', 'createdAt', 'updatedAt'])) {
     return null;
   }
   const source = parseSource(value['source']);
