@@ -17,6 +17,8 @@ Implemented so far:
 - **Quick Add**: Start workout, Add food, Log weight and Add measurement work; Upload InBody and Progress photo are shown as "Coming soon".
 - **You**: profile review, Progress, Weight history, Measurements, appearance (System/Light/Dark) and **Units** (metric/imperial). Notifications, connected health apps and subscription are listed but not built.
 
+**InBody onboarding (planned, AI-based):** onboarding will offer *Enter manually* or *Upload InBody report*. An uploaded report image will be sent, with the user's explicit consent, to an AI model (OpenAI Responses API, Structured Outputs) through a secure server-side endpoint that holds the API key; the response prefills supported answers for the user to review and correct before saving. Manual entry stays available whatever the outcome; no local OCR. Done so far: the extraction contract only (`domain/inbody-extraction`: versioned JSON schema for the model, strict validation of every response, and the mapping to profile/assessment suggestions, checked against an InBody380 sheet). Not built yet: the server endpoint, upload, review UI and saving. The original report is not kept, nothing is overwritten automatically, and age is never turned into a date of birth.
+
 Not implemented yet: auth, backend/API and sync, InBody / body-composition data, progress photos, notifications, health-app integrations, AI coaching and payments/subscriptions. Each will arrive as a separate, reviewed phase.
 
 ## Requirements
@@ -60,6 +62,8 @@ src/
                             macro targets, safeguards, explanation). All coefficients in calculation-config.ts
       workout-session/      Performed workouts: log rules, stored-log parser, history and progress facts
       nutrition/            Food entries, day totals and targets
+      inbody-extraction/    AI extraction contract for InBody reports: JSON schema for the model, strict response
+                            validation, mapping to profile/assessment suggestions (no network, files or storage)
       body-measurements/    Weight entries, history and trends; tape measurements, their history and changes;
                             the explicit profile-weight change
     core/                   App-wide singletons (no UI)
