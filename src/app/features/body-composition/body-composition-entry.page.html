@@ -71,7 +71,7 @@
       <fit-card data-testid="load-error">
         <fit-empty-state icon="alert-circle-outline" [title]="copy.loadFailed.title" [description]="copy.loadFailed.message">
           <button fit-button type="button" (click)="retry()">{{ copy.loadFailed.retry }}</button>
-          <button fit-button type="button" variant="ghost" (click)="cancel()">{{ copy.backToYou }}</button>
+          <button fit-button type="button" variant="ghost" (click)="cancel()">{{ copy.backToHistory }}</button>
         </fit-empty-state>
       </fit-card>
     } @else {

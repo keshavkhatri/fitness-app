@@ -1,3 +1,4 @@
-/** There is no body-composition history screen yet, so the entry page returns to You. */
-export const BODY_COMPOSITION_RETURN_PATH = '/you';
+export const BODY_COMPOSITION_HISTORY_PATH = '/you/body-composition';
+/** Where the entry page returns to. */
+export const BODY_COMPOSITION_RETURN_PATH = BODY_COMPOSITION_HISTORY_PATH;
 export const NEW_BODY_COMPOSITION_PATH = ['/you', 'body-composition', 'new'];

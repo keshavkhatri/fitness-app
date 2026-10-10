@@ -137,7 +137,7 @@ describe('Body composition entry page', () => {
     expect(none.unit('weight')).toBe('kg');
   });
 
-  it('saves a manual assessment with values exactly as typed, then returns to You', async () => {
+  it('saves a manual assessment with values exactly as typed, then returns to the history', async () => {
     const { type, submit, storage, back } = await renderForm();
     type('weight', '80.25');
     type('body-fat-percentage', '22,45');
@@ -153,7 +153,7 @@ describe('Body composition entry page', () => {
         updatedAt: NOW.toISOString(),
       },
     ]);
-    expect(back).toHaveBeenCalledWith('/you');
+    expect(back).toHaveBeenCalledWith('/you/body-composition');
   });
 
   it('saves masses in the chosen unit without converting', async () => {

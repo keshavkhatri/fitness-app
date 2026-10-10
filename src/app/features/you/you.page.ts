@@ -6,6 +6,7 @@ import { ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
 import { UnitPreferenceService } from '../../core/profile/unit-preference.service';
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
 import { UnitSystem } from '../../domain/fitness-profile';
+import { BODY_COMPOSITION_HISTORY_PATH } from '../body-composition/body-composition-paths';
 import { MEASUREMENT_HISTORY_PATH } from '../body-measurements/measurement-paths';
 import { WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
 import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
@@ -91,5 +92,9 @@ export class YouPage {
 
   protected openMeasurements(): void {
     void this.nav.navigateForward(MEASUREMENT_HISTORY_PATH);
+  }
+
+  protected openBodyComposition(): void {
+    void this.nav.navigateForward(BODY_COMPOSITION_HISTORY_PATH);
   }
 }
