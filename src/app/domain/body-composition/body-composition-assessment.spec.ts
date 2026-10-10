@@ -121,6 +121,31 @@ describe('body composition domain', () => {
     });
   });
 
+  describe('updates never rewrite or claim import evidence', () => {
+    const IMPORT = { device: 'inbody', entryMethod: 'import', format: 'f', parser: { name: 'p', version: '1' } } as const;
+    const later = { now: '2026-10-09T09:00:00.000Z', today: TODAY };
+
+    it('refuses to update an imported assessment, even with the same provenance', () => {
+      const original = created({ date: '2026-10-08', source: IMPORT, values: { weight: kg(80.2) } });
+      expect(updateBodyCompositionAssessment(original, { ...input({ weight: kg(81) }), source: IMPORT }, later)).toEqual({
+        ok: false,
+        errors: { source: 'imported-source' },
+      });
+      expect(updateBodyCompositionAssessment(original, input({ weight: kg(81) }), later)).toEqual({
+        ok: false,
+        errors: { source: 'imported-source' },
+      });
+    });
+
+    it('refuses to label edited values of a manual assessment as imported', () => {
+      const original = created(input({ weight: kg(80) }));
+      expect(updateBodyCompositionAssessment(original, { ...input({ weight: kg(81) }), source: IMPORT }, later)).toEqual({
+        ok: false,
+        errors: { source: 'imported-source' },
+      });
+    });
+  });
+
   describe('parsing stored assessments', () => {
     const stored = () => JSON.parse(JSON.stringify(created(input({ weight: kg(80.2), 'body-fat-percentage': pct(22.4) }))));
 

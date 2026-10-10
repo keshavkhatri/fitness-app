@@ -96,9 +96,20 @@ export interface BodyCompositionInput {
   readonly values: Readonly<Partial<Record<BodyCompositionMetric, ReportedValue | null>>>;
 }
 
-export type BodyCompositionProblem = 'not-a-number' | 'out-of-range' | 'wrong-unit' | 'required' | 'invalid-date' | 'future-date';
-/** `values: 'required'` means no metric was filled in. */
-export type BodyCompositionErrors = Readonly<Partial<Record<BodyCompositionMetric | 'values' | 'date', BodyCompositionProblem>>>;
+export type BodyCompositionProblem =
+  | 'not-a-number'
+  | 'out-of-range'
+  | 'wrong-unit'
+  | 'required'
+  | 'invalid-date'
+  | 'future-date'
+  | 'imported-source';
+/**
+ * `values: 'required'` means no metric was filled in. `source:
+ * 'imported-source'` means an update involved an imported source (see
+ * updateBodyCompositionAssessment).
+ */
+export type BodyCompositionErrors = Readonly<Partial<Record<BodyCompositionMetric | 'values' | 'date' | 'source', BodyCompositionProblem>>>;
 export type BodyCompositionResult<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly errors: BodyCompositionErrors };
@@ -197,12 +208,21 @@ const copySource = (source: BodyCompositionSource): BodyCompositionSource =>
         parser: { name: source.parser.name, version: source.parser.version },
       };
 
-/** A new version of an assessment: same id and creation time; everything else replaced. */
+/**
+ * A new version of a manually entered assessment: same id and creation
+ * time; everything else replaced. Updates are user edits, so they are only
+ * allowed from a manual source to a manual source: an imported assessment's
+ * values and provenance are the parser's evidence and are never rewritten,
+ * and edited values are never labelled as parser output.
+ */
 export function updateBodyCompositionAssessment(
   assessment: BodyCompositionAssessment,
   input: BodyCompositionInput,
   { now, today }: Omit<BodyCompositionContext, 'id'>,
 ): BodyCompositionResult<BodyCompositionAssessment> {
+  if (assessment.source.entryMethod !== 'manual' || input.source.entryMethod !== 'manual') {
+    return { ok: false, errors: { source: 'imported-source' } };
+  }
   const created = createBodyCompositionAssessment(input, { id: assessment.id, now, today });
   return created.ok ? { ok: true, value: { ...created.value, createdAt: assessment.createdAt } } : created;
 }

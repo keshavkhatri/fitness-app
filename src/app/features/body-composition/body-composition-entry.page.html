@@ -1,0 +1,105 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button [defaultHref]="returnPath" [text]="copy.back" [disabled]="saving()" />
+    </ion-buttons>
+    <!-- Navigation label only; the page heading (h1) is below. -->
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    @let l = loaded();
+    @if (l?.kind === 'new') {
+      @let f = form();
+      @let e = errors();
+      <div class="heading">
+        <h1 class="title">{{ copy.title }}</h1>
+        <p class="intro">{{ copy.intro }}</p>
+        <p class="note">{{ copy.separateNote }}</p>
+      </div>
+
+      <form id="body-composition-form" class="form" novalidate data-testid="body-composition-form" (submit)="$event.preventDefault(); save()">
+        <div class="unit" data-testid="mass-unit">
+          <!-- The control's legend carries the same name for assistive tech. -->
+          <p class="unit-label" aria-hidden="true">{{ copy.massUnit }}</p>
+          <fit-segmented-control
+            [name]="massUnitName"
+            [legend]="copy.massUnit"
+            [options]="massUnitOptions"
+            [value]="f.massUnit"
+            (valueChange)="setMassUnit($event)"
+          />
+          <p class="unit-hint">{{ copy.massUnitHint }}</p>
+        </div>
+
+        <fieldset class="values" data-testid="body-composition-values">
+          <legend class="legend">{{ copy.legend }}</legend>
+          @if (e.values; as groupError) {
+            <p class="group-error" [id]="groupErrorId" data-testid="values-error">{{ groupError }}</p>
+          }
+          @for (metric of metrics; track metric) {
+            <fit-text-field
+              [label]="metricLabels[metric]"
+              [suffix]="unitFor(metric)"
+              inputMode="decimal"
+              [maxLength]="7"
+              [value]="f[metric]"
+              [error]="e[metric] ?? null"
+              [invalid]="!!e.values"
+              [describedBy]="e.values ? groupErrorId : null"
+              [attr.data-testid]="'field-' + metric"
+              (valueChange)="update(metric, $event)"
+            />
+          }
+        </fieldset>
+        <fit-text-field
+          type="date"
+          [label]="copy.date"
+          [max]="today"
+          enterKeyHint="done"
+          [value]="f.date"
+          [hint]="copy.dateHint"
+          [error]="e.date ?? null"
+          data-testid="field-date"
+          (valueChange)="update('date', $event)"
+        />
+      </form>
+    } @else if (l?.kind === 'error') {
+      <h1 class="visually-hidden">{{ copy.title }}</h1>
+      <fit-card data-testid="load-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.loadFailed.title" [description]="copy.loadFailed.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.loadFailed.retry }}</button>
+          <button fit-button type="button" variant="ghost" (click)="cancel()">{{ copy.backToYou }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <h1 class="visually-hidden">{{ copy.title }}</h1>
+      <p class="visually-hidden" role="status">{{ copy.loading }}</p>
+      <div class="loading" aria-busy="true" data-testid="loading">
+        <fit-skeleton width="50%" height="34px" />
+        <fit-skeleton height="80px" radius="card" />
+        <fit-skeleton height="80px" radius="card" />
+        <fit-skeleton height="80px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>
+
+@if (loaded()?.kind === 'new') {
+  <ion-footer class="ion-no-border">
+    <div class="footer">
+      <!-- Always rendered with Save so its message is announced when it appears. -->
+      <p class="status" role="status" data-testid="form-status" [class.shown]="status() !== ''">{{ status() }}</p>
+      <div class="footer-actions">
+        <button fit-button type="submit" form="body-composition-form" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="save">
+          {{ copy.save }}
+        </button>
+        <button fit-button type="button" size="lg" block variant="ghost" [disabled]="saving()" data-testid="cancel" (click)="cancel()">
+          {{ copy.cancel }}
+        </button>
+      </div>
+    </div>
+  </ion-footer>
+}
