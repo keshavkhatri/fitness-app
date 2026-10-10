@@ -30,13 +30,17 @@ import { SingleChoiceStepComponent } from './steps/single-choice-step.component'
 import { SummaryStepComponent } from './steps/summary-step.component';
 import { WelcomeStepComponent } from './steps/welcome-step.component';
 
+/** Screens a review may return to when backed out of unchanged (`returnTo`). */
+const REVIEW_RETURN_PATHS: readonly string[] = ['/you'];
+
 /**
  * Full-screen onboarding host (no tab bar). Renders the current step and
  * owns the shared chrome: back, progress and the primary action. All flow
  * decisions live in `OnboardingFlow`.
  *
  * Route data `mode: 'review'` (/onboarding/review) opens the summary of the
- * existing profile instead; saving or backing out returns to the assessment.
+ * existing profile instead; saving returns to the assessment. Backing out
+ * unchanged returns there too, or to an allowed `returnTo` query param.
  */
 @Component({
   selector: 'app-onboarding',
@@ -64,6 +68,8 @@ import { WelcomeStepComponent } from './steps/welcome-step.component';
 export class OnboardingPage implements OnInit {
   /** Bound from route data. */
   readonly mode = input<OnboardingMode>('new');
+  /** Bound from the query string; anything not in `REVIEW_RETURN_PATHS` is ignored. */
+  readonly returnTo = input<string>();
 
   protected readonly flow = inject(OnboardingFlow);
   private readonly profiles = inject(FitnessProfileService);
@@ -110,9 +116,11 @@ export class OnboardingPage implements OnInit {
   }
 
   protected async back(): Promise<void> {
-    // Backing out of a review (from its summary) returns to the assessment unchanged.
+    // Backing out of a review (from its summary) returns unchanged to where it was opened.
     if (this.flow.mode() === 'review' && this.flow.stepId() === 'summary' && !this.flow.editingFromSummary()) {
-      await this.router.navigateByUrl(ASSESSMENT_PATH, { replaceUrl: true });
+      const returnTo = this.returnTo();
+      const target = returnTo && REVIEW_RETURN_PATHS.includes(returnTo) ? returnTo : ASSESSMENT_PATH;
+      await this.router.navigateByUrl(target, { replaceUrl: true });
       return;
     }
     this.flow.back();

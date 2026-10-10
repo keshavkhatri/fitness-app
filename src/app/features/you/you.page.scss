@@ -6,40 +6,10 @@ section {
   gap: var(--space-3);
 }
 
-.profile {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
-  font-size: 32px;
-}
-
-.profile-title {
-  @include fx.text(h3, semibold);
-}
-
-.profile-text,
 .hint {
   @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.profile-text {
-  margin-top: var(--space-1);
-}
-
-.hint {
   margin-top: var(--space-3);
+  color: var(--color-text-secondary);
 }
 
 .settings-list {

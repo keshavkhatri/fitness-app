@@ -1,10 +1,13 @@
 <fit-page title="You">
-  <fit-card class="profile">
-    <div class="avatar" aria-hidden="true"><ion-icon name="person-circle-outline" /></div>
-    <div>
-      <h2 class="profile-title">Your profile</h2>
-      <p class="profile-text">Profile details, goals and body stats will live here once accounts are set up.</p>
-    </div>
+  <fit-card padding="none">
+    <button type="button" class="entry" data-testid="profile-entry" (click)="openProfile()">
+      <span class="entry-icon" aria-hidden="true"><ion-icon name="person-circle-outline" /></span>
+      <span class="entry-text">
+        <span class="entry-title">Your profile</span>&ngsp;
+        <span class="entry-description">Review and edit your details and goals</span>
+      </span>
+      <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
+    </button>
   </fit-card>
 
   <section aria-labelledby="you-activity">

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { IonIcon, NavController } from '@ionic/angular';
 
+import { ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
 import { MEASUREMENT_HISTORY_PATH } from '../body-measurements/measurement-paths';
 import { WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
@@ -43,6 +44,11 @@ export class YouPage {
   protected readonly upcomingSettings = UPCOMING_SETTINGS;
 
   private readonly nav = inject(NavController);
+
+  /** The profile review (saving re-runs the assessment; backing out returns here). */
+  protected openProfile(): void {
+    void this.nav.navigateForward(ONBOARDING_REVIEW_PATH, { queryParams: { returnTo: '/you' } });
+  }
 
   protected openProgress(): void {
     void this.nav.navigateForward(['/you', 'progress']);
