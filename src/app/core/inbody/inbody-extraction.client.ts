@@ -1,5 +1,6 @@
-import { Injectable, InjectionToken, inject, isDevMode } from '@angular/core';
+import { Injectable, InjectionToken, inject } from '@angular/core';
 
+import { environment } from '../../../environments/environment';
 import { INBODY_REPORT_MEDIA_TYPES, InBodyExtraction, parseInBodyExtraction } from '../../domain/inbody-extraction';
 
 /**
@@ -12,13 +13,14 @@ import { INBODY_REPORT_MEDIA_TYPES, InBodyExtraction, parseInBodyExtraction } fr
  * the response or its values.
  */
 
-/** Local server (`npm run server:start`) in development; null until production hosting exists. */
-const DEV_ENDPOINT = 'http://localhost:8787/v1/inbody-extractions';
-
-/** The extraction endpoint, or null when report upload isn't available in this build. */
+/**
+ * The extraction endpoint, or null when report upload isn't available in this
+ * build: the local server in development, null in production until hosting
+ * exists (src/environments). A public URL, never a credential.
+ */
 export const INBODY_EXTRACTION_ENDPOINT = new InjectionToken<string | null>('INBODY_EXTRACTION_ENDPOINT', {
   providedIn: 'root',
-  factory: () => (isDevMode() ? DEV_ENDPOINT : null),
+  factory: () => environment.inbodyExtractionEndpoint,
 });
 
 /** `fetch`, injectable so tests never reach the network. */

@@ -2,8 +2,12 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+// Bundled into the app and readable by anyone: public values only, never
+// API keys or other secrets (the OpenAI key lives in server/.env).
 export const environment = {
-  production: false
+  production: false,
+  /** The local InBody extraction server (`npm run server:start`). */
+  inbodyExtractionEndpoint: 'http://localhost:8787/v1/inbody-extractions' as string | null,
 };
 
 /*
