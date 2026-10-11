@@ -68,8 +68,12 @@ export class OnboardingFlow {
     this.ready.set(true);
   }
 
+  /** The profile being reviewed (review mode), for values the questionnaire doesn't edit. */
+  private reviewed: UserFitnessProfile | null = null;
+
   /** Opens the summary of an existing profile for review/editing. */
   startReview(profile: UserFitnessProfile): void {
+    this.reviewed = profile;
     this.mode.set('review');
     this.state.set({ stepId: 'summary', draft: draftFromProfile(profile), editingFromSummary: false });
     this.ready.set(true);
@@ -141,7 +145,7 @@ export class OnboardingFlow {
     }
     const draft = this.draft();
     const incomplete = firstIncompleteStep(draft);
-    const profile = toFitnessProfile(draft, new Date());
+    const profile = withKeptCalibration(toFitnessProfile(draft, new Date()), this.mode() === 'review' ? this.reviewed : null);
     if (incomplete || !profile) {
       this.goTo(incomplete ?? 'goal', true);
       return false;
@@ -174,4 +178,16 @@ export class OnboardingFlow {
       void this.store.save(progress);
     }
   }
+}
+
+/**
+ * An accepted Calorie Check-in calibration survives a profile review, so
+ * editing e.g. equipment never silently changes the calorie target. A new
+ * activity level changes energy needs, so the formula estimate is used again
+ * (and the assessment that follows shows the new target).
+ */
+function withKeptCalibration(profile: UserFitnessProfile | null, previous: UserFitnessProfile | null): UserFitnessProfile | null {
+  return profile && previous?.energyCalibration && previous.activityLevel === profile.activityLevel
+    ? { ...profile, energyCalibration: previous.energyCalibration }
+    : profile;
 }

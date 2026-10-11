@@ -9,7 +9,7 @@ import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, Load
 import { BODY_COMPOSITION_HISTORY_PATH } from '../body-composition/body-composition-paths';
 import { MEASUREMENT_HISTORY_PATH, NEW_MEASUREMENT_PATH } from '../body-measurements/measurement-paths';
 import { NEW_WEIGHT_PATH, WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
-import { NUTRITION_PATH, NUTRITION_WEEK_PATH } from '../nutrition/nutrition-paths';
+import { CALORIE_CHECK_IN_PATH, NUTRITION_PATH, NUTRITION_WEEK_PATH } from '../nutrition/nutrition-paths';
 import { WORKOUT_PATH } from '../workout/workout-paths';
 import { ReviewActionsComponent, ReviewBodyComponent, ReviewNutritionComponent, ReviewTrainingComponent } from './components/review-sections.component';
 import { FITNESS_REVIEW_COPY } from './fitness-review-content';
@@ -133,6 +133,9 @@ export class FitnessReviewPage {
         return;
       case 'nutrition-week':
         void this.nav.navigateForward(NUTRITION_WEEK_PATH, { queryParams: { date: link.date } });
+        return;
+      case 'check-in':
+        void this.nav.navigateForward(CALORIE_CHECK_IN_PATH);
         return;
       case 'exercise':
         void this.nav.navigateForward(['/you', 'progress', 'exercise', link.exerciseId]);

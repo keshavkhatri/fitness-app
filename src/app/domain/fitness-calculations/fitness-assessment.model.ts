@@ -166,6 +166,23 @@ export type ProteinMethodDetail =
 
 export type ProteinMethodType = ProteinMethodDetail['type'];
 
+/**
+ * The maintenance figure the calorie target was built from:
+ * - formula: the estimated TDEE above (BMR × activity multiplier);
+ * - check-in: a maintenance figure the user accepted from a Calorie Check-in
+ *   (observed intake vs weight trend). `estimates.tdeeKcal` stays the
+ *   formula estimate, so the two are never confused.
+ */
+export type MaintenanceBasis =
+  | { readonly source: 'formula'; readonly kcal: number }
+  | {
+      readonly source: 'check-in';
+      readonly kcal: number;
+      readonly observedFrom: IsoCalendarDate;
+      readonly observedTo: IsoCalendarDate;
+      readonly acceptedAt: string;
+    };
+
 export interface AssessmentExplanation {
   readonly bmr: {
     readonly method: BmrMethod;
@@ -173,7 +190,9 @@ export interface AssessmentExplanation {
     readonly inputs: { readonly weightKg: number; readonly heightCm: number; readonly ageYears: number };
   };
   readonly activity: { readonly level: ActivityLevel; readonly multiplier: number };
-  /** Fraction applied to TDEE (−0.15 = 15% below). */
+  /** What the goal adjustment was applied to. */
+  readonly maintenance: MaintenanceBasis;
+  /** Fraction applied to maintenance (−0.15 = 15% below). */
   readonly goalAdjustment: { readonly goal: PrimaryGoal; readonly fraction: number };
   readonly protein: ProteinMethodDetail;
   readonly fat: {

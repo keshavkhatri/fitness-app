@@ -16,8 +16,9 @@ import {
   PageLayoutComponent,
 } from '../../shared/ui';
 import { MealSectionComponent } from './components/meal-section.component';
+import { CHECK_IN_COPY } from '../calorie-check-in/calorie-check-in-content';
 import { NUTRITION_COPY } from './nutrition-content';
-import { NEW_FOOD_PATH, NUTRITION_WEEK_PATH, foodPath } from './nutrition-paths';
+import { CALORIE_CHECK_IN_PATH, NEW_FOOD_PATH, NUTRITION_WEEK_PATH, foodPath } from './nutrition-paths';
 import { NoticeAction, suggestedMeal, toDateHeader, toNutritionScreen } from './nutrition-view-model';
 
 /**
@@ -49,6 +50,7 @@ export class NutritionPage {
   private readonly clock = inject(CLOCK);
 
   protected readonly copy = NUTRITION_COPY;
+  protected readonly checkInEntry = CHECK_IN_COPY.entry;
   protected readonly screen = computed(() => toNutritionScreen(this.nutrition.state()));
   protected readonly header = computed(() => toDateHeader(this.nutrition.selectedDate(), this.nutrition.today()));
 
@@ -98,6 +100,11 @@ export class NutritionPage {
 
   protected addFood(meal: MealCategory = suggestedMeal(this.clock())): void {
     void this.nav.navigateForward(NEW_FOOD_PATH, { queryParams: { meal, date: this.nutrition.selectedDate() } });
+  }
+
+  /** Logged intake vs weight trend, and a proposed target to confirm. */
+  protected openCheckIn(): void {
+    void this.nav.navigateForward(CALORIE_CHECK_IN_PATH);
   }
 
   /** The weekly summary for the week of the day shown. */

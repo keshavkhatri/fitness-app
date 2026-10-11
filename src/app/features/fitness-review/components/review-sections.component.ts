@@ -133,6 +133,9 @@ export class ReviewTrainingComponent {
               <button type="button" class="link" (click)="open.emit(n.link.target)">
                 {{ n.link.label }}<ion-icon name="chevron-forward" aria-hidden="true" />
               </button>
+              <button type="button" class="link" (click)="open.emit({ kind: 'check-in' })">
+                {{ copy.links.checkIn }}<ion-icon name="chevron-forward" aria-hidden="true" />
+              </button>
             }
             @case ('empty') {
               <p class="text" data-testid="nutrition-coverage">{{ n.coverage }}</p>

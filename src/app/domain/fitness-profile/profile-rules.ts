@@ -16,6 +16,8 @@ export interface NumericRange {
 export const AGE_YEARS: NumericRange = { min: 18, max: 120 };
 export const HEIGHT_CM: NumericRange = { min: 50, max: 275 };
 export const WEIGHT_KG: NumericRange = { min: 20, max: 500 };
+/** An accepted maintenance-calorie calibration (kcal/day). */
+export const MAINTENANCE_KCAL: NumericRange = { min: 1000, max: 6000 };
 
 export function isWithin(value: number, range: NumericRange): boolean {
   return value >= range.min && value <= range.max;

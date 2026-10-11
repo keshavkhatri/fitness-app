@@ -182,6 +182,31 @@ describe('OnboardingFlow', () => {
       expect(saved?.activityLevel).toBe('very-active');
       expect(saved?.updatedAt).not.toBe(profile.updatedAt); // so the assessment is shown again
     });
+
+    describe('an accepted Calorie Check-in calibration', () => {
+      const energyCalibration = { maintenanceKcal: 2450, observedFrom: '2026-09-01', observedTo: '2026-09-28', acceptedAt: '2026-09-29T09:00:00.000Z' };
+      async function calibratedReview() {
+        const flow = await createFlow();
+        flow.startReview({ ...toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!, energyCalibration });
+        return flow;
+      }
+
+      it('is kept when other answers change, so the calorie target doesn’t change silently', async () => {
+        const flow = await calibratedReview();
+        flow.edit('equipment');
+        flow.update({ equipment: ['dumbbells'] });
+        expect(await flow.complete()).toBe(true);
+        expect(TestBed.inject(FitnessProfileService).profile()?.energyCalibration).toEqual(energyCalibration);
+      });
+
+      it('is dropped when the activity level changes (energy needs changed; the formula is used again)', async () => {
+        const flow = await calibratedReview();
+        flow.edit('activity');
+        flow.update({ activityLevel: 'very-active' });
+        expect(await flow.complete()).toBe(true);
+        expect(TestBed.inject(FitnessProfileService).profile()?.energyCalibration).toBeUndefined();
+      });
+    });
   });
 
   describe('complete', () => {

@@ -26,6 +26,7 @@ export const ASSESSMENT_COPY = {
     bmrCaption: 'Estimated calories your body uses at rest',
     maintenanceLabel: 'Estimated maintenance',
     maintenanceCaption: 'Estimated daily energy needs at your activity level',
+    maintenanceFromCheckIn: (date: string) => `From your calorie check-in on ${date}: your logged intake compared with your weight trend`,
   },
 
   why: [

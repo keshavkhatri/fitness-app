@@ -65,6 +65,7 @@ export const FITNESS_REVIEW_COPY = {
   links: {
     workout: 'Open Workout',
     nutritionWeek: 'Open weekly nutrition',
+    checkIn: 'Calorie check-in',
     nutrition: 'Open Nutrition',
     exercise: 'See exercise',
     weighIn: 'Log weight',

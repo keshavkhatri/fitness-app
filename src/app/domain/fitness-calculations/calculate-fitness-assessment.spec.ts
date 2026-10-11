@@ -77,6 +77,7 @@ describe('calculateFitnessAssessment', () => {
       expect(assess().explanation).toEqual({
         bmr: { method: 'mifflin-st-jeor', sexBasis: 'male', inputs: { weightKg: 80, heightCm: 180, ageYears: 36 } },
         activity: { level: 'moderately-active', multiplier: 1.55 },
+        maintenance: { source: 'formula', kcal: assess().estimates.tdeeKcal },
         goalAdjustment: { goal: 'lose-fat', fraction: -0.15 },
         protein: { type: 'body-weight', gramsPerKg: 1.8, basisWeightKg: 80 },
         fat: { method: 'share-of-calories', preferredShare: 0.3, minimumShare: 0.2, maximumShare: 0.35 },
@@ -407,5 +408,35 @@ describe('calculateFitnessAssessment', () => {
       expect(errorCode(result)).toBe(code);
       expect(result.ok ? '' : result.error.message).not.toBe('');
     });
+  });
+});
+
+describe('accepted Calorie Check-in calibration', () => {
+  const calibrated = (maintenanceKcal: number) =>
+    profile({ energyCalibration: { maintenanceKcal, observedFrom: '2026-01-01', observedTo: '2026-01-28', acceptedAt: '2026-01-29T09:00:00.000Z' } });
+
+  it('replaces the formula maintenance for targets; BMR and the formula TDEE stay as estimated', () => {
+    const formula = assess();
+    const result = assess(calibrated(2400));
+    expect(result.estimates).toEqual(formula.estimates);
+    expect(result.explanation.maintenance).toEqual({ source: 'check-in', kcal: 2400, observedFrom: '2026-01-01', observedTo: '2026-01-28', acceptedAt: '2026-01-29T09:00:00.000Z' });
+    expect(result.targets.calories.calculatedKcal).toBe(Math.round(2400 * (1 + DEFAULTS.goalCalorieAdjustments[PROFILE.primaryGoal])));
+  });
+
+  it('macros are recalculated from the new calorie target', () => {
+    const result = assess(calibrated(2400));
+    expect(result.targets.macros.analysis.calorieTargetKcal).toBe(result.targets.calories.finalKcal);
+    expect(grams(result.targets.macros)).not.toEqual(grams(assess().targets.macros));
+  });
+
+  it('the product safety threshold still applies, and can still withhold the target', () => {
+    expect(assess(calibrated(1300)).targets.calories).toMatchObject({ status: 'review-required' });
+    const floored = assess(profile({ ...calibrated(1600), primaryGoal: 'lose-fat' })).targets.calories;
+    expect(floored.finalKcal).toBeGreaterThanOrEqual(floored.productSafetyThresholdKcal);
+  });
+
+  it('a calibration outside the plausible range is ignored (formula used)', () => {
+    const result = assess(profile({ energyCalibration: { maintenanceKcal: 900, observedFrom: '2026-01-01', observedTo: '2026-01-28', acceptedAt: '2026-01-29T09:00:00.000Z' } }));
+    expect(result.explanation.maintenance).toEqual({ source: 'formula', kcal: result.estimates.tdeeKcal });
   });
 });

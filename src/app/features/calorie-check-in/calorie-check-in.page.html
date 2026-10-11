@@ -1,0 +1,183 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button [defaultHref]="nutritionPath" [text]="copy.back" />
+    </ion-buttons>
+    <!-- Navigation label only; the page heading (h1) is below. -->
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <header class="intro">
+      <h1 class="title">{{ copy.title }}</h1>
+      <p class="caption">{{ copy.intro }}</p>
+    </header>
+    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+
+    @let s = screen();
+    @if (s.kind === 'ready') {
+      <p class="period" data-testid="period">{{ s.period }}</p>
+
+      @if (outcome(); as message) {
+        <p class="outcome" data-testid="outcome">{{ message }}</p>
+      }
+
+      <fit-card data-testid="observed">
+        <section class="stack" aria-labelledby="check-in-observed">
+          <h2 class="card-title" id="check-in-observed">{{ copy.observed.title }}</h2>
+          <dl class="rows">
+            @for (row of s.observed; track row.key) {
+              <div class="row" [attr.data-testid]="'observed-' + row.key">
+                <dt class="row-label">{{ row.label }}</dt>&ngsp;
+                <dd class="row-value">{{ row.value }}</dd>
+                @if (row.detail; as detail) {
+                  &ngsp;<dd class="row-detail">{{ detail }}</dd>
+                }
+              </div>
+            }
+          </dl>
+          @if (s.intakeVsTarget; as note) {
+            <p class="caption" data-testid="intake-vs-target">{{ note }}</p>
+          }
+        </section>
+      </fit-card>
+
+      <fit-card data-testid="estimate">
+        <section class="stack" aria-labelledby="check-in-estimate">
+          <h2 class="card-title" id="check-in-estimate">{{ copy.estimate.title }}</h2>
+          @let e = s.estimate;
+          @switch (e.kind) {
+            @case ('estimate') {
+              <p class="headline" data-testid="estimate-value"><span class="visually-hidden">{{ copy.estimate.label }}:&ngsp;</span>{{ e.value }}</p>
+              <p class="emphasis" data-testid="estimate-range">{{ e.range }}</p>
+              <details class="how">
+                <summary class="link">{{ copy.estimate.how }}</summary>
+                <ul class="how-list" data-testid="estimate-how">
+                  @for (line of e.how; track $index) {
+                    <li>{{ line }}</li>
+                  }
+                </ul>
+              </details>
+              <p class="caption">{{ copy.estimate.caveat }}</p>
+            }
+            @case ('insufficient') {
+              <p class="emphasis">{{ copy.estimate.insufficientTitle }}</p>
+              <ul class="missing" data-testid="missing">
+                @for (item of e.items; track item.key) {
+                  <li class="missing-item" [attr.data-testid]="'missing-' + item.key">
+                    <span>{{ item.text }}</span>
+                    @if (item.link; as link) {
+                      &ngsp;<button type="button" class="link" (click)="open(link)">
+                        {{ link === 'log-food' ? copy.links.logFood : link === 'log-weight' ? copy.links.logWeight : copy.links.weightHistory }}<ion-icon name="chevron-forward" aria-hidden="true" />
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+            @default {
+              <p class="emphasis">{{ copy.estimate.implausibleTitle }}</p>
+              <p class="text" data-testid="implausible">{{ e.message }}</p>
+            }
+          }
+        </section>
+      </fit-card>
+
+      <fit-card data-testid="recommendation">
+        <section class="stack" aria-labelledby="check-in-recommendation">
+          <h2 class="card-title" id="check-in-recommendation">{{ copy.recommendation.title }}</h2>
+          @let r = s.recommendation;
+          @if (r.trendNote; as note) {
+            <p class="text" data-testid="trend-note">{{ note }}</p>
+          }
+          @if (r.proposal; as p) {
+            @if (!kept()) {
+              <p class="headline" data-testid="proposal">{{ r.message }}</p>
+              <p class="text">{{ p.reason }}</p>
+              @if (p.limitedNote; as limited) {
+                <p class="caption">{{ limited }}</p>
+              }
+              <div class="actions">
+                <button fit-button type="button" block aria-haspopup="dialog" data-testid="review-change" (click)="review()">{{ copy.recommendation.review }}</button>
+                <button fit-button type="button" block variant="outline" data-testid="keep-target" (click)="keep()">{{ copy.recommendation.keep }}</button>
+              </div>
+            } @else {
+              <p class="text" data-testid="kept">{{ copy.recommendation.kept }}</p>
+            }
+          } @else {
+            <p class="text" data-testid="recommendation-message">{{ r.message }}</p>
+          }
+          @if (s.targetSource; as source) {
+            <p class="caption" data-testid="target-source">{{ source }}</p>
+          }
+          @if (s.canUseFormula) {
+            <button type="button" class="link" aria-haspopup="dialog" data-testid="use-formula" (click)="reviewFormula()">{{ copy.formula.action }}</button>
+          }
+        </section>
+      </fit-card>
+    } @else if (s.kind === 'error') {
+      <fit-card data-testid="check-in-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div class="loading" aria-busy="true" data-testid="check-in-loading">
+        <fit-skeleton height="200px" radius="card" />
+        <fit-skeleton height="180px" radius="card" />
+        <fit-skeleton height="160px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>
+
+@let current = screen();
+<fit-bottom-sheet [title]="copy.confirm.title" [open]="acceptOpen()" (openChange)="setSheetOpen('accept', $event)">
+  @if (current.kind === 'ready' && current.recommendation.proposal; as p) {
+    <div class="sheet" data-testid="confirm-sheet">
+      <dl class="rows">
+        <div class="row">
+          <dt class="row-label">{{ copy.confirm.current }}</dt>&ngsp;
+          <dd class="row-value" data-testid="confirm-current">{{ p.current }}</dd>
+        </div>
+        <div class="row">
+          <dt class="row-label">{{ copy.confirm.next }}</dt>&ngsp;
+          <dd class="row-value next" data-testid="confirm-next">{{ p.next }}</dd>
+        </div>
+      </dl>
+      @if (p.macros; as macros) {
+        <p class="row-label">{{ copy.confirm.macros }}</p>
+        <p class="caption" data-testid="confirm-macros">
+          @for (m of macros; track m.key; let last = $last) {
+            {{ m.label }} {{ m.value }}{{ last ? '' : ' · ' }}
+          }
+        </p>
+      } @else {
+        <p class="caption">{{ copy.confirm.noMacros }}</p>
+      }
+      <p class="caption">{{ copy.confirm.consequences }}</p>
+      <p class="status" role="status" data-testid="confirm-status">{{ sheetFailed() ? copy.confirm.failed : '' }}</p>
+      <div class="actions">
+        <button fit-button type="button" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="confirm-change" (click)="confirmAccept()">
+          {{ copy.confirm.accept }}
+        </button>
+        <button fit-button type="button" size="lg" block variant="ghost" [disabled]="saving()" (click)="closeSheet()">{{ copy.confirm.cancel }}</button>
+      </div>
+    </div>
+  }
+</fit-bottom-sheet>
+
+<fit-bottom-sheet [title]="copy.formula.title" [open]="formulaOpen()" (openChange)="setSheetOpen('formula', $event)">
+  <div class="sheet" data-testid="formula-sheet">
+    <p class="caption">Your calorie target will be calculated from your profile again, without this check-in’s maintenance figure. Your records aren’t changed.</p>
+    <p class="status" role="status">{{ sheetFailed() ? copy.confirm.failed : '' }}</p>
+    <div class="actions">
+      <button fit-button type="button" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="confirm-formula" (click)="confirmFormula()">
+        {{ copy.formula.confirm }}
+      </button>
+      <button fit-button type="button" size="lg" block variant="ghost" [disabled]="saving()" (click)="closeSheet()">{{ copy.confirm.cancel }}</button>
+    </div>
+  </div>
+</fit-bottom-sheet>

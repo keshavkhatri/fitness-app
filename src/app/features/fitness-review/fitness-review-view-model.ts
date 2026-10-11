@@ -34,6 +34,7 @@ export type ReviewLink =
   | { readonly kind: 'workout' }
   | { readonly kind: 'nutrition' }
   | { readonly kind: 'nutrition-week'; readonly date: IsoCalendarDate }
+  | { readonly kind: 'check-in' }
   | { readonly kind: 'exercise'; readonly exerciseId: string }
   | { readonly kind: 'weigh-in' }
   | { readonly kind: 'measure' }

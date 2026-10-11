@@ -182,6 +182,8 @@ describe('Weekly Fitness Review page', () => {
     expect(url).toHaveBeenLastCalledWith('/nutrition');
     await go(buttonIn(byTestId(el, 'review-nutrition'), 'Open weekly nutrition'));
     expect(forward).toHaveBeenLastCalledWith(['/nutrition', 'week'], { queryParams: { date: '2026-10-05' } });
+    await go(buttonIn(byTestId(el, 'review-nutrition'), 'Calorie check-in'));
+    expect(forward).toHaveBeenLastCalledWith(['/nutrition', 'check-in']);
     await go(byTestId(el, 'improving')?.querySelector('button') as HTMLButtonElement);
     expect(forward).toHaveBeenLastCalledWith(['/you', 'progress', 'exercise', expect.any(String)]);
     await go(buttonIn(byTestId(el, 'review-body'), 'Weight history'));

@@ -69,6 +69,23 @@ export interface GoalTarget {
   readonly targetWeight: BodyWeight | null;
 }
 
+/**
+ * A maintenance-calorie figure the user explicitly accepted from a Calorie
+ * Check-in (logged intake compared with the weight trend over the same
+ * period). When present, the calculation engine uses it instead of the
+ * formula's estimated maintenance; goal adjustment, safety threshold and
+ * macros are still applied by the engine. Never set without confirmation.
+ */
+export interface EnergyCalibration {
+  /** Whole kcal/day, within MAINTENANCE_KCAL. */
+  readonly maintenanceKcal: number;
+  /** The observed period it came from (inclusive local dates). */
+  readonly observedFrom: IsoCalendarDate;
+  readonly observedTo: IsoCalendarDate;
+  /** ISO-8601 timestamp of the confirmation. */
+  readonly acceptedAt: string;
+}
+
 export interface UserFitnessProfile {
   readonly primaryGoal: PrimaryGoal;
   /**
@@ -91,6 +108,8 @@ export interface UserFitnessProfile {
   readonly equipment: readonly EquipmentId[];
   readonly activityLevel: ActivityLevel;
   readonly goalTarget: GoalTarget;
+  /** Absent until the user accepts a Calorie Check-in adjustment. */
+  readonly energyCalibration?: EnergyCalibration;
   /** ISO-8601 timestamp of the last profile save. */
   readonly updatedAt: string;
 }

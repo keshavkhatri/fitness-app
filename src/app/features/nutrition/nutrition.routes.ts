@@ -13,6 +13,12 @@ export default [
     loadComponent: () => import('./nutrition-week.page').then((m) => m.NutritionWeekPage),
   },
   {
+    // Read-only until the user confirms a proposed calorie target in its sheet.
+    path: 'check-in',
+    title: 'Calorie check-in',
+    loadComponent: () => import('../calorie-check-in/calorie-check-in.page').then((m) => m.CalorieCheckInPage),
+  },
+  {
     // Query parameters: `meal` (breakfast|lunch|dinner|snacks), `date` (YYYY-MM-DD).
     path: 'food/new',
     title: 'Add food',
