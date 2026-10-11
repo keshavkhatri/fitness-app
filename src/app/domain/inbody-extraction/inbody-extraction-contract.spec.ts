@@ -53,7 +53,7 @@ describe('InBody extraction contract', () => {
     ['not an object', [], [{ path: '', problem: 'not-an-object' }]],
     ['another schema version', { ...sample(), schemaVersion: 'inbody-extraction.v2' }, [{ path: 'schemaVersion', problem: 'unsupported-version' }]],
     ['an unknown outcome', { ...sample(), outcome: 'partial' }, [{ path: 'outcome', problem: 'invalid-value' }]],
-    ['an unknown top-level key', { ...sample(), notes: 'looks fine' }, [{ path: 'notes', problem: 'unknown-key' }]],
+    ['an unknown top-level key', { ...sample(), notes: 'looks fine' }, [{ path: '<unknown>', problem: 'unknown-key' }]],
     ['an unknown report issue', { ...sample(), reportIssues: ['blurry'] }, [{ path: 'reportIssues', problem: 'invalid-value' }]],
     ['a repeated report issue', { ...sample(), reportIssues: ['low-image-quality', 'low-image-quality'] }, [{ path: 'reportIssues', problem: 'invalid-value' }]],
   ])('rejects %s', (_, value, errors) => {
@@ -68,9 +68,24 @@ describe('InBody extraction contract', () => {
       ok: false,
       errors: [
         { path: 'measurements.weight', problem: 'missing-key' },
-        { path: 'measurements.inbody-score', problem: 'unknown-key' },
+        { path: 'measurements.<unknown>', problem: 'unknown-key' },
       ],
     });
+  });
+
+  it('never echoes a model-written key: it could quote the report', () => {
+    const value = sample();
+    value['Name: Jane Example, DOB 1990-01-01'] = 'x';
+    group(value, 'measurements')['weight 81.2 kg'] = { status: 'read', text: '81.2', unit: 'kg', sourceLabel: 'Weight' };
+    const result = parseInBodyExtraction(value);
+    expect(result).toEqual({
+      ok: false,
+      errors: [
+        { path: '<unknown>', problem: 'unknown-key' },
+        { path: 'measurements.<unknown>', problem: 'unknown-key' },
+      ],
+    });
+    expect(JSON.stringify(result)).not.toMatch(/Jane|1990|81\.2/);
   });
 
   const weight = (field: Json) => withField('measurements', 'weight', { status: 'read', text: '94.5', unit: 'kg', sourceLabel: 'Weight', ...field });

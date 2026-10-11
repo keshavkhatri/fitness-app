@@ -142,9 +142,13 @@ const DECIMAL = new RegExp(DECIMAL_PATTERN);
 const MAX_TEXT_LENGTH = 40;
 const MAX_LABEL_LENGTH = 80;
 
+/** Path segment standing in for a key the contract doesn't define. */
+export const UNKNOWN_KEY = '<unknown>';
+
 /**
  * `path` locates the problem (e.g. `measurements.weight.unit`). Errors never
- * carry the offending value: extraction payloads hold personal data.
+ * carry the offending value, nor any model-written key (an unknown key shows
+ * as `<unknown>`): extraction payloads hold personal data.
  */
 export type ExtractionProblem =
   | 'not-an-object'
@@ -179,7 +183,9 @@ function checkKeys(value: Record<string, unknown>, keys: readonly string[], path
   }
   for (const key of Object.keys(value)) {
     if (!keys.includes(key)) {
-      errors.push({ path: `${path}${key}`, problem: 'unknown-key' });
+      // The key itself is model-written text (it could quote the report), so
+      // the path names its position only, never the key.
+      errors.push({ path: `${path}${UNKNOWN_KEY}`, problem: 'unknown-key' });
     }
   }
 }

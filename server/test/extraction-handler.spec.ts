@@ -213,7 +213,16 @@ describe('POST /v1/inbody-extractions', () => {
   it('logs only event codes for a contract failure (paths, never values)', async () => {
     const { handle, logs } = harness({ ok: true, body: completed(outputText(JSON.stringify({ ...SAMPLE_INBODY380_EXTRACTION, extra: 1 }))) });
     await handle(upload(pngBytes()), CONTEXT);
-    expect(logs).toContainEqual({ event: 'extraction.invalid-output', fields: { errorCount: 1, paths: 'extra' } });
+    expect(logs).toContainEqual({ event: 'extraction.invalid-output', fields: { errorCount: 1, paths: '<unknown>' } });
+  });
+
+  it('never logs a model-written key from a contract failure (it could quote the report)', async () => {
+    const quoted = 'Patient Jane Example 1990-01-01';
+    const { handle, logs } = harness({ ok: true, body: completed(outputText(JSON.stringify({ ...SAMPLE_INBODY380_EXTRACTION, [quoted]: 1 }))) });
+    const response = await handle(upload(pngBytes()), CONTEXT);
+    expect(response.status).toBe(502);
+    expect(JSON.stringify(logs)).not.toContain('Jane');
+    expect(await response.text()).not.toContain('Jane');
   });
 
   it('answers not-configured without reading the upload when the server has no API key', async () => {
