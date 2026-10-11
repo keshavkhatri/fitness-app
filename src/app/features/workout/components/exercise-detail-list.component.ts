@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
 import { DetailExerciseView } from '../workout-detail-view-model';
+import { ExerciseDemoComponent } from './exercise-demo.component';
 
 /**
  * The full prescription of a session, in programmed order. Each prescription
  * is a small stat grid (value over label) so nothing wraps mid-phrase at
- * 320px. The numbered tile is a neutral placeholder: there is no exercise media yet.
+ * 320px. A demonstration, where the exercise has one, opens on request.
  */
 @Component({
   selector: 'app-exercise-detail-list',
@@ -36,6 +37,8 @@ import { DetailExerciseView } from '../workout-detail-view-model';
             }
           </dl>
 
+          <app-exercise-demo [exerciseId]="exercise.exerciseId" [name]="exercise.name" />
+
           @if (exercise.substitution; as substitution) {
             <p class="substitution" data-testid="substitution">
               <ion-icon name="swap-horizontal-outline" aria-hidden="true" />
@@ -47,7 +50,7 @@ import { DetailExerciseView } from '../workout-detail-view-model';
     </ol>
   `,
   styleUrl: './exercise-detail-list.component.scss',
-  imports: [IonIcon],
+  imports: [IonIcon, ExerciseDemoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExerciseDetailListComponent {

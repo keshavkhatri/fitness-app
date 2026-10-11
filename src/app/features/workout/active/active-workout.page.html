@@ -41,6 +41,7 @@
           <p class="planned" data-testid="planned">
             <span class="planned-label">{{ copy.planned }}</span>&ngsp;<span>{{ v.exercise.planned }}</span>
           </p>
+          <app-exercise-demo [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name" />
         </div>
 
         <app-set-logger

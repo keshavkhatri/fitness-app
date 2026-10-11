@@ -351,6 +351,15 @@ export const WORKOUT_COPY = {
     },
   },
 
+  demo: {
+    show: 'Show demonstration',
+    hide: 'Hide demonstration',
+    play: 'Play',
+    pause: 'Pause',
+    alt: (name: string) => `${name}: start and end positions, shown in turn`,
+    failed: "The demonstration couldn't be loaded. Check your connection and try again.",
+    retry: 'Try again',
+  },
   progress: {
     title: 'Progress',
     subtitle: 'Your training over time',

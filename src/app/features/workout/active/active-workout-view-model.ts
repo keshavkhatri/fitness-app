@@ -24,6 +24,8 @@ export interface ActiveWorkoutView {
 }
 
 export interface ActiveExerciseView {
+  readonly exerciseId: string;
+  readonly name: string;
   /** "2. Cable Row" */
   readonly heading: string;
   readonly metadata: string | null;
@@ -125,6 +127,8 @@ function fieldsFor(exercise: ExerciseLog, log: WorkoutLog): FieldView[] {
 function toExercise(exercise: ExerciseLog, log: WorkoutLog, catalog: ReadonlyMap<string, Exercise>): ActiveExerciseView {
   const next = nextPendingSet(exercise);
   return {
+    exerciseId: exercise.exerciseId,
+    name: exercise.name,
     heading: `${exercise.order}. ${exercise.name}`,
     metadata: exerciseMetadata(catalog.get(exercise.exerciseId)),
     planned: formatPrescription(exercise.planned),

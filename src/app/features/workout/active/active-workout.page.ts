@@ -13,6 +13,7 @@ import {
   NoticeComponent,
 } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
+import { ExerciseDemoComponent } from '../components/exercise-demo.component';
 import { RestTimerComponent } from './rest-timer.component';
 import { RestTimer } from './rest-timer';
 import { DraftEdit, SetError, SetLoggerComponent } from './set-logger.component';
@@ -67,6 +68,7 @@ const parseNumber = (text: string | undefined): number | null => {
     LoadingSkeletonComponent,
     NoticeComponent,
     RestTimerComponent,
+    ExerciseDemoComponent,
     SetLoggerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

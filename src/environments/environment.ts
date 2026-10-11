@@ -8,6 +8,11 @@ export const environment = {
   production: false,
   /** The local InBody extraction server (`npm run server:start`). */
   inbodyExtractionEndpoint: 'http://localhost:8787/v1/inbody-extractions' as string | null,
+  /**
+   * Exercise demonstration photos (free-exercise-db, public domain), pinned to
+   * one commit; null hides demonstrations.
+   */
+  exerciseMediaBaseUrl: 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5/exercises/' as string | null,
 };
 
 /*

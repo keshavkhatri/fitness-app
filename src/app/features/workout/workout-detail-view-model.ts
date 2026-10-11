@@ -48,6 +48,7 @@ export interface ResistanceDetailView extends DetailHeader {
 
 export interface DetailExerciseView {
   readonly order: number;
+  readonly exerciseId: string;
   readonly name: string;
   readonly stats: readonly PrescriptionStat[];
   /** Full sentence form, e.g. "4 sets · 6–10 reps · 120 sec rest". */
@@ -154,6 +155,7 @@ function toDetailExercise(planned: PlannedExercise, catalog: ReadonlyMap<string,
   const exercise = catalog.get(planned.exerciseId);
   return {
     order: planned.order,
+    exerciseId: planned.exerciseId,
     name: exercise?.name ?? planned.exerciseId,
     stats: prescriptionStats(planned),
     prescription: formatPrescription(planned),

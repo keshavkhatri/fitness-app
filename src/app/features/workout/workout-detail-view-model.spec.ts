@@ -96,6 +96,7 @@ describe('workout detail view model', () => {
       expect(detail.exercises.map((e) => e.order)).toEqual(session.exercises.map((e) => e.order));
       expect(detail.exercises[0]).toEqual({
         order: 1,
+        exerciseId: 'barbell-bench-press',
         name: 'Bench Press',
         stats: [
           { value: '4', label: 'sets', spokenLabel: 'sets' },
