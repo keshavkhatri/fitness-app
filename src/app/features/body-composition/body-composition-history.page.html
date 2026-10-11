@@ -48,25 +48,33 @@
               }
             </dl>
           </fit-card>
+          @if (s.single) {
+            <p class="subtitle" data-testid="single-note">{{ copy.singleAssessment }}</p>
+          }
         </section>
         <section class="section" aria-labelledby="body-composition-history-list">
           <h2 class="section-title" id="body-composition-history-list">{{ copy.list.title }}</h2>
           <fit-card padding="none">
             <ul class="rows">
               @for (row of s.rows; track row.id) {
-                <li class="row" data-testid="assessment-row">
-                  <p class="row-heading">
-                    <span class="row-date">{{ row.dateLabel }}</span>&ngsp;
-                    <span class="row-source" data-testid="assessment-source">{{ row.source }}</span>
-                  </p>&ngsp;
-                  <dl class="row-values">
-                    @for (v of row.values; track v.metric) {
-                      <div class="row-value">
-                        <dt>{{ v.metric }}</dt>&ngsp;
-                        <dd>{{ v.value }}</dd>
-                      </div>&ngsp;
-                    }
-                  </dl>
+                <li data-testid="assessment-row">
+                  <button type="button" class="row" [attr.aria-label]="copy.list.open(row.dateLabel)" (click)="open(row.id)">
+                    <span class="row-heading">
+                      <span class="row-date">{{ row.dateLabel }}</span>&ngsp;
+                      <span class="row-source" data-testid="assessment-source">{{ row.source }}</span>
+                    </span>&ngsp;
+                    <span class="row-values">
+                      @for (v of row.values; track v.metric) {
+                        <span class="row-value">
+                          <span class="row-metric">{{ v.metric }}</span>&ngsp;
+                          <span class="row-number">{{ v.value }}</span>
+                        </span>&ngsp;
+                      }
+                      @if (row.moreCount > 0) {
+                        <span class="row-more">+{{ row.moreCount }} more</span>
+                      }
+                    </span>
+                  </button>
                 </li>
               }
             </ul>

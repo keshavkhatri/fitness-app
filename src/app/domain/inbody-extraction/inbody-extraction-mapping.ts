@@ -1,6 +1,7 @@
 import {
   BODY_COMPOSITION_METRICS,
   BodyCompositionMetric,
+  ImportProvenance,
   ReportedValue,
   isReportedUnit,
   validateBodyCompositionInput,
@@ -22,6 +23,7 @@ import {
 import {
   EXTRACTION_FIELD_IDS,
   ExtractedField,
+  INBODY_EXTRACTION_SCHEMA_VERSION,
   ExtractionFieldId,
   ExtractionOutcome,
   InBodyExtraction,
@@ -40,14 +42,14 @@ import {
  * Mapped (supported by the InBody380 sample):
  * - Height (cm) → profile height; Gender (Male/Female) → profile sex;
  *   Weight (kg/lb) → profile weight, converted to the profile's kilograms;
- * - Test Date / Time → assessment date; Weight, Body Fat Mass and PBF →
- *   assessment `weight`, `body-fat-mass`, `body-fat-percentage`, as reported.
+ * - Test Date / Time → assessment date; every measurement → the assessment
+ *   metric of the same quantity, as reported (PBF → `body-fat-percentage`,
+ *   unitless values in unit `none`).
  *
  * Not mapped:
  * - Age: the profile stores a date of birth, which an age can't give;
- * - Fat Free Mass: not the same printed quantity as the app's lean body
- *   mass; equating them is a product decision not yet made;
- * - every other measurement: the assessment model has no metric for it.
+ * - lean body mass: no report field is that quantity. Fat Free Mass is its
+ *   own metric and is never stored as lean body mass.
  * Values calculated by the app (assessments, targets, …) are never read
  * from a report.
  */
@@ -83,11 +85,41 @@ export const MANUAL_PROFILE_ANSWERS = [
   'goalTarget',
 ] as const satisfies readonly (keyof UserFitnessProfile)[];
 
-/** Assessment metric ← report field. `lean-body-mass` has no source yet (see above). */
+/** Assessment metric ← report field. `lean-body-mass` has no source (see above). */
 export const ASSESSMENT_FIELDS: Readonly<Partial<Record<BodyCompositionMetric, ExtractionFieldId>>> = {
   weight: 'weight',
   'body-fat-mass': 'body-fat-mass',
   'body-fat-percentage': 'percent-body-fat',
+  'skeletal-muscle-mass': 'skeletal-muscle-mass',
+  'fat-free-mass': 'fat-free-mass',
+  'soft-lean-mass': 'soft-lean-mass',
+  bmi: 'bmi',
+  'visceral-fat-level': 'visceral-fat-level',
+  'basal-metabolic-rate': 'basal-metabolic-rate',
+  'total-body-water': 'total-body-water',
+  'intracellular-water': 'intracellular-water',
+  'extracellular-water': 'extracellular-water',
+  'ecw-ratio': 'ecw-ratio',
+  protein: 'protein',
+  minerals: 'minerals',
+  'bone-mineral-content': 'bone-mineral-content',
+  'body-cell-mass': 'body-cell-mass',
+  smi: 'smi',
+  'phase-angle': 'phase-angle',
+  'waist-hip-ratio': 'waist-hip-ratio',
+  'obesity-degree': 'obesity-degree',
+};
+
+/**
+ * The source of an assessment saved exactly as read from a report image.
+ * Values the user changed or added are never labelled with it: such an
+ * assessment is saved as a manual entry.
+ */
+export const INBODY_AI_PROVENANCE: ImportProvenance = {
+  device: 'inbody',
+  entryMethod: 'import',
+  format: INBODY_EXTRACTION_SCHEMA_VERSION,
+  parser: { name: 'inbody-ai-extraction', version: '1' },
 };
 
 const PROFILE_FIELDS = ['height', 'gender', 'weight'] as const satisfies readonly ExtractionFieldId[];
@@ -181,6 +213,7 @@ function readDate(today: IsoCalendarDate) {
 function readReported(metric: BodyCompositionMetric, today: IsoCalendarDate) {
   return ({ text, unit }: PrintedValue): Reading<ReportedValue> => {
     const value = parseDecimal(text);
+    unit ??= 'none';
     if (value === null || !isReportedUnit(unit)) {
       return problem('unrecognised');
     }

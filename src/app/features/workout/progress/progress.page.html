@@ -89,5 +89,13 @@
         <fit-skeleton height="140px" radius="card" />
       </div>
     }
+
+    <section class="section" aria-labelledby="progress-body">
+      <h2 class="section-title" id="progress-body">{{ copy.body.title }}</h2>
+      <p class="note">{{ copy.body.description }}</p>
+      <button fit-button type="button" variant="outline" block icon="pulse-outline" data-testid="body-composition-link" (click)="openBodyComposition()">
+        {{ copy.body.composition }}
+      </button>
+    </section>
   </main>
 </ion-content>

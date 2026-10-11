@@ -14,12 +14,14 @@ Implemented so far:
 - **Nutrition**: a daily food log with manually entered values, by meal and day, against the day's calculated targets.
 - **Body-weight history** (You → Weight history): add, edit and delete weigh-ins; a chart and first/latest summary per range. Recording a weight never changes the profile; an entry becomes the profile's weight only through the explicit, confirmed "Use as profile weight" action (after which the updated assessment is shown).
 - **Body measurements** (You → Measurements): tape circumferences (waist, chest, hips, arm, thigh), any subset per entry; history newest first, the latest value per site and the change between a site's two most recent readings. Separate from the profile and the weight history.
-- **Quick Add**: Start workout, Add food, Log weight and Add measurement work; Upload InBody and Progress photo are shown as "Coming soon".
+- **Quick Add**: Start workout, Add food, Log weight, Add measurement and Add InBody work; Progress photo is shown as "Coming soon".
 - **You**: profile review, Progress, Weight history, Measurements, appearance (System/Light/Dark) and **Units** (metric/imperial). Notifications, connected health apps and subscription are listed but not built.
 
 **InBody onboarding (AI-based):** the welcome screen offers *Enter manually* (the default; that path is unchanged) or *Upload InBody report*. The upload step says the image goes to an external AI service, checks the file (PNG/JPEG/WEBP, up to 8 MB) and posts it to the app's own extraction endpoint (`core/inbody`, `POST /v1/inbody-extractions`), which holds the OpenAI key (Responses API, Structured Outputs, `store: false`); the app never does. Every answer is re-validated (`parseInBodyExtraction`) and mapped (`inBodyPrefill`); a read report prefills sex, height and weight on the basics step, where each field shows the printed value or is flagged as uncertain, unreadable, absent or unusable for the user to correct. The profile is saved only from the summary's "Create My Profile", as before. Unsupported or unreadable reports, file, network, provider and invalid-response failures each have their own message, with retry and a switch to manual entry that keeps answers already given. The image and extraction stay in memory only; nothing is logged; weight history, assessments and workout plans are untouched; age is never turned into a date of birth and Fat Free Mass is not used as lean body mass. The endpoint is a public URL set in `src/environments` (`inbodyExtractionEndpoint`; never a key): the local server in development builds (`http://localhost:8787`); production builds set null, which hides the upload option until hosting is chosen. No local OCR.
 
-Not implemented yet: auth, backend/API and sync, InBody / body-composition data, progress photos, notifications, health-app integrations, AI coaching and payments/subscriptions. Each will arrive as a separate, reviewed phase.
+**InBody assessments (You → Body composition, Progress, Quick Add → Add InBody):** a history of saved assessments (key values, the latest value per metric and the difference since the previous report in the same unit; a single assessment shows no change), and a detail page per assessment with every recorded value grouped as on the sheet. A new assessment can be typed in or uploaded: the upload reuses the onboarding extraction (`ReportImport`) and fills in the form, which is the review step; nothing is saved until the user saves. Values saved unchanged are stored as read from the report (`INBODY_AI_PROVENANCE`); any correction saves them as a manual entry. The catalogue covers every scalar the extraction reads (skeletal muscle mass, fat-free mass, water, BMI, visceral fat level, …); lean body mass stays a separate, manual-only metric. Saving never changes the profile or weight history; the profile weight is still updated only with "Use as profile weight" on a weigh-in.
+
+Not implemented yet: auth, backend/API and sync, progress photos, notifications, health-app integrations, AI coaching and payments/subscriptions. Each will arrive as a separate, reviewed phase.
 
 ## Requirements
 
@@ -87,7 +89,7 @@ src/
     shared/ui/              Design-system components (selector prefix `fit-`), import via `shared/ui`
     shell/
       tabs/                 Bottom tab bar (Home, Workout, Quick Add, Nutrition, You)
-      quick-add/            Quick Add sheet + action registry (InBody and progress photo still "coming soon")
+      quick-add/            Quick Add sheet + action registry (progress photo still "coming soon")
     features/
       home/                 Dashboard: page, routes, view models, section cards (all real data: profile goal, plan,
                             workout history, nutrition, recorded weight)

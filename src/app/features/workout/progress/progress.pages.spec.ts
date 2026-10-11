@@ -164,6 +164,7 @@ describe('Progress', () => {
         'H2:Training this week',
         'H2:Training activity',
         'H2:Recent performance',
+        'H2:Body',
       ]);
       for (const b of el.querySelectorAll('button')) {
         expect(clean(b)).not.toBe('');

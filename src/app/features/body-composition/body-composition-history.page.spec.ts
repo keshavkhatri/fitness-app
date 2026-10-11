@@ -96,11 +96,12 @@ describe('Body composition history page', () => {
       'Values from your InBody reports, as recorded. Separate from your weight history, measurements and profile.',
     );
     expect(rows(el).map((r) => clean(r))).toEqual([
-      'Yesterday Imported Weight 81.37 kg Body fat mass 18.25 kg',
-      'Yesterday Entered by hand Lean body mass 62 kg',
+      'Yesterday Read from report Weight 81.37 kg Body fat mass 18.25 kg',
+      // Lean body mass isn't a key value: shown on the assessment's own page.
+      'Yesterday Entered by hand +1 more',
       'Thursday, Oct 1 Entered by hand Weight 176.83 lb Body fat percentage 22.4%',
     ]);
-    expect(rows(el)[0].querySelector('dl')?.querySelectorAll('dt')).toHaveLength(2);
+    expect(rows(el)[0].querySelectorAll('.row-value')).toHaveLength(2);
     // No conversion or interpretation.
     expect(el.textContent).not.toMatch(/80\.2|lost|gained|progress|trend|healthy|range|good|bad/i);
   });
@@ -115,6 +116,8 @@ describe('Body composition history page', () => {
       'Body fat mass 18.25 kg Yesterday',
       'Lean body mass 62 kg Yesterday',
       'Body fat percentage 22.4% Thursday, Oct 1',
+      'Skeletal muscle mass Not recorded yet',
+      'Fat-free mass Not recorded yet',
     ]);
   });
 
@@ -135,6 +138,8 @@ describe('Body composition history page', () => {
       'Body fat mass 18.35 kg Yesterday +0.35 kg since Oct 1',
       'Lean body mass 62 kg Thursday, Oct 1 No change since Sep 12',
       'Body fat percentage 22.8% Thursday, Oct 1 −1.2 percentage points since Dec 30, 2025',
+      'Skeletal muscle mass Not recorded yet',
+      'Fat-free mass Not recorded yet',
     ]);
     expect([...el.querySelectorAll('[data-testid=latest-change]')].map((d) => d.tagName)).toEqual(['DD', 'DD', 'DD', 'DD']);
     expect(el.textContent).not.toMatch(/lost|gained|progress|trend|better|worse|good|bad|healthy|range/i);
@@ -148,13 +153,23 @@ describe('Body composition history page', () => {
       'Body fat mass Not recorded yet',
       'Lean body mass 62 kg Yesterday',
       'Body fat percentage Not recorded yet',
+      'Skeletal muscle mass Not recorded yet',
+      'Fat-free mass Not recorded yet',
     ]);
+    // One assessment sets no trend.
+    expect(clean(byTestId(el, 'single-note'))).toBe('Changes appear here once you add a second assessment.');
+  });
+
+  it('opens an assessment from its row', async () => {
+    const { el, forward } = await renderHistory(envelope([PM, OLDER]));
+    (rows(el)[1].querySelector('button') as HTMLButtonElement).click();
+    expect(forward).toHaveBeenCalledWith(['/you', 'body-composition', 'older']);
+    expect(byTestId(el, 'single-note')).toBeNull();
   });
 
   it('only reads: no edit or delete, and imported provenance is kept exactly', async () => {
     const raw = envelope([PM, OLDER]);
     const { el, storage } = await renderHistory(raw);
-    expect(rows(el).every((r) => r.querySelector('button') === null)).toBe(true);
     expect(el.textContent).not.toMatch(/edit|delete|remove|discard|reset|recover/i);
     expect(storage.values.get(KEY)).toBe(raw);
   });

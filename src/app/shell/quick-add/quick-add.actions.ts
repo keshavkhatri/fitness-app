@@ -26,6 +26,6 @@ export const QUICK_ADD_ACTIONS: readonly QuickAddAction[] = [
   { id: 'add-food', label: 'Add food', icon: 'restaurant-outline', available: true },
   { id: 'log-weight', label: 'Log weight', icon: 'scale-outline', available: true },
   { id: 'add-measurement', label: 'Add measurement', icon: 'resize-outline', available: true },
-  { id: 'upload-inbody', label: 'Upload InBody', icon: 'document-text-outline', available: false },
+  { id: 'upload-inbody', label: 'Add InBody', icon: 'document-text-outline', available: true },
   { id: 'add-progress-photo', label: 'Progress photo', icon: 'camera-outline', available: false },
 ];

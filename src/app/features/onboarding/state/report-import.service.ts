@@ -45,8 +45,9 @@ const failed = (failure: ReportImportFailure, reportIssues: readonly ReportIssue
 });
 
 /**
- * The InBody report upload during onboarding: the chosen image, the request
- * and its result. Provided per onboarding route and held in memory only: the
+ * An InBody report upload: the chosen image, the request and its result.
+ * Used by onboarding and by the new body-composition assessment page.
+ * Provided per route/page and held in memory only: the
  * image, the extraction and the suggestions are never persisted, and the
  * image is let go as soon as it has been read. Nothing here changes the
  * draft; the basics step offers the suggestions for review.

@@ -24,12 +24,14 @@ describe('body composition history (domain)', () => {
   it('gives each metric its latest reported value, from whichever assessment reported it last', () => {
     const older = assessment('older', '2026-09-01', { weight: { value: 82, unit: 'kg' }, 'lean-body-mass': { value: 60, unit: 'kg' } });
     const newer = assessment('newer', '2026-10-01', { weight: { value: 180, unit: 'lb' }, 'body-fat-percentage': { value: 21.5, unit: '%' } });
-    expect(latestReportedValues([newer, older])).toEqual([
+    const latest = latestReportedValues([newer, older]);
+    expect(latest.slice(0, 4)).toEqual([
       { metric: 'weight', value: { value: 180, unit: 'lb' }, assessment: newer },
       { metric: 'body-fat-mass', value: null, assessment: null },
       { metric: 'lean-body-mass', value: { value: 60, unit: 'kg' }, assessment: older },
       { metric: 'body-fat-percentage', value: { value: 21.5, unit: '%' }, assessment: newer },
     ]);
+    expect(latest.slice(4).every((m) => m.value === null)).toBe(true);
   });
 
   it('nothing recorded: every metric is empty', () => {

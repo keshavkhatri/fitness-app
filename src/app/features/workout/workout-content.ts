@@ -356,6 +356,7 @@ export const WORKOUT_COPY = {
     subtitle: 'Your training over time',
     back: 'Back',
     entry: { title: 'Progress', description: 'Training activity and performance' },
+    body: { title: 'Body', composition: 'Body composition', description: 'Your InBody assessments and the changes between them.' },
     loading: 'Loading your progress',
     overview: { title: 'Overview', thisWeek: 'This week', thisMonth: 'This month', total: 'Total', workout: 'workout', workouts: 'workouts' },
     week: {

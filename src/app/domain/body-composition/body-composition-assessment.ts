@@ -11,39 +11,106 @@ import { IsoCalendarDate, POUNDS_PER_KILOGRAM, WEIGHT_KG, isOneOf, isWithin, par
  * computes (unit conversions, lean-mass estimates, …) are never stored here;
  * they will be separate, explicitly derived types when they exist.
  *
- * Provisional on purpose (no report format is established yet):
- * - the metric catalogue holds only general body-composition quantities;
- *   further report fields need a confirmed report format;
- * - `source` is a manual entry from an InBody report or an import with its
- *   provenance (see body-composition-import.ts); no parser exists yet.
+ * The metric catalogue follows the scalar results of an InBody result sheet
+ * (see inbody-extraction-contract.ts). `source` is a manual entry, or an
+ * import with its provenance when the values were read from a report image
+ * and saved as read (see body-composition-import.ts).
  */
 
-/** Supported metrics, in display order. Each has one quantity kind, which decides its allowed units. */
-export const BODY_COMPOSITION_METRICS = ['weight', 'body-fat-mass', 'lean-body-mass', 'body-fat-percentage'] as const;
+/**
+ * Supported metrics, in display order. Each has one quantity kind, which
+ * decides its allowed units. Lean body mass and fat-free mass are separate
+ * metrics: a report's "Fat Free Mass" is never stored as lean body mass.
+ */
+export const BODY_COMPOSITION_METRICS = [
+  'weight',
+  'body-fat-mass',
+  'lean-body-mass',
+  'body-fat-percentage',
+  'skeletal-muscle-mass',
+  'fat-free-mass',
+  'soft-lean-mass',
+  'bmi',
+  'visceral-fat-level',
+  'basal-metabolic-rate',
+  'total-body-water',
+  'intracellular-water',
+  'extracellular-water',
+  'ecw-ratio',
+  'protein',
+  'minerals',
+  'bone-mineral-content',
+  'body-cell-mass',
+  'smi',
+  'phase-angle',
+  'waist-hip-ratio',
+  'obesity-degree',
+] as const;
 export type BodyCompositionMetric = (typeof BODY_COMPOSITION_METRICS)[number];
 export const isBodyCompositionMetric = isOneOf(BODY_COMPOSITION_METRICS);
 
-export type BodyCompositionQuantity = 'mass' | 'percentage';
+/** The metrics shown first (history rows, the entry form); the rest are report details. */
+export const KEY_BODY_COMPOSITION_METRICS = [
+  'weight',
+  'body-fat-percentage',
+  'body-fat-mass',
+  'skeletal-muscle-mass',
+  'fat-free-mass',
+] as const satisfies readonly BodyCompositionMetric[];
+
+/** `index`: kg/m² (BMI, SMI); `ratio` / `level`: unitless numbers. */
+export type BodyCompositionQuantity = 'mass' | 'percentage' | 'volume' | 'index' | 'energy' | 'angle' | 'ratio' | 'level';
 export const METRIC_QUANTITY: Readonly<Record<BodyCompositionMetric, BodyCompositionQuantity>> = {
   weight: 'mass',
   'body-fat-mass': 'mass',
   'lean-body-mass': 'mass',
   'body-fat-percentage': 'percentage',
+  'skeletal-muscle-mass': 'mass',
+  'fat-free-mass': 'mass',
+  'soft-lean-mass': 'mass',
+  bmi: 'index',
+  'visceral-fat-level': 'level',
+  'basal-metabolic-rate': 'energy',
+  'total-body-water': 'volume',
+  'intracellular-water': 'volume',
+  'extracellular-water': 'volume',
+  'ecw-ratio': 'ratio',
+  protein: 'mass',
+  minerals: 'mass',
+  'bone-mineral-content': 'mass',
+  'body-cell-mass': 'mass',
+  smi: 'index',
+  'phase-angle': 'angle',
+  'waist-hip-ratio': 'ratio',
+  'obesity-degree': 'percentage',
 };
 
 export const MASS_UNITS = ['kg', 'lb'] as const;
-export const REPORTED_UNITS = [...MASS_UNITS, '%'] as const;
+/** `none`: a unitless value (a ratio or a level). */
+export const REPORTED_UNITS = [...MASS_UNITS, '%', 'L', 'kg/m²', 'kcal', '°', 'none'] as const;
 export type ReportedUnit = (typeof REPORTED_UNITS)[number];
 export const isReportedUnit = isOneOf(REPORTED_UNITS);
 
 const UNITS_BY_QUANTITY: Readonly<Record<BodyCompositionQuantity, readonly ReportedUnit[]>> = {
   mass: MASS_UNITS,
   percentage: ['%'],
+  volume: ['L'],
+  index: ['kg/m²'],
+  energy: ['kcal'],
+  angle: ['°'],
+  ratio: ['none'],
+  level: ['none'],
 };
 
-/** Whether `unit` is a valid unit for `metric` (a mass in kg/lb, a percentage in %). */
+/** Whether `unit` is a valid unit for `metric` (a mass in kg/lb, a percentage in %, …). */
 export function isUnitFor(metric: BodyCompositionMetric, unit: ReportedUnit): boolean {
   return UNITS_BY_QUANTITY[METRIC_QUANTITY[metric]].includes(unit);
+}
+
+/** The one unit a non-mass metric is recorded in; null for masses (kg or lb). */
+export function fixedUnitOf(metric: BodyCompositionMetric): ReportedUnit | null {
+  const units = UNITS_BY_QUANTITY[METRIC_QUANTITY[metric]];
+  return units.length === 1 ? units[0] : null;
 }
 
 /** A value exactly as the report states it. */
@@ -115,18 +182,46 @@ export type BodyCompositionResult<T> =
   | { readonly ok: false; readonly errors: BodyCompositionErrors };
 
 /**
+ * Upper bounds (inclusive; every value must also be above 0) for metrics
+ * that aren't masses, in their only unit. Plausibility only (typos,
+ * impossible values), not reference ranges.
+ */
+export const PLAUSIBLE_MAX: Readonly<Partial<Record<BodyCompositionMetric, number>>> = {
+  'obesity-degree': 500,
+  bmi: 150,
+  smi: 50,
+  'visceral-fat-level': 100,
+  'basal-metabolic-rate': 10_000,
+  'total-body-water': 200,
+  'intracellular-water': 200,
+  'extracellular-water': 200,
+  'phase-angle': 30,
+  'waist-hip-ratio': 5,
+};
+
+/**
  * Plausibility only (typos, impossible values), not reference ranges:
  * - weight: the profile's body-weight range;
  * - other masses: above 0, at most the largest plausible body weight;
- * - percentages: above 0 and below 100.
+ * - body fat percentage and the ECW ratio: above 0 and below 100 / 1;
+ * - everything else: above 0, up to PLAUSIBLE_MAX.
  * Values are never checked against each other (that would need a formula).
  */
 function isPlausible(metric: BodyCompositionMetric, { value, unit }: ReportedValue): boolean {
-  if (unit === '%') {
-    return value > 0 && value < 100;
+  if (value <= 0) {
+    return false;
   }
-  const kilograms = unit === 'kg' ? value : value / POUNDS_PER_KILOGRAM;
-  return metric === 'weight' ? isWithin(kilograms, WEIGHT_KG) : kilograms > 0 && kilograms <= WEIGHT_KG.max;
+  if (metric === 'body-fat-percentage') {
+    return value < 100;
+  }
+  if (metric === 'ecw-ratio') {
+    return value < 1;
+  }
+  if (unit === 'kg' || unit === 'lb') {
+    const kilograms = unit === 'kg' ? value : value / POUNDS_PER_KILOGRAM;
+    return metric === 'weight' ? isWithin(kilograms, WEIGHT_KG) : kilograms <= WEIGHT_KG.max;
+  }
+  return value <= (PLAUSIBLE_MAX[metric] ?? Number.POSITIVE_INFINITY);
 }
 
 function valueProblem(metric: BodyCompositionMetric, reported: ReportedValue): BodyCompositionProblem | null {

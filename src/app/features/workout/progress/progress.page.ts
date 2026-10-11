@@ -4,6 +4,7 @@ import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, Io
 import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
+import { BODY_COMPOSITION_HISTORY_PATH } from '../../body-composition/body-composition-paths';
 import { WORKOUT_COPY } from '../workout-content';
 import { PerformanceCardListComponent } from './performance-card-list.component';
 import { ProgressScreen, toProgressScreen } from './progress-view-model';
@@ -79,6 +80,10 @@ export class ProgressPage {
 
   protected viewAll(): void {
     void this.nav.navigateForward(['/you', 'progress', 'exercises']);
+  }
+
+  protected openBodyComposition(): void {
+    void this.nav.navigateForward(BODY_COMPOSITION_HISTORY_PATH);
   }
 
   protected viewWorkout(): void {

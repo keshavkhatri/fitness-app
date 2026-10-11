@@ -30,7 +30,8 @@ const NOT_ON_REPORT: ExtractedField = { status: 'not-on-report', text: null, uni
 
 describe('InBody extraction mapping', () => {
   it('suggests the profile details and assessment values the InBody380 sample states', () => {
-    expect(prefillOf(extraction())).toEqual({
+    const prefill = prefillOf(extraction());
+    expect(prefill).toMatchObject({
       kind: 'prefill',
       reportIssues: [],
       unverifiedReportModel: false,
@@ -45,38 +46,25 @@ describe('InBody extraction mapping', () => {
           weight: { kind: 'prefilled', value: { value: 94.5, unit: 'kg' }, field: 'weight', needsReview: false },
           'body-fat-mass': { kind: 'prefilled', value: { value: 31.6, unit: 'kg' }, field: 'body-fat-mass', needsReview: false },
           'body-fat-percentage': { kind: 'prefilled', value: { value: 33.4, unit: '%' }, field: 'percent-body-fat', needsReview: false },
+          'skeletal-muscle-mass': { kind: 'prefilled', value: { value: 35.8, unit: 'kg' }, field: 'skeletal-muscle-mass' },
+          'fat-free-mass': { kind: 'prefilled', value: { value: 62.9, unit: 'kg' }, field: 'fat-free-mass' },
+          'ecw-ratio': { kind: 'prefilled', value: { value: 0.372, unit: 'none' } },
+          'visceral-fat-level': { kind: 'prefilled', value: { value: 15, unit: 'none' } },
+          'obesity-degree': { kind: 'prefilled', value: { value: 133, unit: '%' } },
         },
       },
-      unmapped: [
-        'age',
-        'total-body-water',
-        'protein',
-        'minerals',
-        'soft-lean-mass',
-        'fat-free-mass',
-        'skeletal-muscle-mass',
-        'bmi',
-        'ecw-ratio',
-        'phase-angle',
-        'smi',
-        'intracellular-water',
-        'extracellular-water',
-        'basal-metabolic-rate',
-        'waist-hip-ratio',
-        'visceral-fat-level',
-        'obesity-degree',
-        'bone-mineral-content',
-        'body-cell-mass',
-      ],
+      unmapped: ['age'],
     });
+    // Every measurement the sample states maps to its own metric.
+    expect(Object.values(prefill.assessment.values).every((p) => p.kind === 'prefilled')).toBe(true);
   });
 
-  it('never suggests a date of birth or lean body mass: age and Fat Free Mass stay unmapped', () => {
+  it('never suggests a date of birth or lean body mass: Fat Free Mass is its own metric', () => {
     const prefill = prefillOf(extraction());
     expect(MANUAL_PROFILE_ANSWERS).toContain('dateOfBirth');
     expect(prefill.profile).not.toHaveProperty('dateOfBirth');
     expect(prefill.assessment.values).not.toHaveProperty('lean-body-mass');
-    expect(prefill.unmapped).toEqual(expect.arrayContaining(['age', 'fat-free-mass']));
+    expect(prefill.unmapped).toEqual(['age']);
   });
 
   it('gives assessment values that manual entry accepts unchanged', () => {

@@ -97,3 +97,91 @@ ion-footer {
   @include fx.text(body-sm);
   color: var(--color-text-secondary);
 }
+
+.upload,
+.upload-status,
+.file-actions,
+.more-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.upload-status:empty {
+  display: none;
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+}
+
+// Visually hidden: the "Choose image" button opens it.
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.file-icon {
+  flex-shrink: 0;
+  font-size: 32px;
+  color: var(--color-text-secondary);
+
+  &.done {
+    color: var(--color-success-text);
+  }
+}
+
+.file-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.file-name {
+  @include fx.text(body, medium);
+  overflow-wrap: anywhere;
+}
+
+.file-meta {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.issues {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-5);
+}
+
+.more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.more-summary {
+  @include fx.text(body, semibold);
+  @include fx.focus-ring;
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.more[open] .more-summary {
+  margin-bottom: var(--space-3);
+}
+
+.more-fields {
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}

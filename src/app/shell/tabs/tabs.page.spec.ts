@@ -61,13 +61,13 @@ async function render(
 }
 
 describe('Quick Add (tabs shell)', () => {
-  it('Start workout, Add food, Log weight and Add measurement are available; other actions keep their state', () => {
+  it('Start workout, Add food, Log weight, Add measurement and Add InBody are available; other actions keep their state', () => {
     expect(QUICK_ADD_ACTIONS.map((a) => [a.id, a.available])).toEqual([
       ['start-workout', true],
       ['add-food', true],
       ['log-weight', true],
       ['add-measurement', true],
-      ['upload-inbody', false],
+      ['upload-inbody', true],
       ['add-progress-photo', false],
     ]);
   });
@@ -129,9 +129,16 @@ describe('Quick Add (tabs shell)', () => {
     expect(failing.sheet.open()).toBe(true);
   });
 
-  it('unavailable actions do nothing', async () => {
+  it('Add InBody closes the sheet and opens the new body-composition assessment', async () => {
     const { sheet, forward, choose } = await render(new Date(2026, 9, 8, 12));
     await choose('upload-inbody');
+    expect(sheet.open()).toBe(false);
+    expect(forward).toHaveBeenCalledExactlyOnceWith(['/you', 'body-composition', 'new']);
+  });
+
+  it('unavailable actions do nothing', async () => {
+    const { sheet, forward, choose } = await render(new Date(2026, 9, 8, 12));
+    await choose('add-progress-photo');
     expect(forward).not.toHaveBeenCalled();
     expect(sheet.open()).toBe(true);
   });

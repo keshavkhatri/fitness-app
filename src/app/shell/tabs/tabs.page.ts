@@ -7,6 +7,7 @@ import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
 import { WorkoutLog } from '../../domain/workout-session';
 import { HomeWorkoutView, toHomeWorkout } from '../../features/home/home-training';
+import { NEW_BODY_COMPOSITION_PATH } from '../../features/body-composition/body-composition-paths';
 import { NEW_MEASUREMENT_PATH } from '../../features/body-measurements/measurement-paths';
 import { NEW_WEIGHT_PATH } from '../../features/body-weight/weight-history-paths';
 import { NEW_FOOD_PATH } from '../../features/nutrition/nutrition-paths';
@@ -86,6 +87,9 @@ export class TabsPage {
           break;
         case 'add-measurement':
           navigated = await this.nav.navigateForward(NEW_MEASUREMENT_PATH);
+          break;
+        case 'upload-inbody':
+          navigated = await this.nav.navigateForward(NEW_BODY_COMPOSITION_PATH);
           break;
         default:
           return;

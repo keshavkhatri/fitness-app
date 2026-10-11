@@ -20,6 +20,87 @@
         <p class="note">{{ copy.separateNote }}</p>
       </div>
 
+      <section class="upload" aria-labelledby="body-composition-upload" data-testid="report-upload">
+        <h2 class="section-title" id="body-composition-upload">{{ uploadCopy.title }}</h2>
+        @if (report.available) {
+          @let r = reportState();
+          <p class="note">{{ uploadCopy.intro }}</p>
+          <fit-notice [title]="uploadCopy.notice.title">{{ uploadCopy.notice.message }}</fit-notice>
+          <!-- Opened by the button below; hidden from assistive tech, which uses that button. -->
+          <input #fileInput class="file-input" type="file" tabindex="-1" aria-hidden="true" [accept]="accept" (change)="onImageChosen($event)" />
+          <fit-card>
+            <div class="file">
+              <ion-icon
+                class="file-icon"
+                [class.done]="r.status === 'read'"
+                [name]="r.status === 'read' ? 'checkmark-circle' : 'document-text-outline'"
+                aria-hidden="true"
+              />
+              <div class="file-text">
+                @if (reportFile(); as file) {
+                  <p class="file-name">{{ file.name }}</p>
+                  <p class="file-meta">{{ fileSize(file) }}</p>
+                } @else if (r.status === 'read') {
+                  <p class="file-name">{{ uploadCopy.review.title }}</p>
+                } @else {
+                  <p class="file-name">{{ uploadCopy.noImage }}</p>
+                  <p class="file-meta">{{ uploadCopy.fileHint(maxMegabytes) }}</p>
+                }
+              </div>
+            </div>
+            <div class="file-actions">
+              <button
+                fit-button
+                type="button"
+                variant="outline"
+                block
+                icon="camera-outline"
+                data-testid="choose-report"
+                [disabled]="r.status === 'reading' || saving()"
+                (click)="chooseImage()"
+              >
+                {{ r.status === 'empty' ? uploadCopy.choose : uploadCopy.chooseAnother }}
+              </button>
+              @if (r.status === 'failed' && r.file) {
+                <button fit-button type="button" block data-testid="retry-report" (click)="retryRead()">{{ uploadCopy.retry }}</button>
+              }
+            </div>
+          </fit-card>
+          <div class="upload-status" aria-live="polite" data-testid="report-status">
+            @if (r.status === 'reading') {
+              <p class="note">{{ uploadCopy.reading }}</p>
+            } @else if (reportFailure(); as failure) {
+              <fit-notice tone="danger" [title]="failure.title">
+                <p>{{ failure.message }}</p>
+                @if (failure.issues.length) {
+                  <ul class="issues">
+                    @for (issue of failure.issues; track issue) {
+                      <li>{{ issue }}</li>
+                    }
+                  </ul>
+                }
+              </fit-notice>
+            } @else if (reviewMessage(); as message) {
+              <fit-notice tone="warning" [title]="uploadCopy.review.title" data-testid="review-notice">
+                <p>{{ message }}</p>
+                @if (reviewWarnings().length) {
+                  <ul class="issues">
+                    @for (warning of reviewWarnings(); track warning) {
+                      <li>{{ warning }}</li>
+                    }
+                  </ul>
+                }
+              </fit-notice>
+            }
+          </div>
+          @if (r.status !== 'read') {
+            <p class="note">{{ uploadCopy.manualInstead }}</p>
+          }
+        } @else {
+          <p class="note" data-testid="upload-unavailable">{{ uploadCopy.unavailable }}</p>
+        }
+      </section>
+
       <form id="body-composition-form" class="form" novalidate data-testid="body-composition-form" (submit)="$event.preventDefault(); save()">
         <div class="unit" data-testid="mass-unit">
           <!-- The control's legend carries the same name for assistive tech. -->
@@ -39,13 +120,14 @@
           @if (e.values; as groupError) {
             <p class="group-error" [id]="groupErrorId" data-testid="values-error">{{ groupError }}</p>
           }
-          @for (metric of metrics; track metric) {
+          @for (metric of keyMetrics; track metric) {
             <fit-text-field
               [label]="metricLabels[metric]"
               [suffix]="unitFor(metric)"
               inputMode="decimal"
               [maxLength]="7"
               [value]="f[metric]"
+              [hint]="noteFor(metric)"
               [error]="e[metric] ?? null"
               [invalid]="!!e.values"
               [describedBy]="e.values ? groupErrorId : null"
@@ -53,6 +135,27 @@
               (valueChange)="update(metric, $event)"
             />
           }
+          <details class="more" [open]="moreOpen() || hasMoreError()" data-testid="more-values">
+            <summary class="more-summary">{{ copy.more }}</summary>
+            <p class="note">{{ copy.moreHint }}</p>
+            <div class="more-fields">
+              @for (metric of moreMetrics; track metric) {
+                <fit-text-field
+                  [label]="metricLabels[metric]"
+                  [suffix]="unitFor(metric)"
+                  inputMode="decimal"
+                  [maxLength]="7"
+                  [value]="f[metric]"
+                  [hint]="noteFor(metric)"
+                  [error]="e[metric] ?? null"
+                  [invalid]="!!e.values"
+                  [describedBy]="e.values ? groupErrorId : null"
+                  [attr.data-testid]="'field-' + metric"
+                  (valueChange)="update(metric, $event)"
+                />
+              }
+            </div>
+          </details>
         </fieldset>
         <fit-text-field
           type="date"

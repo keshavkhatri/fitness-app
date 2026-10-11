@@ -7,6 +7,24 @@ export const BODY_COMPOSITION_COPY = {
     'body-fat-mass': 'Body fat mass',
     'lean-body-mass': 'Lean body mass',
     'body-fat-percentage': 'Body fat percentage',
+    'skeletal-muscle-mass': 'Skeletal muscle mass',
+    'fat-free-mass': 'Fat-free mass',
+    'soft-lean-mass': 'Soft lean mass',
+    bmi: 'BMI',
+    'visceral-fat-level': 'Visceral fat level',
+    'basal-metabolic-rate': 'Basal metabolic rate',
+    'total-body-water': 'Total body water',
+    'intracellular-water': 'Intracellular water',
+    'extracellular-water': 'Extracellular water',
+    'ecw-ratio': 'ECW ratio',
+    protein: 'Protein',
+    minerals: 'Minerals',
+    'bone-mineral-content': 'Bone mineral content',
+    'body-cell-mass': 'Body cell mass',
+    smi: 'SMI',
+    'phase-angle': 'Phase angle',
+    'waist-hip-ratio': 'Waist-hip ratio',
+    'obesity-degree': 'Obesity degree',
   } satisfies Record<BodyCompositionMetric, string>,
 
   history: {
@@ -25,10 +43,12 @@ export const BODY_COMPOSITION_COPY = {
       /** Reported values are never converted, so readings in different units aren't compared. */
       differentUnits: (previousDate: string) => `Not compared with ${previousDate} (different units)`,
     },
-    list: { title: 'Assessments' },
+    list: { title: 'Assessments', open: (date: string) => `Open assessment from ${date}` },
+    /** Shown while there is only one assessment: one report sets no trend. */
+    singleAssessment: 'Changes appear here once you add a second assessment.',
     sources: {
       manual: 'Entered by hand',
-      import: 'Imported',
+      import: 'Read from report',
     } satisfies Record<'manual' | 'import', string>,
     unsupported: (count: number) =>
       count === 1
@@ -36,7 +56,7 @@ export const BODY_COMPOSITION_COPY = {
         : `${count} saved assessments can’t be shown because they contain details this version of the app doesn’t support. They have been kept exactly as they are.`,
     empty: {
       title: 'No assessments yet',
-      message: 'Add the values from an InBody report to start your history.',
+      message: 'Upload a photo of your InBody results sheet, or type in its values, to start your history.',
     },
     error: {
       title: "Your body composition can't be read right now",
@@ -45,10 +65,55 @@ export const BODY_COMPOSITION_COPY = {
     },
   },
 
+  detail: {
+    back: 'Body composition',
+    title: 'Assessment',
+    key: 'Key results',
+    composition: 'Body composition analysis',
+    water: 'Body water',
+    other: 'Other results',
+    change: 'Change',
+    notRecorded: 'Not on this report',
+    noComparison: 'This is your first assessment, so there is nothing to compare with yet.',
+    comparedWith: (date: string) => `Compared with your previous assessment on ${date}. A difference between two reports, not a trend.`,
+    notFound: {
+      title: 'Assessment not found',
+      message: 'This assessment may have been saved by another version of the app. Nothing has been changed or deleted.',
+    },
+    profileWeight: 'Saved to body composition only. To update your profile weight, log it as a weigh-in in Body weight and choose “Use as profile weight”.',
+    logWeight: 'Log as weigh-in',
+  },
+
+  upload: {
+    title: 'Upload your report',
+    intro: 'We’ll read the values from a photo of your InBody results sheet. You’ll check every value before anything is saved.',
+    notice: {
+      title: 'Your image is sent to an AI service',
+      message: 'To read your report, the image is sent to our server and processed by OpenAI, an external AI service. The app doesn’t save the image. Only upload your own report.',
+    },
+    choose: 'Choose image',
+    chooseAnother: 'Choose a different image',
+    read: 'Read report',
+    retry: 'Try again',
+    reading: 'Reading your report… This can take up to a minute.',
+    noImage: 'No image chosen',
+    fileHint: (megabytes: number) => `PNG, JPEG or WEBP, up to ${megabytes} MB`,
+    manualInstead: 'Or type the values in below.',
+    review: {
+      title: 'Check the values from your report',
+      message: (filled: number, toCheck: number) =>
+        `${filled} ${filled === 1 ? 'value was' : 'values were'} filled in${toCheck ? `, ${toCheck} to check` : ''}. Correct anything that doesn’t match your report, then save.`,
+      check: 'Check this: the reading may not be accurate.',
+    },
+    unavailable: 'Report upload isn’t available in this version. Type the values in below.',
+  },
+
   form: {
     title: 'Add body composition',
     back: 'Body composition',
-    intro: 'Type in the values from your InBody report, exactly as printed. Leave out any your report doesn’t show.',
+    intro: 'Enter the values from your InBody report, exactly as printed. Leave out any your report doesn’t show.',
+    more: 'More report values',
+    moreHint: 'Optional: water, minerals, BMI and other results your report shows.',
     separateNote: 'Saved to your body composition only. Your profile, weight history and measurements stay the same.',
     legend: 'Report values',
     massUnit: 'Mass unit on your report',
@@ -72,6 +137,8 @@ export const BODY_COMPOSITION_COPY = {
       weightRange: (range: string) => `Enter a weight between ${range}.`,
       massRange: (metric: string, max: string) => `Enter a ${metric.toLowerCase()} above 0 and up to ${max}.`,
       percentageRange: 'Enter a body fat percentage above 0 and below 100.',
+      ratioRange: (metric: string) => `Enter ${metric.toLowerCase()} above 0 and below 1, like 0.38.`,
+      range: (metric: string, max: string) => `Enter ${metric.toLowerCase()} above 0 and up to ${max}.`,
       dateRequired: 'Choose the date of the assessment.',
       dateInvalid: 'Enter a valid date.',
       dateFuture: "The date can't be in the future.",

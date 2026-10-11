@@ -1,0 +1,79 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button [defaultHref]="returnPath" [text]="copy.back" />
+    </ion-buttons>
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    @let s = screen();
+    @switch (s.kind) {
+      @case ('ready') {
+        <header class="intro">
+          <h1 class="title" data-testid="detail-date">{{ s.dateLabel }}</h1>
+          <p class="subtitle" data-testid="detail-source">{{ s.source }}</p>
+          <p class="subtitle" data-testid="detail-comparison">{{ s.comparison ?? copy.noComparison }}</p>
+        </header>
+        @for (group of s.groups; track group.title; let i = $index) {
+          <section class="section" [attr.aria-labelledby]="'detail-group-' + i" data-testid="detail-group">
+            <h2 class="section-title" [id]="'detail-group-' + i">{{ group.title }}</h2>
+            <fit-card padding="none">
+              <dl class="latest">
+                @for (v of group.values; track v.metric) {
+                  <div class="latest-row" data-testid="detail-value">
+                    <dt class="latest-metric">{{ v.metric }}</dt>&ngsp;
+                    @if (v.value) {
+                      <dd class="latest-value">{{ v.value }}</dd>
+                      @if (v.change) {
+                        &ngsp;<dd class="latest-change"><span class="visually-hidden">{{ copy.change }}: </span>{{ v.change }}</dd>
+                      }
+                    } @else {
+                      <dd class="latest-missing">{{ copy.notRecorded }}</dd>
+                    }
+                  </div>
+                }
+              </dl>
+            </fit-card>
+          </section>
+        }
+        @if (s.hasWeight) {
+          <fit-card data-testid="profile-weight-note">
+            <p class="notice">
+              <ion-icon name="information-circle-outline" aria-hidden="true" />
+              <span>{{ copy.profileWeight }}</span>
+            </p>
+          </fit-card>
+          <button fit-button type="button" variant="outline" block icon="scale-outline" data-testid="log-weight" (click)="logWeight()">
+            {{ copy.logWeight }}
+          </button>
+        }
+      }
+      @case ('not-found') {
+        <h1 class="visually-hidden">{{ copy.title }}</h1>
+        <fit-card data-testid="detail-not-found">
+          <fit-empty-state icon="document-text-outline" [title]="copy.notFound.title" [description]="copy.notFound.message">
+            <button fit-button type="button" (click)="back()">{{ copy.back }}</button>
+          </fit-empty-state>
+        </fit-card>
+      }
+      @case ('error') {
+        <h1 class="visually-hidden">{{ copy.title }}</h1>
+        <fit-card data-testid="detail-error">
+          <fit-empty-state icon="alert-circle-outline" [title]="errorCopy.title" [description]="errorCopy.message">
+            <button fit-button type="button" (click)="retry()">{{ errorCopy.retry }}</button>
+          </fit-empty-state>
+        </fit-card>
+      }
+      @default {
+        <h1 class="visually-hidden">{{ copy.title }}</h1>
+        <div class="loading" aria-busy="true" data-testid="loading">
+          <fit-skeleton width="50%" height="34px" />
+          <fit-skeleton height="240px" radius="card" />
+        </div>
+      }
+    }
+  </main>
+</ion-content>

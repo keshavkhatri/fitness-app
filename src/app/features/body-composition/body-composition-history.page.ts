@@ -5,12 +5,12 @@ import { BodyCompositionHistoryService } from '../../core/body-composition/body-
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
 import { BODY_COMPOSITION_COPY } from './body-composition-content';
 import { toBodyCompositionHistoryScreen } from './body-composition-history-view-model';
-import { NEW_BODY_COMPOSITION_PATH } from './body-composition-paths';
+import { NEW_BODY_COMPOSITION_PATH, bodyCompositionDetailPath } from './body-composition-paths';
 
 /**
  * Recorded body-composition assessments: the latest reported value of each
- * metric, and every readable assessment newest first, with the values each
- * report stated in the unit it used. Only reads: nothing here changes the
+ * metric, and every readable assessment newest first (key values; tap for
+ * the full assessment), in the unit each report used. Only reads: nothing here changes the
  * profile, weight history or measurements, and assessments can't be edited
  * or deleted yet. Stored assessments this version can't read are counted
  * (never changed) so the user knows they exist.
@@ -72,6 +72,10 @@ export class BodyCompositionHistoryPage {
 
   protected add(): void {
     void this.nav.navigateForward(NEW_BODY_COMPOSITION_PATH);
+  }
+
+  protected open(id: string): void {
+    void this.nav.navigateForward(bodyCompositionDetailPath(id));
   }
 
   protected retry(): void {

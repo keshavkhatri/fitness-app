@@ -164,7 +164,7 @@ describe('body composition domain', () => {
         (v) => (v['source'] = { device: 'inbody', entryMethod: 'import', format: 'f', parser: { name: 'p', version: ' ' } }),
       ],
       ['an import without a format', (v) => (v['source'] = { device: 'inbody', entryMethod: 'import', parser: { name: 'p', version: '1' } })],
-      ['unknown metric', (v) => (v['reported']['skeletal-muscle-mass'] = { value: 35, unit: 'kg' })],
+      ['unknown metric', (v) => (v['reported']['segmental-lean-mass'] = { value: 35, unit: 'kg' })],
       ['unknown unit', (v) => (v['reported']['weight'] = { value: 80, unit: 'st' })],
       ['unit of the wrong quantity', (v) => (v['reported']['weight'] = { value: 80, unit: '%' })],
       ['out-of-range value', (v) => (v['reported']['body-fat-percentage'] = { value: 120, unit: '%' })],
