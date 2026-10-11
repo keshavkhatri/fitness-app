@@ -47,6 +47,18 @@ import {
   play,
   sparklesOutline,
   trendingUpOutline,
+  appsOutline,
+  leaf,
+  notifications,
+  notificationsOutline,
+  nutrition,
+  nutritionOutline,
+  person,
+  personOutline,
+  star,
+  statsChart,
+  statsChartOutline,
+  walk,
 } from 'ionicons/icons';
 
 /**
@@ -103,5 +115,17 @@ export function registerAppIcons(): void {
     play,
     sparklesOutline,
     trendingUpOutline,
+    appsOutline,
+    leaf,
+    notifications,
+    notificationsOutline,
+    nutrition,
+    nutritionOutline,
+    person,
+    personOutline,
+    star,
+    statsChart,
+    statsChartOutline,
+    walk,
   });
 }

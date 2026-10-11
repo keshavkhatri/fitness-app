@@ -1,0 +1,61 @@
+import { TestBed } from '@angular/core/testing';
+
+import { CurrentAssessment, FitnessAssessmentService } from '../../core/calculations/fitness-assessment.service';
+import { KeyValueStorage } from '../../core/storage/key-value-storage';
+import { MemoryKeyValueStorage } from '../../core/storage/testing/memory-key-value-storage';
+import { CLOCK } from '../../core/time/clock';
+import { PROFILE } from '../workout/testing/workout-fixtures';
+import { NotificationInboxService } from './notification-inbox.service';
+
+/** Thursday 8 October 2026: a training day for the 4-day plan. */
+const NOW = new Date(2026, 9, 8, 12, 30);
+
+function setup(storage = new MemoryKeyValueStorage()) {
+  storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile: PROFILE }));
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: KeyValueStorage, useValue: storage },
+      { provide: CLOCK, useValue: () => NOW },
+      { provide: FitnessAssessmentService, useValue: { current: () => Promise.resolve({ kind: 'unavailable' } as CurrentAssessment) } },
+    ],
+  });
+  return { storage, inbox: TestBed.inject(NotificationInboxService) };
+}
+
+describe('NotificationInboxService', () => {
+  it('builds today’s reminders from stored data, all unread at first', async () => {
+    const { inbox } = setup();
+    const items = await inbox.refresh();
+    expect(items.map((n) => n.action.kind)).toEqual(['open-session', 'recovery-check-in', 'log-food', 'log-weight']);
+    expect(inbox.unreadCount()).toBe(4);
+  });
+
+  it('marking all read persists, so the next refresh has nothing unread', async () => {
+    const { inbox, storage } = setup();
+    await inbox.refresh();
+    await inbox.markAllRead();
+    expect(inbox.unreadCount()).toBe(0);
+    expect(JSON.parse(storage.values.get('fitness.notifications-read')!).ids).toHaveLength(4);
+
+    TestBed.resetTestingModule();
+    const again = setup(storage).inbox;
+    await again.refresh();
+    expect(again.unreadCount()).toBe(0);
+  });
+
+  it('a check-in saved today removes its reminder', async () => {
+    const storage = new MemoryKeyValueStorage();
+    storage.values.set('fitness.daily-check-ins', JSON.stringify({ version: 1, steps: {}, recovery: { '2026-10-08': 'good' } }));
+    const { inbox } = setup(storage);
+    expect((await inbox.refresh()).map((n) => n.action.kind)).not.toContain('recovery-check-in');
+  });
+
+  it('a failed write keeps reminders unread', async () => {
+    const storage = new MemoryKeyValueStorage();
+    const { inbox } = setup(storage);
+    await inbox.refresh();
+    vi.spyOn(storage, 'set').mockRejectedValueOnce(new Error('full'));
+    await expect(inbox.markAllRead()).rejects.toThrow('full');
+    expect(inbox.unreadCount()).toBe(4);
+  });
+});

@@ -5,7 +5,7 @@ modern, premium fitness companion. Every screen consumes this system; no
 screen defines its own colors, type sizes, spacing, radii or shadows.
 
 **Status:** Phase 1 (foundation: tokens, screen themes, shared primitives)
-and Phase 2 (Home) are in place. Home and the bottom tab bar use
+and Phase 2 (Home, to the approved mockup) are in place. Home, its notifications page and the bottom tab bar use
 `fit-theme-dashboard`; every other screen still renders with the classic
 theme, unchanged. Screens adopt the redesign one at a time, in reviewed phases
 (see [Adopting the system](#adopting-the-system-in-a-screen)).
@@ -278,6 +278,7 @@ names don't render): `--icon-size-sm` 16px (chips, inline), `--icon-size-md`
 | 0 — flat | none | Muted tiles, wells | |
 | 1 — card | `--shadow-card` | 1px, 2–4% scrim | none (surface color separates) |
 | 2 — hero | `--shadow-hero` | soft 30px, 50% scrim, offset down | 1px `ink-accent` hairline (ember classic, lime charcoal) |
+| 1b — raised | `--shadow-raised` | soft 28px lift, 14% scrim (borderless dashboard cards) | none |
 | 3 — sheet | `--shadow-sheet` | upward 24px, 8% scrim | none |
 
 Restraint: shadows are tinted with the palette's scrim and never stacked; on
@@ -319,16 +320,17 @@ Native elements stay native (`button[fit-button]`, not a `<div>` with a click).
 | `fit-card` | `tone`: default, muted, ink · `padding`: none, sm, md | Grouping surface. `ink` = the one hero per screen. |
 | `fit-section-header` | `title`, `headingId`, projected trailing action | Section title (h2) + optional "See all". |
 | `fit-metric` | `label`, `value`, `unit`, `trend` · `size`: md, lg, xl **(new)** | A labelled number. `xl` for the one hero number of a card. Trend always has text. |
-| `fit-progress` | `variant`: bar, ring · `tone`: primary, success, warning, danger · `label`, `valueText` (accessible) · `ringSize` | Progress toward a target. Primary fills with `primary-strong` (accessible on light). |
+| `fit-progress` | `variant`: bar, ring · `tone`: primary, success, warning, danger · `label`, `valueText` (accessible) · `ringSize`, `thickness`, `gradient` **(new)** | Progress toward a target. Primary fills with `primary-strong` (accessible on light). |
 | `fit-chip` | `tone`: neutral, primary, success, warning, danger · `fill`: soft, solid **(new)** · `icon` | Non-interactive status. `solid` = live state ("Active", "Done"), at most one per card. |
 | `fit-notice` | `tone`: info, warning, danger · `title` · `headingLevel` | Inline explanation or problem with a heading. |
+| `fit-avatar` **(new)** | `name`, `photo`, `size`, `label` | The user's photo, else initials, else a person icon. Decorative unless labelled. |
 | `fit-empty-state` | `icon`, `title`, `description`, projected actions | No data yet. |
 | `fit-skeleton` | (see component) | Loading placeholders. |
 | `fit-text-field` | (see component) | Labelled input with suffix, hint and error; 52px. |
 | `fit-segmented-control` | (see component) | 2–4 mutually exclusive views or ranges. |
 | `fit-choice-group` | list, grid, chips layouts; single/multiple | Choosing answers (onboarding, forms). |
 | `fit-bottom-sheet` | `title`, `description`, `[(open)]`, `screenTheme` **(new)** | Short focused tasks and confirmations. |
-| `fit-page` | `title`, `heading`, `kicker`, `refreshable`, `wide` · projected `[fitPageSubtitle]` (under the large title) and `[fitPageAside]` (trailing, e.g. a profile button) | Top-level tab pages (large title that collapses into the toolbar). |
+| `fit-page` | `title`, `heading`, `kicker`, `refreshable`, `wide`, `customHeader` (projected `[fitPageHeader]` instead of toolbar + large title) · projected `[fitPageSubtitle]` and `[fitPageAside]` | Top-level tab pages (large title that collapses into the toolbar). |
 
 Known consolidation candidates (leave until their screens are redesigned;
 then replace with `fit-icon-button`): the active workout header's
@@ -457,33 +459,41 @@ When every screen has opted into `fit-theme-dashboard`, make `$warm` /
 `$charcoal` the root palettes, drop the class, and retire the classic
 palettes in one reviewed change.
 
-## Reference implementation: Home (Phase 2)
+## Reference implementation: Home
 
-`features/home` is the first dashboard-mode screen; copy its patterns.
+`features/home` is the dashboard-mode screen built to the approved mockup;
+copy its patterns.
 
-- Theme: `host: { class: 'fit-theme-dashboard' }` on `HomePage`. The tab bar
-  (`shell/tabs`) carries the same class, so it matches the redesigned tab
-  pages; the classic screens keep their own look above it.
-- Geometry: major cards `--radius-lg` (20px), the featured ink card
-  `--radius-hero` (24px), tiles and inner controls `--radius-card` /
-  `--radius-md`; `.dashboard` gap `--space-4`, compact-card gap `--space-3`.
-- One ink hero (the featured workout) with one lime primary action per state.
-  Inside ink, re-point `--color-focus`, `--color-primary-strong` and
-  `--color-track` to the ink variants (see `today-workout-card`).
-- Progress on white: `fit-progress` (olive `primary-strong`); bars inside a
-  button are decorative spans because the button's `aria-label` carries the
-  value (a `progressbar` inside a `button` is invalid).
-- Data honesty: the "Your day" ring measures only sets of today's workout
-  (`home-today.ts`); rest, activity and no-plan days show a state, never a
-  percentage. No steps, sleep, recovery scores or streaks: the app records none.
-- Domain hues stay in their roles: ember for training (Train tile, week
-  icon), teal for body (Body tile), primary for nutrition.
+- Theme: `host: { class: 'fit-theme-dashboard' }` on `HomePage`, and on the
+  tab bar (`shell/tabs`), so it matches the redesigned tab pages.
+- Header: `fit-page customHeader` (no toolbar; the page projects its own
+  header with its `<h1>`, below the safe area): wordmark (`core/brand.ts`),
+  bell with an unread dot, `fit-avatar`, greeting + name, streak chip.
+- Geometry: borderless cards lifted with `--shadow-raised`; the day card and
+  featured card `--radius-hero` (24px), compact cards `--radius-lg` (20px),
+  icon tiles `--radius-md`; Home's gutter is `--space-4`, card gaps `--space-3`.
+  Everything above the tab bar fits a 390 × 844 screen.
+- Brand rings and bars use `fit-progress [gradient]` (lime into the accessible
+  `primary-strong`); decorative bars inside buttons are spans with the same
+  gradient (the button's `aria-label` carries the value).
+- One ink hero (the featured workout) with one lime primary action per state;
+  frosted pills (`color-mix` of `on-ink`) over imagery; inside ink, re-point
+  `--color-focus`, `--color-primary-strong` and `--color-track`.
+- Whole-card links: a heading button whose `::after` stretches over the card
+  (one tab stop, a full-card hit area and focus ring); see the compact cards.
+- Data honesty: the ring is the mean of today's goals, each a share of its own
+  target (steps vs goal, planned workout done, recovery check-in level), so no
+  units are mixed; days without a planned workout leave Train out. Steps and
+  recovery are self-reported (no health-device data); the streak counts days
+  with any record.
+- Narrow phones: container queries move the day card's tiles under the ring,
+  stack the featured action, and drop compact-card title icons.
 
-**Imagery gap.** No exercise photography ships in the repository (only
-`assets/icon/favicon.png`). The exercise demonstrations come from an
-external CDN and load only when the user asks, so they are not used as
-decoration. The featured card uses a token-colored graphic (arcs + icon) in
-its place; real imagery needs bundled, licensed assets in `src/assets`.
+**Imagery.** No exercise photography ships yet. The featured card draws
+`app-workout-art`, a seeded SVG scene in theme colors; set
+`FEATURED_WORKOUT_PHOTO` (`features/home/home-media.ts`) to a bundled photo in
+`src/assets/images/workouts/` to replace it. The avatar shows the user's photo
+(You → name and photo) or initials.
 
 ## Open design decisions
 

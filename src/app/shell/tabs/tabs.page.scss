@@ -5,14 +5,15 @@
 ion-tab-bar {
   --background: var(--color-surface);
   --border: var(--border-hairline) solid var(--color-border);
-  height: 60px;
+  height: 64px;
+  padding-top: var(--space-1);
   // The screen-theme class paints its own background; the bar is a surface.
   background: var(--color-surface);
 }
 
 ion-tab-button {
-  --color: var(--color-text-secondary);
-  --color-selected: var(--color-primary-text);
+  --color: var(--color-text);
+  --color-selected: var(--color-text);
   --ripple-color: transparent;
   --background: transparent;
   --background-focused: var(--color-surface-muted);
@@ -20,67 +21,48 @@ ion-tab-button {
   // truncates five labels on 320–360px screens. Keep sizing mode-independent.
   --padding-start: 0;
   --padding-end: 0;
+  position: relative;
   min-width: var(--tap-target-min);
 
-  // Every icon sits in the same pill box; the active one fills it (with the
-  // filled icon variant and a bolder label, so state isn't color alone).
   ion-icon {
-    box-sizing: content-box;
-    padding: 2px var(--space-4);
-    border-radius: var(--radius-pill);
-    font-size: var(--icon-size-lg);
-    transition: background-color var(--motion-duration-fast) var(--motion-ease);
+    position: relative;
+    font-size: 26px;
   }
 
   ion-label {
     @include fx.text(caption, medium);
-    margin-top: 2px;
+    position: relative;
+    margin-top: 3px;
+    color: var(--color-text-secondary);
+  }
+
+  // Active: a soft brand glow behind icon and label, the filled icon variant
+  // and a bold label (never color alone).
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 64px;
+    height: 58px;
+    border-radius: var(--radius-lg);
+    background: radial-gradient(closest-side, rgba(var(--color-primary-rgb), 0.85), rgba(var(--color-primary-rgb), 0.35) 55%, transparent);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    transition:
+      opacity var(--motion-duration-base) var(--motion-ease),
+      transform var(--motion-duration-base) var(--motion-ease);
   }
 
   &.tab-selected {
-    ion-icon {
-      background: var(--color-primary-soft);
+    &::before {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
     }
 
     ion-label {
-      font-weight: var(--font-weight-semibold);
       color: var(--color-text);
+      font-weight: var(--font-weight-bold);
     }
   }
-}
-
-.quick-add {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  // Icon box + gap matches the 24px icon + 2px label offset of the tab buttons.
-  gap: 0;
-  min-width: var(--tap-target-min);
-  height: 100%;
-  color: var(--color-text-secondary);
-}
-
-.quick-add-icon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: var(--icon-size-lg);
-  transition: transform var(--motion-duration-fast) var(--motion-ease);
-}
-
-.quick-add:active .quick-add-icon {
-  transform: scale(0.94);
-}
-
-.quick-add-label {
-  @include fx.text(caption, medium);
 }

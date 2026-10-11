@@ -25,12 +25,15 @@
 
   --color-scrim-rgb: #{ionic-bridge.rgb-list(map.get($palette, scrim))};
   --color-ink-accent-rgb: #{ionic-bridge.rgb-list(map.get($palette, ink-accent))};
+  --color-primary-rgb: #{ionic-bridge.rgb-list(map.get($palette, primary))};
 
   @include ionic-bridge.ionic-colors($palette);
 }
 
 @mixin light-only-tokens {
   --shadow-card: 0 1px 2px rgba(var(--color-scrim-rgb), 0.04), 0 1px 1px rgba(var(--color-scrim-rgb), 0.02);
+  // Borderless dashboard cards: a soft, wide lift instead of a hairline.
+  --shadow-raised: 0 10px 28px -12px rgba(var(--color-scrim-rgb), 0.14), 0 1px 2px rgba(var(--color-scrim-rgb), 0.04);
   --shadow-sheet: 0 -8px 24px rgba(var(--color-scrim-rgb), 0.08);
   --shadow-hero: 0 14px 30px -14px rgba(var(--color-scrim-rgb), 0.5);
   color-scheme: light;
@@ -39,6 +42,7 @@
 @mixin dark-only-tokens {
   // On dark surfaces, elevation reads through surface color, not shadow.
   --shadow-card: none;
+  --shadow-raised: none;
   --shadow-sheet: none;
   // No shadow on dark: a 1px accent hairline separates the hero instead.
   --shadow-hero: inset 0 0 0 1px rgba(var(--color-ink-accent-rgb), 0.22);

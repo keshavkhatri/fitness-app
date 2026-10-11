@@ -2,64 +2,76 @@
 
 :host {
   display: block;
-  // The card's own width decides whether the title keeps its icon.
   container-type: inline-size;
 }
 
 fit-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
   height: 100%;
-  padding: var(--space-2) var(--space-2) var(--space-4);
+  padding: var(--space-3);
+  border-color: transparent;
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
 }
 
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1);
+.title {
+  @include fx.text(body-sm, bold);
 }
 
-// The title is the link to Nutrition; a full touch target.
 .title-link {
   @include fx.button-reset;
-  @include fx.focus-ring;
 
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
-  min-height: var(--tap-target-min);
-  padding: 0 var(--space-2);
+  gap: var(--space-2);
+  min-height: 32px;
   white-space: nowrap;
-  border-radius: var(--radius-md);
 
   ion-icon {
     flex: none;
     font-size: var(--icon-size-md);
-    color: var(--color-primary-text);
+  }
+
+  // The stretched hit area and its focus ring cover the whole card.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::after {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
   }
 }
 
-.title {
-  @include fx.text(body-sm, semibold);
-  min-width: 0;
+// Protein ring on the left, calories on the right (stacked on very narrow cards).
+.body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-// --- Protein ring --------------------------------------------------------------------
 .protein {
   display: flex;
+  flex: none;
   flex-direction: column;
   align-items: center;
   gap: var(--space-1);
-  padding: 0 var(--space-2);
 }
 
 .ring-value {
-  @include fx.text(body, bold);
+  @include fx.text(h3, bold);
   @include fx.tabular-numbers;
+  line-height: 20px;
 }
 
 .ring-target {
@@ -73,52 +85,57 @@ fit-card {
 }
 
 .protein-label {
-  @include fx.text(body-sm, semibold);
+  @include fx.text(caption, medium);
 }
 
-// --- Carbs and fat -------------------------------------------------------------------
-.macros {
+.calories {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0 var(--space-2);
-  list-style: none;
+  min-width: 0;
 }
 
-.macro-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0 var(--space-2);
-}
-
-.macro-label {
-  @include fx.text(caption, semibold);
-}
-
-.macro-value {
-  @include fx.text(caption, semibold);
-  @include fx.tabular-numbers;
-}
-
-.macro-target {
-  font-weight: var(--font-weight-regular);
+.cal-label {
+  @include fx.text(caption);
   color: var(--color-text-secondary);
 }
 
-.macro-bar {
+.cal-value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+}
+
+.cal-target {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.cal-bar {
+  margin-top: var(--space-2);
+}
+
+.over {
+  @include fx.text(caption, semibold);
   margin-top: var(--space-1);
+  color: var(--color-warning-text);
+}
+
+@container (max-width: 160px) {
+  .body {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 // --- Withheld target -----------------------------------------------------------------
 .note {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0 var(--space-2);
-  padding: 0 var(--space-2);
 
   p {
     @include fx.text(caption);
@@ -133,11 +150,4 @@ fit-card {
 
   min-height: var(--tap-target-min);
   color: var(--color-primary-text);
-}
-
-// Very narrow cards (two columns at 320px): the title drops its icon rather than wrapping.
-@container (max-width: 150px) {
-  .title-link ion-icon:first-child {
-    display: none;
-  }
 }

@@ -9,6 +9,7 @@ import { WorkoutPlanService, WorkoutPlanState } from '../../core/workout/workout
 import { WorkoutLog } from '../../domain/workout-session';
 import { finishedLog } from '../../domain/workout-session/testing/workout-log-fixtures';
 import { PROFILE, SUNDAY, THURSDAY, planFor } from '../../features/workout/testing/workout-fixtures';
+import { QuickAddLauncher } from '../quick-add/quick-add-launcher.service';
 import { QuickAddSheetComponent } from '../quick-add/quick-add-sheet.component';
 import { QUICK_ADD_ACTIONS, QuickAddAction } from '../quick-add/quick-add.actions';
 import { TabsPage } from './tabs.page';
@@ -59,6 +60,24 @@ async function render(
   };
   return { fixture, sheet, forward, byUrl, logs, plans, choose };
 }
+
+describe('Tab bar', () => {
+  it('five destinations, as the redesign names them; route ids unchanged; no Quick Add button', async () => {
+    const { fixture } = await render(THURSDAY);
+    const el = fixture.nativeElement as HTMLElement;
+    const tabs = [...el.querySelectorAll('ion-tab-button')];
+    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['Home', 'Train', 'Fuel', 'Progress', 'You']);
+    expect(tabs.map((t) => (t as HTMLIonTabButtonElement).tab)).toEqual(['home', 'workout', 'nutrition', 'progress', 'you']);
+    expect(el.querySelector('.quick-add')).toBeNull();
+  });
+
+  it('the Quick Add sheet opens through the launcher (from the You tab)', async () => {
+    const { fixture, sheet } = await render(THURSDAY);
+    TestBed.inject(QuickAddLauncher).show();
+    fixture.detectChanges();
+    expect(sheet.open()).toBe(true);
+  });
+});
 
 describe('Quick Add (tabs shell)', () => {
   it('Start workout, Add food, Log weight, Add measurement and Add InBody are available; other actions keep their state', () => {

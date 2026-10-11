@@ -1,41 +1,12 @@
 @use 'mixins' as fx;
 
-// --- Header (projected into fit-page) -----------------------------------------------------
-.header-line:not(:empty) {
-  display: flex;
-  margin-top: var(--space-2);
+// Home's tighter gutter (as the reference): more room for the cards on phones.
+:host {
+  --page-gutter: var(--space-4);
 }
 
-// The goal, as a compact pill: a real link to the profile review.
-.goal-pill {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-  @include fx.text(body-sm, semibold);
-
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  max-width: 100%;
-  min-height: var(--tap-target-min);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
-
-  ion-icon {
-    flex: none;
-    font-size: var(--icon-size-sm);
-  }
-}
-
-.goal-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-[fitPageAside] {
-  margin-top: var(--space-1);
+app-home-header {
+  margin-bottom: var(--space-1);
 }
 
 // --- Layout -------------------------------------------------------------------------------
@@ -45,7 +16,7 @@
   container-type: inline-size;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 section {

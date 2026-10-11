@@ -109,10 +109,10 @@ describe('Progress', () => {
       const { el, forward, settle, button } = await render(ProgressPage, LOGS);
       (el.querySelector('[data-testid="performance-item"]') as HTMLButtonElement).click();
       await settle();
-      expect(forward).toHaveBeenCalledWith(['/you', 'progress', 'exercise', 'barbell-bench-press']);
+      expect(forward).toHaveBeenCalledWith(['/you/progress', 'exercise', 'barbell-bench-press']);
       button('View all exercises')!.click();
       await settle();
-      expect(forward).toHaveBeenCalledWith(['/you', 'progress', 'exercises']);
+      expect(forward).toHaveBeenCalledWith(['/you/progress', 'exercises']);
     });
 
     it('partial workouts count when something was completed', async () => {
@@ -232,7 +232,7 @@ describe('Progress', () => {
       expect(clean(items[0].querySelector('.name'))).toBe('Bench Press');
       (items[2] as HTMLButtonElement).click();
       await settle();
-      expect(forward).toHaveBeenCalledWith(['/you', 'progress', 'exercise', expect.any(String)]);
+      expect(forward).toHaveBeenCalledWith(['/you/progress', 'exercise', expect.any(String)]);
     });
   });
 });

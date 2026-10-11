@@ -29,6 +29,8 @@ export type HomeWorkoutView =
       readonly descriptor: string;
       readonly countLabel: string;
       readonly durationLabel: string;
+      /** The plan's rough estimate, in minutes. */
+      readonly minutes: number;
       /** Exercise names in plan order (Home shows the first few). */
       readonly exercises: readonly string[];
       /** Broad body areas the session trains ("Chest", "Back"); empty when the plan session isn't given. */
@@ -76,6 +78,7 @@ export function toHomeWorkout(
       descriptor: s.descriptor,
       countLabel: s.countLabel,
       durationLabel: s.durationLabel,
+      minutes: s.estimatedMinutes,
       exercises: s.exercises.map((e) => e.name),
       focusAreas: session ? sessionFocusAreas(session, catalog) : [],
       setsTotal: session ? session.exercises.reduce((sum, e) => sum + e.sets, 0) : null,
@@ -101,6 +104,8 @@ export interface HomeWeekDayView {
   readonly date: string;
   /** done: a training workout was finished that day; planned: a plan workout falls on it. */
   readonly state: 'done' | 'planned' | 'rest';
+  /** Minutes trained that day (finished training workouts). */
+  readonly minutes: number;
   readonly isToday: boolean;
 }
 
@@ -131,6 +136,7 @@ export function toHomeWeek(screen: WorkoutScreen, activity: readonly ActivityDay
       letter: day.shortWeekday.charAt(0),
       date: String(activity[i].date.day),
       state: activity[i].workouts > 0 ? 'done' : planned ? 'planned' : 'rest',
+      minutes: activity[i].minutes,
       isToday: day.isToday,
     };
   });

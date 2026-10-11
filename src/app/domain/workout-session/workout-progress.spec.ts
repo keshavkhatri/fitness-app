@@ -35,6 +35,13 @@ describe('workout progress (domain)', () => {
       expect(week.map((d) => d.workouts)).toEqual([1, 0, 2, 0, 0, 0, 1]);
     });
 
+    it('sums each day’s start-to-finish minutes (0 on days without workouts)', () => {
+      const a = finishedLog({ startedAt: local(10, 6, 7), minutes: 30 });
+      const b = finishedLog({ startedAt: local(10, 6, 18), minutes: 45 });
+      const week = weeklyActivity([a, b], day(2026, 10, 8), localDate);
+      expect(week.map((d) => d.minutes)).toEqual([0, 75, 0, 0, 0, 0, 0]);
+    });
+
     it('a workout with zero completed sets is not activity', () => {
       expect(weeklyActivity(logs, day(2026, 10, 8), localDate)[4].workouts).toBe(0);
     });

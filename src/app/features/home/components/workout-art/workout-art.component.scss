@@ -1,0 +1,54 @@
+:host {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: var(--color-ink);
+}
+svg {
+  width: 100%;
+  height: 100%;
+}
+.base {
+  fill: var(--color-ink);
+}
+.light-core {
+  stop-color: var(--color-on-ink);
+  stop-opacity: 0.16;
+}
+.light-edge {
+  stop-color: var(--color-on-ink);
+  stop-opacity: 0;
+}
+.post {
+  fill: var(--color-on-ink);
+}
+.floor-top {
+  stop-color: var(--color-on-ink);
+  stop-opacity: 0.06;
+}
+.floor-bottom {
+  stop-color: var(--color-ink);
+  stop-opacity: 0;
+}
+.plate-hi {
+  stop-color: var(--color-on-ink);
+  stop-opacity: 0.42;
+}
+.plate-mid {
+  stop-color: var(--color-on-ink);
+  stop-opacity: 0.12;
+}
+.plate-lo {
+  stop-color: var(--color-on-ink);
+  stop-opacity: 0.04;
+}
+.handle {
+  fill: var(--color-on-ink);
+  opacity: 0.3;
+}
+.rim {
+  fill: none;
+  stroke: var(--color-ink-accent);
+  stroke-opacity: 0.35;
+  stroke-width: 1.2;
+}

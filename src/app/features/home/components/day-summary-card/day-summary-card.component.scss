@@ -2,29 +2,42 @@
 
 :host {
   display: block;
+  container-type: inline-size;
 }
 
+// Borderless, softly lifted (as the reference). The ring sits top right,
+// beside both the title and the tiles; the tiles share the left column.
 fit-card {
-  border-radius: var(--radius-lg);
-}
-
-.head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-5) var(--space-5) var(--space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'intro ring'
+    'tiles ring';
+  grid-template-rows: auto 1fr;
+  column-gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-2) var(--space-3);
+  border-color: transparent;
+  border-radius: var(--radius-hero);
+  box-shadow: var(--shadow-raised);
 }
 
 .intro {
+  grid-area: intro;
   display: flex;
-  flex: 1;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
   min-width: 0;
+  padding: 0 0 var(--space-2) var(--space-2);
+}
+
+.ring,
+.ring-skeleton {
+  grid-area: ring;
+  align-self: start;
 }
 
 .title {
-  @include fx.text(h2, bold);
+  @include fx.text(h3, bold);
 }
 
 .status {
@@ -43,40 +56,14 @@ fit-card {
   color: var(--color-text-secondary);
 }
 
-// States without a set count: an icon in a quiet disc, the same footprint as the ring.
-.ring-state {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  width: 96px;
-  height: 96px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
-
-  ion-icon {
-    font-size: 30px;
-  }
-
-  .ring-caption {
-    color: var(--color-primary-text);
-    font-weight: var(--font-weight-semibold);
-  }
-}
-
-.ring-skeleton {
-  flex: none;
-}
 
 // --- Tiles ---------------------------------------------------------------------------
 .tiles {
+  grid-area: tiles;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
-  padding: 0 var(--space-2) var(--space-2);
+  padding: 0;
   list-style: none;
 
   li {
@@ -84,7 +71,6 @@ fit-card {
     min-width: 0;
   }
 
-  // Hairline separators between tiles, as in the reference.
   li + li {
     border-left: var(--border-hairline) solid var(--color-border);
   }
@@ -98,10 +84,8 @@ fit-card {
   flex: 1;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-1);
   min-width: 0;
-  min-height: var(--tap-target-min);
-  padding: var(--space-2) var(--space-3) var(--space-3);
+  padding: var(--space-2);
   border-radius: var(--radius-card);
   transition: background-color var(--motion-duration-fast) var(--motion-ease);
 
@@ -110,75 +94,67 @@ fit-card {
   }
 }
 
-// Domain hue per tile: ember = training, primary = nutrition, teal = body.
+// Lime-tinted icon tiles with the brand's strong green (3:1 on the tint).
 .tile-icon {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-bottom: var(--space-1);
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-2);
   border-radius: var(--radius-md);
   background: var(--color-primary-soft);
-  color: var(--color-primary-text);
-  font-size: var(--icon-size-sm);
-
-  [data-key='train'] & {
-    background: var(--color-train-soft);
-    color: var(--color-train-text);
-  }
-
-  [data-key='body'] & {
-    background: var(--color-body-soft);
-    color: var(--color-body-text);
-  }
+  color: var(--color-primary-strong);
+  font-size: var(--icon-size-lg);
 }
 
 .tile-label {
-  @include fx.text(body-sm, semibold);
+  @include fx.text(body-sm, bold);
 }
 
 .tile-value {
+  @include fx.text(caption);
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: var(--space-1);
+  column-gap: 3px;
   min-width: 0;
-}
-
-.value {
-  @include fx.text(h3, bold);
-  @include fx.tabular-numbers;
-}
-
-.unit {
-  @include fx.text(caption, medium);
+  margin-top: 2px;
   color: var(--color-text-secondary);
+}
+
+.tile-value[data-emphasis='number'] .value {
+  @include fx.tabular-numbers;
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
 }
 
 .bar {
   display: block;
   width: 100%;
-  height: 4px;
-  margin-top: var(--space-1);
+  height: 5px;
+  margin-top: var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--color-track);
   overflow: hidden;
+
+  &.inactive {
+    opacity: 0.5;
+  }
 }
 
 .bar-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--color-primary-strong);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-strong));
   transition: width var(--motion-duration-ring) var(--motion-ease);
-
-  [data-tone='warning'] & {
-    background: var(--color-warning-text);
-  }
 }
 
-.tile-note {
-  @include fx.text(caption, medium);
-  color: var(--color-text-secondary);
-  overflow-wrap: anywhere;
+// Narrow phones (320px): the tiles take the full width under the ring.
+@container (max-width: 330px) {
+  fit-card {
+    grid-template-areas:
+      'intro ring'
+      'tiles tiles';
+    row-gap: var(--space-2);
+  }
 }

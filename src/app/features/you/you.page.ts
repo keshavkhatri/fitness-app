@@ -10,7 +10,11 @@ import { BODY_COMPOSITION_HISTORY_PATH } from '../body-composition/body-composit
 import { MEASUREMENT_HISTORY_PATH } from '../body-measurements/measurement-paths';
 import { WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
 import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
+import { UserIdentityService } from '../../core/identity/user-identity.service';
+import { QuickAddLauncher } from '../../shell/quick-add/quick-add-launcher.service';
+import { IdentitySheetComponent } from './identity-sheet.component';
 import {
+  FitnessAvatarComponent,
   FitnessCardComponent,
   FitnessChipComponent,
   PageLayoutComponent,
@@ -35,6 +39,8 @@ const UPCOMING_SETTINGS: readonly string[] = ['Notifications', 'Connected health
   styleUrl: './you.page.scss',
   imports: [
     IonIcon,
+    IdentitySheetComponent,
+    FitnessAvatarComponent,
     FitnessCardComponent,
     FitnessChipComponent,
     PageLayoutComponent,
@@ -58,8 +64,38 @@ export class YouPage {
   protected readonly unitSystem = linkedSignal<UnitSystem | null>(() => this.profiles.profile()?.unitSystem ?? null);
   protected readonly unitsError = signal(false);
 
+  protected readonly identity = inject(UserIdentityService);
+  protected readonly identityOpen = signal(false);
+  protected readonly identitySaving = signal(false);
+  protected readonly identityError = signal<string | null>(null);
+  private readonly quickAdd = inject(QuickAddLauncher);
+
   constructor() {
     void this.profiles.load();
+    void this.identity.load().catch(() => undefined);
+  }
+
+  protected openIdentity(): void {
+    this.identityError.set(null);
+    this.identityOpen.set(true);
+  }
+
+  protected async saveIdentity(next: { name: string | null; photo: string | null }): Promise<void> {
+    this.identitySaving.set(true);
+    this.identityError.set(null);
+    try {
+      await this.identity.save(next);
+      this.identityOpen.set(false);
+    } catch {
+      this.identityError.set("Couldn't save. Try again.");
+    } finally {
+      this.identitySaving.set(false);
+    }
+  }
+
+  /** The Quick Add sheet (start a workout, log food, weight, measurements, InBody). */
+  protected openQuickAdd(): void {
+    this.quickAdd.show();
   }
 
   /** Shown at once; a failed save puts the previous choice back and says so. */

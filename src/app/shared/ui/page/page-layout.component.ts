@@ -37,16 +37,22 @@ export interface PageRefreshEvent {
  * Optional projected header content: an element with `fitPageSubtitle` sits
  * under the large title (e.g. a goal pill); one with `fitPageAside` sits at
  * its trailing edge (e.g. a profile button). Both scroll away with the title.
+ *
+ * `customHeader`: no toolbar and no large title; the page projects its own
+ * header (`fitPageHeader`, containing the page's <h1>) at the top of the
+ * content, below the device's safe area. `title` remains the document title.
  */
 @Component({
   selector: 'fit-page',
   template: `
-    <ion-header class="ion-no-border" [class.scrolled]="isScrolled()">
-      <ion-toolbar>
-        <!-- Duplicate of the <h1> below; hidden from assistive tech. -->
-        <ion-title aria-hidden="true">{{ title() }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    @if (!customHeader()) {
+      <ion-header class="ion-no-border" [class.scrolled]="isScrolled()">
+        <ion-toolbar>
+          <!-- Duplicate of the <h1> below; hidden from assistive tech. -->
+          <ion-title aria-hidden="true">{{ title() }}</ion-title>
+        </ion-toolbar>
+      </ion-header>
+    }
 
     <ion-content>
       @if (refreshable()) {
@@ -54,16 +60,23 @@ export interface PageRefreshEvent {
           <ion-refresher-content [refreshingText]="refreshingText()" />
         </ion-refresher>
       }
-      <div class="large-title-block" [class.wide]="wide()">
-        <div class="title-text">
-          @if (kicker(); as k) {
-            <p class="kicker">{{ k }}</p>
-          }
-          <h1 #largeTitle class="large-title">{{ heading() ?? title() }}</h1>
-          <ng-content select="[fitPageSubtitle]" />
+      @if (customHeader()) {
+        <!-- The page renders its own header (it must contain the page's <h1>). -->
+        <div class="custom-header" [class.wide]="wide()">
+          <ng-content select="[fitPageHeader]" />
         </div>
-        <ng-content select="[fitPageAside]" />
-      </div>
+      } @else {
+        <div class="large-title-block" [class.wide]="wide()">
+          <div class="title-text">
+            @if (kicker(); as k) {
+              <p class="kicker">{{ k }}</p>
+            }
+            <h1 #largeTitle class="large-title">{{ heading() ?? title() }}</h1>
+            <ng-content select="[fitPageSubtitle]" />
+          </div>
+          <ng-content select="[fitPageAside]" />
+        </div>
+      }
       <div class="page-body" [class.wide]="wide()">
         <ng-content />
       </div>
@@ -84,6 +97,8 @@ export class PageLayoutComponent {
   readonly refreshingText = input('Updating');
   /** Wider content area (two-column layouts on tablets). */
   readonly wide = input(false, { transform: booleanAttribute });
+  /** The page brings its own header instead of the toolbar and large title. */
+  readonly customHeader = input(false, { transform: booleanAttribute });
 
   readonly refresh = output<PageRefreshEvent>();
 
@@ -91,7 +106,7 @@ export class PageLayoutComponent {
   protected readonly isScrolled = signal(false);
 
   private readonly content = viewChild.required(IonContent);
-  private readonly largeTitle = viewChild.required<ElementRef<HTMLElement>>('largeTitle');
+  private readonly largeTitle = viewChild<ElementRef<HTMLElement>>('largeTitle');
 
   constructor() {
     let observer: IntersectionObserver | undefined;
@@ -112,7 +127,10 @@ export class PageLayoutComponent {
       observer = new IntersectionObserver(([entry]) => this.isScrolled.set(!entry.isIntersecting), {
         root: scrollRoot,
       });
-      observer.observe(this.largeTitle().nativeElement);
+      const title = this.largeTitle()?.nativeElement;
+      if (title) {
+        observer.observe(title);
+      }
     });
   }
 

@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonTitle, IonToolbar, NavController } from '@ionic/angular';
 
+import { ActivatedRoute } from '@angular/router';
+
 import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
+import { progressBaseOf } from './progress-paths';
 import { PerformanceCardListComponent } from './performance-card-list.component';
 import { toExerciseList } from './progress-view-model';
 
@@ -14,7 +17,7 @@ import { toExerciseList } from './progress-view-model';
   template: `
     <ion-header class="ion-no-border subpage-header">
       <ion-toolbar>
-        <ion-buttons slot="start"><ion-back-button defaultHref="/you/progress" [text]="copy.back" /></ion-buttons>
+        <ion-buttons slot="start"><ion-back-button [defaultHref]="base" [text]="copy.back" /></ion-buttons>
         <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
       </ion-toolbar>
     </ion-header>
@@ -59,12 +62,13 @@ export class ProgressExercisesPage {
   private readonly history = inject(WorkoutHistoryService);
   private readonly clock = inject(CLOCK);
   private readonly nav = inject(NavController);
+  protected readonly base = progressBaseOf(inject(ActivatedRoute));
 
   protected readonly copy = WORKOUT_COPY.progress;
   protected readonly state = resource({ loader: async () => toExerciseList(await this.history.progress(), this.clock()) });
   protected readonly items = computed(() => (this.state.hasValue() ? this.state.value() : null));
 
   protected open(exerciseId: string): void {
-    void this.nav.navigateForward(['/you', 'progress', 'exercise', exerciseId]);
+    void this.nav.navigateForward([this.base, 'exercise', exerciseId]);
   }
 }

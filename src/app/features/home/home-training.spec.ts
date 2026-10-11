@@ -26,6 +26,7 @@ describe('Home training summaries', () => {
         descriptor: s.today.session.descriptor,
         countLabel: s.today.session.countLabel,
         durationLabel: s.today.session.durationLabel,
+        minutes: s.today.session.estimatedMinutes,
         exercises: s.today.session.exercises.map((e) => e.name),
         focusAreas: [],
         setsTotal: null,

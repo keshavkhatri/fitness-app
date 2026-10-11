@@ -1,58 +1,50 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
 import { FitnessCardComponent, FitnessProgressComponent, LoadingSkeletonComponent } from '../../../../shared/ui';
-import { HomeTileAction, HomeTileView, HomeTodayView } from '../../home-today';
+import { HomeDayView, HomeTileAction } from '../../home-today';
 
 /**
- * "Your day": today's training as the ring, plus Train, Fuel and Body tiles.
- * Each part may still be loading (null), independently. Presentational only:
- * a tile tap emits its action and the page navigates.
+ * "Your day, in motion": today's goals as one ring and three tiles (Move,
+ * Train, Recover). Presentational only: a tile tap emits its action.
  */
 @Component({
   selector: 'app-day-summary-card',
   template: `
-    @let t = today();
-    <fit-card padding="none">
-      <div class="head">
+    @let d = day();
+    <fit-card [attr.aria-busy]="d ? null : 'true'">
         <div class="intro">
-          <h2 class="title" [id]="headingId()">Your day</h2>
-          @if (t) {
-            <p class="status" data-testid="home-day-status">{{ t.status }}</p>
+          <h2 class="title" [id]="headingId()">Your day, in motion</h2>
+          @if (d) {
+            <p class="status" data-testid="home-day-status">{{ d.status }}</p>
           } @else {
-            <fit-skeleton width="80%" height="18px" />
+            <fit-skeleton width="80%" height="16px" />
           }
         </div>
-
-        @if (t?.ring; as ring) {
-          @if (ring.kind === 'progress') {
-            <fit-progress
-              variant="ring"
-              label="Today’s workout"
-              data-testid="home-day-ring"
-              [ringSize]="96"
-              [value]="ring.value"
-              [max]="ring.max"
-              [valueText]="ring.valueText"
-            >
-              <span class="ring-value">{{ ring.label }}</span>
-              <span class="ring-caption">{{ ring.caption }}</span>
-            </fit-progress>
-          } @else {
-            <div class="ring-state" data-testid="home-day-state">
-              <ion-icon [name]="ring.icon" aria-hidden="true" />
-              <span class="ring-caption">{{ ring.label }}</span>
-            </div>
-          }
+        @if (d) {
+          <fit-progress
+            variant="ring"
+            gradient
+            label="Today’s goals"
+            class="ring"
+            data-testid="home-day-ring"
+            [ringSize]="92"
+            [thickness]="4.4"
+            [value]="d.percent"
+            [max]="100"
+            [valueText]="d.valueText"
+          >
+            <span class="ring-value">{{ d.percent }}%</span>
+            <span class="ring-caption">Today</span>
+          </fit-progress>
         } @else {
-          <fit-skeleton class="ring-skeleton" width="96px" height="96px" radius="pill" />
+          <fit-skeleton class="ring-skeleton" width="92px" height="92px" radius="pill" />
         }
-      </div>
 
       <ul class="tiles" [attr.aria-labelledby]="headingId()">
-        @for (tile of tiles(); track $index) {
+        @for (i of slots; track i) {
           <li>
-            @if (tile) {
+            @if (d?.tiles?.[i]; as tile) {
               <button
                 type="button"
                 class="tile"
@@ -63,27 +55,22 @@ import { HomeTileAction, HomeTileView, HomeTodayView } from '../../home-today';
               >
                 <span class="tile-icon" aria-hidden="true"><ion-icon [name]="tile.icon" /></span>
                 <span class="tile-label">{{ tile.label }}</span>
-                <span class="tile-value">
+                <span class="tile-value" [attr.data-emphasis]="tile.emphasis">
                   <span class="value">{{ tile.value }}</span>
                   @if (tile.unit; as unit) {
                     <span class="unit">{{ unit }}</span>
                   }
                 </span>
-                @if (tile.progress; as p) {
-                  <!-- Decorative: the button's label carries the value. -->
-                  <span class="bar" [attr.data-tone]="p.tone">
-                    <span class="bar-fill" [style.width.%]="fill(p.value, p.max)"></span>
-                  </span>
-                }
-                @if (tile.note; as note) {
-                  <span class="tile-note">{{ note }}</span>
-                }
+                <!-- Decorative: the button's label carries the value. -->
+                <span class="bar" [class.inactive]="tile.fraction === null">
+                  <span class="bar-fill" [style.width.%]="(tile.fraction ?? 0) * 100"></span>
+                </span>
               </button>
             } @else {
               <div class="tile" aria-hidden="true">
-                <fit-skeleton width="32px" height="32px" radius="pill" />
+                <fit-skeleton width="44px" height="44px" radius="md" />
                 <fit-skeleton width="70%" height="14px" />
-                <fit-skeleton width="90%" height="20px" />
+                <fit-skeleton width="90%" height="14px" />
               </div>
             }
           </li>
@@ -94,25 +81,13 @@ import { HomeTileAction, HomeTileView, HomeTodayView } from '../../home-today';
   styleUrl: './day-summary-card.component.scss',
   imports: [IonIcon, FitnessCardComponent, FitnessProgressComponent, LoadingSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    '[attr.aria-busy]': 'loading() ? "true" : null',
-  },
 })
 export class DaySummaryCardComponent {
-  /** Ring, status and Train tile; null while the plan loads. */
-  readonly today = input.required<HomeTodayView | null>();
-  /** null while nutrition loads. */
-  readonly fuel = input.required<HomeTileView | null>();
-  /** null while weigh-ins load. */
-  readonly body = input.required<HomeTileView | null>();
+  /** null while today's data loads. */
+  readonly day = input.required<HomeDayView | null>();
   readonly headingId = input('home-day');
 
   readonly tileSelected = output<HomeTileAction>();
 
-  protected readonly tiles = computed(() => [this.today()?.train ?? null, this.fuel(), this.body()]);
-  protected readonly loading = computed(() => this.tiles().some((t) => t === null));
-
-  protected fill(value: number, max: number): number {
-    return max > 0 ? Math.min(Math.max(value / max, 0), 1) * 100 : 0;
-  }
+  protected readonly slots = [0, 1, 2] as const;
 }

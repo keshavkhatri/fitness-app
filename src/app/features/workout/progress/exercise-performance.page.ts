@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, resource } from '@angular/core';
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonTitle, IonToolbar, NavController } from '@ionic/angular';
 
+import { ActivatedRoute } from '@angular/router';
+
 import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
+import { progressBaseOf } from './progress-paths';
 import { ExercisePerformanceView, toExercisePerformance } from './progress-view-model';
 
 type Screen = { readonly kind: 'ready'; readonly view: ExercisePerformanceView } | { readonly kind: 'not-found' } | { readonly kind: 'error' };
@@ -38,6 +41,7 @@ export class ExercisePerformancePage {
   private readonly history = inject(WorkoutHistoryService);
   private readonly clock = inject(CLOCK);
   private readonly nav = inject(NavController);
+  protected readonly base = progressBaseOf(inject(ActivatedRoute));
 
   protected readonly copy = WORKOUT_COPY.progress;
   protected readonly state = resource({
@@ -62,6 +66,6 @@ export class ExercisePerformancePage {
   });
 
   protected backToProgress(): void {
-    void this.nav.navigateBack('/you/progress');
+    void this.nav.navigateBack(this.base);
   }
 }

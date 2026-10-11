@@ -48,7 +48,20 @@ svg {
 
 circle {
   fill: none;
-  stroke-width: 3.5;
+  stroke-width: var(--ring-thickness, 3.5);
+}
+
+// Gradient: from the brand fill (lime) into the accessible strong shade.
+.stop-start {
+  stop-color: var(--color-primary);
+}
+
+.stop-end {
+  stop-color: var(--progress-color);
+}
+
+:host(.gradient) div.fill {
+  background: linear-gradient(90deg, var(--color-primary), var(--progress-color));
 }
 
 circle.track {

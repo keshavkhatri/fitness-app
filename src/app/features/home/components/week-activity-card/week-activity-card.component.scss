@@ -7,68 +7,89 @@
 }
 
 fit-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   height: 100%;
-  padding: var(--space-2) var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-3) var(--space-3);
+  border-color: transparent;
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
 }
 
 .title {
-  @include fx.text(body-sm, semibold);
+  @include fx.text(body-sm, bold);
+  min-width: 0;
 }
 
 .title-link {
   @include fx.button-reset;
-  @include fx.focus-ring;
 
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: var(--tap-target-min);
-  padding: 0 var(--space-2);
+  gap: var(--space-2);
+  min-height: 32px;
   white-space: nowrap;
-  border-radius: var(--radius-md);
 
   ion-icon {
     flex: none;
     font-size: var(--icon-size-md);
-    color: var(--color-train-text);
   }
 
-  .chevron {
-    font-size: var(--icon-size-sm);
-    color: var(--color-text-secondary);
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::after {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
   }
 }
 
-.summary {
-  padding: 0 var(--space-2);
+.chevron {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-size: var(--icon-size-sm);
 }
 
 .count {
-  @include fx.text(h1, bold);
+  @include fx.text(h2, bold);
   @include fx.tabular-numbers;
 }
 
-.of {
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-semibold);
-}
-
 .unit {
-  @include fx.text(caption, medium);
+  @include fx.text(caption);
   color: var(--color-text-secondary);
 }
 
 // --- Chart ---------------------------------------------------------------------------
 .chart {
   display: grid;
+  flex: 1;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--space-1);
-  margin-top: auto;
-  padding: var(--space-2) var(--space-2) 0;
+  gap: 2px;
+  min-height: 84px;
+  margin-top: var(--space-2);
 }
 
 .day {
@@ -80,33 +101,22 @@ fit-card {
 
 .bar {
   display: flex;
+  flex: 1;
   align-items: flex-end;
-  width: 100%;
-  max-width: 12px;
-  height: 88px;
+  width: 9px;
 }
 
-// Height and fill both differ by state (never colour alone).
-.bar::before {
-  content: '';
+// Done bars are filled; planned and rest bars are empty tracks of different
+// heights (never color alone).
+.fill {
   width: 100%;
   border-radius: var(--radius-pill);
-}
-
-[data-state='done'] .bar::before {
-  height: 100%;
-  background: var(--color-primary-strong);
-}
-
-[data-state='planned'] .bar::before {
-  height: 100%;
   background: var(--color-track);
-  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+  transition: height var(--motion-duration-ring) var(--motion-ease);
 }
 
-[data-state='rest'] .bar::before {
-  height: 30%;
-  background: var(--color-track);
+[data-state='done'] .fill {
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-strong));
 }
 
 .letter {
@@ -117,13 +127,12 @@ fit-card {
 .today .letter {
   color: var(--color-text);
   font-weight: var(--font-weight-bold);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
-// Very narrow cards (two columns at 320px): the title drops its icon rather than wrapping.
+// Very narrow cards (two columns at 320px): the title drops its icon rather
+// than running under the chevron.
 @container (max-width: 150px) {
-  .title-link ion-icon:first-child {
+  .title-link ion-icon {
     display: none;
   }
 }

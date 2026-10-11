@@ -1,43 +1,50 @@
 @let n = summary();
 @let p = protein();
+@let c = n.calories;
 
-<fit-card padding="none">
-  <div class="head">
-    <h2 class="title" [id]="headingId()">
-      <button type="button" class="title-link" (click)="openNutrition.emit()">
-        <ion-icon name="restaurant" aria-hidden="true" />Nutrition
-      </button>
-    </h2>
-    <button fit-icon-button type="button" variant="tonal" icon="add" aria-label="Log food" data-testid="home-log-food" (click)="logFood.emit()"></button>
+<fit-card>
+  <h2 class="title" [id]="headingId()">
+    <!-- Stretched over the card: the whole card opens Nutrition. -->
+    <button type="button" class="title-link" data-testid="home-nutrition-open" (click)="openNutrition.emit()">
+      <ion-icon name="restaurant-outline" aria-hidden="true" />Nutrition
+    </button>
+  </h2>
+
+  <div class="body">
+    <div class="protein" data-testid="home-macro-protein">
+      @if (p.progress; as progress) {
+        <fit-progress
+          variant="ring"
+          gradient
+          [label]="p.label"
+          [ringSize]="72"
+          [thickness]="4.8"
+          [value]="progress.value"
+          [max]="progress.max"
+          [valueText]="progress.valueText"
+        >
+          <span class="ring-value">{{ tight(p.eaten) }}</span>
+          <span class="ring-target">of {{ tight(p.target) }}</span>
+        </fit-progress>
+      } @else {
+        <!-- No protein target today: the intake alone, no ring. -->
+        <span class="no-target-value">{{ tight(p.eaten) }}</span>
+      }
+      <span class="protein-label">{{ p.label }}</span>
+    </div>
+
+    <div class="calories">
+      <span class="cal-label">Calories</span>
+      <span class="cal-value" data-testid="calories-eaten">{{ c.eaten }}</span>
+      <span class="cal-target" data-testid="calories-target">{{ c.target ? '/ ' + c.target + ' kcal' : 'kcal' }}</span>
+      @if (c.progress; as bar) {
+        <fit-progress class="cal-bar" label="Calories" gradient [tone]="c.over ? 'warning' : 'primary'" [value]="bar.value" [max]="bar.max" [valueText]="bar.valueText" />
+      }
+      @if (c.over) {
+        <span class="over">Over target</span>
+      }
+    </div>
   </div>
-
-  <div class="protein" [attr.data-testid]="'home-macro-' + p.key">
-    @if (p.progress; as progress) {
-      <fit-progress variant="ring" [label]="p.label" [ringSize]="88" [value]="progress.value" [max]="progress.max" [valueText]="progress.valueText">
-        <span class="ring-value">{{ p.eaten }}</span>
-        <span class="ring-target">of {{ p.target }}</span>
-      </fit-progress>
-    } @else {
-      <!-- No protein target today: the intake alone, no ring. -->
-      <span class="no-target-value">{{ p.eaten }}</span>
-    }
-    <span class="protein-label">{{ p.label }}</span>
-  </div>
-
-  <ul class="macros" aria-label="Carbs and fat">
-    @for (macro of others(); track macro.key) {
-      <!-- With a bar, its label and value text carry the macro; the visible copy isn't read twice. -->
-      <li [attr.data-testid]="'home-macro-' + macro.key">
-        <span class="macro-row" [attr.aria-hidden]="macro.progress ? 'true' : null">
-          <span class="macro-label">{{ macro.label }}</span>
-          <span class="macro-value">{{ macro.eaten }}@if (macro.target) {<span class="macro-target"> / {{ macro.target }}</span>}</span>
-        </span>
-        @if (macro.progress; as bar) {
-          <fit-progress class="macro-bar" [label]="macro.label" [value]="bar.value" [max]="bar.max" [valueText]="bar.valueText" />
-        }
-      </li>
-    }
-  </ul>
 
   @if (n.targetNote; as note) {
     <div class="note" data-testid="target-note">

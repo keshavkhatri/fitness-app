@@ -1,211 +1,153 @@
-import { DaySummaryView, ProgressView } from '../nutrition/nutrition-view-model';
-import { WORKOUT_COPY } from '../workout/workout-content';
+import {
+  DEFAULT_STEP_GOAL,
+  RecoveryLevel,
+  formatSteps,
+  recoveryFraction,
+  stepsFraction,
+} from '../../domain/daily-check-in';
 import { HomeWorkoutView } from './home-training';
-import { HomeWeightView } from './home-weight';
 
 /**
- * Home's "Your day" card: today's training as the ring, plus three compact
- * tiles (Train, Fuel, Body), all from data the app records. There is no
- * device activity data (steps, sleep, recovery) and no combined "day score":
- * the ring only ever measures sets of today's workout, never mixed units.
+ * Home's "Your day, in motion" card: three daily goals and their combined
+ * share as the ring.
+ *
+ * - Move: steps the user logged against the daily step goal.
+ * - Train: today's planned workout (done, or sets done while in progress).
+ *   Days without a planned workout (rest, light activity, no plan) leave
+ *   Train out of the ring unless a workout was finished anyway.
+ * - Recover: today's self-reported recovery check-in (poor 25% … great 100%).
+ *
+ * The ring is the mean of the goals that apply today, each 0–100% of its own
+ * target, so no units are mixed. Nothing is measured by a device.
  */
 
-/** What tapping a tile does; the page maps it to its existing navigation. */
 export type HomeTileAction =
+  | { readonly kind: 'log-steps' }
+  | { readonly kind: 'check-in-recovery' }
   | { readonly kind: 'resume'; readonly sessionId: string }
   | { readonly kind: 'open-session'; readonly sessionId: string }
   | { readonly kind: 'workout-tab' }
-  | { readonly kind: 'set-up-profile' }
-  | { readonly kind: 'nutrition' }
-  | { readonly kind: 'retry-nutrition' }
-  | { readonly kind: 'weight-history' }
-  | { readonly kind: 'log-weight' }
-  | { readonly kind: 'retry-weight' };
+  | { readonly kind: 'set-up-profile' };
 
 export interface HomeTileView {
-  readonly key: 'train' | 'fuel' | 'body';
+  readonly key: 'move' | 'train' | 'recover';
   readonly label: string;
   readonly icon: string;
-  /** The tile's number or one-word state: "8/22", "1,420", "78.4", "Rest". */
+  /** The emphasised part: "8.2k", "1/1", "Good". */
   readonly value: string;
-  /** Unit or target after the value: "sets", "/ 2,000 kcal", "kg". */
+  /** Plain text after it: "steps", "done"; null when none. */
   readonly unit: string | null;
-  /** A thin bar for values measured against a target; null otherwise. */
-  readonly progress: (ProgressView & { readonly tone: 'primary' | 'warning' }) | null;
-  /** One short supporting line: "Over target", "−1.2 kg · 30 days". */
-  readonly note: string | null;
-  /** The whole tile for assistive tech (value and what a tap does). */
+  /** 0–1 for the tile's bar; null when the goal doesn't apply today. */
+  readonly fraction: number | null;
+  /** A measured number (bold) or a word (quiet), as in the reference. */
+  readonly emphasis: 'number' | 'word';
   readonly accessibleLabel: string;
   readonly action: HomeTileAction;
 }
 
-export type HomeRingView =
-  /** Sets of today's workout: done (or all, once a workout was finished today) of planned. */
-  | {
-      readonly kind: 'progress';
-      readonly value: number;
-      readonly max: number;
-      /** "36%" */
-      readonly label: string;
-      /** "sets" | "done" */
-      readonly caption: string;
-      readonly valueText: string;
-    }
-  /** No set count applies (rest, activity, no plan): an icon and a word, never a fake percentage. */
-  | { readonly kind: 'state'; readonly icon: string; readonly label: string };
-
-export interface HomeTodayView {
-  readonly ring: HomeRingView;
-  /** One short line under the card title. */
+export interface HomeDayView {
+  /** Rounded percentage of today's goals, 0–100. */
+  readonly percent: number;
+  readonly valueText: string;
   readonly status: string;
-  readonly train: HomeTileView;
+  readonly tiles: readonly [HomeTileView, HomeTileView, HomeTileView];
 }
 
-/**
- * @param workout Today's workout (Home's workout view model).
- * @param finishedToday A training workout was finished today (history); null while unknown.
- */
-export function toHomeToday(workout: HomeWorkoutView, finishedToday: boolean | null): HomeTodayView {
-  if (workout.kind === 'resume') {
-    const { setsDone: done, setsTotal: total } = workout;
-    return {
-      ring: setsRing(done, total, workout.progress),
-      status: 'Pick up where you left off.',
-      train: trainTile(`${done}/${total}`, 'sets', setsBar(done, total, workout.progress), `${workout.progress}. Resume ${workout.title}.`, {
-        kind: 'resume',
-        sessionId: workout.sessionId,
-      }),
-    };
-  }
-  if (finishedToday) {
-    const valueText = 'Workout done today';
-    return {
-      ring: { kind: 'progress', value: 1, max: 1, label: '100%', caption: 'done', valueText },
-      status: 'Workout done. Nice work.',
-      train: trainTile('Done', null, { value: 1, max: 1, valueText, tone: 'primary' }, `${valueText}. Open your plan.`, { kind: 'workout-tab' }),
-    };
-  }
-  switch (workout.kind) {
-    case 'resistance': {
-      const total = workout.setsTotal;
-      const open = { kind: 'open-session', sessionId: workout.sessionId } as const;
-      if (total === null || total === 0) {
-        return {
-          ring: { kind: 'state', icon: 'barbell', label: 'Today' },
-          status: 'Your workout is ready.',
-          train: trainTile('Planned', null, null, `${workout.title} planned today. Open workout.`, open),
-        };
-      }
-      const valueText = WORKOUT_COPY.resume.progress(0, total);
-      return {
-        ring: setsRing(0, total, valueText),
-        status: 'Your workout is ready.',
-        train: trainTile(`0/${total}`, 'sets', setsBar(0, total, valueText), `${workout.title}: ${valueText}. Open workout.`, open),
-      };
-    }
-    case 'activity':
-      return {
-        ring: { kind: 'state', icon: 'walk-outline', label: 'Light' },
-        status: 'Light activity today.',
-        train: trainTile('Light', null, null, `${workout.title} today. Open activity.`, { kind: 'open-session', sessionId: workout.sessionId }),
-      };
-    case 'rest':
-      return {
-        ring: { kind: 'state', icon: 'moon-outline', label: 'Rest' },
-        status: 'Rest day. Recover well.',
-        train: trainTile('Rest', null, null, 'Rest day today. Open your plan.', { kind: 'workout-tab' }),
-      };
-    case 'no-profile':
-      return {
-        ring: { kind: 'state', icon: 'sparkles-outline', label: 'Start' },
-        status: 'Set up your profile to get a plan.',
-        train: trainTile('No plan', null, null, 'No training plan yet. Set up your profile.', { kind: 'set-up-profile' }),
-      };
-    default:
-      return {
-        ring: { kind: 'state', icon: 'barbell', label: 'Plan' },
-        status: 'Your plan is unavailable.',
-        train: trainTile('—', null, null, 'Training plan unavailable. Open Workout.', { kind: 'workout-tab' }),
-      };
-  }
+export interface HomeDayFacts {
+  readonly workout: HomeWorkoutView;
+  /** A training workout was finished today (history). */
+  readonly finishedToday: boolean;
+  /** Steps logged today; null when none were logged. */
+  readonly steps: number | null;
+  readonly recovery: RecoveryLevel | null;
+  readonly stepGoal?: number;
 }
 
-/** Today's calories against the day's target (Nutrition's own summary; no arithmetic here). */
-export function toFuelTile(nutrition: DaySummaryView | 'error'): HomeTileView {
-  const base = { key: 'fuel', label: 'Fuel', icon: 'restaurant' } as const;
-  if (nutrition === 'error') {
-    return {
-      ...base,
-      value: '—',
-      unit: null,
-      progress: null,
-      note: 'Couldn’t load',
-      accessibleLabel: 'Fuel: couldn’t load nutrition. Try again.',
-      action: { kind: 'retry-nutrition' },
-    };
-  }
-  const c = nutrition.calories;
+const RECOVERY_LABELS: Readonly<Record<RecoveryLevel, string>> = { poor: 'Poor', fair: 'Fair', good: 'Good', great: 'Great' };
+const NUMBER = new Intl.NumberFormat('en-US');
+
+export const RECOVERY_OPTIONS: readonly { readonly value: RecoveryLevel; readonly label: string }[] = (
+  ['poor', 'fair', 'good', 'great'] as const
+).map((value) => ({ value, label: RECOVERY_LABELS[value] }));
+
+export function toHomeDay(f: HomeDayFacts): HomeDayView {
+  const goal = f.stepGoal ?? DEFAULT_STEP_GOAL;
+  const tiles = [moveTile(f.steps, goal), trainTile(f.workout, f.finishedToday), recoverTile(f.recovery)] as const;
+  const applicable = tiles.map((t) => t.fraction).filter((x): x is number => x !== null);
+  // toFixed first: 0.785 * 100 is 78.49999… in binary floating point.
+  const percent = Math.round(Number(((applicable.reduce((sum, x) => sum + x, 0) / applicable.length) * 100).toFixed(6)));
+  return { percent, valueText: `${percent}% of today's goals`, status: statusFor(percent), tiles };
+}
+
+function moveTile(steps: number | null, goal: number): HomeTileView {
+  const value = steps ?? 0;
   return {
-    ...base,
-    value: c.eaten,
-    unit: c.target ? `/ ${c.target} kcal` : 'kcal',
-    progress: c.progress ? { ...c.progress, tone: c.over ? 'warning' : 'primary' } : null,
-    note: c.over ? 'Over target' : null,
-    // Nutrition's value text already carries the remaining/over amount.
-    accessibleLabel: `Fuel: ${c.progress?.valueText ?? c.headline}. Open nutrition.`,
-    action: { kind: 'nutrition' },
+    key: 'move',
+    label: 'Move',
+    icon: 'walk',
+    value: formatSteps(value),
+    unit: 'steps',
+    fraction: stepsFraction(value, goal),
+    emphasis: 'number',
+    accessibleLabel: `Move: ${NUMBER.format(value)} of ${NUMBER.format(goal)} steps. Log steps.`,
+    action: { kind: 'log-steps' },
   };
 }
 
-/** The latest recorded weigh-in (never the profile weight); no target, so no bar. */
-export function toBodyTile(weight: HomeWeightView): HomeTileView {
-  const base = { key: 'body', label: 'Body', icon: 'scale-outline', progress: null } as const;
-  switch (weight.kind) {
-    case 'ready':
+function trainTile(w: HomeWorkoutView, finishedToday: boolean): HomeTileView {
+  const base = { key: 'train', label: 'Train', icon: 'barbell', emphasis: 'word' } as const;
+  if (w.kind === 'resume') {
+    return {
+      ...base,
+      value: '0/1',
+      unit: 'done',
+      fraction: w.setsTotal > 0 ? w.setsDone / w.setsTotal : 0,
+      accessibleLabel: `Train: ${w.progress}. Resume ${w.title}.`,
+      action: { kind: 'resume', sessionId: w.sessionId },
+    };
+  }
+  if (finishedToday) {
+    return { ...base, value: '1/1', unit: 'done', fraction: 1, accessibleLabel: 'Train: today’s workout is done. Open your plan.', action: { kind: 'workout-tab' } };
+  }
+  switch (w.kind) {
+    case 'resistance':
       return {
         ...base,
-        value: weight.value,
-        unit: weight.unit,
-        note: weight.change ?? weight.dateLabel,
-        accessibleLabel: weight.accessibleLabel,
-        action: { kind: 'weight-history' },
+        value: '0/1',
+        unit: 'done',
+        fraction: 0,
+        accessibleLabel: `Train: ${w.title} planned today, not done yet. Open workout.`,
+        action: { kind: 'open-session', sessionId: w.sessionId },
       };
-    case 'empty':
-      return {
-        ...base,
-        value: 'Log',
-        unit: null,
-        note: 'No weigh-ins yet',
-        accessibleLabel: 'Body: no weigh-ins yet. Log your weight.',
-        action: { kind: 'log-weight' },
-      };
+    case 'activity':
+      return { ...base, value: 'Light day', unit: null, fraction: null, accessibleLabel: `Train: ${w.title} today. Open activity.`, action: { kind: 'open-session', sessionId: w.sessionId } };
+    case 'rest':
+      return { ...base, value: 'Rest day', unit: null, fraction: null, accessibleLabel: 'Train: rest day. Open your plan.', action: { kind: 'workout-tab' } };
+    case 'no-profile':
+      return { ...base, value: 'No plan', unit: null, fraction: null, accessibleLabel: 'Train: no plan yet. Set up your profile.', action: { kind: 'set-up-profile' } };
     default:
-      return {
-        ...base,
-        value: '—',
-        unit: null,
-        note: 'Couldn’t load',
-        accessibleLabel: 'Body: couldn’t load your weight. Try again.',
-        action: { kind: 'retry-weight' },
-      };
+      return { ...base, value: 'No plan', unit: null, fraction: null, accessibleLabel: 'Train: plan unavailable. Open Workout.', action: { kind: 'workout-tab' } };
   }
 }
 
-function setsRing(done: number, total: number, valueText: string): HomeRingView {
-  const max = Math.max(total, 1);
-  return { kind: 'progress', value: done, max, label: `${Math.round((Math.min(done, max) / max) * 100)}%`, caption: 'sets', valueText };
+function recoverTile(level: RecoveryLevel | null): HomeTileView {
+  const base = { key: 'recover', label: 'Recover', icon: 'leaf', unit: null, emphasis: 'word', action: { kind: 'check-in-recovery' } } as const;
+  if (!level) {
+    return { ...base, value: 'Check in', fraction: 0, accessibleLabel: 'Recover: not checked in today. Check in.' };
+  }
+  const label = RECOVERY_LABELS[level];
+  return { ...base, value: label, fraction: recoveryFraction(level), accessibleLabel: `Recover: feeling ${label.toLowerCase()} today. Change check-in.` };
 }
 
-function setsBar(done: number, total: number, valueText: string): HomeTileView['progress'] {
-  return { value: done, max: Math.max(total, 1), valueText, tone: 'primary' };
-}
-
-function trainTile(
-  value: string,
-  unit: string | null,
-  progress: HomeTileView['progress'],
-  description: string,
-  action: HomeTileAction,
-): HomeTileView {
-  return { key: 'train', label: 'Train', icon: 'barbell', value, unit, progress, note: null, accessibleLabel: `Train: ${description}`, action };
+function statusFor(percent: number): string {
+  if (percent >= 100) {
+    return 'Every goal done. Great work!';
+  }
+  if (percent >= 70) {
+    return 'Almost there. Keep it up!';
+  }
+  if (percent > 0) {
+    return 'Stay consistent. You’ve got this!';
+  }
+  return 'A fresh day. Let’s get moving!';
 }

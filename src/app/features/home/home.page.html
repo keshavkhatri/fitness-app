@@ -1,46 +1,18 @@
-<fit-page
-  title="Today"
-  [heading]="greeting()"
-  [kicker]="today | date: 'EEEE, MMMM d'"
-  refreshable
-  refreshingText="Updating today"
-  wide
-  (refresh)="refresh($event)"
->
-  <!-- Header: the goal under the greeting; the profile at the trailing edge. -->
-  <div fitPageSubtitle class="header-line">
-    @if (goal.hasValue()) {
-      @if (goal.value(); as g) {
-        @if (g.kind === 'ready') {
-          <button type="button" class="goal-pill" data-testid="home-goal" [attr.aria-label]="'Goal: ' + g.title + '. Review your details.'" (click)="reviewProfile()">
-            <ion-icon name="flag-outline" aria-hidden="true" />
-            <span class="goal-title">{{ g.title }}</span>
-            <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
-          </button>
-        }
-      }
-    } @else if (goal.error()) {
-      <button type="button" class="goal-pill" data-testid="home-goal-error" (click)="goal.reload()">
-        <ion-icon name="alert-circle-outline" aria-hidden="true" />
-        <span class="goal-title">Couldn't load your goal. Try again</span>
-      </button>
-    }
-  </div>
-  <button
-    fitPageAside
-    fit-icon-button
-    type="button"
-    variant="tonal"
-    size="lg"
-    icon="person-circle-outline"
-    aria-label="You: profile and settings"
-    data-testid="home-profile"
-    (click)="openYou()"
-  ></button>
+<fit-page title="Today" customHeader refreshable refreshingText="Updating today" wide (refresh)="refresh($event)">
+  <app-home-header
+    fitPageHeader
+    [greeting]="greeting()"
+    [name]="identity.hasValue() ? identity.value().name : null"
+    [photo]="identity.hasValue() ? identity.value().photo : null"
+    [streak]="streak.hasValue() ? streak.value() : null"
+    [unread]="inbox.unreadCount()"
+    (openNotifications)="openNotifications()"
+    (openProfile)="openYou()"
+  />
 
   <div class="dashboard">
     <section class="day" aria-labelledby="home-day">
-      <app-day-summary-card headingId="home-day" [today]="day()" [fuel]="fuelTile()" [body]="bodyTile()" (tileSelected)="runTileAction($event)" />
+      <app-day-summary-card headingId="home-day" [day]="day()" (tileSelected)="runTileAction($event)" />
     </section>
 
     <section class="featured" aria-label="Today's workout">
@@ -64,7 +36,7 @@
       } @else {
         <div aria-busy="true" data-testid="home-workout-loading">
           <span class="visually-hidden">Loading today's workout</span>
-          <fit-skeleton height="248px" radius="card" />
+          <fit-skeleton height="228px" radius="card" />
         </div>
       }
     </section>
@@ -72,7 +44,7 @@
     <div class="compact">
       <section aria-labelledby="home-nutrition">
         @if (nutrition.hasValue()) {
-          <app-nutrition-summary-card headingId="home-nutrition" [summary]="nutrition.value()" (openNutrition)="openNutrition()" (logFood)="logFood()" />
+          <app-nutrition-summary-card headingId="home-nutrition" [summary]="nutrition.value()" (openNutrition)="openNutrition()" />
         } @else if (nutrition.error()) {
           <!-- Only this card: the rest of Home doesn't depend on Nutrition. -->
           <fit-card class="compact-error" data-testid="home-nutrition-error">
@@ -83,7 +55,7 @@
         } @else {
           <div aria-busy="true" data-testid="home-nutrition-loading">
             <span id="home-nutrition" class="visually-hidden">Loading nutrition</span>
-            <fit-skeleton height="232px" radius="card" />
+            <fit-skeleton height="172px" radius="card" />
           </div>
         }
       </section>
@@ -103,10 +75,21 @@
       } @else if (plan.isLoading() || history.isLoading()) {
         <div aria-busy="true" data-testid="home-week-loading">
           <span class="visually-hidden">Loading this week</span>
-          <fit-skeleton height="232px" radius="card" />
+          <fit-skeleton height="172px" radius="card" />
         </div>
       }
       <!-- No plan (setup or unavailable): no week to compare against, so no card. -->
     </div>
   </div>
+
+  <app-check-in-sheets
+    [(stepsOpen)]="stepsOpen"
+    [(recoveryOpen)]="recoveryOpen"
+    [steps]="todaySteps()"
+    [recovery]="todayRecovery()"
+    [saving]="savingCheckIn()"
+    [saveError]="checkInError()"
+    (saveSteps)="saveSteps($event)"
+    (saveRecovery)="saveRecovery($event)"
+  />
 </fit-page>

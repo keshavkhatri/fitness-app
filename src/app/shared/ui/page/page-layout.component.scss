@@ -72,3 +72,16 @@ ion-title {
 ion-refresher-content {
   --color: var(--color-text-secondary);
 }
+
+// Custom header: starts below the status bar / notch (no toolbar to do it).
+.custom-header {
+  @include fx.safe-area-padding(top, var(--space-3));
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+
+  &.wide {
+    max-width: var(--page-max-width-wide);
+  }
+}

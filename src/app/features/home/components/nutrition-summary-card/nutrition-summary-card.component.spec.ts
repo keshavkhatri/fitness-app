@@ -27,22 +27,23 @@ function render(value: DaySummaryView) {
 const clean = (node: Element | null | undefined) => node?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
 describe('NutritionSummaryCardComponent', () => {
-  it('shows protein as a labelled ring and carbs and fat as labelled bars', () => {
+  it('shows protein as a labelled ring and calories against the target', () => {
     const { el } = render(summary());
     const ring = el.querySelector('[data-testid=home-macro-protein] [role=progressbar]')!;
     expect(ring.getAttribute('aria-label')).toBe('Protein');
     expect(ring.getAttribute('data-variant')).toBe('ring');
-    expect(clean(el.querySelector('.ring-value'))).toBe('90 g');
-    expect(clean(el.querySelector('.ring-target'))).toBe('of 150 g');
-    expect([...el.querySelectorAll('.macros [role=progressbar]')].map((b) => b.getAttribute('aria-label'))).toEqual(['Carbs', 'Fat']);
-    expect(clean(el.querySelector('[data-testid=home-macro-carbs] .macro-value'))).toBe('100 g / 220 g');
+    expect(clean(el.querySelector('.ring-value'))).toBe('90g');
+    expect(clean(el.querySelector('.ring-target'))).toBe('of 150g');
+    expect(clean(el.querySelector('[data-testid=calories-eaten]'))).toBe('1,500');
+    expect(clean(el.querySelector('[data-testid=calories-target]'))).toBe('/ 2,000 kcal');
+    expect(el.querySelector('.cal-bar')?.getAttribute('aria-label')).toBe('Calories');
   });
 
-  it('without a valid target: intake only, no rings or bars, a short note and a way to Nutrition', () => {
+  it('without a valid target: intake only, no ring or bar, a short note and a way to Nutrition', () => {
     const { el, fixture } = render(summary({ kind: 'available', targets: { calories: { kind: 'review-required' }, macros: { kind: 'withheld', reason: 'calorie-review' } } }));
     expect(el.querySelectorAll('[role=progressbar]')).toHaveLength(0);
-    expect(clean(el.querySelector('.no-target-value'))).toBe('90 g');
-    expect(clean(el.querySelector('[data-testid=home-macro-fat] .macro-value'))).toBe('30 g');
+    expect(clean(el.querySelector('.no-target-value'))).toBe('90g');
+    expect(clean(el.querySelector('[data-testid=calories-target]'))).toBe('kcal');
     expect(clean(el.querySelector('[data-testid=target-note] p'))).toBe('Your targets need review.');
     const opened = vi.fn();
     fixture.componentInstance.openNutrition.subscribe(opened);
@@ -50,13 +51,13 @@ describe('NutritionSummaryCardComponent', () => {
     expect(opened).toHaveBeenCalled();
   });
 
-  it('Log food is an icon button with an accessible name', () => {
+  it('the whole card opens Nutrition through its title link', () => {
     const { el, fixture } = render(summary());
-    const logged = vi.fn();
-    fixture.componentInstance.logFood.subscribe(logged);
-    const button = el.querySelector<HTMLButtonElement>('[data-testid=home-log-food]')!;
-    expect(button.getAttribute('aria-label')).toBe('Log food');
-    button.click();
-    expect(logged).toHaveBeenCalled();
+    const opened = vi.fn();
+    fixture.componentInstance.openNutrition.subscribe(opened);
+    const link = el.querySelector<HTMLButtonElement>('[data-testid=home-nutrition-open]')!;
+    expect(link.closest('h2')?.id).toBe('home-nutrition');
+    link.click();
+    expect(opened).toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 // Public API of the shared UI layer. Feature code imports from here only.
 export * from './tone';
 export * from './screen-theme';
+export * from './avatar/fitness-avatar.component';
 export * from './bottom-sheet/bottom-sheet.component';
 export * from './button/fitness-button.component';
 export * from './card/fitness-card.component';
