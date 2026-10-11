@@ -68,3 +68,11 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Server: local secrets and build output
+/server/.env
+/server/dist
+/server/node_modules
+.env
+.env.*
+!.env.example
