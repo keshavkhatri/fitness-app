@@ -12,7 +12,8 @@ export interface MetricTrend {
   label: string;
 }
 
-export type FitnessMetricSize = 'md' | 'lg';
+/** `xl`: the one hero number of a screen or card (display-xl numerals). */
+export type FitnessMetricSize = 'md' | 'lg' | 'xl';
 
 const TREND_PRESENTATION: Record<MetricTrend['direction'], { icon: string | null; srText: string }> = {
   up: { icon: 'trending-up', srText: 'Up' },

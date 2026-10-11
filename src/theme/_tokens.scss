@@ -6,6 +6,12 @@
 //   - <html class="theme-light"> → forced light
 //   - <html class="theme-dark">  → forced dark
 // The class is managed by `ThemeService` (src/app/core/theme).
+//
+// Screen themes (opt-in, scoped to an element and its subtree):
+//   - .fit-theme-dashboard → warm (light) / charcoal (dark), follows the above
+//   - .fit-theme-immersive → charcoal, whatever the app theme
+// They re-emit the same token names, so components need no changes.
+// Contract and rules: docs/design-system.md.
 // =============================================================================
 
 @use 'sass:map';
@@ -18,6 +24,7 @@
   }
 
   --color-scrim-rgb: #{ionic-bridge.rgb-list(map.get($palette, scrim))};
+  --color-ink-accent-rgb: #{ionic-bridge.rgb-list(map.get($palette, ink-accent))};
 
   @include ionic-bridge.ionic-colors($palette);
 }
@@ -33,9 +40,28 @@
   // On dark surfaces, elevation reads through surface color, not shadow.
   --shadow-card: none;
   --shadow-sheet: none;
-  // No shadow on dark: a 1px ember hairline separates the hero instead.
-  --shadow-hero: inset 0 0 0 1px rgba(255, 122, 82, 0.22);
+  // No shadow on dark: a 1px accent hairline separates the hero instead.
+  --shadow-hero: inset 0 0 0 1px rgba(var(--color-ink-accent-rgb), 0.22);
   color-scheme: dark;
+}
+
+/// All color-dependent tokens for one palette. `$scheme` is light | dark.
+@mixin theme($palette, $scheme) {
+  @include color-tokens($palette);
+
+  @if $scheme == light {
+    @include light-only-tokens;
+  } @else {
+    @include dark-only-tokens;
+  }
+}
+
+/// A screen theme applies to a subtree, so it must also reset the inherited
+/// text color and paint its own background (body's were resolved at :root).
+@mixin screen-theme($palette, $scheme) {
+  @include theme($palette, $scheme);
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 :root {
@@ -43,6 +69,8 @@
   --font-family-base: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
 
+  // Hero numerals only (timers, ring centres, the one key number of a screen).
+  --font-size-display-xl: 48px;
   --font-size-display: 32px;
   --font-size-h1: 28px;
   --font-size-h2: 22px;
@@ -51,6 +79,7 @@
   --font-size-body-sm: 14px;
   --font-size-caption: 12px;
 
+  --line-height-display-xl: 52px;
   --line-height-display: 40px;
   --line-height-h1: 34px;
   --line-height-h2: 28px;
@@ -93,8 +122,21 @@
   // Pages that switch to two columns on tablets (Home).
   --page-max-width-wide: 70em;
   --tap-target-min: 44px;
+  // Primary actions, large buttons and fields; one-handed use mid-workout.
+  --tap-target-lg: 52px;
   --border-hairline: 1px;
   --toolbar-height: 44px;
+
+  // --- Icons ----------------------------------------------------------------
+  --icon-size-sm: 16px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 24px;
+
+  // --- Interaction states ---------------------------------------------------
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --state-pressed-scale: 0.98;
+  --state-disabled-opacity: 0.4;
 
   // --- Motion ---------------------------------------------------------------
   --motion-duration-fast: 120ms;
@@ -103,8 +145,7 @@
   --motion-duration-ring: 700ms;
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  @include color-tokens(palette.$light);
-  @include light-only-tokens;
+  @include theme(palette.$light, light);
 }
 
 @media (max-width: 360px) {
@@ -115,14 +156,36 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) {
-    @include color-tokens(palette.$dark);
-    @include dark-only-tokens;
+    @include theme(palette.$dark, dark);
   }
 }
 
 :root.theme-dark {
-  @include color-tokens(palette.$dark);
-  @include dark-only-tokens;
+  @include theme(palette.$dark, dark);
+}
+
+// --- Screen themes ------------------------------------------------------------
+// Dashboard mode follows the app's light/dark resolution (same selectors as
+// above, so a user's Appearance setting is honoured).
+.fit-theme-dashboard {
+  @include screen-theme(palette.$warm, light);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) .fit-theme-dashboard {
+    @include screen-theme(palette.$charcoal, dark);
+  }
+}
+
+:root.theme-dark .fit-theme-dashboard {
+  @include screen-theme(palette.$charcoal, dark);
+}
+
+// Immersive mode (active workout) is always dark. Nested inside a dashboard
+// subtree it still wins: an element's own declarations beat inherited ones.
+// Don't put both classes on the same element.
+.fit-theme-immersive {
+  @include screen-theme(palette.$charcoal, dark);
 }
 
 @media (prefers-reduced-motion: reduce) {

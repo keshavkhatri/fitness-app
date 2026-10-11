@@ -1,0 +1,184 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+fit-card {
+  border-radius: var(--radius-lg);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+.intro {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.title {
+  @include fx.text(h2, bold);
+}
+
+.status {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+// --- Ring ----------------------------------------------------------------------------
+.ring-value {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+}
+
+.ring-caption {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+// States without a set count: an icon in a quiet disc, the same footprint as the ring.
+.ring-state {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+
+  ion-icon {
+    font-size: 30px;
+  }
+
+  .ring-caption {
+    color: var(--color-primary-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.ring-skeleton {
+  flex: none;
+}
+
+// --- Tiles ---------------------------------------------------------------------------
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-2);
+  list-style: none;
+
+  li {
+    display: flex;
+    min-width: 0;
+  }
+
+  // Hairline separators between tiles, as in the reference.
+  li + li {
+    border-left: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.tile {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-radius: var(--radius-card);
+  transition: background-color var(--motion-duration-fast) var(--motion-ease);
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+// Domain hue per tile: ember = training, primary = nutrition, teal = body.
+.tile-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: var(--icon-size-sm);
+
+  [data-key='train'] & {
+    background: var(--color-train-soft);
+    color: var(--color-train-text);
+  }
+
+  [data-key='body'] & {
+    background: var(--color-body-soft);
+    color: var(--color-body-text);
+  }
+}
+
+.tile-label {
+  @include fx.text(body-sm, semibold);
+}
+
+.tile-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-1);
+  min-width: 0;
+}
+
+.value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+}
+
+.unit {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary-strong);
+  transition: width var(--motion-duration-ring) var(--motion-ease);
+
+  [data-tone='warning'] & {
+    background: var(--color-warning-text);
+  }
+}
+
+.tile-note {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}

@@ -1,5 +1,6 @@
 :host {
-  --progress-color: var(--color-primary);
+  // primary-strong, not primary: the fill must reach 3:1 against the surface.
+  --progress-color: var(--color-primary-strong);
   display: block;
 }
 

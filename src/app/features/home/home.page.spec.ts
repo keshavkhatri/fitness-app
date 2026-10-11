@@ -18,6 +18,7 @@ import { FoodEntry, FoodEntryInput, createFoodEntry } from '../../domain/nutriti
 import { WorkoutLog } from '../../domain/workout-session';
 import { finishedLog } from '../../domain/workout-session/testing/workout-log-fixtures';
 import { ACTIVITY_PROFILE, PROFILE, REST_PROFILE, planFor, profileWith } from '../workout/testing/workout-fixtures';
+import { scheduleWeek } from '../workout/workout-view-model';
 import { HomePage } from './home.page';
 
 /** Thursday 8 October 2026, 12:30 local: a training day for the 4-day plan. */
@@ -113,95 +114,80 @@ async function render(
 const clean = (node: Element | null | undefined) => node?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 const nutritionCard = (el: HTMLElement) => el.querySelector('app-nutrition-summary-card');
 const workoutCard = (el: HTMLElement) => el.querySelector('app-today-workout-card');
-const progressCard = (el: HTMLElement) => el.querySelector('app-progress-summary-card');
+const weekCard = (el: HTMLElement) => el.querySelector('app-week-activity-card');
+const tile = (el: HTMLElement, key: 'train' | 'fuel' | 'body') => el.querySelector<HTMLButtonElement>(`[data-testid=home-tile-${key}]`);
+/** Visible parts joined by a space (Angular drops whitespace between elements; CSS spaces them). */
+const parts = (node: Element | null | undefined) => [...(node?.children ?? [])].map((c) => clean(c)).filter(Boolean).join(' ');
+const tileValue = (el: HTMLElement, key: 'train' | 'fuel' | 'body') => parts(tile(el, key)?.querySelector('.tile-value'));
+const ringText = (el: HTMLElement) => parts(el.querySelector('[data-testid=home-day-ring] .center'));
 const buttonIn = (root: Element | null, label: string) =>
   [...(root?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find((b) => clean(b) === label);
 
 describe('HomePage', () => {
-  it('renders every dashboard section', async () => {
-    const { el } = await render();
-    for (const heading of ['This week', "Today's workout", 'Nutrition', 'Weight', 'Goal', 'Recent']) {
+  it('renders the redesigned dashboard in the dashboard screen theme', async () => {
+    const { el, fixture } = await render();
+    expect(el.classList.contains('fit-theme-dashboard')).toBe(true);
+    for (const heading of ['Your day', "Today's workout", 'Nutrition', 'This week']) {
       expect(el.textContent).toContain(heading);
     }
     // No made-up name in the greeting (the profile has none); the date sits above it.
     expect(clean(el.querySelector('h1'))).toBe('Good afternoon');
     expect(clean(el.querySelector('.kicker'))).toBe('Thursday, October 8');
+    // Nothing the app doesn't record: no streaks, steps, sleep or recovery scores.
+    expect(el.textContent).not.toMatch(/streak|steps|sleep|recover(y)? score/i);
+    expect(fixture).toBeTruthy();
+  });
+
+  it('the profile button opens the You tab', async () => {
+    const { el, fixture, navigateByUrl } = await render();
+    const profile = el.querySelector<HTMLButtonElement>('[data-testid=home-profile]')!;
+    expect(profile.getAttribute('aria-label')).toBe('You: profile and settings');
+    profile.click();
+    await fixture.whenStable();
+    expect(navigateByUrl).toHaveBeenCalledWith('/you');
   });
 
   describe('goal (real profile)', () => {
-    const goalCard = (el: HTMLElement) => el.querySelector('app-goal-summary-card');
+    const pill = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('[data-testid=home-goal]');
 
-    it('shows the saved goal; a goal that supports a target says none is set', async () => {
-      const { el } = await render(); // build-muscle, no target weight
-      const card = goalCard(el)!;
-      expect(clean(card.querySelector('[data-testid=goal-title]'))).toBe('Build muscle');
-      expect(clean(card.querySelector('[data-testid=goal-target]'))).toBe('No target weight set');
-      expect(card.querySelector('button')?.getAttribute('aria-label')).toBe('Goal: Build muscle. No target weight set. Review my details.');
-    });
-
-    it('shows a saved target weight in the profile’s units, measured from the profile weight', async () => {
-      const metric = await render({ profile: profileWith({ primaryGoal: 'lose-fat', goalTarget: { targetWeight: { kilograms: 74 } } }) });
-      const card = goalCard(metric.el)!;
-      expect(clean(card.querySelector('[data-testid=goal-title]'))).toBe('Lose fat');
-      expect([...card.querySelectorAll('[data-testid=goal-target] .sub')].map((p) => clean(p))).toEqual([
-        'Target weight 74 kg',
-        'Lose 6 kg from your profile weight',
-      ]);
-
-      TestBed.resetTestingModule();
-      const imperial = await render({
-        profile: profileWith({ primaryGoal: 'lose-fat', unitSystem: 'imperial', goalTarget: { targetWeight: { kilograms: 74 } } }),
-      });
-      expect(clean(goalCard(imperial.el)!.querySelector('[data-testid=goal-target] .sub'))).toBe('Target weight 163.1 lb');
-    });
-
-    it('goals without targets show no target line at all', async () => {
-      const { el } = await render({ profile: profileWith({ primaryGoal: 'get-stronger' }) });
-      const card = goalCard(el)!;
-      expect(clean(card.querySelector('[data-testid=goal-title]'))).toBe('Build strength');
-      expect(card.querySelector('[data-testid=goal-target]')).toBeNull();
-      // Without targets, the goal's own description fills the tile.
-      expect(clean(card.querySelector('.sub'))).not.toBe('');
-    });
-
-    it('never shows fabricated progress, timelines or a Sample/demo label', async () => {
+    it('shows the saved goal under the greeting, without progress or timelines', async () => {
       const { el } = await render({ profile: profileWith({ primaryGoal: 'lose-fat', goalTarget: { targetWeight: { kilograms: 74 } } }) });
-      const card = goalCard(el)!;
-      expect(card.querySelector('fit-progress, [role=progressbar], fit-chip')).toBeNull();
-      expect(clean(card)).not.toMatch(/week \d|%|on track|progress|lost|gained/i);
-      expect(el.querySelector('[data-testid=goal-sample]')).toBeNull();
+      expect(clean(pill(el))).toBe('Lose fat');
+      expect(pill(el)!.getAttribute('aria-label')).toBe('Goal: Lose fat. Review your details.');
+      expect(clean(pill(el))).not.toMatch(/%|on track|progress|lost|gained/i);
       expect(el.textContent).not.toMatch(/Sample|Demo data/);
     });
 
-    it('Review my details opens the profile review', async () => {
+    it('the goal opens the profile review', async () => {
       const { el, fixture, navigateByUrl } = await render();
-      goalCard(el)!.querySelector('button')!.click();
+      expect(clean(pill(el))).toBe('Build muscle');
+      pill(el)!.click();
       await fixture.whenStable();
       expect(navigateByUrl).toHaveBeenCalledWith('/onboarding/review');
     });
 
-    it('without a profile, the goal tile gives way to the setup hero', async () => {
+    it('without a profile: no goal, a welcome, and setup from the featured card', async () => {
       const { el, fixture, navigateByUrl } = await render({ profile: null });
-      expect(goalCard(el)).toBeNull();
+      expect(pill(el)).toBeNull();
       expect(clean(el.querySelector('h1'))).toBe('Welcome');
       buttonIn(workoutCard(el), 'Set up profile')!.click();
       await fixture.whenStable();
       expect(navigateByUrl).toHaveBeenCalledWith('/onboarding');
     });
 
-    it('a profile that can’t be read only affects the goal card, and can be retried', async () => {
+    it('a profile that can’t be read only affects the goal, and can be retried', async () => {
       const { el, fixture } = await render({
         before: () => vi.spyOn(TestBed.inject(FitnessProfileService), 'load').mockRejectedValueOnce(new Error('storage')),
       });
       const error = el.querySelector<HTMLButtonElement>('[data-testid=home-goal-error]')!;
       expect(clean(error)).toContain("Couldn't load your goal");
-      expect(goalCard(el)).toBeNull();
+      expect(pill(el)).toBeNull();
       expect(workoutCard(el)).not.toBeNull();
       expect(nutritionCard(el)).not.toBeNull();
-      expect(progressCard(el)).not.toBeNull();
+      expect(weekCard(el)).not.toBeNull();
       error.click();
       await settle(fixture);
-      expect(clean(goalCard(el)?.querySelector('[data-testid=goal-title]'))).toBe('Build muscle');
+      expect(clean(pill(el))).toBe('Build muscle');
     });
 
     it('re-entering Home re-reads the goal (e.g. after editing the profile)', async () => {
@@ -210,7 +196,73 @@ describe('HomePage', () => {
       await TestBed.inject(FitnessProfileService).save(profileWith({ primaryGoal: 'get-stronger', updatedAt: '2026-10-08T10:00:00.000Z' }));
       fixture.componentInstance.ionViewWillEnter();
       await settle(fixture);
-      expect(clean(goalCard(el)?.querySelector('[data-testid=goal-title]'))).toBe('Build strength');
+      expect(clean(pill(el))).toBe('Build strength');
+    });
+  });
+
+  describe('your day (today’s training, fuel, body)', () => {
+    it('a planned day: 0% of the planned sets, the Train tile opens the workout', async () => {
+      const { el, fixture, forward } = await render();
+      const ring = el.querySelector('[data-testid=home-day-ring]')!;
+      const today = scheduleWeek(TestBed.inject(WorkoutPlanService).plan()!)[3]; // Thursday
+      const sets = today?.kind === 'resistance' ? today.exercises.reduce((n, e) => n + e.sets, 0) : -1;
+      expect(ring.getAttribute('aria-valuenow')).toBe('0');
+      expect(ring.getAttribute('aria-valuemax')).toBe(String(sets));
+      expect(ringText(el)).toBe('0% sets');
+      expect(tileValue(el, 'train')).toBe(`0/${sets} sets`);
+      expect(clean(el.querySelector('[data-testid=home-day-status]'))).toBe('Your workout is ready.');
+      tile(el, 'train')!.click();
+      await fixture.whenStable();
+      expect(forward).toHaveBeenCalledWith(['/workout', 'session', today!.id]);
+    });
+
+    it('a workout in progress: the ring is its sets done, and Train resumes it', async () => {
+      const { el, fixture, forward } = await render({ activeSession: 'day-1-upper' });
+      const ring = el.querySelector('[data-testid=home-day-ring]')!;
+      expect(ring.getAttribute('aria-valuetext')).toBe('0 of 22 sets done');
+      expect(tileValue(el, 'train')).toBe('0/22 sets');
+      expect(tile(el, 'train')!.getAttribute('aria-label')).toBe('Train: 0 of 22 sets done. Resume Upper Body A.');
+      tile(el, 'train')!.click();
+      await fixture.whenStable();
+      expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-1-upper', 'active']);
+    });
+
+    it('a workout finished today: done (from history), never re-offered as 0%', async () => {
+      const { el } = await render({ history: [finishedLog({ plan: planFor(PROFILE), startedAt: new Date(2026, 9, 8, 7, 0), minutes: 40 })] });
+      expect(ringText(el)).toBe('100% done');
+      expect(tileValue(el, 'train')).toBe('Done');
+      expect(clean(el.querySelector('[data-testid=home-day-status]'))).toBe('Workout done. Nice work.');
+    });
+
+    it('a rest day shows a state, not a percentage', async () => {
+      const { el } = await render({ profile: REST_PROFILE });
+      expect(el.querySelector('[data-testid=home-day-ring]')).toBeNull();
+      expect(clean(el.querySelector('[data-testid=home-day-state]'))).toBe('Rest');
+      expect(tileValue(el, 'train')).toBe('Rest');
+    });
+
+    it('Fuel is today’s calories against the target and opens Nutrition', async () => {
+      const { el, fixture, navigateByUrl } = await render({ entries: [food('a', '2026-10-08', { calories: 1420 })] });
+      expect(tileValue(el, 'fuel')).toBe('1,420 / 2,000 kcal');
+      expect(tile(el, 'fuel')!.getAttribute('aria-label')).toBe('Fuel: 1,420 of 2,000 kcal, 580 kcal remaining. Open nutrition.');
+      tile(el, 'fuel')!.click();
+      await fixture.whenStable();
+      expect(navigateByUrl).toHaveBeenCalledWith('/nutrition');
+    });
+
+    it('Fuel over target says so in words', async () => {
+      const { el } = await render({ entries: [food('a', '2026-10-08', { calories: 2300 })] });
+      expect(clean(tile(el, 'fuel')!.querySelector('.tile-note'))).toBe('Over target');
+      expect(tile(el, 'fuel')!.querySelector('.bar')?.getAttribute('data-tone')).toBe('warning');
+    });
+
+    it('each part loads independently', async () => {
+      const { el } = await render({
+        unsettled: true,
+        before: () => vi.spyOn(TestBed.inject(NutritionRepository), 'loadDay').mockReturnValue(new Promise(() => undefined)),
+      });
+      expect(el.querySelector('app-day-summary-card')?.getAttribute('aria-busy')).toBe('true');
+      expect(tile(el, 'fuel')).toBeNull();
     });
   });
 
@@ -223,10 +275,13 @@ describe('HomePage', () => {
       const title = clean(card.querySelector('.name'));
       expect(title).not.toBe('');
       expect([...card.querySelectorAll('.meta li')].map((li) => clean(li))).toEqual([
-        expect.stringMatching(/^\d+ exercises$/),
         expect.stringMatching(/^About \d+ min$/),
+        expect.stringMatching(/^\d+ exercises$/),
       ]);
-      expect(clean(card.querySelector('[data-testid=home-workout-exercises]'))).toMatch(/\+\d+ more$/);
+      // Body areas from the plan's exercises (as Workout Detail shows them).
+      const areas = [...card.querySelectorAll('[data-testid=home-workout-areas] li')].map((li) => clean(li));
+      expect(areas.length).toBeGreaterThan(0);
+      expect(buttonIn(card, 'Start workout')?.getAttribute('data-variant')).toBe('primary');
       buttonIn(card, 'Start workout')!.click();
       await settle(fixture);
       const [path] = forward.mock.calls[0] as unknown as [string[]];
@@ -253,7 +308,7 @@ describe('HomePage', () => {
       const card = workoutCard(el)!;
       expect(clean(card.querySelector('.name'))).toBe('Rest Day');
       expect(clean(card.querySelector('[data-testid=home-workout-next]'))).toMatch(/^Next up: .+ on Friday\.$/);
-      expect(buttonIn(card, 'View Workout')).toBeUndefined();
+      expect(buttonIn(card, 'Start workout')).toBeUndefined();
       buttonIn(card, 'View plan')!.click();
       await fixture.whenStable();
       expect(navigateByUrl).toHaveBeenCalledWith('/workout');
@@ -292,16 +347,18 @@ describe('HomePage', () => {
       await logs.start('day-1-upper');
       fixture.detectChanges();
       expect(buttonIn(workoutCard(el), 'Resume')).toBeDefined();
+      expect(tileValue(el, 'train')).toBe('0/22 sets');
       await logs.discard();
       fixture.detectChanges();
       expect(buttonIn(workoutCard(el), 'Start workout')).toBeDefined();
     });
 
-    it('without a profile, the hero offers setup (rest of Home still renders)', async () => {
+    it('without a profile, the featured card offers setup (rest of Home still renders)', async () => {
       const { el } = await render({ profile: null });
       expect(clean(workoutCard(el)?.querySelector('.name'))).toBe('Let’s build your plan');
-      expect(el.querySelector('app-week-strip')).toBeNull();
+      expect(weekCard(el)).toBeNull();
       expect(nutritionCard(el)).not.toBeNull();
+      expect(tileValue(el, 'train')).toBe('No plan');
     });
 
     it('a plan failure only affects the workout card, and can be retried', async () => {
@@ -312,11 +369,12 @@ describe('HomePage', () => {
       const error = el.querySelector('[data-testid=home-workout-error]')!;
       expect(clean(error)).toContain("Couldn't load your plan");
       expect(workoutCard(el)).toBeNull();
-      expect(progressCard(el)).not.toBeNull();
       expect(nutritionCard(el)).not.toBeNull();
+      expect(tile(el, 'fuel')).not.toBeNull();
       buttonIn(error, 'Try again')!.click();
       await settle(fixture);
       expect(buttonIn(workoutCard(el), 'Start workout')).toBeDefined();
+      expect(weekCard(el)).not.toBeNull();
     });
 
     it('shows a loading state while the plan is read', async () => {
@@ -328,29 +386,27 @@ describe('HomePage', () => {
     });
   });
 
-  describe('progress (real history)', () => {
-    it('counts this Monday–Sunday week and links to the latest workout and Progress', async () => {
+  describe('this week (real history)', () => {
+    const count = (el: HTMLElement) => clean(el.querySelector('[data-testid=home-week-count]'));
+    const states = (el: HTMLElement) => [...el.querySelectorAll('.chart .day')].map((d) => d.getAttribute('data-state'));
+
+    it('counts this Monday–Sunday week against the plan, one bar per day, and opens Progress', async () => {
       const history = [workoutAt(4, 40), workoutAt(5, 50), workoutAt(7, 45)]; // Sun (last week), Mon, Wed
       const { el, fixture, forward } = await render({ history });
-      const card = progressCard(el)!;
-      expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('2 of 4 workouts');
+      expect(count(el)).toBe('2/4');
       expect(el.querySelector('[data-testid=home-week]')?.getAttribute('aria-label')).toMatch(/^This week: 2 of 4 workouts done\. Today, Thursday: /);
-      const last = card.querySelector<HTMLButtonElement>('[data-testid=home-last-workout]')!;
-      expect(clean(last)).toMatch(/Yesterday · 45 min · Completed$/);
-      last.click();
-      await fixture.whenStable();
-      expect(forward).toHaveBeenCalledWith(['/workout', 'history', history[2].id]);
-      buttonIn(el.querySelector('[aria-labelledby=home-recent]'), 'Progress')!.click();
+      // Mon done, Tue planned, Wed done (unplanned), Thu–Fri planned, weekend rest.
+      expect(states(el)).toEqual(['done', 'planned', 'done', 'planned', 'planned', 'rest', 'rest']);
+      expect(el.querySelector('.chart .day.today .letter')?.textContent).toBe('T');
+      buttonIn(weekCard(el), 'This week')!.click();
       await fixture.whenStable();
       expect(forward).toHaveBeenCalledWith('/you/progress');
     });
 
-    it('no completed workouts: an empty state, no fabricated numbers', async () => {
+    it('no completed workouts: nothing fabricated', async () => {
       const { el } = await render();
-      const card = progressCard(el)!;
-      expect(clean(card)).toContain('No completed workouts yet');
-      expect(card.querySelector('[data-testid=home-last-workout]')).toBeNull();
-      expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('0 of 4 workouts');
+      expect(count(el)).toBe('0/4');
+      expect(states(el)).not.toContain('done');
     });
 
     it('reads history once per load (week overview), not the full progress analysis', async () => {
@@ -366,51 +422,51 @@ describe('HomePage', () => {
       expect(spies!.progress).not.toHaveBeenCalled();
     });
 
-    it('a history failure only affects the progress card, and can be retried', async () => {
+    it('a history failure only affects the week card, and can be retried', async () => {
       const { el, fixture } = await render({
         history: [workoutAt(7)],
         before: () => vi.spyOn(TestBed.inject(WorkoutHistoryService), 'weekOverview').mockResolvedValueOnce(null),
       });
       const error = el.querySelector('[data-testid=home-progress-error]')!;
-      expect(clean(error)).toContain("Couldn't load your progress");
+      expect(clean(error)).toContain("Couldn't load your workouts");
       expect(workoutCard(el)).not.toBeNull();
       expect(nutritionCard(el)).not.toBeNull();
       buttonIn(error, 'Try again')!.click();
       await settle(fixture);
-      expect(progressCard(el)?.querySelector('[data-testid=home-last-workout]')).not.toBeNull();
+      expect(count(el)).toBe('1/4');
     });
   });
 
-  it('re-entering Home re-reads workout and progress (e.g. after finishing a workout)', async () => {
+  it('re-entering Home re-reads workout and week (e.g. after finishing a workout)', async () => {
     const { el, fixture, storage } = await render({ history: [workoutAt(5)] });
     fixture.componentInstance.ionViewWillEnter(); // first entry: no reload
-    expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('1 of 4 workouts');
+    expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('1/4');
 
     storage.values.set(LOGS_KEY, JSON.stringify({ version: 1, logs: [workoutAt(5), workoutAt(7)] }));
     const plans = vi.spyOn(TestBed.inject(WorkoutPlanService), 'load');
     fixture.componentInstance.ionViewWillEnter(); // back on Home
     await settle(fixture);
-    expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('2 of 4 workouts');
+    expect(clean(el.querySelector('[data-testid=home-week-count]'))).toBe('2/4');
     expect(plans).toHaveBeenCalledTimes(1);
   });
 
-  describe('weight (recorded weigh-ins)', () => {
-    const tile = (el: HTMLElement) => el.querySelector('app-weight-tile');
-
+  describe('body (recorded weigh-ins)', () => {
     it('shows the latest weigh-in and the 30-day change, and opens weight history', async () => {
       const { el, fixture, forward } = await render({ weights: [weighIn('a', '2026-09-20', 79.6), weighIn('b', '2026-10-07', 78.4)] });
-      expect(clean(tile(el)!.querySelector('[data-testid=home-weight-value]'))).toBe('78.4kg');
-      expect(clean(tile(el)!.querySelector('[data-testid=home-weight-change]'))).toBe('−1.2 kg · 30 days');
-      expect(tile(el)!.querySelector('polyline')).not.toBeNull();
-      tile(el)!.querySelector('button')!.click();
+      expect(tileValue(el, 'body')).toBe('78.4 kg');
+      expect(clean(tile(el, 'body')!.querySelector('.tile-note'))).toBe('−1.2 kg · 30 days');
+      // A recorded value, not a target: no bar.
+      expect(tile(el, 'body')!.querySelector('.bar')).toBeNull();
+      tile(el, 'body')!.click();
       await fixture.whenStable();
       expect(forward).toHaveBeenCalledWith('/you/weight-history');
     });
 
     it('no weigh-ins: offers to log one (the profile weight is never shown as a weigh-in)', async () => {
       const { el, fixture, forward } = await render();
-      expect(clean(tile(el))).toContain('No weigh-ins yet');
-      tile(el)!.querySelector('button')!.click();
+      expect(clean(tile(el, 'body'))).toContain('No weigh-ins yet');
+      expect(clean(tile(el, 'body'))).not.toContain(String(PROFILE.weight.kilograms));
+      tile(el, 'body')!.click();
       await fixture.whenStable();
       expect(forward).toHaveBeenCalledWith(['/you', 'weight-history', 'new']);
     });
@@ -418,7 +474,7 @@ describe('HomePage', () => {
 
   it('Log food opens a new entry for today', async () => {
     const { el, fixture, forward } = await render();
-    buttonIn(nutritionCard(el), 'Log food')!.click();
+    nutritionCard(el)!.querySelector<HTMLButtonElement>('button[aria-label="Log food"]')!.click();
     await fixture.whenStable();
     expect(forward).toHaveBeenCalledWith(['/nutrition', 'food', 'new'], { queryParams: { date: '2026-10-08' } });
   });
@@ -435,10 +491,13 @@ describe('HomePage', () => {
     await settle(fixture);
     await done;
     expect(complete).toHaveBeenCalledTimes(1);
-    expect(clean(nutritionCard(el)!.querySelector('[data-testid=calories-eaten]'))).toBe('455');
+    expect(tileValue(el, 'fuel')).toBe('455 / 2,000 kcal');
   });
 
   describe('nutrition (real data)', () => {
+    const macros = (card: Element) =>
+      ['protein', 'carbs', 'fat'].map((k) => clean(card.querySelector(`[data-testid=home-macro-${k}] .ring-value, [data-testid=home-macro-${k}] .macro-value`)));
+
     it('shows today’s logged totals against valid targets (other days excluded)', async () => {
       const { el } = await render({
         entries: [
@@ -448,23 +507,17 @@ describe('HomePage', () => {
         ],
       });
       const card = nutritionCard(el)!;
-      expect(clean(card.querySelector('[data-testid=calories-eaten]'))).toBe('1,420');
-      expect(clean(card.querySelector('.remaining'))).toBe('580 kcal');
-      expect(clean(card.querySelector('[data-testid=calories-target]'))).toBe('Daily target 2,000 kcal');
-      expect(['protein', 'carbs', 'fat'].map((k) => clean(card.querySelector(`[data-testid=home-macro-${k}] .macro-value`)))).toEqual([
-        '62 g / 140 g',
-        '140.5 g / 220 g',
-        '24 g / 65 g',
-      ]);
+      expect(tileValue(el, 'fuel')).toBe('1,420 / 2,000 kcal');
+      expect(macros(card)).toEqual(['62 g', '140.5 g / 220 g', '24 g / 65 g']);
+      expect(clean(card.querySelector('.ring-target'))).toBe('of 140 g');
+      expect(card.querySelector('[data-testid=home-macro-protein] [role=progressbar]')?.getAttribute('aria-label')).toBe('Protein');
       expect(card.querySelector('[data-testid=target-note]')).toBeNull();
     });
 
     it('an empty day shows zero intake, without inventing food', async () => {
       const { el } = await render();
-      const card = nutritionCard(el)!;
-      expect(clean(card.querySelector('[data-testid=calories-eaten]'))).toBe('0');
-      expect(clean(card.querySelector('.remaining'))).toBe('2,000 kcal');
-      expect(clean(card.querySelector('[data-testid=home-macro-protein] .macro-value'))).toBe('0 g / 140 g');
+      expect(tileValue(el, 'fuel')).toBe('0 / 2,000 kcal');
+      expect(clean(nutritionCard(el)!.querySelector('[data-testid=home-macro-protein] .ring-value'))).toBe('0 g');
     });
 
     it('review-required targets: intake only, a note and a path to Nutrition', async () => {
@@ -473,12 +526,13 @@ describe('HomePage', () => {
         targets: assessment({ finalKcal: 1100, status: 'review-required' }, { status: 'feasible', proteinGrams: 1, carbohydrateGrams: 1, fatGrams: 1 }),
       });
       const card = nutritionCard(el)!;
-      expect(clean(card.querySelector('[data-testid=calories-eaten]'))).toBe('230');
-      expect(clean(card.querySelector('[data-testid=calories-target]'))).toBe('Not available');
-      expect(card.textContent).not.toContain('1,100');
+      expect(tileValue(el, 'fuel')).toBe('230 kcal');
+      expect(tile(el, 'fuel')!.querySelector('.bar')).toBeNull();
+      expect(el.textContent).not.toContain('1,100');
+      expect(card.querySelector('[role=progressbar]')).toBeNull();
       expect(clean(card.querySelector('[data-testid=target-note] p'))).toBe('Your targets need review.');
       const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
-      card.querySelector<HTMLButtonElement>('[data-testid=target-note] button')!.click();
+      buttonIn(card, 'Review')!.click();
       await fixture.whenStable();
       expect(navigate).toHaveBeenCalledWith('/nutrition');
     });
@@ -486,34 +540,42 @@ describe('HomePage', () => {
     it('unavailable targets are explained, not invented', async () => {
       const { el } = await render({ targets: { kind: 'unavailable' } });
       expect(clean(nutritionCard(el)!.querySelector('[data-testid=target-note] p'))).toBe("Targets aren't available right now.");
-      expect(nutritionCard(el)!.querySelector('.remaining')).toBeNull();
+      expect(tileValue(el, 'fuel')).toBe('0 kcal');
+    });
+
+    it('the card title opens Nutrition', async () => {
+      const { el, fixture, navigateByUrl } = await render();
+      buttonIn(nutritionCard(el), 'Nutrition')!.click();
+      await fixture.whenStable();
+      expect(navigateByUrl).toHaveBeenCalledWith('/nutrition');
     });
 
     it('refreshes when Home is re-entered (e.g. after logging food)', async () => {
       const { el, fixture } = await render();
       fixture.componentInstance.ionViewWillEnter(); // first entry
-      expect(clean(nutritionCard(el)!.querySelector('[data-testid=calories-eaten]'))).toBe('0');
+      expect(tileValue(el, 'fuel')).toBe('0 / 2,000 kcal');
 
       await TestBed.inject(NutritionService).add({ name: 'Wrap', quantity: 1, unit: 'piece', meal: 'lunch', calories: 455, proteinGrams: 30, carbohydrateGrams: 50, fatGrams: 12 }, '2026-10-08');
       fixture.componentInstance.ionViewWillEnter(); // back from Nutrition
       await settle(fixture);
-      expect(clean(nutritionCard(el)!.querySelector('[data-testid=calories-eaten]'))).toBe('455');
-      expect(clean(nutritionCard(el)!.querySelector('.remaining'))).toBe('1,545 kcal');
+      expect(tileValue(el, 'fuel')).toBe('455 / 2,000 kcal');
+      expect(clean(nutritionCard(el)!.querySelector('[data-testid=home-macro-protein] .ring-value'))).toBe('30 g');
     });
 
-    it('a Nutrition failure only affects its card', async () => {
+    it('a Nutrition failure only affects its card and the Fuel tile, and can be retried', async () => {
       const { el, fixture } = await render({
         entries: [food('a', '2026-10-08')],
         before: () => vi.spyOn(TestBed.inject(NutritionRepository), 'loadDay').mockRejectedValueOnce(new Error('boom')),
       });
       expect(clean(el.querySelector('[data-testid=home-nutrition-error]'))).toContain("Couldn't load nutrition");
       expect(nutritionCard(el)).toBeNull();
-      for (const heading of ['Goal', "Today's workout", 'Recent']) {
-        expect(el.textContent).toContain(heading);
-      }
+      expect(clean(tile(el, 'fuel')!.querySelector('.tile-note'))).toBe('Couldn’t load');
+      expect(workoutCard(el)).not.toBeNull();
+      expect(weekCard(el)).not.toBeNull();
       el.querySelector<HTMLButtonElement>('[data-testid=home-nutrition-error] button')!.click();
       await settle(fixture);
-      expect(clean(nutritionCard(el)!.querySelector('[data-testid=calories-eaten]'))).toBe('230');
+      expect(tileValue(el, 'fuel')).toBe('230 / 2,000 kcal');
+      expect(nutritionCard(el)).not.toBeNull();
     });
 
     it('shows a loading state for the card while reading', async () => {
@@ -522,7 +584,6 @@ describe('HomePage', () => {
         before: () => vi.spyOn(TestBed.inject(NutritionRepository), 'loadDay').mockReturnValue(new Promise(() => undefined)),
       });
       expect(el.querySelector('[data-testid=home-nutrition-loading]')?.getAttribute('aria-busy')).toBe('true');
-      expect(el.textContent).toContain('Goal');
     });
 
     it('reading Home never changes the day selected in Nutrition', async () => {

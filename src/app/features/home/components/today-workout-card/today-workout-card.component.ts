@@ -5,120 +5,116 @@ import { FitnessButtonComponent, FitnessCardComponent, FitnessProgressComponent 
 import { WORKOUT_COPY } from '../../../workout/workout-content';
 import { HomeWorkoutView } from '../../home-training';
 
-/** Exercise names shown before "+N more". */
-const SHOWN_EXERCISES = 2;
-
 /**
- * Today's workout as Home's one ink (hero) surface: the planned session with
- * Start, the workout in progress with Resume, a rest day, or first-run setup.
+ * Home's featured card, its one ink (hero) surface: today's planned session
+ * with Start, the workout in progress with Resume, an activity or rest day,
+ * or first-run setup. Every state has exactly one lime primary action.
  * Presentational only.
  */
 @Component({
   selector: 'app-today-workout-card',
   template: `
     @let w = workout();
-    <fit-card tone="ink" [attr.data-kind]="w.kind">
-      <svg class="arcs" viewBox="0 0 210 210" aria-hidden="true">
-        <circle cx="105" cy="105" r="90" stroke-opacity=".28" stroke-dasharray="380 566" />
-        <circle cx="105" cy="105" r="64" stroke-opacity=".16" stroke-dasharray="300 402" />
-        <circle cx="105" cy="105" r="38" stroke-opacity=".08" stroke-dasharray="180 239" />
-      </svg>
+    <fit-card tone="ink" padding="none" [attr.data-kind]="w.kind">
+      <!-- No exercise photography ships with the app (see docs/design-system.md): a graphic stands in. -->
+      <div class="art" aria-hidden="true">
+        <svg class="arcs" viewBox="0 0 210 210">
+          <circle cx="105" cy="105" r="90" stroke-opacity=".32" stroke-dasharray="380 566" />
+          <circle cx="105" cy="105" r="64" stroke-opacity=".18" stroke-dasharray="300 402" />
+          <circle cx="105" cy="105" r="38" stroke-opacity=".1" stroke-dasharray="180 239" />
+        </svg>
+        <ion-icon class="glyph" [name]="glyph()" />
+      </div>
       <div class="content">
         @switch (w.kind) {
           @case ('resume') {
             <p class="eyebrow"><ion-icon name="play" aria-hidden="true" />{{ copy.resume.eyebrow }}</p>
             <h2 class="name">{{ w.title }}</h2>
-            <fit-progress class="sets" label="Sets done" [value]="w.setsDone" [max]="w.setsTotal || 1" [valueText]="w.progress" />
             <p class="focus" data-testid="home-workout-progress">{{ w.progress }}</p>
-            <button
-              fit-button
-              type="button"
-              variant="on-ink"
-              size="lg"
-              block
-              icon="play"
-              class="cta"
-              [attr.aria-label]="'Resume ' + w.title"
-              (click)="resumeSession.emit(w.sessionId)"
-            >
-              Resume
-            </button>
+            <fit-progress class="sets" label="Sets done" [value]="w.setsDone" [max]="w.setsTotal || 1" [valueText]="w.progress" />
+            <div class="actions">
+              <button
+                fit-button
+                type="button"
+                size="lg"
+                class="cta"
+                [attr.aria-label]="'Resume ' + w.title"
+                (click)="resumeSession.emit(w.sessionId)"
+              >
+                Resume<ion-icon name="chevron-forward" aria-hidden="true" />
+              </button>
+            </div>
           }
           @case ('resistance') {
-            <div class="top">
-              <p class="eyebrow"><ion-icon name="barbell-outline" aria-hidden="true" />{{ copy.today.workoutEyebrow }}</p>
-              <span class="chip">{{ w.descriptor }}</span>
-            </div>
+            <p class="eyebrow"><ion-icon name="barbell" aria-hidden="true" />{{ copy.today.workoutEyebrow }}</p>
             <h2 class="name">{{ w.title }}</h2>
             <ul class="meta">
-              <li><ion-icon name="list-outline" aria-hidden="true" />{{ w.countLabel }}</li>
               <li><ion-icon name="time-outline" aria-hidden="true" />{{ w.durationLabel }}</li>
+              <li><ion-icon name="list-outline" aria-hidden="true" />{{ w.countLabel }}</li>
             </ul>
-            @if (w.exercises.length) {
-              <ul class="exercises" aria-label="First exercises" data-testid="home-workout-exercises">
-                @for (name of shownExercises(); track $index) {
-                  <li>{{ name }}</li>
-                }
-                @if (moreExercises(); as more) {
-                  <li class="more">+{{ more }} more</li>
-                }
-              </ul>
-            }
             @if (statusMessage(); as message) {
               <p class="status" role="status">{{ message }}</p>
             }
-            <button
-              fit-button
-              type="button"
-              variant="on-ink"
-              size="lg"
-              block
-              icon="play"
-              class="cta"
-              [loading]="starting()"
-              [disabled]="starting()"
-              (click)="startSession.emit(w.sessionId)"
-            >
-              Start workout
-            </button>
+            <div class="actions">
+              @if (w.focusAreas.length) {
+                <ul class="areas" aria-label="Focus" data-testid="home-workout-areas">
+                  @for (area of w.focusAreas; track area) {
+                    <li>{{ area }}</li>
+                  }
+                </ul>
+              }
+              <button fit-button type="button" size="lg" class="cta" [loading]="starting()" [disabled]="starting()" (click)="startSession.emit(w.sessionId)">
+                Start workout<ion-icon name="chevron-forward" aria-hidden="true" />
+              </button>
+            </div>
           }
           @case ('activity') {
             <p class="eyebrow"><ion-icon name="walk-outline" aria-hidden="true" />{{ copy.today.activityEyebrow }}</p>
             <h2 class="name">{{ w.title }}</h2>
             <p class="focus">{{ w.summary }}</p>
-            <button fit-button type="button" variant="ghost-ink" size="lg" block class="cta" (click)="openSession.emit(w.sessionId)">
-              {{ copy.today.viewActivity }}
-            </button>
+            <div class="actions">
+              <button fit-button type="button" size="lg" class="cta" (click)="openSession.emit(w.sessionId)">
+                {{ copy.today.viewActivity }}<ion-icon name="chevron-forward" aria-hidden="true" />
+              </button>
+            </div>
           }
           @case ('rest') {
             <p class="eyebrow"><ion-icon name="moon-outline" aria-hidden="true" />{{ copy.today.restEyebrow }}</p>
             <h2 class="name">{{ copy.today.restTitle }}</h2>
-            <p class="focus">{{ w.message }}</p>
             @if (w.upNext; as next) {
-              <p class="next" data-testid="home-workout-next">{{ next }}</p>
+              <p class="focus" data-testid="home-workout-next">{{ next }}</p>
+            } @else {
+              <p class="focus">{{ w.message }}</p>
             }
-            <button fit-button type="button" variant="ghost-ink" size="lg" block icon="chevron-forward" class="cta" (click)="openPlan.emit()">
-              View plan
-            </button>
+            <div class="actions">
+              <button fit-button type="button" size="lg" class="cta" (click)="openPlan.emit()">
+                View plan<ion-icon name="chevron-forward" aria-hidden="true" />
+              </button>
+            </div>
           }
           @case ('no-profile') {
             <p class="eyebrow"><ion-icon name="sparkles-outline" aria-hidden="true" />Get started</p>
             <h2 class="name">Let’s build your plan</h2>
-            <p class="focus">Tell us about you and your goal. We’ll create your training plan and daily targets.</p>
             <ol class="steps">
               <li><span class="step-number" aria-hidden="true">1</span>Your profile</li>
               <li><span class="step-number" aria-hidden="true">2</span>Your assessment</li>
               <li><span class="step-number" aria-hidden="true">3</span>Your weekly plan</li>
             </ol>
-            <button fit-button type="button" variant="on-ink" size="lg" block icon="chevron-forward" class="cta" (click)="setUpProfile.emit()">
-              Set up profile
-            </button>
+            <div class="actions">
+              <button fit-button type="button" size="lg" class="cta" (click)="setUpProfile.emit()">
+                Set up profile<ion-icon name="chevron-forward" aria-hidden="true" />
+              </button>
+            </div>
           }
           @default {
-            <p class="eyebrow"><ion-icon name="barbell-outline" aria-hidden="true" />{{ copy.today.workoutEyebrow }}</p>
+            <p class="eyebrow"><ion-icon name="barbell" aria-hidden="true" />{{ copy.today.workoutEyebrow }}</p>
             <h2 class="name">Plan unavailable</h2>
             <p class="focus">We couldn’t create a training plan from your profile right now.</p>
-            <button fit-button type="button" variant="ghost-ink" size="lg" block class="cta" (click)="openPlan.emit()">Open Workout</button>
+            <div class="actions">
+              <button fit-button type="button" size="lg" class="cta" (click)="openPlan.emit()">
+                Open Workout<ion-icon name="chevron-forward" aria-hidden="true" />
+              </button>
+            </div>
           }
         }
       </div>
@@ -147,10 +143,12 @@ export class TodayWorkoutCardComponent {
 
   protected readonly copy = WORKOUT_COPY;
 
-  private readonly exercises = computed(() => {
-    const w = this.workout();
-    return w.kind === 'resistance' ? w.exercises : [];
-  });
-  protected readonly shownExercises = computed(() => this.exercises().slice(0, SHOWN_EXERCISES));
-  protected readonly moreExercises = computed(() => Math.max(this.exercises().length - SHOWN_EXERCISES, 0));
+  /** The large background glyph, matching the state. */
+  protected readonly glyph = computed(() => GLYPHS[this.workout().kind] ?? 'barbell');
 }
+
+const GLYPHS: Partial<Record<HomeWorkoutView['kind'], string>> = {
+  activity: 'walk-outline',
+  rest: 'moon-outline',
+  'no-profile': 'sparkles-outline',
+};

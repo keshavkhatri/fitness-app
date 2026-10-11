@@ -5,17 +5,37 @@
 }
 
 fit-card {
-  padding: var(--space-5);
+  display: grid;
+  min-height: 248px;
+  border-radius: var(--radius-hero);
+  // Lime highlights on ink; the dashboard's ink focus ring would vanish here.
+  --color-focus: var(--color-ink-accent);
+  // The resume progress bar: accent fill on the ink track.
+  --color-primary-strong: var(--color-ink-accent);
+  --color-track: var(--color-ink-track);
 }
 
-// Decorative ember arcs in the top-right corner.
+// --- Art: stands in for exercise imagery (none ships with the app) ------------------
+.art {
+  grid-area: 1 / 1;
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+  // A soft lime glow behind the glyph, from the palette's accent channels.
+  background: radial-gradient(
+    120% 90% at 100% 0%,
+    rgba(var(--color-ink-accent-rgb), 0.22) 0%,
+    rgba(var(--color-ink-accent-rgb), 0.06) 45%,
+    transparent 70%
+  );
+}
+
 .arcs {
   position: absolute;
-  top: -54px;
-  right: -54px;
-  width: 210px;
-  height: 210px;
-  pointer-events: none;
+  top: -88px;
+  right: -88px;
+  width: 208px;
+  height: 208px;
 
   circle {
     fill: none;
@@ -25,42 +45,46 @@ fit-card {
   }
 }
 
-.content {
-  position: relative;
+.glyph {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  font-size: 48px;
+  color: var(--color-ink-accent);
+  opacity: 0.9;
+  transform: rotate(-24deg);
 }
 
-.top {
+// --- Content ---------------------------------------------------------------------------
+.content {
+  grid-area: 1 / 1;
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--space-5);
 }
 
 .eyebrow {
-  @include fx.text(caption, semibold);
+  @include fx.eyebrow;
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
-  gap: 6px;
-  color: var(--color-ink-accent);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-
-  ion-icon {
-    font-size: 16px;
-  }
-}
-
-.chip {
-  @include fx.text(caption, semibold);
-  padding: var(--space-1) 10px;
+  gap: var(--space-1);
+  margin-bottom: auto;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   background: var(--color-ink-track);
+  color: var(--color-ink-accent);
+
+  ion-icon {
+    font-size: var(--icon-size-sm);
+  }
 }
 
 .name {
   @include fx.text(display, bold);
-  margin-top: 10px;
+  margin-top: var(--space-10);
   overflow-wrap: anywhere;
 }
 
@@ -69,24 +93,18 @@ fit-card:not([data-kind='resistance']):not([data-kind='resume']) .name {
   @include fx.text(h1, bold);
 }
 
-.focus,
-.next {
+.focus {
   @include fx.text(body-sm);
-  margin-top: 6px;
+  margin-top: var(--space-1);
   color: var(--color-on-ink-secondary);
 }
 
-.next {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-on-ink);
-}
-
 .meta {
-  @include fx.text(body-sm);
+  @include fx.text(body-sm, medium);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-4);
-  margin: var(--space-1) 0 0;
+  margin: var(--space-2) 0 0;
   padding: 0;
   list-style: none;
   color: var(--color-on-ink-secondary);
@@ -94,47 +112,73 @@ fit-card:not([data-kind='resistance']):not([data-kind='resume']) .name {
   li {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-1);
   }
 
   ion-icon {
-    font-size: 16px;
+    font-size: var(--icon-size-sm);
   }
 }
 
-.exercises {
+.sets {
+  margin-top: var(--space-3);
+}
+
+.status {
+  @include fx.text(body-sm, medium);
+  margin-top: var(--space-3);
+  color: var(--color-on-ink);
+}
+
+// Chips and the action share a row; the action drops below them when space runs out.
+.actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: var(--space-4) 0 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.areas {
+  display: flex;
+  flex: 1 1 8em;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
   padding: 0;
   list-style: none;
 
   li {
     @include fx.text(caption, medium);
-    padding: 6px 10px;
-    border-radius: 10px;
-    background: var(--color-ink-track);
-  }
-
-  .more {
-    background: none;
-    box-shadow: inset 0 0 0 1px var(--color-ink-track);
-    color: var(--color-on-ink-secondary);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    box-shadow: inset 0 0 0 var(--border-hairline) var(--color-ink-track);
+    color: var(--color-on-ink);
   }
 }
 
-.sets {
-  margin-top: 14px;
-  // Ember fill on the ink track.
-  --color-primary: var(--color-ink-accent);
-  --color-track: var(--color-ink-track);
+.cta {
+  flex: 0 1 auto;
+  border-radius: var(--radius-pill);
+
+  // Trailing chevron inside the label.
+  ion-icon {
+    margin-left: var(--space-1);
+    font-size: var(--icon-size-md);
+    vertical-align: -4px;
+  }
+}
+
+// Alone in its row, the action spans the card.
+.actions > .cta:only-child {
+  flex: 1 1 100%;
 }
 
 .steps {
   display: grid;
-  gap: 10px;
-  margin: var(--space-4) 0 0;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
 
@@ -153,7 +197,7 @@ fit-card:not([data-kind='resistance']):not([data-kind='resume']) .name {
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   box-shadow: inset 0 0 0 1.5px var(--color-ink-track);
 }
 
@@ -161,14 +205,4 @@ fit-card:not([data-kind='resistance']):not([data-kind='resume']) .name {
   background: var(--color-ink-accent);
   color: var(--color-ink);
   box-shadow: none;
-}
-
-.status {
-  @include fx.text(body-sm, medium);
-  margin-top: var(--space-4);
-  color: var(--color-on-ink);
-}
-
-.cta {
-  margin-top: var(--space-5);
 }

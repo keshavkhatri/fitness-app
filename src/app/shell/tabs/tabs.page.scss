@@ -1,22 +1,35 @@
 @use 'mixins' as fx;
 
+// The bar uses the dashboard screen theme (the redesign's tab pages). Ionic
+// adds the bottom safe-area inset below this height (content-box).
 ion-tab-bar {
+  --background: var(--color-surface);
   --border: var(--border-hairline) solid var(--color-border);
-  height: 56px;
+  height: 60px;
+  // The screen-theme class paints its own background; the bar is a surface.
+  background: var(--color-surface);
 }
 
 ion-tab-button {
   --color: var(--color-text-secondary);
   --color-selected: var(--color-primary-text);
   --ripple-color: transparent;
+  --background: transparent;
+  --background-focused: var(--color-surface-muted);
   // Ionic md tab buttons default to min-width 80px + 12px side padding, which
   // truncates five labels on 320–360px screens. Keep sizing mode-independent.
   --padding-start: 0;
   --padding-end: 0;
   min-width: var(--tap-target-min);
 
+  // Every icon sits in the same pill box; the active one fills it (with the
+  // filled icon variant and a bolder label, so state isn't color alone).
   ion-icon {
-    font-size: 24px;
+    box-sizing: content-box;
+    padding: 2px var(--space-4);
+    border-radius: var(--radius-pill);
+    font-size: var(--icon-size-lg);
+    transition: background-color var(--motion-duration-fast) var(--motion-ease);
   }
 
   ion-label {
@@ -24,8 +37,15 @@ ion-tab-button {
     margin-top: 2px;
   }
 
-  &.tab-selected ion-label {
-    font-weight: var(--font-weight-semibold);
+  &.tab-selected {
+    ion-icon {
+      background: var(--color-primary-soft);
+    }
+
+    ion-label {
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+    }
   }
 }
 
@@ -48,12 +68,12 @@ ion-tab-button {
 .quick-add-icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 26px;
-  border-radius: var(--radius-md);
+  width: 52px;
+  height: 28px;
+  border-radius: var(--radius-pill);
   background: var(--color-primary);
   color: var(--color-on-primary);
-  font-size: 22px;
+  font-size: var(--icon-size-lg);
   transition: transform var(--motion-duration-fast) var(--motion-ease);
 }
 

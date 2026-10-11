@@ -2,112 +2,142 @@
 
 :host {
   display: block;
+  // The card's own width decides whether the title keeps its icon.
+  container-type: inline-size;
 }
 
 fit-card {
-  padding: var(--space-4);
-}
-
-.calories {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+}
+
+.head {
+  display: flex;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: space-between;
+  gap: var(--space-1);
 }
 
-.ring-value {
-  @include fx.text(h2, bold);
-  @include fx.tabular-numbers;
-  display: block;
-}
+// The title is the link to Nutrition; a full touch target.
+.title-link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
 
-.ring-unit,
-.caption {
-  @include fx.text(caption, medium);
-  display: block;
-  color: var(--color-text-secondary);
-}
-
-.caption.over {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-warning-text);
+  gap: 6px;
+  min-width: 0;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+  border-radius: var(--radius-md);
 
   ion-icon {
-    font-size: 14px;
+    flex: none;
+    font-size: var(--icon-size-md);
+    color: var(--color-primary-text);
   }
 }
 
-.calorie-copy {
-  display: flex;
-  flex: 1 1 9em;
-  flex-direction: column;
+.title {
+  @include fx.text(body-sm, semibold);
   min-width: 0;
 }
 
-.remaining {
-  @include fx.text(display, bold);
-  @include fx.tabular-numbers;
-  margin: 2px 0;
-  letter-spacing: -0.025em;
-
-  .unit {
-    @include fx.text(body-sm, semibold);
-    margin-left: 3px;
-    letter-spacing: 0;
-    color: var(--color-text-secondary);
-  }
+// --- Protein ring --------------------------------------------------------------------
+.protein {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
 }
 
-// Columns have an em minimum, so they drop from three to fewer as text grows.
+.ring-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+}
+
+.ring-target {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.no-target-value {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+}
+
+.protein-label {
+  @include fx.text(body-sm, semibold);
+}
+
+// --- Carbs and fat -------------------------------------------------------------------
 .macros {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.75em), 1fr));
-  gap: var(--space-3);
-  margin: var(--space-4) 0 0;
-  padding: 14px 0 0;
-  border-top: var(--border-hairline) solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 var(--space-2);
   list-style: none;
+}
+
+.macro-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--space-2);
 }
 
 .macro-label {
   @include fx.text(caption, semibold);
-  display: block;
-  color: var(--color-text-secondary);
 }
 
 .macro-value {
-  @include fx.text(body-sm, semibold);
+  @include fx.text(caption, semibold);
   @include fx.tabular-numbers;
-  display: block;
-  margin-top: 2px;
 }
 
 .macro-target {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
 
 .macro-bar {
-  margin-top: 6px;
+  margin-top: var(--space-1);
 }
 
-.no-target {
-  @include fx.text(body, semibold);
-}
-
+// --- Withheld target -----------------------------------------------------------------
 .note {
-  @include fx.text(body-sm);
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+  padding: 0 var(--space-2);
+
+  p {
+    @include fx.text(caption);
+    color: var(--color-text-secondary);
+  }
 }
 
-.log-food {
-  margin-top: var(--space-4);
+.note-link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(caption, semibold);
+
+  min-height: var(--tap-target-min);
+  color: var(--color-primary-text);
+}
+
+// Very narrow cards (two columns at 320px): the title drops its icon rather than wrapping.
+@container (max-width: 150px) {
+  .title-link ion-icon:first-child {
+    display: none;
+  }
 }

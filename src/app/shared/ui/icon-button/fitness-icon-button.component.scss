@@ -1,0 +1,46 @@
+@use 'mixins' as fx;
+
+:host {
+  @include fx.button-reset;
+  @include fx.pressable;
+  @include fx.focus-ring;
+
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-size: var(--icon-size-lg);
+  text-decoration: none;
+}
+
+:host([data-size='lg']) {
+  width: var(--tap-target-lg);
+  height: var(--tap-target-lg);
+}
+
+:host([data-variant='plain']):active {
+  background: var(--color-surface-muted);
+}
+
+:host([data-variant='tonal']) {
+  background: var(--color-surface-muted);
+}
+
+:host([data-variant='primary']) {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+
+  &:active {
+    background: var(--color-primary-pressed);
+  }
+}
+
+:host([disabled]),
+:host([aria-disabled='true']) {
+  opacity: var(--state-disabled-opacity);
+  cursor: default;
+  pointer-events: none;
+}

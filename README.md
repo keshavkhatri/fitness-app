@@ -7,7 +7,7 @@ All data is stored on this device only (no account, backend or sync yet).
 Implemented so far:
 
 - **Onboarding + fitness profile**, then the **assessment** ("Your starting point": estimated BMR/maintenance and starting calorie and macro targets from the fitness calculation engine). The profile can be reviewed and edited later from the assessment or the You tab.
-- **Home**: greeting, today's workout card (open, start or resume), the plan's week strip with finished workouts, goal summary, latest recorded weight with its last-30-days change, today's nutrition against targets, and a progress summary. Each card loads independently; pull to refresh.
+- **Home** (redesigned dashboard, `fit-theme-dashboard`): date, greeting, the saved goal (opens the profile review) and a profile button; "Your day" with today's workout sets as a ring and Train (sets), Fuel (calories against the target) and Body (latest weigh-in) tiles; the featured workout (start, resume, activity, rest or setup); compact Nutrition (protein ring, carbs and fat) and This week (finished vs planned workouts, one bar per day; opens Progress) cards. Each part loads independently; pull to refresh.
 - **Workout planning**: the deterministic workout generation engine (v2, frozen) builds the user's plan from the profile; the plan is persisted and kept in sync as the profile changes. The Workout tab shows today, the week, today's exercises and the plan; each session opens Workout Detail.
 - **Active workout logging** (full screen): one exercise at a time, set logging, rest timer, resumable after the app is closed, one workout in progress at a time, then a workout summary.
 - **Workout history and progress**: finished workouts and their details; Progress (You → Progress) shows weekly activity and per-exercise actual performance (latest and recent best top sets). No estimates, scores or streaks.
@@ -46,11 +46,12 @@ Native platforms have not been added yet. Once the bundle ID is final: `npx cap 
 
 ```
 src/
-  theme/                    Design tokens: the ONLY place colors/type/spacing are defined
-    _palette.scss           Light + dark color values (Sass maps)
-    _tokens.scss            Emits CSS custom properties (--color-*, --space-*, --radius-*, --font-size-*)
+  theme/                    Design tokens: the ONLY place colors/type/spacing are defined (contract: docs/design-system.md)
+    _palette.scss           Color values (Sass maps): classic light + dark; redesign warm + charcoal (one key set)
+    _tokens.scss            Emits CSS custom properties (--color-*, --space-*, --radius-*, --font-size-*, …)
+                            and the opt-in screen themes (.fit-theme-dashboard, .fit-theme-immersive)
     _ionic-bridge.scss      Maps tokens onto Ionic's --ion-* variables
-    _mixins.scss            Component helpers: text(), focus-ring, button-reset, pressable
+    _mixins.scss            Component helpers: text(), eyebrow, focus-ring, safe-area-padding, button-reset, pressable
     theme.scss              Global entry: base styles, utility classes, Ionic overrides
   app/
     app.config.ts           Providers (Ionic platform mode, router, icon + theme init)
@@ -111,8 +112,9 @@ src/
 
 ## Conventions
 
+- **Design system:** [`docs/design-system.md`](docs/design-system.md) is the contract for tokens, screen themes, components, accessibility and responsive rules; screen redesigns follow it.
 - **Never hard-code colors or sizes in components.** Use `var(--color-*)`, `var(--space-*)`, `var(--radius-*)`, and `@use 'mixins' as fx; @include fx.text(h3, semibold);` (`src/theme` is on the Sass include path).
-- **Theming:** no class on `<html>` follows the OS; `theme-light` / `theme-dark` force a mode (managed by `ThemeService`).
+- **Theming:** no class on `<html>` follows the OS; `theme-light` / `theme-dark` force a mode (managed by `ThemeService`). Redesigned screens opt into a screen theme with a class on the page host (`fit-theme-dashboard` follows light/dark, `fit-theme-immersive` is always dark); screens without one keep the classic look. Focus indicators use `--color-focus` and stand-alone graphics `--color-primary-strong`, never the brand fill (lime is invisible on light surfaces).
 - **Components:** standalone, `OnPush`, signal inputs/outputs. `fit-*` is presentational and has no business logic. Feature-specific components live in `features/<area>/components`.
 - **Platform mode:** Ionic picks `ios`/`md` per platform for native behaviour (transitions, swipe-back). The look must be mode-independent: never rely on mode-only Ionic features (e.g. `collapse="condense"`) or on Ionic's mode-specific sizing; check new UI in both modes (append `?ionic:mode=ios` / `?ionic:mode=md` to the dev URL).
 - **Data:** pages load from core services with `resource()` (e.g. Home reads the profile, plan, history and nutrition services). If demo data is ever needed, it lives only in `*.demo.ts` files (enforced by lint, `no-restricted-imports`) and must be labelled in the UI.

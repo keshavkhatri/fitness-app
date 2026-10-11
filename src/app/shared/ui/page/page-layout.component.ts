@@ -33,6 +33,10 @@ export interface PageRefreshEvent {
  * `title`), `kicker` adds a line above it (e.g. the date), `refreshable`
  * adds pull to refresh (`refresh` output) and `wide` lifts the phone max
  * width for pages that lay out in columns on tablets.
+ *
+ * Optional projected header content: an element with `fitPageSubtitle` sits
+ * under the large title (e.g. a goal pill); one with `fitPageAside` sits at
+ * its trailing edge (e.g. a profile button). Both scroll away with the title.
  */
 @Component({
   selector: 'fit-page',
@@ -51,10 +55,14 @@ export interface PageRefreshEvent {
         </ion-refresher>
       }
       <div class="large-title-block" [class.wide]="wide()">
-        @if (kicker(); as k) {
-          <p class="kicker">{{ k }}</p>
-        }
-        <h1 #largeTitle class="large-title">{{ heading() ?? title() }}</h1>
+        <div class="title-text">
+          @if (kicker(); as k) {
+            <p class="kicker">{{ k }}</p>
+          }
+          <h1 #largeTitle class="large-title">{{ heading() ?? title() }}</h1>
+          <ng-content select="[fitPageSubtitle]" />
+        </div>
+        <ng-content select="[fitPageAside]" />
       </div>
       <div class="page-body" [class.wide]="wide()">
         <ng-content />

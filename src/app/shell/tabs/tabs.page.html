@@ -1,5 +1,5 @@
 <ion-tabs (ionTabsDidChange)="activeTab.set($event.tab)">
-  <ion-tab-bar slot="bottom">
+  <ion-tab-bar slot="bottom" class="fit-theme-dashboard">
     @for (item of tabBarItems; track item.id) {
       @if (item.kind === 'tab') {
         <ion-tab-button [tab]="item.id">

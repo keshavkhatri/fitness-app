@@ -24,13 +24,13 @@
 }
 
 :host([data-size='lg']) {
-  min-height: 52px;
+  min-height: var(--tap-target-lg);
   padding: 0 var(--space-6);
 }
 
 ion-icon {
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: var(--icon-size-md);
 }
 
 :host([data-variant='primary']) {
@@ -99,7 +99,7 @@ ion-icon {
 
 :host([disabled]:not([aria-busy='true'])),
 :host([aria-disabled='true']) {
-  opacity: 0.4;
+  opacity: var(--state-disabled-opacity);
   cursor: default;
   pointer-events: none;
 }

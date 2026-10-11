@@ -4,10 +4,10 @@
 // Mixins only reference CSS custom properties, so they stay theme-agnostic.
 // =============================================================================
 
-$type-styles: (display, h1, h2, h3, body, body-sm, caption);
+$type-styles: (display-xl, display, h1, h2, h3, body, body-sm, caption);
 
 /// Applies a typography step from the scale.
-/// @param {String} $name - one of display, h1, h2, h3, body, body-sm, caption
+/// @param {String} $name - one of display-xl, display, h1, h2, h3, body, body-sm, caption
 /// @param {String} $weight - regular | medium | semibold | bold
 @mixin text($name, $weight: null) {
   font-size: var(--font-size-#{$name});
@@ -17,19 +17,37 @@ $type-styles: (display, h1, h2, h3, body, body-sm, caption);
     font-weight: var(--font-weight-#{$weight});
   }
 
-  @if $name == display or $name == h1 {
+  @if $name == display-xl or $name == display or $name == h1 {
     letter-spacing: var(--letter-spacing-tight);
   } @else if $name == h2 or $name == h3 {
     letter-spacing: var(--letter-spacing-snug);
   }
 }
 
-/// Visible, consistent keyboard focus indicator.
+/// Small uppercase label above a value or title ("TODAY", "SET 2 OF 4").
+/// Use sparingly: one per card at most.
+@mixin eyebrow {
+  @include text(caption, semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+/// Visible, consistent keyboard focus indicator. Uses `--color-focus`, never
+/// the brand fill: lime is invisible as a ring on light surfaces.
 @mixin focus-ring {
   &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
   }
+}
+
+/// Adds the device's safe-area inset to a padding edge, for full-screen
+/// flows without a tab bar and for fixed footers. Reads Ionic's variable at
+/// the element itself (not a :root alias), so Ionic's local overrides apply.
+/// @param {String} $edge - top | bottom
+/// @param {Length} $base - the padding wanted on devices without an inset
+@mixin safe-area-padding($edge, $base: 0px) {
+  padding-#{$edge}: calc(#{$base} + var(--ion-safe-area-#{$edge}, 0px));
 }
 
 /// Resets a native <button> so it can be styled from scratch.
@@ -53,7 +71,7 @@ $type-styles: (display, h1, h2, h3, body, body-sm, caption);
     background-color var(--motion-duration-fast) var(--motion-ease);
 
   &:active:not([disabled]):not([aria-disabled='true']) {
-    transform: scale(0.98);
+    transform: scale(var(--state-pressed-scale));
   }
 }
 

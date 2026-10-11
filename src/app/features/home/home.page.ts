@@ -16,36 +16,35 @@ import { NEW_WEIGHT_PATH, WEIGHT_HISTORY_PATH } from '../body-weight/weight-hist
 import { NEW_FOOD_PATH, NUTRITION_PATH } from '../nutrition/nutrition-paths';
 import { toDaySummary } from '../nutrition/nutrition-view-model';
 import { WORKOUT_COPY } from '../workout/workout-content';
-import { WORKOUT_PATH, activeWorkoutPath, historyDetailPath, workoutSessionPath } from '../workout/workout-paths';
-import { toWorkoutScreen } from '../workout/workout-view-model';
+import { WORKOUT_PATH, activeWorkoutPath, workoutSessionPath } from '../workout/workout-paths';
+import { toWorkoutScreen, weekdayIndexOf } from '../workout/workout-view-model';
 import {
   EmptyStateComponent,
   FitnessButtonComponent,
   FitnessCardComponent,
+  FitnessIconButtonComponent,
   LoadingSkeletonComponent,
   PageLayoutComponent,
   PageRefreshEvent,
-  SectionHeaderComponent,
 } from '../../shared/ui';
-import { GoalSummaryCardComponent } from './components/goal-summary-card/goal-summary-card.component';
+import { DaySummaryCardComponent } from './components/day-summary-card/day-summary-card.component';
 import { NutritionSummaryCardComponent } from './components/nutrition-summary-card/nutrition-summary-card.component';
-import { ProgressSummaryCardComponent } from './components/progress-summary-card/progress-summary-card.component';
-import { StatTileComponent } from './components/stat-tile/stat-tile.component';
 import { TodayWorkoutCardComponent } from './components/today-workout-card/today-workout-card.component';
-import { WeekStripComponent } from './components/week-strip/week-strip.component';
-import { WeightTileComponent } from './components/weight-tile/weight-tile.component';
+import { WeekActivityCardComponent } from './components/week-activity-card/week-activity-card.component';
 import { greetingFor } from './greeting';
 import { toHomeGoal } from './home-goal';
-import { HomeProgressView, HomeWeekView, HomeWorkoutView, toHomeProgress, toHomeWeek, toHomeWorkout } from './home-training';
-import { HomeWeightView, toHomeWeight } from './home-weight';
+import { HomeTileAction, HomeTileView, HomeTodayView, toBodyTile, toFuelTile, toHomeToday } from './home-today';
+import { HomeWeekView, HomeWorkoutView, toHomeWeek, toHomeWorkout } from './home-training';
+import { toHomeWeight } from './home-weight';
 
 export const PROGRESS_PATH = '/you/progress';
+export const YOU_PATH = '/you';
 
 /**
- * Home: today at a glance. Each card loads independently (a failure only
- * affects its own card) and is re-read whenever the Home tab is re-entered
- * or the page is pulled to refresh. Every card shows the user's real data;
- * nothing is demo content.
+ * Home: today at a glance, in the dashboard screen theme. Each part loads
+ * independently (a failure only affects its own card or tile) and is re-read
+ * whenever the Home tab is re-entered or the page is pulled to refresh.
+ * Every card shows the user's real data; nothing is demo content.
  */
 @Component({
   selector: 'app-home',
@@ -57,18 +56,16 @@ export const PROGRESS_PATH = '/you/progress';
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
+    FitnessIconButtonComponent,
     LoadingSkeletonComponent,
     PageLayoutComponent,
-    SectionHeaderComponent,
-    GoalSummaryCardComponent,
+    DaySummaryCardComponent,
     NutritionSummaryCardComponent,
-    ProgressSummaryCardComponent,
-    StatTileComponent,
     TodayWorkoutCardComponent,
-    WeekStripComponent,
-    WeightTileComponent,
+    WeekActivityCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'fit-theme-dashboard' },
 })
 export class HomePage {
   private readonly profiles = inject(FitnessProfileService);
@@ -83,39 +80,63 @@ export class HomePage {
   private readonly injector = inject(Injector);
 
   protected readonly today = this.clock();
-  /** The goal card: the saved profile's goal and target (no progress is tracked yet). */
+  /** The header's goal pill: the saved profile's goal (no progress is tracked yet). */
   protected readonly goal = resource({ loader: async () => toHomeGoal(await this.profiles.load()) });
   /** New users are welcomed rather than greeted by time of day. */
   protected readonly greeting = computed(() =>
     this.goal.hasValue() && this.goal.value().kind === 'no-profile' ? 'Welcome' : greetingFor(this.today),
   );
 
-  /** Today's session by the plan's weekday layout (the Workout tab's own view model). */
+  /**
+   * Today's session by the plan's weekday layout (the Workout tab's own view
+   * model), plus the plan's sessions for their body areas and set counts.
+   */
   protected readonly plan = resource({
     loader: async () => {
       // Knowing the in-progress workout decides "Resume" (read from the log service, never inferred).
       await this.logs.loadActive();
-      return toWorkoutScreen(await this.plans.load(), this.clock());
+      const state = await this.plans.load();
+      return { screen: toWorkoutScreen(state, this.clock()), sessions: state.kind === 'ready' ? state.plan.sessions : [] };
     },
   });
   /** null while loading or after a failed load (see `plan.error()`). */
-  protected readonly workout = computed<HomeWorkoutView | null>(() =>
-    this.plan.hasValue() ? toHomeWorkout(this.plan.value(), this.logs.active()) : null,
-  );
-
-  /** One history read: this week's finished workouts and the latest workout. */
-  protected readonly history = resource({ loader: () => this.workoutHistory.weekOverview() });
-  protected readonly progress = computed<HomeProgressView | null>(() => {
-    if (this.history.hasValue()) {
-      const value = this.history.value();
-      return toHomeProgress(value?.overview ?? null, this.clock());
+  protected readonly workout = computed<HomeWorkoutView | null>(() => {
+    if (!this.plan.hasValue()) {
+      return null;
     }
-    return this.history.error() ? { kind: 'error' } : null;
+    const { screen, sessions } = this.plan.value();
+    return toHomeWorkout(screen, this.logs.active(), sessions);
   });
+
+  /** One history read: this week's finished workouts per day and the overview. */
+  protected readonly history = resource({ loader: () => this.workoutHistory.weekOverview() });
+  /** `weekOverview()` resolves null when history can't be read: an error like a rejection. */
+  protected readonly historyFailed = computed(() => !!this.history.error() || (this.history.hasValue() && this.history.value() === null));
   /** The plan's week with finished workouts; null until both are read (or without a plan). */
   protected readonly week = computed<HomeWeekView | null>(() => {
     const history = this.history.hasValue() ? this.history.value() : null;
-    return this.plan.hasValue() && history ? toHomeWeek(this.plan.value(), history.week, history.overview) : null;
+    return this.plan.hasValue() && history ? toHomeWeek(this.plan.value().screen, history.week, history.overview) : null;
+  });
+  /** A training workout was finished today (history); null while unknown. */
+  private readonly finishedToday = computed<boolean | null>(() => {
+    const history = this.history.hasValue() ? this.history.value() : null;
+    return history ? (history.week[weekdayIndexOf(this.clock())]?.workouts ?? 0) > 0 : null;
+  });
+
+  /** "Your day": the ring, status and Train tile follow today's workout; a plan failure reads as unavailable. */
+  protected readonly day = computed<HomeTodayView | null>(() => {
+    const workout = this.workout() ?? (this.plan.error() ? ({ kind: 'unavailable' } as const) : null);
+    return workout ? toHomeToday(workout, this.finishedToday()) : null;
+  });
+  protected readonly fuelTile = computed<HomeTileView | null>(() =>
+    this.nutrition.hasValue() ? toFuelTile(this.nutrition.value()) : this.nutrition.error() ? toFuelTile('error') : null,
+  );
+  protected readonly bodyTile = computed<HomeTileView | null>(() => {
+    if (this.weight.hasValue()) {
+      const value = this.weight.value();
+      return value ? toBodyTile(value) : null;
+    }
+    return this.weight.error() ? toBodyTile({ kind: 'error' }) : null;
   });
 
   /**
@@ -136,8 +157,6 @@ export class HomePage {
       return toHomeWeight(this.weights.state(), this.weights.today());
     },
   });
-
-  protected readonly weightError: HomeWeightView = { kind: 'error' };
 
   protected readonly starting = signal(false);
   protected readonly startMessage = signal('');
@@ -247,12 +266,45 @@ export class HomePage {
     void this.nav.navigateForward(activeWorkoutPath(sessionId));
   }
 
-  protected openWorkoutTab(): void {
-    void this.router.navigateByUrl(WORKOUT_PATH);
+  /** A tile of "Your day" was tapped: the same destinations as the rest of Home. */
+  protected runTileAction(action: HomeTileAction): void {
+    switch (action.kind) {
+      case 'resume':
+        this.resumeSession(action.sessionId);
+        break;
+      case 'open-session':
+        this.openSession(action.sessionId);
+        break;
+      case 'workout-tab':
+        this.openWorkoutTab();
+        break;
+      case 'set-up-profile':
+        this.setUpProfile();
+        break;
+      case 'nutrition':
+        this.openNutrition();
+        break;
+      case 'retry-nutrition':
+        this.nutrition.reload();
+        break;
+      case 'weight-history':
+        this.openWeightHistory();
+        break;
+      case 'log-weight':
+        this.logWeight();
+        break;
+      case 'retry-weight':
+        this.weight.reload();
+        break;
+    }
   }
 
-  protected openFinishedWorkout(workoutId: string): void {
-    void this.nav.navigateForward(historyDetailPath(workoutId));
+  protected openYou(): void {
+    void this.router.navigateByUrl(YOU_PATH);
+  }
+
+  protected openWorkoutTab(): void {
+    void this.router.navigateByUrl(WORKOUT_PATH);
   }
 
   protected openProgress(): void {

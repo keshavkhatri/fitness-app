@@ -22,8 +22,8 @@
   transition: border-color var(--motion-duration-fast) var(--motion-ease);
 
   &:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 1px var(--color-primary);
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 1px var(--color-focus);
   }
 
   &.invalid {

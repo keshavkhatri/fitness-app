@@ -1,0 +1,129 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+  // The card's own width decides whether the title keeps its icon.
+  container-type: inline-size;
+}
+
+fit-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+}
+
+.title {
+  @include fx.text(body-sm, semibold);
+}
+
+.title-link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+
+  ion-icon {
+    flex: none;
+    font-size: var(--icon-size-md);
+    color: var(--color-train-text);
+  }
+
+  .chevron {
+    font-size: var(--icon-size-sm);
+    color: var(--color-text-secondary);
+  }
+}
+
+.summary {
+  padding: 0 var(--space-2);
+}
+
+.count {
+  @include fx.text(h1, bold);
+  @include fx.tabular-numbers;
+}
+
+.of {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.unit {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+// --- Chart ---------------------------------------------------------------------------
+.chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-1);
+  margin-top: auto;
+  padding: var(--space-2) var(--space-2) 0;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.bar {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 12px;
+  height: 88px;
+}
+
+// Height and fill both differ by state (never colour alone).
+.bar::before {
+  content: '';
+  width: 100%;
+  border-radius: var(--radius-pill);
+}
+
+[data-state='done'] .bar::before {
+  height: 100%;
+  background: var(--color-primary-strong);
+}
+
+[data-state='planned'] .bar::before {
+  height: 100%;
+  background: var(--color-track);
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+}
+
+[data-state='rest'] .bar::before {
+  height: 30%;
+  background: var(--color-track);
+}
+
+.letter {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.today .letter {
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+// Very narrow cards (two columns at 320px): the title drops its icon rather than wrapping.
+@container (max-width: 150px) {
+  .title-link ion-icon:first-child {
+    display: none;
+  }
+}

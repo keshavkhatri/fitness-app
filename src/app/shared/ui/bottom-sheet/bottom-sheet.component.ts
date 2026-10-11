@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, input, model, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, viewChild } from '@angular/core';
 import { IonIcon, IonModal } from '@ionic/angular';
+
+import { FitScreenTheme, SCREEN_THEME_CLASS } from '../screen-theme';
 
 let nextId = 0;
 
@@ -8,6 +10,9 @@ let nextId = 0;
  * swipe-to-dismiss and backdrop handling come from Ionic).
  *
  * <fit-bottom-sheet title="Quick add" [(open)]="isOpen">…</fit-bottom-sheet>
+ *
+ * Ionic moves a presented sheet to <body>, outside the page's screen theme,
+ * so a page that uses one passes it on: `screenTheme="immersive"`.
  */
 @Component({
   selector: 'fit-bottom-sheet',
@@ -18,6 +23,7 @@ let nextId = 0;
       [initialBreakpoint]="1"
       [breakpoints]="[0, 1]"
       [attr.aria-labelledby]="titleId"
+      [class]="themeClass()"
       (didDismiss)="open.set(false)"
     >
       <ng-template>
@@ -44,6 +50,13 @@ export class BottomSheetComponent {
   readonly title = input.required<string>();
   readonly description = input<string>();
   readonly open = model(false);
+  /** Screen theme of the hosting page, if any. */
+  readonly screenTheme = input<FitScreenTheme>();
+
+  protected readonly themeClass = computed(() => {
+    const theme = this.screenTheme();
+    return theme ? SCREEN_THEME_CLASS[theme] : '';
+  });
 
   protected readonly titleId = `fit-bottom-sheet-title-${nextId++}`;
   private readonly modal = viewChild.required(IonModal);

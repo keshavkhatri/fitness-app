@@ -1,61 +1,48 @@
 @let n = summary();
-@let c = n.calories;
+@let p = protein();
 
-<fit-card>
-  <div class="calories">
-    <fit-progress
-      variant="ring"
-      label="Calories"
-      [ringSize]="112"
-      [value]="c.progress?.value ?? 0"
-      [max]="c.progress?.max ?? 1"
-      [tone]="c.over ? 'warning' : 'primary'"
-      [valueText]="c.progress?.valueText ?? c.headline"
-    >
-      <span class="ring-value" data-testid="calories-eaten">{{ c.eaten }}</span>
-      <span class="ring-unit">kcal eaten</span>
-    </fit-progress>
-
-    <div class="calorie-copy">
-      @if (c.balance) {
-        @if (c.over) {
-          <span class="caption over"><ion-icon name="alert-circle-outline" aria-hidden="true" />Over target</span>
-        } @else {
-          <span class="caption">Remaining</span>
-        }
-        <span class="remaining" data-testid="calories-balance">
-          {{ c.balance }}
-          <span class="unit">kcal</span>
-        </span>
-        <span class="caption" data-testid="calories-target">Daily target {{ c.target }} kcal</span>
-      } @else {
-        <span class="caption">Daily target</span>
-        <span class="no-target" data-testid="calories-target">Not available</span>
-      }
-    </div>
+<fit-card padding="none">
+  <div class="head">
+    <h2 class="title" [id]="headingId()">
+      <button type="button" class="title-link" (click)="openNutrition.emit()">
+        <ion-icon name="restaurant" aria-hidden="true" />Nutrition
+      </button>
+    </h2>
+    <button fit-icon-button type="button" variant="tonal" icon="add" aria-label="Log food" data-testid="home-log-food" (click)="logFood.emit()"></button>
   </div>
 
-  @if (n.targetNote; as note) {
-    <div class="note" data-testid="target-note">
-      <p>{{ note }}</p>
-      <button fit-button type="button" variant="outline" (click)="openNutrition.emit()">Review in Nutrition</button>
-    </div>
-  }
+  <div class="protein" [attr.data-testid]="'home-macro-' + p.key">
+    @if (p.progress; as progress) {
+      <fit-progress variant="ring" [label]="p.label" [ringSize]="88" [value]="progress.value" [max]="progress.max" [valueText]="progress.valueText">
+        <span class="ring-value">{{ p.eaten }}</span>
+        <span class="ring-target">of {{ p.target }}</span>
+      </fit-progress>
+    } @else {
+      <!-- No protein target today: the intake alone, no ring. -->
+      <span class="no-target-value">{{ p.eaten }}</span>
+    }
+    <span class="protein-label">{{ p.label }}</span>
+  </div>
 
-  <ul class="macros" aria-label="Macros">
-    @for (macro of n.macros; track macro.key) {
-      <!-- With a bar, the bar's label and value text carry the macro; the visible copy isn't read twice. -->
+  <ul class="macros" aria-label="Carbs and fat">
+    @for (macro of others(); track macro.key) {
+      <!-- With a bar, its label and value text carry the macro; the visible copy isn't read twice. -->
       <li [attr.data-testid]="'home-macro-' + macro.key">
-        <span class="macro-label" [attr.aria-hidden]="macro.progress ? 'true' : null">{{ macro.label }}</span>
-        <span class="macro-value" [attr.aria-hidden]="macro.progress ? 'true' : null">
-          {{ macro.eaten }}@if (macro.target) {<span class="macro-target"> / {{ macro.target }}</span>}
+        <span class="macro-row" [attr.aria-hidden]="macro.progress ? 'true' : null">
+          <span class="macro-label">{{ macro.label }}</span>
+          <span class="macro-value">{{ macro.eaten }}@if (macro.target) {<span class="macro-target"> / {{ macro.target }}</span>}</span>
         </span>
-        @if (macro.progress; as p) {
-          <fit-progress class="macro-bar" [label]="macro.label" [value]="p.value" [max]="p.max" [valueText]="p.valueText" />
+        @if (macro.progress; as bar) {
+          <fit-progress class="macro-bar" [label]="macro.label" [value]="bar.value" [max]="bar.max" [valueText]="bar.valueText" />
         }
       </li>
     }
   </ul>
 
-  <button fit-button type="button" variant="secondary" block icon="add" class="log-food" (click)="logFood.emit()">Log food</button>
+  @if (n.targetNote; as note) {
+    <div class="note" data-testid="target-note">
+      <p>{{ note }}</p>
+      <button type="button" class="note-link" (click)="openNutrition.emit()">Review</button>
+    </div>
+  }
 </fit-card>

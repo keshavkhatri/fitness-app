@@ -37,6 +37,9 @@ ion-title {
 }
 
 .large-title-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--space-2) var(--page-gutter) var(--space-3);
@@ -44,6 +47,13 @@ ion-title {
   &.wide {
     max-width: var(--page-max-width-wide);
   }
+}
+
+.title-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .kicker {
