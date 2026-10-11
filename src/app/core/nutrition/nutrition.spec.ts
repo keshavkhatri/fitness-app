@@ -266,6 +266,52 @@ describe('NutritionService', () => {
     });
   });
 
+  describe('weekly summary', () => {
+    it('summarises this Monday–Sunday week with the current targets', async () => {
+      const service = setup();
+      await service.add({ ...INPUT, calories: 500 }, '2026-10-05');
+      await service.add({ ...INPUT, calories: 700 }, '2026-10-08');
+      await service.add({ ...INPUT, calories: 999 }, '2026-10-04'); // previous week
+      const snap = await service.week();
+      expect(snap.today).toBe('2026-10-08');
+      expect([snap.week.start, snap.week.end]).toEqual(['2026-10-05', '2026-10-11']);
+      expect(snap.week.total?.calories).toBe(1200);
+      expect(snap.week.loggedDays).toBe(2);
+      expect(snap.targets).toMatchObject({ kind: 'available' });
+    });
+
+    it('opens any earlier week; a later week falls back to this week', async () => {
+      const service = setup();
+      await service.add({ ...INPUT, calories: 999 }, '2026-10-04');
+      expect((await service.week('2026-10-01')).week).toMatchObject({ start: '2026-09-28', total: { calories: 999 } });
+      expect((await service.week('2026-10-20')).week.start).toBe('2026-10-05');
+      expect((await service.week('nonsense')).week.start).toBe('2026-10-05');
+    });
+
+    it('reads only up to today and never changes the selected day or the stored log', async () => {
+      const service = setup();
+      await service.load('2026-10-06');
+      await service.add(INPUT, '2026-10-06');
+      const range = vi.spyOn(TestBed.inject(NutritionRepository), 'loadRange');
+      const set = vi.spyOn(storage, 'set');
+      await service.week();
+      expect(range).toHaveBeenCalledWith('2026-10-05', '2026-10-08');
+      expect(set).not.toHaveBeenCalled();
+      expect(service.selectedDate()).toBe('2026-10-06');
+    });
+
+    it('reports missing targets as such (no profile)', async () => {
+      const service = setup(null);
+      expect((await service.week()).targets).toEqual({ kind: 'no-profile' });
+    });
+
+    it('rejects when the food log can’t be read (the screen shows an error)', async () => {
+      const service = setup();
+      vi.spyOn(TestBed.inject(NutritionRepository), 'loadRange').mockRejectedValueOnce(new NutritionStorageError('unsupported-version'));
+      await expect(service.week()).rejects.toBeInstanceOf(NutritionStorageError);
+    });
+  });
+
   describe('selected day', () => {
     it('moves between days, never into the future, and returns to today', async () => {
       const service = setup();

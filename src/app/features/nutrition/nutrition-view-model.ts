@@ -219,7 +219,14 @@ export interface DaySummaryView {
 }
 
 export function toDaySummary(day: NutritionDay, targetState: TargetState): DaySummaryView {
-  const totals: NutritionValues = day.totals;
+  return toIntakeSummary(day.totals, targetState);
+}
+
+/**
+ * Any intake (a day's totals, or a weekly daily average) against the daily
+ * targets, with the same rounding and withheld-target rules everywhere.
+ */
+export function toIntakeSummary(totals: NutritionValues, targetState: TargetState): DaySummaryView {
   const targets = targetState.kind === 'available' ? targetState.targets : null;
   const kcal = targets?.calories.kind === 'target' ? targets.calories.kcal : null;
   const macros = targets?.macros.kind === 'target' ? targets.macros : null;

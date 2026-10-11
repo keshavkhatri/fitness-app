@@ -7,10 +7,14 @@ import {
   FoodEntryInput,
   NutritionDay,
   NutritionTargets,
+  NutritionWeek,
   createFoodEntry,
   nutritionDay,
   nutritionTargetsFrom,
+  nutritionWeek,
   recentFoods,
+  weekDates,
+  weekStartOf,
   updateFoodEntry,
 } from '../../domain/nutrition';
 import { addDays } from '../../domain/workout-session';
@@ -40,6 +44,13 @@ export type SaveResult =
 export interface NutritionDaySnapshot {
   readonly date: IsoCalendarDate;
   readonly day: NutritionDay;
+  readonly targets: TargetState;
+}
+
+/** One Monday–Sunday week of logged food, with the current targets (targets aren't stored per day). */
+export interface NutritionWeekSnapshot {
+  readonly today: IsoCalendarDate;
+  readonly week: NutritionWeek;
   readonly targets: TargetState;
 }
 
@@ -104,6 +115,22 @@ export class NutritionService {
   async snapshot(date: IsoCalendarDate = this.today()): Promise<NutritionDaySnapshot> {
     const [entries, targets] = await Promise.all([this.repository.loadDay(date), this.targets()]);
     return { date, day: nutritionDay(entries, date), targets };
+  }
+
+  /**
+   * The Monday–Sunday week containing `date` (default: this week). A date in a
+   * later week, or an invalid one, gives this week. Read-only: leaves the
+   * selected day untouched. Rejects when food logs can't be read.
+   */
+  async week(date: IsoCalendarDate = this.today()): Promise<NutritionWeekSnapshot> {
+    const today = this.today();
+    const thisWeek = weekStartOf(today) as IsoCalendarDate;
+    const requested = weekStartOf(date);
+    const start = requested && requested <= thisWeek ? requested : thisWeek;
+    const dates = weekDates(start);
+    const last = dates[dates.length - 1] < today ? dates[dates.length - 1] : today;
+    const [entries, targets] = await Promise.all([this.repository.loadRange(start, last), this.targets()]);
+    return { today, week: nutritionWeek(entries, start, today) as NutritionWeek, targets };
   }
 
   goToPreviousDay(): Promise<void> {

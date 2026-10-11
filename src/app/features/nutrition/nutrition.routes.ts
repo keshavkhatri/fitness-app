@@ -7,6 +7,12 @@ export default [
     loadComponent: () => import('./nutrition.page').then((m) => m.NutritionPage),
   },
   {
+    // Optional query parameter `date` (YYYY-MM-DD): opens the week containing it (default: this week).
+    path: 'week',
+    title: 'Weekly summary',
+    loadComponent: () => import('./nutrition-week.page').then((m) => m.NutritionWeekPage),
+  },
+  {
     // Query parameters: `meal` (breakfast|lunch|dinner|snacks), `date` (YYYY-MM-DD).
     path: 'food/new',
     title: 'Add food',

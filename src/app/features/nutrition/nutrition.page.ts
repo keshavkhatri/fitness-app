@@ -17,7 +17,7 @@ import {
 } from '../../shared/ui';
 import { MealSectionComponent } from './components/meal-section.component';
 import { NUTRITION_COPY } from './nutrition-content';
-import { NEW_FOOD_PATH, foodPath } from './nutrition-paths';
+import { NEW_FOOD_PATH, NUTRITION_WEEK_PATH, foodPath } from './nutrition-paths';
 import { NoticeAction, suggestedMeal, toDateHeader, toNutritionScreen } from './nutrition-view-model';
 
 /**
@@ -98,6 +98,11 @@ export class NutritionPage {
 
   protected addFood(meal: MealCategory = suggestedMeal(this.clock())): void {
     void this.nav.navigateForward(NEW_FOOD_PATH, { queryParams: { meal, date: this.nutrition.selectedDate() } });
+  }
+
+  /** The weekly summary for the week of the day shown. */
+  protected openWeek(): void {
+    void this.nav.navigateForward(NUTRITION_WEEK_PATH, { queryParams: { date: this.nutrition.selectedDate() } });
   }
 
   protected editFood(entryId: string): void {

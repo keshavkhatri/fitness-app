@@ -1,0 +1,86 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+  margin-bottom: var(--space-3);
+}
+
+.day-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day-list li + li {
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.day {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--space-3) var(--space-4);
+}
+
+button.day {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  // After the reset, which zeroes padding.
+  padding: var(--space-3) var(--space-4);
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+.day-name {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 88px;
+}
+
+.weekday {
+  @include fx.text(body-sm, semibold);
+}
+
+.date {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.day-values {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.day-kcal {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+}
+
+.day-macros,
+.day-comparison,
+.day-missing {
+  @include fx.text(caption);
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+}
+
+.day-missing {
+  @include fx.text(body-sm);
+}
+
+.chevron {
+  flex: none;
+  font-size: 18px;
+  color: var(--color-text-secondary);
+}

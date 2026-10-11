@@ -1,0 +1,37 @@
+<section class="days" aria-labelledby="week-days-title">
+  <h2 class="section-title" id="week-days-title">{{ copy.daysTitle }}</h2>
+  <fit-card padding="none">
+    <ul class="day-list">
+      @for (d of days(); track d.date) {
+        <li [attr.data-status]="d.status" data-testid="week-day">
+          @if (d.openable) {
+            <button type="button" class="day" [attr.aria-label]="d.ariaLabel" (click)="openDay.emit(d.date)">
+              <span class="day-name">
+                <span class="weekday">{{ d.weekday }}</span>&ngsp;<span class="date">{{ d.dateLabel }}</span>
+              </span>&ngsp;
+              <span class="day-values">
+                @if (d.calories) {
+                  <span class="day-kcal">{{ d.calories }}</span>&ngsp;
+                  <span class="day-macros">{{ d.macros }}</span>
+                  @if (d.comparison; as comparison) {
+                    &ngsp;<span class="day-comparison">{{ comparison }}</span>
+                  }
+                } @else {
+                  <span class="day-missing">{{ copy.notLogged }}</span>
+                }
+              </span>
+              <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+            </button>
+          } @else {
+            <div class="day upcoming" [attr.aria-label]="d.ariaLabel" role="group">
+              <span class="day-name">
+                <span class="weekday">{{ d.weekday }}</span>&ngsp;<span class="date">{{ d.dateLabel }}</span>
+              </span>&ngsp;
+              <span class="day-values"><span class="day-missing">{{ copy.upcoming }}</span></span>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  </fit-card>
+</section>

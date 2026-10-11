@@ -3,4 +3,5 @@
 export * from './nutrition.model';
 export * from './food-entry';
 export * from './nutrition-day';
+export * from './nutrition-week';
 export * from './nutrition-targets';

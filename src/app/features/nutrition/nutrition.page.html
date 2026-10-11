@@ -85,6 +85,10 @@
         </section>
       </fit-card>
 
+      <button fit-button type="button" variant="outline" block icon="calendar-outline" data-testid="open-week" (click)="openWeek()">
+        {{ copy.week.entry }}
+      </button>
+
       @if (s.isEmpty) {
         <fit-card data-testid="empty-day">
           <fit-empty-state icon="restaurant-outline" [title]="copy.emptyDay.title" [description]="copy.emptyDay.message">
