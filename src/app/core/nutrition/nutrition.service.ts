@@ -10,6 +10,7 @@ import {
   createFoodEntry,
   nutritionDay,
   nutritionTargetsFrom,
+  recentFoods,
   updateFoodEntry,
 } from '../../domain/nutrition';
 import { addDays } from '../../domain/workout-session';
@@ -48,6 +49,9 @@ const newId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? `food-${crypto.randomUUID()}`
     : `food-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+/** How far back Recent foods looks. */
+const RECENT_FOOD_DAYS = 30;
 
 const shift = (date: IsoCalendarDate, days: number): IsoCalendarDate => {
   const parsed = parseIsoCalendarDate(date);
@@ -130,6 +134,12 @@ export class NutritionService {
     } catch {
       return 'error';
     }
+  }
+
+  /** Distinct foods logged in the last 30 days, newest first, to log again. Rejects when food logs can't be read. */
+  async recentFoods(): Promise<FoodEntry[]> {
+    const today = this.today();
+    return recentFoods(await this.repository.loadRange(shift(today, -(RECENT_FOOD_DAYS - 1)), today));
   }
 
   add(input: FoodEntryInput, date: IsoCalendarDate): Promise<SaveResult> {

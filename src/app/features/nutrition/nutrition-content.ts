@@ -106,6 +106,12 @@ export const NUTRITION_COPY = {
 
   form: {
     addTitle: 'Add food',
+    recent: {
+      title: 'Recent foods',
+      hint: 'Tap a food to fill in the form, then check it and save.',
+      choose: (name: string, detail: string) => `Fill in ${name}, ${detail}`,
+      filled: (name: string) => `Filled in ${name}. Check the values, then save.`,
+    },
     editTitle: 'Edit food',
     back: 'Nutrition',
     name: 'Food name',

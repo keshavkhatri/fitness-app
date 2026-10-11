@@ -15,10 +15,10 @@ import {
   LoadingSkeletonComponent,
   TextFieldComponent,
 } from '../../shared/ui';
-import { FoodFormErrors, FoodFormValues, emptyFoodForm, foodFormOf, formErrorsOf, readFoodForm } from './food-form';
+import { FoodFormErrors, FoodFormValues, emptyFoodForm, foodFormFromRecent, foodFormOf, formErrorsOf, readFoodForm } from './food-form';
 import { MEAL_LABELS, NUTRITION_COPY, UNIT_LABELS } from './nutrition-content';
 import { NUTRITION_PATH } from './nutrition-paths';
-import { suggestedMeal, toDateHeader } from './nutrition-view-model';
+import { FoodRowView, suggestedMeal, toDateHeader, toFoodRow } from './nutrition-view-model';
 
 type Loaded =
   | { readonly kind: 'new' }
@@ -30,7 +30,9 @@ type TextFieldName = Exclude<FoodEntryField, 'unit' | 'meal'>;
 const FIELD_ORDER: readonly FoodEntryField[] = ['name', 'quantity', 'unit', 'meal', 'calories', 'proteinGrams', 'carbohydrateGrams', 'fatGrams'];
 
 /**
- * Add or edit one logged food, with values typed in manually.
+ * Add or edit one logged food, with values typed in manually. When adding,
+ * Recent foods (the last 30 days) can fill in the form in one tap; it is
+ * still reviewed and saved like any typed-in entry.
  * `/nutrition/food/new?meal=lunch&date=2026-10-08` or `/nutrition/food/:entryId?date=…`.
  * Nothing is shown as saved or deleted until storage confirmed it.
  */
@@ -104,6 +106,17 @@ export class FoodEntryPage {
     const meal = this.meal();
     return entry ? foodFormOf(entry) : emptyFoodForm(meal && isMealCategory(meal) ? meal : suggestedMeal(this.clock()));
   });
+  /** Recent foods to log again (adding only); empty when there are none or they can't be read. */
+  private readonly recent = resource({
+    params: () => ({ adding: !this.entryId() }),
+    loader: async ({ params }): Promise<FoodEntry[]> => (params.adding ? this.nutrition.recentFoods().catch(() => []) : []),
+  });
+  protected readonly recentFoods = computed<readonly (FoodRowView & { readonly entry: FoodEntry })[]>(() =>
+    (this.recent.hasValue() ? this.recent.value() : []).map((entry) => ({ ...toFoodRow(entry), entry })),
+  );
+  /** Announced after a recent food filled in the form. */
+  protected readonly filledFrom = signal('');
+
   protected readonly errors = signal<FoodFormErrors>({});
   protected readonly saving = signal(false);
   /** Announced above Save: validation summary or a failed save/delete. */
@@ -130,6 +143,16 @@ export class FoodEntryPage {
     if (this.errors()[field]) {
       this.errors.update(({ [field]: _, ...rest }) => rest);
     }
+  }
+
+  protected useRecent(entry: FoodEntry): void {
+    if (this.saving()) {
+      return;
+    }
+    this.form.set(foodFormFromRecent(entry, this.form().meal));
+    this.errors.set({});
+    this.status.set('');
+    this.filledFrom.set(this.copy.recent.filled(entry.name));
   }
 
   protected async save(): Promise<void> {

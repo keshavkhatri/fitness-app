@@ -19,6 +19,36 @@
         <p class="day" data-testid="form-day">{{ dayLabel() }}</p>
       </header>
 
+      @if (l.kind === 'new' && recentFoods().length > 0) {
+        <section class="recent" aria-labelledby="recent-foods-title" data-testid="recent-foods">
+          <h2 class="recent-title" id="recent-foods-title">{{ copy.recent.title }}</h2>
+          <p class="values-hint">{{ copy.recent.hint }}</p>
+          <fit-card padding="none">
+            <ul class="recent-list">
+              @for (food of recentFoods(); track food.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="recent-food"
+                    [attr.aria-label]="copy.recent.choose(food.name, food.detail + ', ' + food.calories)"
+                    [disabled]="saving()"
+                    data-testid="recent-food"
+                    (click)="useRecent(food.entry)"
+                  >
+                    <span class="recent-text">
+                      <span class="recent-name">{{ food.name }}</span>&ngsp;
+                      <span class="recent-detail">{{ food.detail }}</span>
+                    </span>&ngsp;
+                    <span class="recent-kcal">{{ food.calories }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </fit-card>
+          <p class="recent-status" role="status" data-testid="recent-status">{{ filledFrom() }}</p>
+        </section>
+      }
+
       <form id="food-form" class="form" novalidate data-testid="food-form" (submit)="$event.preventDefault(); save()">
         <fit-text-field
           #nameField

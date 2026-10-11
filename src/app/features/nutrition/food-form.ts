@@ -46,6 +46,9 @@ export const foodFormOf = (entry: FoodEntry): FoodFormValues => ({
   fatGrams: text(entry.nutrition.fatGrams),
 });
 
+/** A recently logged food as a new entry for `meal`: same name, amount and nutrition. */
+export const foodFormFromRecent = (entry: FoodEntry, meal: MealCategory): FoodFormValues => ({ ...foodFormOf(entry), meal });
+
 type NumberField = 'quantity' | 'calories' | 'proteinGrams' | 'carbohydrateGrams' | 'fatGrams';
 const NUMBER_FIELDS: readonly NumberField[] = ['quantity', 'calories', 'proteinGrams', 'carbohydrateGrams', 'fatGrams'];
 

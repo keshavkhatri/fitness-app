@@ -261,6 +261,33 @@ describe('Food entry page', () => {
     expect(back).toHaveBeenCalledWith('/nutrition');
   });
 
+  it('fills in the form from a recent food, keeping the chosen meal and day, and saves a new entry', async () => {
+    const yogurt = food('y', '2026-10-06', { name: 'Greek yogurt', quantity: 170, meal: 'breakfast', calories: 100, proteinGrams: 17.3 });
+    const { el, fixture, submit, storage, back } = await renderForm([yogurt], { meal: 'lunch' });
+    const rows = el.querySelectorAll<HTMLButtonElement>('[data-testid="recent-food"]');
+    expect(rows).toHaveLength(1);
+    expect(clean(rows[0])).toContain('Greek yogurt');
+    rows[0].click();
+    fixture.detectChanges();
+    expect(byTestId(el, 'field-name')!.querySelector('input')!.value).toBe('Greek yogurt');
+    expect(clean(byTestId(el, 'recent-status'))).toBe('Filled in Greek yogurt. Check the values, then save.');
+    await submit();
+    const saved = stored(storage);
+    expect(saved).toHaveLength(2);
+    expect(saved[1]).toEqual(
+      expect.objectContaining({ name: 'Greek yogurt', date: '2026-10-08', meal: 'lunch', quantity: 170, nutrition: yogurt.nutrition }),
+    );
+    expect(saved[1].id).not.toBe('y');
+    expect(saved[0]).toEqual(yogurt);
+    expect(back).toHaveBeenCalledWith('/nutrition');
+  });
+
+  it('shows no recent foods when editing', async () => {
+    const yogurt = food('y', '2026-10-08', { name: 'Greek yogurt' });
+    const { el } = await renderForm([yogurt], { entryId: 'y', date: '2026-10-08' });
+    expect(byTestId(el, 'recent-foods')).toBeNull();
+  });
+
   it('shows field-level errors and saves nothing', async () => {
     const { el, type, submit, storage, back } = await renderForm([], { meal: 'breakfast' });
     await type('quantity', '0');

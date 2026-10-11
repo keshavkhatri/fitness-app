@@ -72,3 +72,27 @@ export function balance(target: number, consumed: number): Balance {
   const diff = (tenths(target) - tenths(consumed)) / 10;
   return { target, consumed, remaining: Math.max(0, diff), over: Math.max(0, -diff) };
 }
+
+/**
+ * Foods to log again: the most recent entry of each distinct food (same
+ * name, ignoring case and spacing, quantity and unit), newest first. Each is
+ * an existing snapshot; re-logging it creates a new entry.
+ */
+export function recentFoods(entries: readonly FoodEntry[], limit = 8): FoodEntry[] {
+  const newestFirst = [...entries].sort(
+    (a, b) => (a.date !== b.date ? (a.date < b.date ? 1 : -1) : Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
+  );
+  const seen = new Set<string>();
+  const foods: FoodEntry[] = [];
+  for (const entry of newestFirst) {
+    const key = `${entry.name.trim().replace(/\s+/g, ' ').toLowerCase()}|${entry.quantity}|${entry.unit}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      foods.push(entry);
+      if (foods.length === limit) {
+        break;
+      }
+    }
+  }
+  return foods;
+}

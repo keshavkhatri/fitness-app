@@ -1,7 +1,7 @@
 import { calculateFitnessAssessment, DEFAULT_CALCULATION_CONFIG } from '../fitness-calculations';
 import { UserFitnessProfile } from '../fitness-profile';
 import { createFoodEntry, inputOf, parseFoodEntry, updateFoodEntry, validateFoodEntryInput } from './food-entry';
-import { balance, entriesBetween, entriesOn, groupByMeal, nutritionDay, sumNutrition } from './nutrition-day';
+import { balance, entriesBetween, entriesOn, groupByMeal, nutritionDay, recentFoods, sumNutrition } from './nutrition-day';
 import { nutritionTargetsFrom } from './nutrition-targets';
 import { FoodEntry, FoodEntryInput } from './nutrition.model';
 
@@ -211,6 +211,17 @@ describe('nutrition domain', () => {
       const t = nutritionTargetsFrom(constrained);
       expect(t.calories).toMatchObject({ kind: 'target', adjusted: true });
       expect(t.macros).toEqual({ kind: 'target', proteinGrams: 150, carbohydrateGrams: 120, fatGrams: 40, constrained: true });
+    });
+  });
+
+  describe('recent foods', () => {
+    it('lists each distinct food once (name ignoring case and spacing, amount, unit), newest first', () => {
+      const older = entry({ name: 'Greek yogurt' }, { id: 'a', date: '2026-10-06' });
+      const newer = entry({ name: ' greek  YOGURT ' }, { id: 'b', date: '2026-10-08' });
+      const bigger = entry({ name: 'Greek yogurt', quantity: 340 }, { id: 'c', date: '2026-10-07' });
+      const oats = entry({ name: 'Oats' }, { id: 'd', date: '2026-10-05' });
+      expect(recentFoods([older, oats, newer, bigger]).map((e) => e.id)).toEqual(['b', 'c', 'd']);
+      expect(recentFoods([older, oats, newer, bigger], 2).map((e) => e.id)).toEqual(['b', 'c']);
     });
   });
 });
