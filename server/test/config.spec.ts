@@ -6,6 +6,7 @@ describe('server configuration', () => {
     expect(loadConfig({ OPENAI_API_KEY: 'k', OPENAI_MODEL: 'm' })).toEqual({
       openAi: { apiKey: 'k', model: 'm', maxOutputTokens: 8000, timeoutMs: 90_000 },
       maxUploadBytes: 8 * 1024 * 1024,
+      maxConcurrentExtractions: 4,
       allowedOrigins: [],
       clientRateLimit: 5,
       clientRateWindowMs: 15 * 60_000,
@@ -41,5 +42,11 @@ describe('server configuration', () => {
     expect(() => loadConfig({ INBODY_MAX_UPLOAD_BYTES: 'sk-looks-secret' })).not.toThrow(/sk-looks-secret/);
     expect(() => loadConfig({ INBODY_MAX_UPLOAD_BYTES: String(64 * 1024 * 1024) })).toThrow(ConfigError);
     expect(() => loadConfig({ RATE_LIMIT_PER_CLIENT: '0' })).toThrow(ConfigError);
+    expect(() => loadConfig({ MAX_CONCURRENT_EXTRACTIONS: '0' })).toThrow(/^MAX_CONCURRENT_EXTRACTIONS must be/);
+    expect(() => loadConfig({ MAX_CONCURRENT_EXTRACTIONS: '101' })).toThrow(ConfigError);
+  });
+
+  it('reads the concurrent extraction limit', () => {
+    expect(loadConfig({ MAX_CONCURRENT_EXTRACTIONS: '12' }).maxConcurrentExtractions).toBe(12);
   });
 });

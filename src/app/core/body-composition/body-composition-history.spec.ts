@@ -136,7 +136,7 @@ describe('LocalBodyCompositionHistoryRepository', () => {
 
   it('keeps unreadable stored items, including unknown fields, unchanged on every write and counts them', async () => {
     const newerProvenance = { ...imported('n', '2026-10-04'), source: { ...PROVENANCE, fileHash: 'sha256:abc' } };
-    const newerMetric = { ...assessment('m', '2026-10-03'), reported: { 'segmental-lean-mass': { value: 35.1, unit: 'kg' } } };
+    const newerMetric = { ...assessment('m', '2026-10-03'), reported: { 'segmental-lean-mass': { value: 24.6, unit: 'kg' } } };
     const broken = { id: 'odd', reported: 'big' };
     storage.values.set(KEY, JSON.stringify({ version: 1, assessments: [broken, newerProvenance, newerMetric, assessment('a', '2026-10-05')] }));
     expect((await repo.list()).map((a) => a.id)).toEqual(['a']);

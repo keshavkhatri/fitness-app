@@ -82,6 +82,7 @@ function failureOf(status: number, code: unknown): ExtractionFailure {
       return 'rejected-file';
     case 'rate-limited':
     case 'service-limit-reached':
+    case 'server-busy':
       return 'busy';
     case 'not-configured':
     case 'origin-not-allowed':

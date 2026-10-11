@@ -44,6 +44,7 @@ export type ErrorCode =
   | 'origin-not-allowed'
   | 'rate-limited'
   | 'service-limit-reached'
+  | 'server-busy'
   | 'not-configured'
   | 'extraction-refused'
   | 'extraction-incomplete'
@@ -54,6 +55,8 @@ export type ErrorCode =
   | 'internal-error';
 
 const DAY_MS = 24 * 60 * 60_000;
+/** Suggested wait when every extraction slot is taken (uploads usually finish within seconds). */
+export const BUSY_RETRY_AFTER_SECONDS = 10;
 const MANUAL = 'Try again later or enter your details manually.';
 
 function errorStatus(code: ErrorCode): number {
@@ -83,6 +86,7 @@ function errorStatus(code: ErrorCode): number {
     case 'provider-error':
       return 502;
     case 'not-configured':
+    case 'server-busy':
     case 'provider-unavailable':
       return 503;
     case 'provider-timeout':
@@ -110,6 +114,8 @@ function errorMessage(code: ErrorCode, maxUploadBytes: number): string {
       return `Too many uploads. ${MANUAL}`;
     case 'service-limit-reached':
       return `Report extraction has reached its limit for now. ${MANUAL}`;
+    case 'server-busy':
+      return `Report extraction is busy right now. ${MANUAL}`;
     case 'not-configured':
       return "Report extraction isn't available right now. Enter your details manually.";
     case 'extraction-refused':
@@ -133,6 +139,8 @@ const BASE_HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'n
 export function createExtractionHandler({ config, client, log, now = Date.now }: ExtractionHandlerDeps) {
   const clientLimiter = new FixedWindowLimiter(config.clientRateLimit, config.clientRateWindowMs, now);
   const dailyLimiter = new FixedWindowLimiter(config.dailyExtractionLimit, DAY_MS, now);
+  /** Extractions holding a slot. Checked and taken synchronously (no await in between), so concurrent requests can't overshoot. */
+  let inFlight = 0;
 
   const corsHeaders = (origin: string | null): Record<string, string> =>
     origin && config.allowedOrigins.includes(origin)
@@ -167,13 +175,32 @@ export function createExtractionHandler({ config, client, log, now = Date.now }:
     if (!client || !config.openAi) {
       return fail('not-configured', origin);
     }
+    // Before anything is read: a request without a slot never buffers its upload.
+    if (inFlight >= config.maxConcurrentExtractions) {
+      return fail('server-busy', origin, { 'retry-after': String(BUSY_RETRY_AFTER_SECONDS) });
+    }
+    inFlight += 1;
+    try {
+      return await extractWithSlot(request, origin, client, config.openAi);
+    } finally {
+      // Every outcome releases the slot: answers, rejections, exceptions, aborted uploads, provider timeouts.
+      inFlight -= 1;
+    }
+  }
+
+  async function extractWithSlot(
+    request: Request,
+    origin: string | null,
+    client: ResponsesClient,
+    openAi: NonNullable<ServerConfig['openAi']>,
+  ): Promise<Response> {
     const upload = await readReportUpload(request, config.maxUploadBytes);
     if (!upload.ok) {
       return fail(upload.problem, origin);
     }
     const built = inBodyExtractionRequest(
       { mediaType: upload.mediaType, base64: Buffer.from(upload.bytes.buffer, upload.bytes.byteOffset, upload.bytes.byteLength).toString('base64') },
-      { model: config.openAi.model, maxOutputTokens: config.openAi.maxOutputTokens },
+      { model: openAi.model, maxOutputTokens: openAi.maxOutputTokens },
     );
     if (!built.ok) {
       return fail(built.problem === 'invalid-image' ? 'invalid-image' : 'internal-error', origin);

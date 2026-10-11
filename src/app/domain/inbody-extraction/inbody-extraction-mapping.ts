@@ -195,7 +195,7 @@ function readProfileWeight({ text, unit }: PrintedValue): Reading<BodyWeight> {
   return orProblem(parseBodyWeight(unit === 'lb' ? weightFromPounds(value) : weightFromKilograms(value)), 'out-of-range');
 }
 
-/** "2026.10.01. 08:06" (year first, as printed on the sample); other date orders are never guessed. */
+/** "2026.09.14. 07:42" (year first, as InBody prints it); other date orders are never guessed. */
 const PRINTED_DATE = /^(\d{4})\.(\d{2})\.(\d{2})\.?(?:\s+\d{2}:\d{2})?$/;
 
 function readDate(today: IsoCalendarDate) {

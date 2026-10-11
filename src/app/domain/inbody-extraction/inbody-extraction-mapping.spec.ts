@@ -36,21 +36,21 @@ describe('InBody extraction mapping', () => {
       reportIssues: [],
       unverifiedReportModel: false,
       profile: {
-        sex: { kind: 'prefilled', value: 'male', field: 'gender', needsReview: false },
-        height: { kind: 'prefilled', value: { centimeters: 180 }, field: 'height', needsReview: false },
-        weight: { kind: 'prefilled', value: { kilograms: 94.5 }, field: 'weight', needsReview: false },
+        sex: { kind: 'prefilled', value: 'female', field: 'gender', needsReview: false },
+        height: { kind: 'prefilled', value: { centimeters: 172 }, field: 'height', needsReview: false },
+        weight: { kind: 'prefilled', value: { kilograms: 68.4 }, field: 'weight', needsReview: false },
       },
       assessment: {
-        date: { kind: 'prefilled', value: '2026-10-01', field: 'test-date-time', needsReview: false },
+        date: { kind: 'prefilled', value: '2026-09-14', field: 'test-date-time', needsReview: false },
         values: {
-          weight: { kind: 'prefilled', value: { value: 94.5, unit: 'kg' }, field: 'weight', needsReview: false },
-          'body-fat-mass': { kind: 'prefilled', value: { value: 31.6, unit: 'kg' }, field: 'body-fat-mass', needsReview: false },
-          'body-fat-percentage': { kind: 'prefilled', value: { value: 33.4, unit: '%' }, field: 'percent-body-fat', needsReview: false },
-          'skeletal-muscle-mass': { kind: 'prefilled', value: { value: 35.8, unit: 'kg' }, field: 'skeletal-muscle-mass' },
-          'fat-free-mass': { kind: 'prefilled', value: { value: 62.9, unit: 'kg' }, field: 'fat-free-mass' },
-          'ecw-ratio': { kind: 'prefilled', value: { value: 0.372, unit: 'none' } },
-          'visceral-fat-level': { kind: 'prefilled', value: { value: 15, unit: 'none' } },
-          'obesity-degree': { kind: 'prefilled', value: { value: 133, unit: '%' } },
+          weight: { kind: 'prefilled', value: { value: 68.4, unit: 'kg' }, field: 'weight', needsReview: false },
+          'body-fat-mass': { kind: 'prefilled', value: { value: 21.1, unit: 'kg' }, field: 'body-fat-mass', needsReview: false },
+          'body-fat-percentage': { kind: 'prefilled', value: { value: 30.8, unit: '%' }, field: 'percent-body-fat', needsReview: false },
+          'skeletal-muscle-mass': { kind: 'prefilled', value: { value: 26.2, unit: 'kg' }, field: 'skeletal-muscle-mass' },
+          'fat-free-mass': { kind: 'prefilled', value: { value: 47.3, unit: 'kg' }, field: 'fat-free-mass' },
+          'ecw-ratio': { kind: 'prefilled', value: { value: 0.378, unit: 'none' } },
+          'visceral-fat-level': { kind: 'prefilled', value: { value: 7, unit: 'none' } },
+          'obesity-degree': { kind: 'prefilled', value: { value: 107, unit: '%' } },
         },
       },
       unmapped: ['age'],
@@ -81,7 +81,7 @@ describe('InBody extraction mapping', () => {
   });
 
   it('flags uncertain readings for review', () => {
-    const prefill = prefillOf(extraction({ measurements: { weight: { status: 'uncertain', text: '94.5', unit: 'kg', sourceLabel: 'Weight' } } }));
+    const prefill = prefillOf(extraction({ measurements: { weight: { status: 'uncertain', text: '68.4', unit: 'kg', sourceLabel: 'Weight' } } }));
     expect(prefill.profile.weight).toMatchObject({ kind: 'prefilled', needsReview: true });
     expect(prefill.assessment.values.weight).toMatchObject({ kind: 'prefilled', needsReview: true });
     expect(prefill.profile.height).toMatchObject({ needsReview: false });
@@ -111,9 +111,9 @@ describe('InBody extraction mapping', () => {
   });
 
   it('keeps pounds as reported for the assessment and converts only the profile weight to kilograms', () => {
-    const prefill = prefillOf(extraction({ measurements: { weight: read('208.3', 'lb') } }));
-    expect(prefill.assessment.values.weight).toMatchObject({ value: { value: 208.3, unit: 'lb' } });
-    expect(prefill.profile.weight).toMatchObject({ value: { kilograms: 94.48 } });
+    const prefill = prefillOf(extraction({ measurements: { weight: read('150.8', 'lb') } }));
+    expect(prefill.assessment.values.weight).toMatchObject({ value: { value: 150.8, unit: 'lb' } });
+    expect(prefill.profile.weight).toMatchObject({ value: { kilograms: 68.4 } });
   });
 
   it('flags a report model the mapping was not checked against', () => {

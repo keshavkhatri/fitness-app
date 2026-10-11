@@ -72,6 +72,7 @@ describe('InBodyExtractionClient', () => {
       [serverError(415, 'unsupported-media-type'), 'rejected-file'],
       [serverError(429, 'rate-limited'), 'busy'],
       [serverError(429, 'service-limit-reached'), 'busy'],
+      [serverError(503, 'server-busy'), 'busy'],
       [serverError(503, 'not-configured'), 'unavailable'],
       [serverError(403, 'origin-not-allowed'), 'unavailable'],
       [serverError(422, 'extraction-refused'), 'refused'],

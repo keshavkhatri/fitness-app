@@ -75,7 +75,7 @@ describe('InBody extraction response', () => {
   });
 
   it('rejects output that is not exactly one JSON text matching the contract', () => {
-    expect(readInBodyExtractionResponse(completed(outputText('The weight is 94.5 kg.')))).toEqual({ kind: 'invalid-output', errors: [] });
+    expect(readInBodyExtractionResponse(completed(outputText('The weight is 68.4 kg.')))).toEqual({ kind: 'invalid-output', errors: [] });
     expect(readInBodyExtractionResponse(completed())).toEqual({ kind: 'invalid-output', errors: [] });
     expect(readInBodyExtractionResponse(completed(outputText('{}'), outputText('{}')))).toEqual({ kind: 'invalid-output', errors: [] });
     const wrongVersion = { ...SAMPLE_INBODY380_EXTRACTION, schemaVersion: 'inbody-extraction.v0' };

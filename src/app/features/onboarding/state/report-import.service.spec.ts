@@ -43,7 +43,7 @@ describe('ReportImport', () => {
     const state = report.current();
     expect(state.status).toBe('read');
     expect('file' in state).toBe(false);
-    expect(report.reading()?.prefill.profile.height).toMatchObject({ kind: 'prefilled', value: { centimeters: 180 } });
+    expect(report.reading()?.prefill.profile.height).toMatchObject({ kind: 'prefilled', value: { centimeters: 172 } });
     expect(report.basicsPrefillPending()).toBe(true);
   });
 

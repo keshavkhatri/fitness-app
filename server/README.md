@@ -31,6 +31,7 @@ server at startup with the variable's name, never its value.
 | `OPENAI_MAX_OUTPUT_TOKENS` | 8000 | 1000–64000 |
 | `OPENAI_TIMEOUT_MS` | 90000 | 5000–300000 |
 | `INBODY_MAX_UPLOAD_BYTES` | 8 MiB | Up to 20 MiB; the app checks 8 MiB before sending. |
+| `MAX_CONCURRENT_EXTRACTIONS` | 4 | 1–100. Extractions in progress at once; more get 503 `server-busy` (with `Retry-After`) before any upload is read. Bounds memory: each holds one upload. |
 | `ALLOWED_ORIGINS` | none | Exact origins, comma-separated; `*` is refused. Capacitor: `capacitor://localhost` (iOS), `https://localhost` (Android). |
 | `RATE_LIMIT_PER_CLIENT` / `RATE_LIMIT_WINDOW_MS` | 5 / 15 min | Attempts per client IP. |
 | `DAILY_EXTRACTION_LIMIT` | 200 | Provider calls per day across all clients: a cost ceiling. |
@@ -47,6 +48,10 @@ upload.
   is never returned, logged or included in error messages.
 - Uploads: declared type must be PNG/JPEG/WEBP and match the file signature;
   the body is streamed and reading stops at the size limit (413).
+- At most `MAX_CONCURRENT_EXTRACTIONS` uploads are processed at once: a
+  request beyond that gets 503 `server-busy` before its upload is read. The
+  slot is released on every outcome (success, rejection, error, aborted upload,
+  provider timeout). Like the rate limits, the count is per process.
 - CORS: only the configured origins; others get 403. Requests without an
   `Origin` (non-browser clients) are served under the same rate limits.
 - Provider errors are mapped to fixed codes and messages; provider text is

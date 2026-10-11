@@ -9,13 +9,13 @@ describe('applyReportPrefill', () => {
   it('fills in sex, height and weight from the report, never the date of birth', () => {
     const form = applyReportPrefill(emptyForm, reportReading().prefill);
 
-    expect(form).toMatchObject({ sex: 'male', heightCm: '180', weight: '94.5' });
+    expect(form).toMatchObject({ sex: 'female', heightCm: '172', weight: '68.4' });
     expect([form.birthDay, form.birthMonth, form.birthYear]).toEqual(['', '', '']);
   });
 
   it('keeps the decimal of a printed height', () => {
-    const form = applyReportPrefill(emptyForm, reportReading({ profile: { height: { status: 'read', text: '180.4', unit: 'cm', sourceLabel: 'Height' } } }).prefill);
-    expect(form.heightCm).toBe('180.4');
+    const form = applyReportPrefill(emptyForm, reportReading({ profile: { height: { status: 'read', text: '172.4', unit: 'cm', sourceLabel: 'Height' } } }).prefill);
+    expect(form.heightCm).toBe('172.4');
   });
 
   it('keeps what the user already entered for fields the report could not fill', () => {
@@ -24,12 +24,12 @@ describe('applyReportPrefill', () => {
 
     const form = applyReportPrefill(manual, reading.prefill);
 
-    expect(form).toMatchObject({ birthDay: '15', birthMonth: '6', birthYear: '1991', sex: 'female', heightCm: '168', weight: '94.5' });
+    expect(form).toMatchObject({ birthDay: '15', birthMonth: '6', birthYear: '1991', sex: 'female', heightCm: '168', weight: '68.4' });
   });
 
   it('converts into the user’s unit system', () => {
     const form = applyReportPrefill({ ...emptyForm, unitSystem: 'imperial' }, reportReading().prefill);
-    expect(form).toMatchObject({ heightFeet: '5', heightInches: '11', weight: '208.3' });
+    expect(form).toMatchObject({ heightFeet: '5', heightInches: '8', weight: '150.8' });
   });
 
   it('gives a form that still has to pass the usual validation (date of birth is required)', () => {
@@ -43,15 +43,15 @@ describe('applyReportPrefill', () => {
 describe('reportFieldNotes', () => {
   it('shows the printed value and unit for values read', () => {
     const notes = reportFieldNotes(reportReading());
-    expect(notes.height).toEqual({ tone: 'read', text: 'From your report: 180 cm' });
-    expect(notes.weight).toEqual({ tone: 'read', text: 'From your report: 94.5 kg' });
-    expect(notes.sex).toEqual({ tone: 'read', text: 'From your report: Male' });
+    expect(notes.height).toEqual({ tone: 'read', text: 'From your report: 172 cm' });
+    expect(notes.weight).toEqual({ tone: 'read', text: 'From your report: 68.4 kg' });
+    expect(notes.sex).toEqual({ tone: 'read', text: 'From your report: Female' });
   });
 
   it('flags uncertain readings for checking', () => {
-    const notes = reportFieldNotes(reportReading({ measurements: { weight: uncertain('94.5', 'kg', 'Weight') } }));
+    const notes = reportFieldNotes(reportReading({ measurements: { weight: uncertain('68.4', 'kg', 'Weight') } }));
     expect(notes.weight.tone).toBe('check');
-    expect(notes.weight.text).toContain('94.5 kg');
+    expect(notes.weight.text).toContain('68.4 kg');
   });
 
   it('tells unreadable, absent, unusable and implausible values apart', () => {
@@ -71,14 +71,14 @@ describe('reportFieldNotes', () => {
   });
 
   it('mentions the report’s age without turning it into a date of birth', () => {
-    expect(reportFieldNotes(reportReading()).dateOfBirth.text).toContain('age 31');
+    expect(reportFieldNotes(reportReading()).dateOfBirth.text).toContain('age 38');
     expect(reportFieldNotes(reportReading({ profile: { age: notOnReport } })).dateOfBirth.text).not.toContain('age');
   });
 });
 
 describe('reportReviewSummary', () => {
   it('summarises the test date and what was filled in', () => {
-    expect(reportReviewSummary(reportReading())).toEqual({ testDate: 'Oct 1, 2026', filled: 3, needsCheck: 0, warnings: [] });
+    expect(reportReviewSummary(reportReading())).toEqual({ testDate: 'Sep 14, 2026', filled: 3, needsCheck: 0, warnings: [] });
   });
 
   it('counts uncertain values and lists whole-report problems', () => {
@@ -86,7 +86,7 @@ describe('reportReviewSummary', () => {
       reportReading({
         reportIssues: ['low-image-quality'],
         metadata: { 'report-model': { status: 'read', text: 'InBody570', unit: null, sourceLabel: '[InBody570]' } },
-        profile: { height: uncertain('180', 'cm', 'Height'), gender: unreadable() },
+        profile: { height: uncertain('172', 'cm', 'Height'), gender: unreadable() },
       }),
     );
     expect(summary).toMatchObject({ filled: 2, needsCheck: 1 });

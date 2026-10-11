@@ -36,16 +36,16 @@ describe('InBody extraction contract', () => {
       expect(result.value).toEqual(SAMPLE_INBODY380_EXTRACTION);
       expect(result.value.measurements['intracellular-water']).toEqual({
         status: 'read',
-        text: '29.0',
+        text: '21.6',
         unit: 'L',
         sourceLabel: 'Intracellular Water',
       });
-      expect(result.value.measurements['ecw-ratio'].text).toBe('0.372');
+      expect(result.value.measurements['ecw-ratio'].text).toBe('0.378');
     }
   });
 
   it('accepts uncertain readings and labels whose value is unreadable', () => {
-    expect(parseInBodyExtraction(withField('measurements', 'weight', { status: 'uncertain', text: '94.5', unit: 'kg', sourceLabel: 'Weight' })).ok).toBe(true);
+    expect(parseInBodyExtraction(withField('measurements', 'weight', { status: 'uncertain', text: '68.4', unit: 'kg', sourceLabel: 'Weight' })).ok).toBe(true);
     expect(parseInBodyExtraction(withField('profile', 'age', { status: 'unreadable', text: null, unit: null, sourceLabel: 'Age' })).ok).toBe(true);
   });
 
@@ -88,16 +88,16 @@ describe('InBody extraction contract', () => {
     expect(JSON.stringify(result)).not.toMatch(/Jane|1990|81\.2/);
   });
 
-  const weight = (field: Json) => withField('measurements', 'weight', { status: 'read', text: '94.5', unit: 'kg', sourceLabel: 'Weight', ...field });
+  const weight = (field: Json) => withField('measurements', 'weight', { status: 'read', text: '68.4', unit: 'kg', sourceLabel: 'Weight', ...field });
   it.each<[string, Json, string]>([
-    ['a unit inside the number', weight({ text: '94.5 kg' }), 'measurements.weight.text'],
+    ['a unit inside the number', weight({ text: '68.4 kg' }), 'measurements.weight.text'],
     ['a decimal comma', weight({ text: '94,5' }), 'measurements.weight.text'],
-    ['a negative number', weight({ text: '-94.5' }), 'measurements.weight.text'],
-    ['a number as a JSON number', weight({ text: 94.5 }), 'measurements.weight.text'],
+    ['a negative number', weight({ text: '-68.4' }), 'measurements.weight.text'],
+    ['a number as a JSON number', weight({ text: 68.4 }), 'measurements.weight.text'],
     ['an unknown unit', weight({ unit: 'kgs' }), 'measurements.weight.unit'],
     ['an unknown status', weight({ status: 'guessed' }), 'measurements.weight.status'],
     ['an empty label', weight({ sourceLabel: ' ' }), 'measurements.weight.sourceLabel'],
-    ['a unit on a unitless value', withField('measurements', 'ecw-ratio', { status: 'read', text: '0.372', unit: '%', sourceLabel: 'ECW Ratio' }), 'measurements.ecw-ratio.unit'],
+    ['a unit on a unitless value', withField('measurements', 'ecw-ratio', { status: 'read', text: '0.378', unit: '%', sourceLabel: 'ECW Ratio' }), 'measurements.ecw-ratio.unit'],
     ['prose instead of a transcription', withField('profile', 'gender', { status: 'read', text: 'The report appears to say the person is male', unit: null, sourceLabel: 'Gender' }), 'profile.gender.text'],
   ])('rejects %s as an invalid value', (_, value, path) => {
     expect(parseInBodyExtraction(value)).toEqual({ ok: false, errors: [{ path, problem: 'invalid-value' }] });
@@ -124,9 +124,9 @@ describe('InBody extraction contract', () => {
   });
 
   it('never repeats extracted values in its errors', () => {
-    const result = parseInBodyExtraction(withField('profile', 'height', { status: 'read', text: '180 cm', unit: 'feet', sourceLabel: 'Height' }));
+    const result = parseInBodyExtraction(withField('profile', 'height', { status: 'read', text: '172 cm', unit: 'feet', sourceLabel: 'Height' }));
     expect(result.ok).toBe(false);
-    expect(JSON.stringify(result)).not.toMatch(/180|feet/);
+    expect(JSON.stringify(result)).not.toMatch(/172|feet/);
   });
 
   describe('JSON schema for the model', () => {

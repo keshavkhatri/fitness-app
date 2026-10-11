@@ -164,19 +164,19 @@ describe('OnboardingPage (InBody report setup)', () => {
 
     await clickPrimary();
     expect(heading()).toBe('Check your details');
-    expect(field('Height').value).toBe('180');
-    expect(field('Weight').value).toBe('94.5');
+    expect(field('Height').value).toBe('172');
+    expect(field('Weight').value).toBe('68.4');
     expect(field('Day').value).toBe('');
-    expect(el.textContent).toContain('From your report: 180 cm');
-    expect(el.textContent).toContain('Your report lists age 31');
+    expect(el.textContent).toContain('From your report: 172 cm');
+    expect(el.textContent).toContain('Your report lists age 38');
     // Nothing is committed to the draft until the user continues.
     expect(flow.draft().basics).toBeNull();
 
     // The user corrects the height and adds the date of birth the report can't give.
-    await type('Height', '181');
-    await type('Day', '15');
-    await type('Month', '6');
-    await type('Year', '1991');
+    await type('Height', '173');
+    await type('Day', '9');
+    await type('Month', '3');
+    await type('Year', '1988');
     await clickPrimary();
     expect(heading()).toContain('training experience');
 
@@ -191,7 +191,7 @@ describe('OnboardingPage (InBody report setup)', () => {
     await vi.waitFor(() => expect(flow.stepId()).toBe('finish'));
 
     const saved = JSON.parse(storage.values.get(PROFILE_KEY)!).profile;
-    expect(saved).toMatchObject({ dateOfBirth: '1991-06-15', sex: 'male', height: { centimeters: 181 }, weight: { kilograms: 94.5 } });
+    expect(saved).toMatchObject({ dateOfBirth: '1988-03-09', sex: 'female', height: { centimeters: 173 }, weight: { kilograms: 68.4 } });
     expect(storage.values.has(WEIGHT_HISTORY_KEY)).toBe(false);
     expect(storage.values.has(BODY_COMPOSITION_KEY)).toBe(false);
     expect(storage.values.get(WORKOUT_PLAN_KEY)).toBe(EXISTING_PLAN);
@@ -199,7 +199,7 @@ describe('OnboardingPage (InBody report setup)', () => {
 
   it('flags uncertain values and leaves unreadable ones for the user', async () => {
     const { startWithReport, pickImage, clickPrimary, field, el, settle } = await render({
-      answers: [async () => json(200, rawExtraction({ profile: { height: unreadable('Height') }, measurements: { weight: uncertain('94.5', 'kg', 'Weight') } }))],
+      answers: [async () => json(200, rawExtraction({ profile: { height: unreadable('Height') }, measurements: { weight: uncertain('68.4', 'kg', 'Weight') } }))],
     });
     await startWithReport();
     await pickImage(reportImage());
@@ -210,7 +210,7 @@ describe('OnboardingPage (InBody report setup)', () => {
 
     expect(field('Height').value).toBe('');
     expect(el.querySelector('#height-report-note')?.textContent).toContain("Couldn't be read from your report");
-    expect(field('Weight').value).toBe('94.5');
+    expect(field('Weight').value).toBe('68.4');
     const weightNote = el.querySelector('#weight-report-note');
     expect(weightNote?.getAttribute('data-tone')).toBe('check');
     expect(field('Weight').getAttribute('aria-describedby')).toContain('weight-report-note');

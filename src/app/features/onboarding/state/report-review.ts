@@ -54,7 +54,7 @@ export interface ReportFieldNote {
   readonly text: string;
 }
 
-/** The value as printed, e.g. "180 cm" or "Male". */
+/** The value as printed, e.g. "172 cm" or "Female". */
 const printed = (field: ExtractedField): string => [field.text, field.unit].filter(Boolean).join(' ');
 
 const MISSING_NOTES: Readonly<Record<PrefillProblem, (value: string) => string>> = {

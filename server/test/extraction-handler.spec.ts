@@ -7,6 +7,7 @@ import {
   inBodyExtractionRequest,
 } from '../../src/app/domain/inbody-extraction';
 import { SAMPLE_INBODY380_EXTRACTION } from '../../src/app/domain/inbody-extraction/testing/sample-inbody380-extraction';
+import { BUSY_RETRY_AFTER_SECONDS } from '../src/extraction-handler';
 import { ProviderResult } from '../src/openai-client';
 import {
   API_KEY,
@@ -16,6 +17,7 @@ import {
   WEBP_BYTES,
   base64,
   completed,
+  config,
   harness,
   outputText,
   pngBytes,
@@ -161,10 +163,10 @@ describe('POST /v1/inbody-extractions', () => {
     ['provider rate limiting', { ok: false, failure: 'rate-limited', status: 429 }, 503, 'provider-unavailable'],
     ['a provider outage', { ok: false, failure: 'http-error', status: 503 }, 503, 'provider-unavailable'],
     ['a rejected provider request', { ok: false, failure: 'http-error', status: 400 }, 502, 'provider-error'],
-    ['output that is not JSON', { ok: true, body: completed(outputText('Weight 94.5 kg, John Smith')) }, 502, 'invalid-extraction'],
+    ['output that is not JSON', { ok: true, body: completed(outputText('Weight 68.4 kg, John Smith')) }, 502, 'invalid-extraction'],
     [
       'output that breaks the contract',
-      { ok: true, body: completed(outputText(JSON.stringify({ ...SAMPLE_INBODY380_EXTRACTION, extra: 'John Smith 94.5' }))) },
+      { ok: true, body: completed(outputText(JSON.stringify({ ...SAMPLE_INBODY380_EXTRACTION, extra: 'John Smith 68.4' }))) },
       502,
       'invalid-extraction',
     ],
@@ -176,7 +178,7 @@ describe('POST /v1/inbody-extractions', () => {
           outputText(
             JSON.stringify({
               ...SAMPLE_INBODY380_EXTRACTION,
-              measurements: { ...SAMPLE_INBODY380_EXTRACTION.measurements, weight: { status: 'read', text: '94.5', unit: 'stone', sourceLabel: 'Weight' } },
+              measurements: { ...SAMPLE_INBODY380_EXTRACTION.measurements, weight: { status: 'read', text: '68.4', unit: 'stone', sourceLabel: 'Weight' } },
             }),
           ),
         ),
@@ -191,11 +193,11 @@ describe('POST /v1/inbody-extractions', () => {
 
   it('keeps report content, extracted values, provider text, client addresses and the key out of errors and logs', async () => {
     const bytes = pngBytes(128);
-    const secrets = ['John Smith', '94.5', 'boom', API_KEY, base64(bytes), CONTEXT.remoteAddress, 'test-vision-model'];
+    const secrets = ['John Smith', '68.4', 'boom', API_KEY, base64(bytes), CONTEXT.remoteAddress, 'test-vision-model'];
     const results: ProviderResult[] = [
       { ok: true, body: completed({ type: 'refusal', refusal: 'I cannot read the report of John Smith.' }) },
-      { ok: true, body: completed(outputText('Weight 94.5 kg, John Smith')) },
-      { ok: true, body: completed(outputText(JSON.stringify({ ...SAMPLE_INBODY380_EXTRACTION, extra: 'John Smith 94.5' }))) },
+      { ok: true, body: completed(outputText('Weight 68.4 kg, John Smith')) },
+      { ok: true, body: completed(outputText(JSON.stringify({ ...SAMPLE_INBODY380_EXTRACTION, extra: 'John Smith 68.4' }))) },
       { ok: true, body: { ...completed(), status: 'failed', error: { message: 'boom John Smith' } } },
       { ok: false, failure: 'network' },
       SUCCESS,
@@ -271,6 +273,122 @@ describe('rate limiting', () => {
     // A spoofed first entry doesn't make a new client: the proxy's own entry (last) counts.
     expect((await handle(from('10.9.9.9, 192.0.2.1'), CONTEXT)).status).toBe(429);
     expect((await handle(from('192.0.2.2'), CONTEXT)).status).toBe(200);
+  });
+});
+
+describe('concurrency limit', () => {
+  /** A provider that answers only when the test releases each call (or throws, to simulate a crash). */
+  function gated(h: ReturnType<typeof harness>) {
+    const pending: { resolve: (result: ProviderResult) => void; reject: (error: unknown) => void }[] = [];
+    h.client.create = (body) => {
+      h.client.requests.push(body);
+      return new Promise<ProviderResult>((resolve, reject) => pending.push({ resolve, reject }));
+    };
+    return pending;
+  }
+  /** Lets in-flight handlers reach the (gated) provider call. */
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+  // Each request from its own client, so per-client rate limits never interfere.
+  const from = (n: number) => ({ remoteAddress: `203.0.113.${100 + n}` });
+  const unreadable = () =>
+    new ReadableStream<Uint8Array>({
+      pull() {
+        throw new Error('a request without a slot must not read its upload');
+      },
+    });
+
+  it('defaults to 4 simultaneous extractions, configurable via MAX_CONCURRENT_EXTRACTIONS', () => {
+    expect(config().maxConcurrentExtractions).toBe(4);
+  });
+
+  it('answers 503 server-busy when every slot is taken, without reading the upload or calling the provider', async () => {
+    const h = harness(SUCCESS, { config: { maxConcurrentExtractions: 2 } });
+    const pending = gated(h);
+    const first = h.handle(upload(pngBytes()), from(1));
+    const second = h.handle(upload(pngBytes()), from(2));
+    await settle();
+    expect(pending).toHaveLength(2);
+
+    const busy = await h.handle(upload(unreadable()), from(3));
+    expect(busy.headers.get('retry-after')).toBe(String(BUSY_RETRY_AFTER_SECONDS));
+    expect(busy.headers.get('access-control-allow-origin')).toBe(APP_ORIGIN);
+    expect(await errorOf(busy)).toEqual({
+      status: 503,
+      code: 'server-busy',
+      message: 'Report extraction is busy right now. Try again later or enter your details manually.',
+    });
+    expect(h.client.requests).toHaveLength(2);
+
+    pending.forEach((p) => p.resolve(SUCCESS));
+    expect((await first).status).toBe(200);
+    expect((await second).status).toBe(200);
+  });
+
+  it('never lets simultaneous requests overshoot the limit', async () => {
+    const h = harness(SUCCESS, { config: { maxConcurrentExtractions: 3 } });
+    const pending = gated(h);
+    const responses = Array.from({ length: 10 }, (_, i) => h.handle(upload(pngBytes()), from(i)));
+    await settle();
+    expect(pending).toHaveLength(3);
+    pending.forEach((p) => p.resolve(SUCCESS));
+    const statuses = await Promise.all(responses.map(async (r) => (await r).status));
+    expect(statuses.filter((s) => s === 200)).toHaveLength(3);
+    expect(statuses.filter((s) => s === 503)).toHaveLength(7);
+  });
+
+  it('frees the slot after a successful extraction', async () => {
+    const h = harness(SUCCESS, { config: { maxConcurrentExtractions: 1 } });
+    const pending = gated(h);
+    const first = h.handle(upload(pngBytes()), from(1));
+    await settle();
+    expect((await h.handle(upload(pngBytes()), from(2))).status).toBe(503);
+    pending[0].resolve(SUCCESS);
+    expect((await first).status).toBe(200);
+
+    const next = h.handle(upload(pngBytes()), from(3));
+    await settle();
+    pending[1].resolve(SUCCESS);
+    expect((await next).status).toBe(200);
+  });
+
+  it('frees the slot after every kind of failure', async () => {
+    const h = harness(SUCCESS, { config: { maxConcurrentExtractions: 1 } });
+    const pending = gated(h);
+    const attempt = async (body: RequestInit['body'], answer?: (p: (typeof pending)[number]) => void) => {
+      const response = h.handle(upload(body), from(pending.length + 10));
+      await settle();
+      if (answer) {
+        answer(pending[pending.length - 1]);
+      }
+      return (await response).status;
+    };
+    const aborted = () =>
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(pngBytes(16));
+          controller.error(new Error('client went away'));
+        },
+      });
+
+    expect(await attempt(new Uint8Array([1, 2, 3]))).toBe(400); // invalid image
+    expect(await attempt(aborted())).toBe(500); // upload aborted mid-way
+    expect(await attempt(pngBytes(), (p) => p.resolve({ ok: false, failure: 'timeout' }))).toBe(504); // provider timeout
+    expect(await attempt(pngBytes(), (p) => p.resolve({ ok: false, failure: 'http-error', status: 500 }))).toBe(503); // provider error
+    expect(await attempt(pngBytes(), (p) => p.resolve({ ok: true, body: completed(outputText('{}')) }))).toBe(502); // invalid output
+    expect(await attempt(pngBytes(), (p) => p.reject(new Error('client crashed')))).toBe(500); // exception
+    // After all of that, the single slot is free again.
+    expect(await attempt(pngBytes(), (p) => p.resolve(SUCCESS))).toBe(200);
+  });
+
+  it('a busy answer uses neither the daily budget nor the provider', async () => {
+    const h = harness(SUCCESS, { config: { maxConcurrentExtractions: 1, dailyExtractionLimit: 1 } });
+    const pending = gated(h);
+    const first = h.handle(upload(pngBytes()), from(1));
+    await settle();
+    expect((await errorOf(await h.handle(upload(pngBytes()), from(2)))).code).toBe('server-busy');
+    pending[0].resolve(SUCCESS);
+    expect((await first).status).toBe(200);
+    expect(h.client.requests).toHaveLength(1);
   });
 });
 

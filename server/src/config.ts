@@ -15,6 +15,11 @@ export interface ServerConfig {
   /** null when the key or model is missing: extraction requests then get `not-configured`. */
   readonly openAi: OpenAiConfig | null;
   readonly maxUploadBytes: number;
+  /**
+   * Extractions in progress at once (each holds an upload in memory while it is
+   * read, encoded and sent): further requests get 503 server-busy.
+   */
+  readonly maxConcurrentExtractions: number;
   /** Exact origins allowed to call the endpoint from a browser/WebView. */
   readonly allowedOrigins: readonly string[];
   /** Extraction attempts per client per window. */
@@ -78,6 +83,7 @@ export function loadConfig(env: Env): ServerConfig {
           }
         : null,
     maxUploadBytes: integer(env, 'INBODY_MAX_UPLOAD_BYTES', 8 * MIB, 1024, MAX_UPLOAD_BYTES_CEILING),
+    maxConcurrentExtractions: integer(env, 'MAX_CONCURRENT_EXTRACTIONS', 4, 1, 100),
     allowedOrigins: origins(env),
     clientRateLimit: integer(env, 'RATE_LIMIT_PER_CLIENT', 5, 1, 1000),
     clientRateWindowMs: integer(env, 'RATE_LIMIT_WINDOW_MS', 15 * 60_000, 1_000, 24 * 60 * 60_000),

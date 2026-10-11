@@ -29,7 +29,7 @@ const EARLIER = {
   id: 'earlier',
   date: '2026-09-01',
   source: { device: 'inbody', entryMethod: 'manual' },
-  reported: { weight: { value: 95.2, unit: 'kg' }, 'skeletal-muscle-mass': { value: 35.1, unit: 'kg' } },
+  reported: { weight: { value: 69.1, unit: 'kg' }, 'skeletal-muscle-mass': { value: 25.5, unit: 'kg' } },
   createdAt: '2026-09-01T06:00:00.000Z',
   updatedAt: '2026-09-01T06:00:00.000Z',
 };
@@ -100,11 +100,11 @@ describe('Body composition: add an assessment from a report', () => {
 
     // Review: filled in, nothing saved yet.
     expect(clean(byTestId(el, 'review-notice'))).toContain('21 values were filled in');
-    expect(input('weight').value).toBe('94.5');
-    expect(input('skeletal-muscle-mass').value).toBe('35.8');
-    expect(input('fat-free-mass').value).toBe('62.9');
+    expect(input('weight').value).toBe('68.4');
+    expect(input('skeletal-muscle-mass').value).toBe('26.2');
+    expect(input('fat-free-mass').value).toBe('47.3');
     expect(input('lean-body-mass').value).toBe('');
-    expect(input('date').value).toBe('2026-10-01');
+    expect(input('date').value).toBe('2026-09-14');
     expect(byTestId(el, 'more-values')?.hasAttribute('open')).toBe(true);
     expect(storedAssessments(storage)).toHaveLength(1);
 
@@ -113,8 +113,8 @@ describe('Body composition: add an assessment from a report', () => {
     expect(saved).toHaveLength(2);
     const added = saved.find((a: { id: string }) => a.id === 'new-1');
     expect(added.source).toEqual(INBODY_AI_PROVENANCE);
-    expect(added.reported['fat-free-mass']).toEqual({ value: 62.9, unit: 'kg' });
-    expect(added.reported['ecw-ratio']).toEqual({ value: 0.372, unit: 'none' });
+    expect(added.reported['fat-free-mass']).toEqual({ value: 47.3, unit: 'kg' });
+    expect(added.reported['ecw-ratio']).toEqual({ value: 0.378, unit: 'none' });
     expect(added.reported).not.toHaveProperty('lean-body-mass');
     expect(storage.values.get(PROFILE_KEY)).toBe(PROFILE);
     expect(storage.values.get(WEIGHT_KEY)).toBe(WEIGHTS);
@@ -125,7 +125,7 @@ describe('Body composition: add an assessment from a report', () => {
     await settle(history);
     const rows = [...(history.nativeElement as HTMLElement).querySelectorAll('[data-testid=assessment-row]')].map((r) => clean(r));
     expect(rows[0]).toBe(
-      'Thursday, Oct 1 Read from report Weight 94.5 kg Body fat percentage 33.4% Body fat mass 31.6 kg Skeletal muscle mass 35.8 kg Fat-free mass 62.9 kg +16 more',
+      'Monday, Sep 14 Read from report Weight 68.4 kg Body fat percentage 30.8% Body fat mass 21.1 kg Skeletal muscle mass 26.2 kg Fat-free mass 47.3 kg +16 more',
     );
     history.destroy();
 
@@ -135,10 +135,10 @@ describe('Body composition: add an assessment from a report', () => {
     await settle(detail);
     const d = detail.nativeElement as HTMLElement;
     const values = [...d.querySelectorAll('[data-testid=detail-value]')].map((v) => clean(v));
-    expect(values).toContain('Weight 94.5 kg Change: −0.7 kg');
-    expect(values).toContain('Skeletal muscle mass 35.8 kg Change: +0.7 kg');
-    expect(values).toContain('Fat-free mass 62.9 kg');
-    expect(values).toContain('ECW ratio 0.372');
+    expect(values).toContain('Weight 68.4 kg Change: −0.7 kg');
+    expect(values).toContain('Skeletal muscle mass 26.2 kg Change: +0.7 kg');
+    expect(values).toContain('Fat-free mass 47.3 kg');
+    expect(values).toContain('ECW ratio 0.378');
     expect(values.some((v) => v.startsWith('Lean body mass'))).toBe(false);
     expect(clean(byTestId(d, 'detail-comparison'))).toContain('not a trend');
     expect(byTestId(d, 'log-weight')).not.toBeNull();

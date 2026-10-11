@@ -10,7 +10,7 @@ import {
 import { SAMPLE_INBODY380_EXTRACTION } from '../../../domain/inbody-extraction/testing/sample-inbody380-extraction';
 import { ReportReading } from '../state/report-import.service';
 
-/** After the sample report's test date (2026-10-01). */
+/** After the synthetic sample report's test date (2026-09-14). */
 export const REPORT_TODAY = '2026-10-11' as IsoCalendarDate;
 
 export const uncertain = (text: string, unit: string | null, sourceLabel: string): ExtractedField => ({
