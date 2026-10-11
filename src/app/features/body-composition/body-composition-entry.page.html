@@ -1,105 +1,110 @@
 <ion-header class="ion-no-border subpage-header">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="returnPath" [text]="copy.back" [disabled]="saving()" />
+      <ion-back-button [defaultHref]="returnPath()" [text]="copy.back" [disabled]="saving()" />
     </ion-buttons>
     <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+    <ion-title aria-hidden="true">{{ title() }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
   <main class="body">
     @let l = loaded();
-    @if (l?.kind === 'new') {
+    @if (editable()) {
       @let f = form();
       @let e = errors();
       <div class="heading">
-        <h1 class="title">{{ copy.title }}</h1>
-        <p class="intro">{{ copy.intro }}</p>
+        <h1 class="title">{{ title() }}</h1>
+        <p class="intro">{{ editing() ? copy.editIntro : copy.intro }}</p>
         <p class="note">{{ copy.separateNote }}</p>
+        @if (imported()) {
+          <p class="note" data-testid="imported-note">{{ copy.importedNote }}</p>
+        }
       </div>
 
-      <section class="upload" aria-labelledby="body-composition-upload" data-testid="report-upload">
-        <h2 class="section-title" id="body-composition-upload">{{ uploadCopy.title }}</h2>
-        @if (report.available) {
-          @let r = reportState();
-          <p class="note">{{ uploadCopy.intro }}</p>
-          <fit-notice [title]="uploadCopy.notice.title">{{ uploadCopy.notice.message }}</fit-notice>
-          <!-- Opened by the button below; hidden from assistive tech, which uses that button. -->
-          <input #fileInput class="file-input" type="file" tabindex="-1" aria-hidden="true" [accept]="accept" (change)="onImageChosen($event)" />
-          <fit-card>
-            <div class="file">
-              <ion-icon
-                class="file-icon"
-                [class.done]="r.status === 'read'"
-                [name]="r.status === 'read' ? 'checkmark-circle' : 'document-text-outline'"
-                aria-hidden="true"
-              />
-              <div class="file-text">
-                @if (reportFile(); as file) {
-                  <p class="file-name">{{ file.name }}</p>
-                  <p class="file-meta">{{ fileSize(file) }}</p>
-                } @else if (r.status === 'read') {
-                  <p class="file-name">{{ uploadCopy.review.title }}</p>
-                } @else {
-                  <p class="file-name">{{ uploadCopy.noImage }}</p>
-                  <p class="file-meta">{{ uploadCopy.fileHint(maxMegabytes) }}</p>
+      @if (!editing()) {
+        <section class="upload" aria-labelledby="body-composition-upload" data-testid="report-upload">
+          <h2 class="section-title" id="body-composition-upload">{{ uploadCopy.title }}</h2>
+          @if (report.available) {
+            @let r = reportState();
+            <p class="note">{{ uploadCopy.intro }}</p>
+            <fit-notice [title]="uploadCopy.notice.title">{{ uploadCopy.notice.message }}</fit-notice>
+            <!-- Opened by the button below; hidden from assistive tech, which uses that button. -->
+            <input #fileInput class="file-input" type="file" tabindex="-1" aria-hidden="true" [accept]="accept" (change)="onImageChosen($event)" />
+            <fit-card>
+              <div class="file">
+                <ion-icon
+                  class="file-icon"
+                  [class.done]="r.status === 'read'"
+                  [name]="r.status === 'read' ? 'checkmark-circle' : 'document-text-outline'"
+                  aria-hidden="true"
+                />
+                <div class="file-text">
+                  @if (reportFile(); as file) {
+                    <p class="file-name">{{ file.name }}</p>
+                    <p class="file-meta">{{ fileSize(file) }}</p>
+                  } @else if (r.status === 'read') {
+                    <p class="file-name">{{ uploadCopy.review.title }}</p>
+                  } @else {
+                    <p class="file-name">{{ uploadCopy.noImage }}</p>
+                    <p class="file-meta">{{ uploadCopy.fileHint(maxMegabytes) }}</p>
+                  }
+                </div>
+              </div>
+              <div class="file-actions">
+                <button
+                  fit-button
+                  type="button"
+                  variant="outline"
+                  block
+                  icon="camera-outline"
+                  data-testid="choose-report"
+                  [disabled]="r.status === 'reading' || saving()"
+                  (click)="chooseImage()"
+                >
+                  {{ r.status === 'empty' ? uploadCopy.choose : uploadCopy.chooseAnother }}
+                </button>
+                @if (r.status === 'failed' && r.file) {
+                  <button fit-button type="button" block data-testid="retry-report" (click)="retryRead()">{{ uploadCopy.retry }}</button>
                 }
               </div>
-            </div>
-            <div class="file-actions">
-              <button
-                fit-button
-                type="button"
-                variant="outline"
-                block
-                icon="camera-outline"
-                data-testid="choose-report"
-                [disabled]="r.status === 'reading' || saving()"
-                (click)="chooseImage()"
-              >
-                {{ r.status === 'empty' ? uploadCopy.choose : uploadCopy.chooseAnother }}
-              </button>
-              @if (r.status === 'failed' && r.file) {
-                <button fit-button type="button" block data-testid="retry-report" (click)="retryRead()">{{ uploadCopy.retry }}</button>
+            </fit-card>
+            <div class="upload-status" aria-live="polite" data-testid="report-status">
+              @if (r.status === 'reading') {
+                <p class="note">{{ uploadCopy.reading }}</p>
+              } @else if (reportFailure(); as failure) {
+                <fit-notice tone="danger" [title]="failure.title">
+                  <p>{{ failure.message }}</p>
+                  @if (failure.issues.length) {
+                    <ul class="issues">
+                      @for (issue of failure.issues; track issue) {
+                        <li>{{ issue }}</li>
+                      }
+                    </ul>
+                  }
+                </fit-notice>
+              } @else if (reviewMessage(); as message) {
+                <fit-notice tone="warning" [title]="uploadCopy.review.title" data-testid="review-notice">
+                  <p>{{ message }}</p>
+                  @if (reviewWarnings().length) {
+                    <ul class="issues">
+                      @for (warning of reviewWarnings(); track warning) {
+                        <li>{{ warning }}</li>
+                      }
+                    </ul>
+                  }
+                </fit-notice>
               }
             </div>
-          </fit-card>
-          <div class="upload-status" aria-live="polite" data-testid="report-status">
-            @if (r.status === 'reading') {
-              <p class="note">{{ uploadCopy.reading }}</p>
-            } @else if (reportFailure(); as failure) {
-              <fit-notice tone="danger" [title]="failure.title">
-                <p>{{ failure.message }}</p>
-                @if (failure.issues.length) {
-                  <ul class="issues">
-                    @for (issue of failure.issues; track issue) {
-                      <li>{{ issue }}</li>
-                    }
-                  </ul>
-                }
-              </fit-notice>
-            } @else if (reviewMessage(); as message) {
-              <fit-notice tone="warning" [title]="uploadCopy.review.title" data-testid="review-notice">
-                <p>{{ message }}</p>
-                @if (reviewWarnings().length) {
-                  <ul class="issues">
-                    @for (warning of reviewWarnings(); track warning) {
-                      <li>{{ warning }}</li>
-                    }
-                  </ul>
-                }
-              </fit-notice>
+            @if (r.status !== 'read') {
+              <p class="note">{{ uploadCopy.manualInstead }}</p>
             }
-          </div>
-          @if (r.status !== 'read') {
-            <p class="note">{{ uploadCopy.manualInstead }}</p>
+          } @else {
+            <p class="note" data-testid="upload-unavailable">{{ uploadCopy.unavailable }}</p>
           }
-        } @else {
-          <p class="note" data-testid="upload-unavailable">{{ uploadCopy.unavailable }}</p>
-        }
-      </section>
+        </section>
+      }
 
       <form id="body-composition-form" class="form" novalidate data-testid="body-composition-form" (submit)="$event.preventDefault(); save()">
         <div class="unit" data-testid="mass-unit">
@@ -169,8 +174,15 @@
           (valueChange)="update('date', $event)"
         />
       </form>
+    } @else if (l?.kind === 'not-found') {
+      <h1 class="visually-hidden">{{ title() }}</h1>
+      <fit-card data-testid="not-found">
+        <fit-empty-state icon="document-text-outline" [title]="copy.editNotFound.title" [description]="copy.editNotFound.message">
+          <button fit-button type="button" (click)="backToHistory()">{{ copy.backToHistory }}</button>
+        </fit-empty-state>
+      </fit-card>
     } @else if (l?.kind === 'error') {
-      <h1 class="visually-hidden">{{ copy.title }}</h1>
+      <h1 class="visually-hidden">{{ title() }}</h1>
       <fit-card data-testid="load-error">
         <fit-empty-state icon="alert-circle-outline" [title]="copy.loadFailed.title" [description]="copy.loadFailed.message">
           <button fit-button type="button" (click)="retry()">{{ copy.loadFailed.retry }}</button>
@@ -178,7 +190,7 @@
         </fit-empty-state>
       </fit-card>
     } @else {
-      <h1 class="visually-hidden">{{ copy.title }}</h1>
+      <h1 class="visually-hidden">{{ title() }}</h1>
       <p class="visually-hidden" role="status">{{ copy.loading }}</p>
       <div class="loading" aria-busy="true" data-testid="loading">
         <fit-skeleton width="50%" height="34px" />
@@ -190,14 +202,14 @@
   </main>
 </ion-content>
 
-@if (loaded()?.kind === 'new') {
+@if (editable()) {
   <ion-footer class="ion-no-border">
     <div class="footer">
       <!-- Always rendered with Save so its message is announced when it appears. -->
       <p class="status" role="status" data-testid="form-status" [class.shown]="status() !== ''">{{ status() }}</p>
       <div class="footer-actions">
         <button fit-button type="submit" form="body-composition-form" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="save">
-          {{ copy.save }}
+          {{ editing() ? copy.saveChanges : copy.save }}
         </button>
         <button fit-button type="button" size="lg" block variant="ghost" [disabled]="saving()" data-testid="cancel" (click)="cancel()">
           {{ copy.cancel }}

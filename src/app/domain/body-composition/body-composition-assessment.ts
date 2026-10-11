@@ -173,8 +173,8 @@ export type BodyCompositionProblem =
   | 'imported-source';
 /**
  * `values: 'required'` means no metric was filled in. `source:
- * 'imported-source'` means an update involved an imported source (see
- * updateBodyCompositionAssessment).
+ * 'imported-source'` means an update would label edited values as imported
+ * (see updateBodyCompositionAssessment).
  */
 export type BodyCompositionErrors = Readonly<Partial<Record<BodyCompositionMetric | 'values' | 'date' | 'source', BodyCompositionProblem>>>;
 export type BodyCompositionResult<T> =
@@ -304,22 +304,39 @@ const copySource = (source: BodyCompositionSource): BodyCompositionSource =>
       };
 
 /**
- * A new version of a manually entered assessment: same id and creation
- * time; everything else replaced. Updates are user edits, so they are only
- * allowed from a manual source to a manual source: an imported assessment's
- * values and provenance are the parser's evidence and are never rewritten,
- * and edited values are never labelled as parser output.
+ * A new version of an assessment after a user edit: same id and creation
+ * time; everything else replaced. Edited values are never labelled as
+ * parser output: the result may keep an imported source only when it is the
+ * assessment's own provenance and every reported value is unchanged (e.g.
+ * only the date was corrected). Otherwise the input must be a manual entry.
  */
 export function updateBodyCompositionAssessment(
   assessment: BodyCompositionAssessment,
   input: BodyCompositionInput,
   { now, today }: Omit<BodyCompositionContext, 'id'>,
 ): BodyCompositionResult<BodyCompositionAssessment> {
-  if (assessment.source.entryMethod !== 'manual' || input.source.entryMethod !== 'manual') {
+  const created = createBodyCompositionAssessment(input, { id: assessment.id, now, today });
+  if (!created.ok) {
+    return created;
+  }
+  if (
+    input.source.entryMethod !== 'manual' &&
+    !(isSame(created.value.source, assessment.source) && isSame(created.value.reported, assessment.reported))
+  ) {
     return { ok: false, errors: { source: 'imported-source' } };
   }
-  const created = createBodyCompositionAssessment(input, { id: assessment.id, now, today });
-  return created.ok ? { ok: true, value: { ...created.value, createdAt: assessment.createdAt } } : created;
+  return { ok: true, value: { ...created.value, createdAt: assessment.createdAt } };
+}
+
+/** Deep equality of plain JSON-like values, ignoring key order. */
+function isSame(a: unknown, b: unknown): boolean {
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    return a === b;
+  }
+  const aRecord = a as Record<string, unknown>;
+  const bRecord = b as Record<string, unknown>;
+  const keys = Object.keys(aRecord);
+  return keys.length === Object.keys(bRecord).length && keys.every((key) => Object.hasOwn(bRecord, key) && isSame(aRecord[key], bRecord[key]));
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

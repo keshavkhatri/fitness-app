@@ -9,7 +9,7 @@ import { KeyValueStorage } from '../storage/key-value-storage';
 
 /** Stored assessments can't be read or written safely (details aren't shown to users). */
 export class BodyCompositionHistoryStorageError extends Error {
-  constructor(readonly reason: 'unreadable' | 'unsupported-version' | 'write-failed' | 'duplicate-id' | 'invalid-assessment') {
+  constructor(readonly reason: 'unreadable' | 'unsupported-version' | 'write-failed' | 'duplicate-id' | 'invalid-assessment' | 'not-found') {
     super(`Body composition history storage: ${reason}`);
   }
 }
@@ -19,8 +19,7 @@ export class BodyCompositionHistoryStorageError extends Error {
  *
  * Today: `LocalBodyCompositionHistoryRepository` (this device only; no sync).
  * Separate from the profile, weight history and tape measurements: nothing
- * here reads or writes any of them. Add-only for now: assessments are not
- * edited or deleted yet.
+ * here reads or writes any of them.
  */
 @Injectable({ providedIn: 'root', useFactory: () => new LocalBodyCompositionHistoryRepository(inject(KeyValueStorage)) })
 export abstract class BodyCompositionHistoryRepository {
@@ -28,6 +27,10 @@ export abstract class BodyCompositionHistoryRepository {
   abstract list(): Promise<BodyCompositionAssessment[]>;
   /** Rejects with BodyCompositionHistoryStorageError when nothing was saved. */
   abstract add(assessment: BodyCompositionAssessment): Promise<void>;
+  /** Replaces the readable assessment with this id; rejects when nothing was saved. */
+  abstract update(assessment: BodyCompositionAssessment): Promise<void>;
+  /** Removes the readable assessment with this id; unreadable items are kept. */
+  abstract remove(id: string): Promise<void>;
   /** How many stored items can't be read (kept as they are, but not listed). Read-only. */
   abstract countUnreadable(): Promise<number>;
 }
@@ -57,23 +60,36 @@ export class LocalBodyCompositionHistoryRepository implements BodyCompositionHis
 
   /**
    * Appends; every stored item, readable or not, is kept exactly as it was.
-   * Adds run one at a time (read, then write), so rapid saves can't overwrite each other.
    */
   add(assessment: BodyCompositionAssessment): Promise<void> {
-    const next = this.queue.then(async () => {
-      // Only store what reads back as the same assessment, so a save never creates an unreadable record.
-      const stored: unknown = JSON.parse(JSON.stringify(assessment));
-      if (!isSame(parseBodyCompositionAssessment(stored), stored)) {
-        throw new BodyCompositionHistoryStorageError('invalid-assessment');
-      }
+    return this.enqueue(async () => {
+      const stored = storable(assessment);
       const items = await this.read();
       if (items.some((item) => idOf(item) === assessment.id)) {
         throw new BodyCompositionHistoryStorageError('duplicate-id');
       }
       await this.write([...items, stored]);
     });
-    this.queue = next.catch(() => undefined);
-    return next;
+  }
+
+  /** Replaces the readable assessment with this id; unreadable items (e.g. from a newer version) are never touched. */
+  update(assessment: BodyCompositionAssessment): Promise<void> {
+    return this.enqueue(async () => {
+      const stored = storable(assessment);
+      const items = await this.read();
+      if (!items.some((item) => isReadable(item, assessment.id))) {
+        throw new BodyCompositionHistoryStorageError('not-found');
+      }
+      await this.write(items.map((item) => (isReadable(item, assessment.id) ? stored : item)));
+    });
+  }
+
+  /** Removes the readable assessment with this id; every other stored item is kept as it was. */
+  remove(id: string): Promise<void> {
+    return this.enqueue(async () => {
+      const items = await this.read();
+      await this.write(items.filter((item) => !isReadable(item, id)));
+    });
   }
 
   async countUnreadable(): Promise<number> {
@@ -110,6 +126,13 @@ export class LocalBodyCompositionHistoryRepository implements BodyCompositionHis
     return envelope['assessments'] as unknown[];
   }
 
+  /** Writes run one at a time (read, then write), so rapid changes can't overwrite each other. */
+  private enqueue(task: () => Promise<void>): Promise<void> {
+    const next = this.queue.then(task);
+    this.queue = next.catch(() => undefined);
+    return next;
+  }
+
   private async write(items: unknown[]): Promise<void> {
     try {
       await this.storage.set(
@@ -122,6 +145,16 @@ export class LocalBodyCompositionHistoryRepository implements BodyCompositionHis
   }
 }
 
+/** Only store what reads back as the same assessment, so a save never creates an unreadable record. */
+function storable(assessment: BodyCompositionAssessment): unknown {
+  const stored: unknown = JSON.parse(JSON.stringify(assessment));
+  if (!isSame(parseBodyCompositionAssessment(stored), stored)) {
+    throw new BodyCompositionHistoryStorageError('invalid-assessment');
+  }
+  return stored;
+}
+
+const isReadable = (item: unknown, id: string) => idOf(item) === id && parseBodyCompositionAssessment(item) !== null;
 const idOf = (item: unknown) => (typeof item === 'object' && item !== null ? (item as Record<string, unknown>)['id'] : undefined);
 /** Deep equality of JSON values, ignoring key order. */
 function isSame(a: unknown, b: unknown): boolean {

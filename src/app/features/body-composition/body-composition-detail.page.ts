@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
 
 import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
+import { BottomSheetComponent, EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
 import { NEW_WEIGHT_PATH } from '../body-weight/weight-history-paths';
 import { BODY_COMPOSITION_COPY } from './body-composition-content';
 import { toBodyCompositionDetailScreen } from './body-composition-detail-view-model';
-import { BODY_COMPOSITION_HISTORY_PATH } from './body-composition-paths';
+import { BODY_COMPOSITION_HISTORY_PATH, editBodyCompositionPath } from './body-composition-paths';
 
 /**
- * One saved assessment: `/you/body-composition/:assessmentId`. Read-only:
- * every recorded value and its difference from the previous assessment.
- * Nothing here changes the profile or weight history; updating the profile
- * weight stays the explicit "Use as profile weight" action on a weigh-in.
+ * One saved assessment: `/you/body-composition/:assessmentId`: every
+ * recorded value and its difference from the previous assessment, with
+ * Edit and Delete (after a confirmation). Nothing here changes the profile
+ * or weight history; updating the profile weight stays the explicit "Use as
+ * profile weight" action on a weigh-in.
  */
 @Component({
   selector: 'app-body-composition-detail',
@@ -26,6 +27,7 @@ import { BODY_COMPOSITION_HISTORY_PATH } from './body-composition-paths';
     IonTitle,
     IonContent,
     IonIcon,
+    BottomSheetComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -45,6 +47,20 @@ export class BodyCompositionDetailPage {
   protected readonly returnPath = BODY_COMPOSITION_HISTORY_PATH;
   protected readonly screen = computed(() => toBodyCompositionDetailScreen(this.history.state(), this.assessmentId(), this.history.today()));
 
+  /** The saved assessment shown; null while loading or when it doesn't exist. */
+  private readonly assessment = computed(() => {
+    const state = this.history.state();
+    return state.status === 'ready' ? (state.assessments.find((a) => a.id === this.assessmentId()) ?? null) : null;
+  });
+  protected readonly confirmOpen = signal(false);
+  protected readonly deleting = signal(false);
+  /** A failed delete. */
+  protected readonly status = signal('');
+  protected readonly deleteMessage = computed(() => {
+    const s = this.screen();
+    return this.copy.deleteConfirm.message(s.kind === 'ready' ? s.dateLabel : '');
+  });
+
   constructor() {
     if (this.history.state().status !== 'ready') {
       void this.history.load();
@@ -57,6 +73,41 @@ export class BodyCompositionDetailPage {
 
   protected logWeight(): void {
     void this.nav.navigateForward(NEW_WEIGHT_PATH);
+  }
+
+  protected edit(): void {
+    if (!this.deleting()) {
+      void this.nav.navigateForward(editBodyCompositionPath(this.assessmentId()));
+    }
+  }
+
+  protected askDelete(): void {
+    if (!this.deleting()) {
+      this.status.set('');
+      this.confirmOpen.set(true);
+    }
+  }
+
+  protected cancelDelete(): void {
+    this.confirmOpen.set(false);
+  }
+
+  protected async confirmDelete(): Promise<void> {
+    const assessment = this.assessment();
+    this.confirmOpen.set(false);
+    if (!assessment || this.deleting()) {
+      return; // no double delete
+    }
+    this.deleting.set(true);
+    try {
+      if ((await this.history.remove(assessment)).ok) {
+        void this.nav.navigateBack(BODY_COMPOSITION_HISTORY_PATH);
+      } else {
+        this.status.set(this.copy.deleteFailed);
+      }
+    } finally {
+      this.deleting.set(false);
+    }
   }
 
   protected back(): void {

@@ -12,6 +12,11 @@ export default [
     loadComponent: () => import('./body-composition-entry.page').then((m) => m.BodyCompositionEntryPage),
   },
   {
+    path: ':assessmentId/edit',
+    title: 'Edit body composition',
+    loadComponent: () => import('./body-composition-entry.page').then((m) => m.BodyCompositionEntryPage),
+  },
+  {
     path: ':assessmentId',
     title: 'Body composition assessment',
     loadComponent: () => import('./body-composition-detail.page').then((m) => m.BodyCompositionDetailPage),

@@ -6,6 +6,7 @@ import {
   BodyCompositionInput,
   createBodyCompositionAssessment,
   sortBodyCompositionAssessments,
+  updateBodyCompositionAssessment,
 } from '../../domain/body-composition';
 import { CLOCK, localIsoDate } from '../time/clock';
 import { BodyCompositionHistoryRepository } from './body-composition-history.repository';
@@ -31,6 +32,9 @@ export type BodyCompositionSaveResult =
   | { readonly ok: false; readonly kind: 'invalid'; readonly errors: BodyCompositionErrors }
   /** Nothing was saved (storage failed or unreadable). */
   | { readonly ok: false; readonly kind: 'save-failed' };
+
+/** `ok: false`: nothing was deleted. */
+export type BodyCompositionDeleteResult = { readonly ok: boolean };
 
 /**
  * Recorded body-composition assessments. Saves are serialized and applied to
@@ -84,12 +88,46 @@ export class BodyCompositionHistoryService {
       } catch {
         return { ok: false, kind: 'save-failed' };
       }
-      const state = this.current();
-      if (state.status === 'ready') {
-        this.current.set({ status: 'ready', assessments: sortBodyCompositionAssessments([...state.assessments, created.value]) });
-      }
+      this.apply((assessments) => [...assessments, created.value]);
       return { ok: true, assessment: created.value };
     });
+  }
+
+  /** A user correction; never touches the profile or weight history. */
+  update(assessment: BodyCompositionAssessment, input: BodyCompositionInput): Promise<BodyCompositionSaveResult> {
+    return this.serialize(async () => {
+      const updated = updateBodyCompositionAssessment(assessment, input, { now: this.clock().toISOString(), today: this.today() });
+      if (!updated.ok) {
+        return { ok: false, kind: 'invalid', errors: updated.errors };
+      }
+      try {
+        await this.repository.update(updated.value);
+      } catch {
+        return { ok: false, kind: 'save-failed' };
+      }
+      this.apply((assessments) => assessments.map((a) => (a.id === assessment.id ? updated.value : a)));
+      return { ok: true, assessment: updated.value };
+    });
+  }
+
+  /** Removes this assessment only; weigh-ins and the profile stay as they are. */
+  remove(assessment: BodyCompositionAssessment): Promise<BodyCompositionDeleteResult> {
+    return this.serialize(async () => {
+      try {
+        await this.repository.remove(assessment.id);
+      } catch {
+        return { ok: false };
+      }
+      this.apply((assessments) => assessments.filter((a) => a.id !== assessment.id));
+      return { ok: true };
+    });
+  }
+
+  private apply(change: (assessments: readonly BodyCompositionAssessment[]) => readonly BodyCompositionAssessment[]): void {
+    const state = this.current();
+    if (state.status === 'ready') {
+      this.current.set({ status: 'ready', assessments: sortBodyCompositionAssessments(change(state.assessments)) });
+    }
   }
 
   private serialize<T>(task: () => Promise<T>): Promise<T> {

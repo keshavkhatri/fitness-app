@@ -11,8 +11,8 @@ import { NEW_BODY_COMPOSITION_PATH, bodyCompositionDetailPath } from './body-com
  * Recorded body-composition assessments: the latest reported value of each
  * metric, and every readable assessment newest first (key values; tap for
  * the full assessment), in the unit each report used. Only reads: nothing here changes the
- * profile, weight history or measurements, and assessments can't be edited
- * or deleted yet. Stored assessments this version can't read are counted
+ * profile, weight history or measurements (editing and deleting happen on
+ * the assessment's page). Stored assessments this version can't read are counted
  * (never changed) so the user knows they exist.
  */
 @Component({

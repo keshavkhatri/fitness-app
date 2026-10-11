@@ -50,6 +50,26 @@
             {{ copy.logWeight }}
           </button>
         }
+        <div class="detail-actions">
+          <p class="status" role="status" data-testid="detail-status" [class.shown]="status() !== ''">{{ status() }}</p>
+          <button fit-button type="button" variant="outline" block icon="create-outline" [disabled]="deleting()" data-testid="edit" (click)="edit()">
+            {{ copy.edit }}
+          </button>
+          <button
+            fit-button
+            type="button"
+            variant="ghost"
+            block
+            icon="trash-outline"
+            aria-haspopup="dialog"
+            [disabled]="deleting()"
+            [loading]="deleting()"
+            data-testid="delete"
+            (click)="askDelete()"
+          >
+            {{ copy.delete }}
+          </button>
+        </div>
       }
       @case ('not-found') {
         <h1 class="visually-hidden">{{ copy.title }}</h1>
@@ -77,3 +97,12 @@
     }
   </main>
 </ion-content>
+
+<fit-bottom-sheet [title]="copy.deleteConfirm.title" [description]="deleteMessage()" [(open)]="confirmOpen">
+  <div class="sheet-actions" data-testid="delete-confirm">
+    <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
+    <button fit-button type="button" size="lg" block variant="ghost" data-testid="cancel-delete" (click)="cancelDelete()">
+      {{ copy.deleteConfirm.cancel }}
+    </button>
+  </div>
+</fit-bottom-sheet>

@@ -82,6 +82,16 @@ export const BODY_COMPOSITION_COPY = {
     },
     profileWeight: 'Saved to body composition only. To update your profile weight, log it as a weigh-in in Body weight and choose “Use as profile weight”.',
     logWeight: 'Log as weigh-in',
+    edit: 'Edit assessment',
+    delete: 'Delete assessment',
+    deleteFailed: "This assessment couldn't be deleted, so nothing was changed. Please try again.",
+    deleteConfirm: {
+      title: 'Delete this assessment?',
+      message: (date: string) =>
+        `The assessment from ${date} will be removed from your assessment history. Your weigh-ins and profile stay the same. This can't be undone.`,
+      confirm: 'Delete',
+      cancel: 'Cancel',
+    },
   },
 
   upload: {
@@ -110,6 +120,14 @@ export const BODY_COMPOSITION_COPY = {
 
   form: {
     title: 'Add body composition',
+    editTitle: 'Edit assessment',
+    editIntro: 'Correct any value so it matches your InBody report. Clear a field your report doesn’t show.',
+    saveChanges: 'Save changes',
+    editNotFound: {
+      title: 'Assessment not found',
+      message: 'This assessment may have been deleted. Nothing has been changed.',
+    },
+    importedNote: 'This assessment was read from your report. Changing a value saves it as entered by hand.',
     back: 'Body composition',
     intro: 'Enter the values from your InBody report, exactly as printed. Leave out any your report doesn’t show.',
     more: 'More report values',

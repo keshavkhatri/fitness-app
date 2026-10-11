@@ -1,5 +1,6 @@
 import {
   BODY_COMPOSITION_METRICS,
+  BodyCompositionAssessment,
   BodyCompositionErrors,
   BodyCompositionInput,
   BodyCompositionMetric,
@@ -177,3 +178,23 @@ const BODY_COMPOSITION_FIELDS = [...BODY_COMPOSITION_METRICS, 'date', 'massUnit'
 /** Saved as read from the report only when nothing was changed or added; otherwise it is the user's entry. */
 export const reviewedSource = (form: BodyCompositionFormValues, prefilled: BodyCompositionFormValues | null): BodyCompositionSource =>
   prefilled && BODY_COMPOSITION_FIELDS.every((field) => form[field] === prefilled[field]) ? INBODY_AI_PROVENANCE : MANUAL_INBODY_SOURCE;
+
+/**
+ * A saved assessment as the form shows it, for editing: each value exactly
+ * as stored (no conversion), masses in the unit the report used.
+ */
+export function bodyCompositionFormOf(assessment: BodyCompositionAssessment, fallbackMassUnit: MassUnit): BodyCompositionFormValues {
+  const firstMass = BODY_COMPOSITION_METRICS.map((metric) => assessment.reported[metric]?.unit).find((unit) => unit === 'kg' || unit === 'lb');
+  let form: BodyCompositionFormValues = emptyBodyCompositionForm(assessment.date, firstMass ?? fallbackMassUnit);
+  for (const metric of BODY_COMPOSITION_METRICS) {
+    const reported = assessment.reported[metric];
+    if (reported) {
+      form = { ...form, [metric]: String(reported.value) };
+    }
+  }
+  return form;
+}
+
+/** An edit keeps the assessment's source while its values are unchanged (a corrected date only); any value change makes it a manual entry. */
+export const editedSource = (form: BodyCompositionFormValues, saved: BodyCompositionFormValues, source: BodyCompositionSource): BodyCompositionSource =>
+  [...BODY_COMPOSITION_METRICS, 'massUnit' as const].every((field) => form[field] === saved[field]) ? source : MANUAL_INBODY_SOURCE;

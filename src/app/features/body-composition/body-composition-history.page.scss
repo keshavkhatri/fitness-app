@@ -155,3 +155,20 @@
   @include fx.text(body-sm, semibold);
   @include fx.tabular-numbers;
 }
+
+.detail-actions,
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.status {
+  @include fx.text(body-sm, medium);
+  color: var(--color-danger-text);
+  text-align: center;
+
+  &:not(.shown) {
+    display: contents;
+  }
+}
