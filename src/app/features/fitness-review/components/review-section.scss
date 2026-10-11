@@ -1,0 +1,118 @@
+@use 'mixins' as fx;
+
+// Shared by the review's section components (actions, training, nutrition, body).
+
+:host {
+  display: block;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.section-title {
+  @include fx.text(h3, semibold);
+}
+
+.group-title {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-text-secondary);
+}
+
+.text {
+  @include fx.text(body);
+}
+
+.note {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.item-title {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.item-detail {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.row-value {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+  text-align: end;
+}
+
+.divider {
+  margin: var(--space-1) 0;
+  border: 0;
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: flex-start;
+  min-height: var(--tap-target-min);
+  color: var(--color-primary-text);
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+.action {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+}
+
+.action-rank {
+  @include fx.text(body-sm, bold);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+.action-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}

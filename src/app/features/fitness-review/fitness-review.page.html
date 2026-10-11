@@ -1,0 +1,77 @@
+<ion-header class="ion-no-border subpage-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/you" [text]="copy.back" />
+    </ion-buttons>
+    <!-- Navigation label only; the page heading (h1) is below. -->
+    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body">
+    <h1 class="title">{{ copy.title }}</h1>
+    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+
+    @let s = screen();
+    @if (s.kind === 'ready') {
+      <nav class="week-nav" aria-label="Week" data-testid="week-nav">
+        <button type="button" class="step" [attr.aria-label]="copy.previous" data-testid="previous-week" (click)="previousWeek()">
+          <ion-icon name="chevron-back" aria-hidden="true" />
+        </button>
+        <div class="week-label">
+          <p class="week-title" data-testid="week-title">{{ s.header.title }}</p>
+          @if (s.header.title !== s.header.range) {
+            <p class="week-range" data-testid="week-range">{{ s.header.range }}</p>
+          }
+          @if (awayFromDefault()) {
+            <button type="button" class="back-link" data-testid="last-week" (click)="lastWeek()">{{ copy.backToLastWeek }}</button>
+          }
+        </div>
+        <button
+          type="button"
+          class="step"
+          [attr.aria-label]="copy.next"
+          [disabled]="!s.header.canGoNext"
+          data-testid="next-week"
+          (click)="nextWeek()"
+        >
+          <ion-icon name="chevron-forward" aria-hidden="true" />
+        </button>
+      </nav>
+
+      <fit-card data-testid="review-overview">
+        <section class="overview" aria-labelledby="review-overview-title">
+          <h2 class="card-title" id="review-overview-title">{{ copy.overview.title }}</h2>
+          <p class="summary" data-testid="review-summary">{{ s.summary }}</p>
+          <dl class="stats" data-testid="review-stats">
+            @for (stat of s.stats; track stat.key) {
+              <div class="stat" [attr.data-testid]="'stat-' + stat.key">
+                <dt class="stat-label">{{ stat.label }}</dt>&ngsp;
+                <dd class="stat-value">{{ stat.value }}</dd>
+              </div>
+            }
+          </dl>
+          <p class="caption">{{ copy.intro }}</p>
+        </section>
+      </fit-card>
+
+      <app-review-actions [title]="s.actionsTitle" [actions]="s.actions" (open)="open($event)" />
+      <app-review-training [training]="s.training" (open)="open($event)" />
+      <app-review-nutrition [nutrition]="s.nutrition" (open)="open($event)" />
+      <app-review-body [body]="s.body" (open)="open($event)" />
+    } @else if (s.kind === 'error') {
+      <fit-card data-testid="review-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+        </fit-empty-state>
+      </fit-card>
+    } @else {
+      <div class="loading" aria-busy="true" data-testid="review-loading">
+        <fit-skeleton height="56px" radius="md" />
+        <fit-skeleton height="180px" radius="card" />
+        <fit-skeleton height="240px" radius="card" />
+      </div>
+    }
+  </main>
+</ion-content>

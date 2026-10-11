@@ -34,6 +34,8 @@ import { StatTileComponent } from './components/stat-tile/stat-tile.component';
 import { TodayWorkoutCardComponent } from './components/today-workout-card/today-workout-card.component';
 import { WeekStripComponent } from './components/week-strip/week-strip.component';
 import { WeightTileComponent } from './components/weight-tile/weight-tile.component';
+import { ReviewEntryComponent } from '../fitness-review/components/review-entry.component';
+import { FITNESS_REVIEW_PATH } from '../fitness-review/fitness-review-paths';
 import { greetingFor } from './greeting';
 import { toHomeGoal } from './home-goal';
 import { HomeProgressView, HomeWeekView, HomeWorkoutView, toHomeProgress, toHomeWeek, toHomeWorkout } from './home-training';
@@ -54,6 +56,7 @@ export const PROGRESS_PATH = '/you/progress';
   imports: [
     DatePipe,
     IonIcon,
+    ReviewEntryComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -257,6 +260,10 @@ export class HomePage {
 
   protected openProgress(): void {
     void this.nav.navigateForward(PROGRESS_PATH);
+  }
+
+  protected openReview(): void {
+    void this.nav.navigateForward(FITNESS_REVIEW_PATH);
   }
 
   protected reviewProfile(): void {

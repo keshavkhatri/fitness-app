@@ -345,6 +345,15 @@ describe('HomePage', () => {
       expect(forward).toHaveBeenCalledWith('/you/progress');
     });
 
+    it('the weekly review is reachable from Home, with or without a plan', async () => {
+      const { el, fixture, forward } = await render();
+      const entry = el.querySelector<HTMLButtonElement>('[data-testid=review-entry]')!;
+      expect(clean(entry)).toBe('Weekly review What went well and what to focus on next');
+      entry.click();
+      await fixture.whenStable();
+      expect(forward).toHaveBeenCalledWith('/you/review');
+    });
+
     it('no completed workouts: an empty state, no fabricated numbers', async () => {
       const { el } = await render();
       const card = progressCard(el)!;

@@ -5,6 +5,8 @@ import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
 import { BODY_COMPOSITION_HISTORY_PATH } from '../../body-composition/body-composition-paths';
+import { ReviewEntryComponent } from '../../fitness-review/components/review-entry.component';
+import { FITNESS_REVIEW_PATH } from '../../fitness-review/fitness-review-paths';
 import { WORKOUT_COPY } from '../workout-content';
 import { PerformanceCardListComponent } from './performance-card-list.component';
 import { ProgressScreen, toProgressScreen } from './progress-view-model';
@@ -18,6 +20,7 @@ import { ProgressScreen, toProgressScreen } from './progress-view-model';
   templateUrl: './progress.page.html',
   styleUrl: './progress.page.scss',
   imports: [
+    ReviewEntryComponent,
     IonHeader,
     IonToolbar,
     IonButtons,
@@ -72,6 +75,10 @@ export class ProgressPage {
       this.state.reload();
     }
     this.entered = true;
+  }
+
+  protected openReview(): void {
+    void this.nav.navigateForward(FITNESS_REVIEW_PATH);
   }
 
   protected openExercise(exerciseId: string): void {

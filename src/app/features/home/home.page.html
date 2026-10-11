@@ -19,6 +19,8 @@
           <div aria-hidden="true"><fit-skeleton height="104px" radius="card" /></div>
         }
 
+        <app-review-entry (open)="openReview()" />
+
         <section aria-label="Today's workout">
           @if (workout(); as w) {
             <app-today-workout-card
