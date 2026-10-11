@@ -1,0 +1,96 @@
+@let s = state();
+
+<header class="header">
+  <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>Upload your InBody report</h1>
+  <p class="helper">
+    We'll fill in your height, weight and sex from the results sheet. You'll check everything before your profile is
+    created.
+  </p>
+</header>
+
+@if (report.available) {
+  <fit-notice title="Your image is sent to an AI service">
+    To read your report, the image is sent to our server and processed by OpenAI, an external AI service. The app
+    doesn't save the image. Only upload your own report.
+  </fit-notice>
+
+  <!-- Opened by the button below; hidden from assistive tech, which uses that button. -->
+  <input
+    #fileInput
+    class="file-input"
+    type="file"
+    tabindex="-1"
+    aria-hidden="true"
+    [accept]="accept"
+    (change)="onImageChosen($event)"
+  />
+
+  <fit-card>
+    <div class="file">
+      <ion-icon
+        class="file-icon"
+        [class.done]="s.status === 'read'"
+        [name]="s.status === 'read' ? 'checkmark-circle' : 'document-text-outline'"
+        aria-hidden="true"
+      />
+      <div class="file-text">
+        @if (summary(); as summary) {
+          <p class="file-name">Report read</p>
+          <p class="file-meta">
+            Filled in {{ summary.filled }} of 3 details@if (summary.needsCheck) {, {{ summary.needsCheck }} to check}.
+            @if (summary.testDate) {
+              Test date {{ summary.testDate }}.
+            }
+          </p>
+        } @else if (file(); as file) {
+          <p class="file-name">{{ file.name }}</p>
+          <p class="file-meta">{{ fileSize(file) }}</p>
+        } @else {
+          <p class="file-name">No image chosen</p>
+          <p class="file-meta">PNG, JPEG or WEBP, up to {{ maxMegabytes }} MB</p>
+        }
+      </div>
+    </div>
+    <button
+      #chooseButton
+      fit-button
+      type="button"
+      variant="outline"
+      block
+      [disabled]="s.status === 'reading'"
+      [attr.aria-describedby]="prompt() ? 'report-prompt' : null"
+      (click)="chooseImage()"
+    >
+      {{ file() || summary() ? 'Choose a different image' : 'Choose image' }}
+    </button>
+  </fit-card>
+
+  <div class="status" aria-live="polite">
+    @if (s.status === 'reading') {
+      <p class="message">Reading your report… This can take up to a minute.</p>
+    } @else if (failure(); as failure) {
+      <fit-notice tone="danger" [title]="failure.title">
+        <p>{{ failure.message }}</p>
+        @if (failure.issues.length) {
+          <ul class="issues">
+            @for (issue of failure.issues; track issue) {
+              <li>{{ issue }}</li>
+            }
+          </ul>
+        }
+      </fit-notice>
+    } @else if (prompt(); as message) {
+      <p class="message error" id="report-prompt">
+        <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ message }}
+      </p>
+    }
+  </div>
+
+  <button fit-button type="button" variant="ghost" block (click)="useManualEntry()">
+    Enter my details manually instead
+  </button>
+} @else {
+  <fit-notice tone="warning" title="Report upload isn't available">
+    This version of the app can't read reports. Enter your details manually instead.
+  </fit-notice>
+}

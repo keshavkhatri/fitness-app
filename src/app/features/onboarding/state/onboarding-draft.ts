@@ -38,10 +38,17 @@ export interface BasicInfo {
 }
 
 /**
+ * How the user fills in their details: by answering every question, or by
+ * uploading an InBody report first (which prefills the basics for review).
+ */
+export type SetupMethod = 'manual' | 'report';
+
+/**
  * In-progress onboarding answers. Every answer is already typed and
  * validated; `null` means "not answered yet".
  */
 export interface OnboardingDraft {
+  readonly setupMethod: SetupMethod;
   readonly primaryGoal: PrimaryGoal | null;
   readonly unitSystem: UnitSystem;
   readonly basics: BasicInfo | null;
@@ -54,6 +61,7 @@ export interface OnboardingDraft {
 }
 
 export const EMPTY_DRAFT: OnboardingDraft = {
+  setupMethod: 'manual',
   primaryGoal: null,
   unitSystem: 'metric',
   basics: null,
@@ -133,6 +141,7 @@ export function sanitizeDraft(value: unknown): OnboardingDraft {
   const equipment = parseEquipment(raw['equipment']);
 
   return {
+    setupMethod: raw['setupMethod'] === 'report' ? 'report' : 'manual',
     primaryGoal,
     unitSystem: isUnitSystem(raw['unitSystem']) ? raw['unitSystem'] : 'metric',
     basics: dateOfBirth && height && weight && isSex(sex) ? { dateOfBirth, sex, height, weight } : null,
@@ -148,6 +157,7 @@ export function sanitizeDraft(value: unknown): OnboardingDraft {
 /** Prefills a draft from an existing profile (used when reviewing details). */
 export function draftFromProfile(profile: UserFitnessProfile): OnboardingDraft {
   return {
+    setupMethod: 'manual',
     primaryGoal: profile.primaryGoal,
     unitSystem: profile.unitSystem,
     basics: {

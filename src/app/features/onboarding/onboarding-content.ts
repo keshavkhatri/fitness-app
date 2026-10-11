@@ -10,6 +10,7 @@ import {
   UnitSystem,
 } from '../../domain/fitness-profile';
 import { ChoiceOption, SegmentOption } from '../../shared/ui';
+import { SetupMethod } from './state/onboarding-draft';
 
 /**
  * User-facing copy for onboarding answers: labels, descriptions and icons.
@@ -23,6 +24,16 @@ export const GOAL_OPTIONS: readonly ChoiceOption<PrimaryGoal>[] = [
   { value: 'recomposition', label: 'Recomposition', description: 'Lose fat and build muscle together', icon: 'sync-outline' },
   { value: 'get-stronger', label: 'Get Stronger', description: 'Lift heavier and build strength', icon: 'trophy-outline' },
   { value: 'improve-fitness', label: 'Improve Fitness', description: 'Move better, feel fitter, build habits', icon: 'pulse-outline' },
+];
+
+export const SETUP_METHOD_OPTIONS: readonly ChoiceOption<SetupMethod>[] = [
+  { value: 'manual', label: 'Enter manually', description: 'Answer a few quick questions', icon: 'list-outline' },
+  {
+    value: 'report',
+    label: 'Upload InBody report',
+    description: 'Fill in height, weight and sex from your results sheet',
+    icon: 'document-text-outline',
+  },
 ];
 
 export const SEX_OPTIONS: readonly ChoiceOption<Sex>[] = [

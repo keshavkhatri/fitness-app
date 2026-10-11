@@ -4,6 +4,7 @@ import { OnboardingDraft } from './onboarding-draft';
 export const ONBOARDING_STEP_IDS = [
   'welcome',
   'goal',
+  'report',
   'basics',
   'experience',
   'frequency',
@@ -37,6 +38,13 @@ export interface OnboardingStep {
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   { id: 'welcome', kind: 'intro', primaryAction: 'Get Started' },
   { id: 'goal', kind: 'question', primaryAction: 'Continue' },
+  {
+    id: 'report',
+    kind: 'question',
+    primaryAction: 'Read my report',
+    // Only for users who chose to upload a report; manual entry never sees it.
+    isApplicable: (draft) => draft.setupMethod === 'report',
+  },
   { id: 'basics', kind: 'question', primaryAction: 'Continue' },
   { id: 'experience', kind: 'question', primaryAction: 'Continue' },
   { id: 'frequency', kind: 'question', primaryAction: 'Continue' },

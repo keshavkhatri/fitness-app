@@ -67,3 +67,20 @@
 .error {
   color: var(--color-danger-text);
 }
+
+// Where a value came from when reviewing an InBody report. Tone is carried by icon and text too.
+.report-note {
+  &[data-tone='read'] {
+    color: var(--color-success-text);
+  }
+
+  &[data-tone='check'] {
+    @include fx.text(body-sm, medium);
+    color: var(--color-warning-text);
+  }
+}
+
+.warnings {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}

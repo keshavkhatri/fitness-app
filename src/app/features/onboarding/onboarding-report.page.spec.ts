@@ -1,0 +1,306 @@
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+import { provideIonicAngular } from '@ionic/angular';
+
+import { INBODY_EXTRACTION_ENDPOINT, INBODY_EXTRACTION_FETCH } from '../../core/inbody/inbody-extraction.client';
+import { KeyValueStorage } from '../../core/storage/key-value-storage';
+import { MemoryKeyValueStorage } from '../../core/storage/testing/memory-key-value-storage';
+import { CLOCK } from '../../core/time/clock';
+import { OnboardingPage } from './onboarding.page';
+import { OnboardingFlow } from './state/onboarding-flow.service';
+import { OnboardingProgress } from './state/onboarding-progress.store';
+import { ReportImport } from './state/report-import.service';
+import { completeDraft } from './testing/draft-fixtures';
+import { REPORT_TODAY, rawExtraction, rejectedExtraction, uncertain, unreadable } from './testing/report-fixtures';
+
+const PROFILE_KEY = 'fitness.profile';
+const PROGRESS_KEY = 'fitness.onboarding-progress';
+const WEIGHT_HISTORY_KEY = 'fitness.body-weight-entries';
+const BODY_COMPOSITION_KEY = 'fitness.body-composition-assessments';
+const WORKOUT_PLAN_KEY = 'fitness.workout-plan';
+const EXISTING_PLAN = '{"version":1,"plan":"existing"}';
+
+const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
+const reportImage = () => new File([new Uint8Array(32)], 'my-inbody.png', { type: 'image/png' });
+
+/** First-run onboarding with a mocked extraction endpoint; nothing reaches the network. */
+async function render(options: { answers?: (() => Promise<Response>)[]; saved?: OnboardingProgress; endpoint?: string | null } = {}) {
+  const storage = new MemoryKeyValueStorage();
+  storage.values.set(WORKOUT_PLAN_KEY, EXISTING_PLAN);
+  if (options.saved) {
+    storage.values.set(PROGRESS_KEY, JSON.stringify({ version: 2, ...options.saved }));
+  }
+  const fetch = vi.fn<typeof globalThis.fetch>();
+  for (const answer of options.answers ?? []) {
+    fetch.mockImplementationOnce(answer);
+  }
+  TestBed.configureTestingModule({
+    providers: [
+      provideIonicAngular(),
+      provideRouter([]),
+      OnboardingFlow,
+      ReportImport,
+      { provide: KeyValueStorage, useValue: storage },
+      { provide: CLOCK, useValue: () => new Date(`${REPORT_TODAY}T12:00:00`) },
+      { provide: INBODY_EXTRACTION_ENDPOINT, useValue: options.endpoint === undefined ? 'https://api.example.test/x' : options.endpoint },
+      { provide: INBODY_EXTRACTION_FETCH, useValue: fetch },
+    ],
+  });
+  vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+  const fixture = TestBed.createComponent(OnboardingPage);
+  fixture.detectChanges();
+  const flow = fixture.debugElement.injector.get(OnboardingFlow);
+  await vi.waitFor(() => expect(flow.ready()).toBe(true));
+
+  const el = fixture.nativeElement as HTMLElement;
+  const settle = async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  await settle();
+
+  const primary = () => el.querySelector<HTMLButtonElement>('ion-footer button')!;
+  const heading = () => el.querySelector('[data-step-heading]')?.textContent?.trim();
+  const clickPrimary = async () => {
+    primary().click();
+    await settle();
+  };
+  const choose = async (text: string) => {
+    [...el.querySelectorAll('fit-choice-group label')].find((l) => l.textContent?.includes(text))!.querySelector('input')!.click();
+    await settle();
+  };
+  const field = (label: string) =>
+    [...el.querySelectorAll('fit-text-field')]
+      .find((f) => f.querySelector('label')?.textContent?.trim() === label)!
+      .querySelector('input')!;
+  const type = async (label: string, value: string) => {
+    const input = field(label);
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    await settle();
+  };
+  const pickImage = async (file: File) => {
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!;
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    input.dispatchEvent(new Event('change'));
+    await settle();
+  };
+  const clickButton = async (text: string) => {
+    [...el.querySelectorAll<HTMLButtonElement>('main button')].find((b) => b.textContent?.includes(text))!.click();
+    await settle();
+  };
+  /** Welcome → (upload choice) → goal → the next step. */
+  const startWithReport = async () => {
+    await choose('Upload InBody report');
+    await clickPrimary();
+    await choose('Lose Fat');
+    await clickPrimary();
+  };
+
+  return { fixture, el, flow, storage, fetch, settle, primary, heading, clickPrimary, choose, field, type, pickImage, clickButton, startWithReport };
+}
+
+describe('OnboardingPage (InBody report setup)', () => {
+  it('offers manual entry (the default) and report upload on the welcome screen', async () => {
+    const { el } = await render();
+    const options = [...el.querySelectorAll('fit-choice-group label')].map((l) => l.textContent);
+
+    expect(options.some((text) => text?.includes('Enter manually'))).toBe(true);
+    expect(options.some((text) => text?.includes('Upload InBody report'))).toBe(true);
+    const checked = el.querySelector<HTMLInputElement>('fit-choice-group input:checked');
+    expect(checked?.closest('label')?.textContent).toContain('Enter manually');
+  });
+
+  it('keeps the manual path as it was: no upload step, no report notes', async () => {
+    const { clickPrimary, choose, heading, flow, el, fetch } = await render();
+    await clickPrimary();
+    await choose('Lose Fat');
+    await clickPrimary();
+
+    expect(heading()).toBe('A bit about you');
+    expect(flow.position()).toEqual({ current: 2, total: 9 });
+    expect(el.querySelector('.report-note')).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('hides the upload option when this build cannot read reports', async () => {
+    const { el } = await render({ endpoint: null });
+    expect(el.querySelector('fit-choice-group')).toBeNull();
+  });
+
+  it('explains that the image goes to an external AI service before anything is sent', async () => {
+    const { startWithReport, heading, el, clickPrimary, fetch } = await render();
+    await startWithReport();
+
+    expect(heading()).toBe('Upload your InBody report');
+    expect(el.querySelector('fit-notice')?.textContent).toContain('OpenAI, an external AI service');
+
+    await clickPrimary();
+    expect(el.textContent).toContain('Choose an image of your report first.');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('reads the report once, then prefills the basics for review and saves only after confirmation', async () => {
+    let answer!: (response: Response) => void;
+    const { startWithReport, pickImage, primary, clickPrimary, heading, field, type, el, flow, storage, fetch, settle } = await render({
+      answers: [() => new Promise<Response>((resolve) => (answer = resolve))],
+    });
+    await startWithReport();
+    await pickImage(reportImage());
+    expect(el.textContent).toContain('my-inbody.png');
+
+    await clickPrimary();
+    expect(primary().disabled).toBe(true);
+    expect(primary().textContent).toContain('Reading your report…');
+    // A second press (or Enter) while reading must not send the image again.
+    primary().click();
+    await settle();
+    expect(fetch).toHaveBeenCalledOnce();
+
+    answer(json(200, rawExtraction()));
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('read'));
+    await settle();
+    expect(primary().textContent).toContain('Check my details');
+
+    await clickPrimary();
+    expect(heading()).toBe('Check your details');
+    expect(field('Height').value).toBe('180');
+    expect(field('Weight').value).toBe('94.5');
+    expect(field('Day').value).toBe('');
+    expect(el.textContent).toContain('From your report: 180 cm');
+    expect(el.textContent).toContain('Your report lists age 31');
+    // Nothing is committed to the draft until the user continues.
+    expect(flow.draft().basics).toBeNull();
+
+    // The user corrects the height and adds the date of birth the report can't give.
+    await type('Height', '181');
+    await type('Day', '15');
+    await type('Month', '6');
+    await type('Year', '1991');
+    await clickPrimary();
+    expect(heading()).toContain('training experience');
+
+    flow.update({ trainingExperience: 'beginner', trainingDaysPerWeek: 3, trainingLocation: 'gym', equipment: ['full-gym'], activityLevel: 'sedentary' });
+    while (flow.stepId() !== 'summary') {
+      await clickPrimary();
+    }
+    expect(storage.values.has(PROFILE_KEY)).toBe(false);
+    expect(storage.values.get(PROGRESS_KEY)).not.toContain('inbody-extraction');
+
+    await clickPrimary(); // "Create My Profile"
+    await vi.waitFor(() => expect(flow.stepId()).toBe('finish'));
+
+    const saved = JSON.parse(storage.values.get(PROFILE_KEY)!).profile;
+    expect(saved).toMatchObject({ dateOfBirth: '1991-06-15', sex: 'male', height: { centimeters: 181 }, weight: { kilograms: 94.5 } });
+    expect(storage.values.has(WEIGHT_HISTORY_KEY)).toBe(false);
+    expect(storage.values.has(BODY_COMPOSITION_KEY)).toBe(false);
+    expect(storage.values.get(WORKOUT_PLAN_KEY)).toBe(EXISTING_PLAN);
+  });
+
+  it('flags uncertain values and leaves unreadable ones for the user', async () => {
+    const { startWithReport, pickImage, clickPrimary, field, el, settle } = await render({
+      answers: [async () => json(200, rawExtraction({ profile: { height: unreadable('Height') }, measurements: { weight: uncertain('94.5', 'kg', 'Weight') } }))],
+    });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('read'));
+    await settle();
+    await clickPrimary();
+
+    expect(field('Height').value).toBe('');
+    expect(el.querySelector('#height-report-note')?.textContent).toContain("Couldn't be read from your report");
+    expect(field('Weight').value).toBe('94.5');
+    const weightNote = el.querySelector('#weight-report-note');
+    expect(weightNote?.getAttribute('data-tone')).toBe('check');
+    expect(field('Weight').getAttribute('aria-describedby')).toContain('weight-report-note');
+  });
+
+  it('explains an unsupported report and stays on the upload step', async () => {
+    const { startWithReport, pickImage, clickPrimary, el, heading, primary, settle } = await render({
+      answers: [async () => json(200, rejectedExtraction('unsupported-report'))],
+    });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('failed'));
+    await settle();
+
+    expect(heading()).toBe('Upload your InBody report');
+    expect(el.textContent).toContain("This doesn't look like an InBody report");
+    expect(primary().textContent).toContain('Read my report');
+  });
+
+  it('explains a report with too little readable information', async () => {
+    const { startWithReport, pickImage, clickPrimary, el, settle } = await render({
+      answers: [async () => json(200, rejectedExtraction('insufficient-readable-information', ['low-image-quality']))],
+    });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('failed'));
+    await settle();
+
+    expect(el.textContent).toContain("We couldn't read this report");
+    expect(el.textContent).toContain('The image quality was low');
+  });
+
+  it('rejects an invalid response without prefilling anything', async () => {
+    const { startWithReport, pickImage, clickPrimary, el, flow, settle } = await render({
+      answers: [async () => json(200, { ...(rawExtraction() as object), outcome: 'extracted', extra: true })],
+    });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('failed'));
+    await settle();
+
+    expect(el.textContent).toContain("We couldn't use the result");
+    expect(flow.stepId()).toBe('report');
+    expect(TestBed.inject(ReportImport).reading()).toBeNull();
+  });
+
+  it('offers a retry after a network failure', async () => {
+    const { startWithReport, pickImage, clickPrimary, el, primary, fetch, settle } = await render({
+      answers: [() => Promise.reject(new TypeError('Failed to fetch')), async () => json(200, rawExtraction())],
+    });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('failed'));
+    await settle();
+    expect(el.textContent).toContain("Couldn't reach the report service");
+    expect(primary().textContent).toContain('Try again');
+
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('read'));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows the provider failure message for a server error', async () => {
+    const { startWithReport, pickImage, clickPrimary, el, settle } = await render({
+      answers: [async () => json(504, { error: { code: 'provider-timeout', message: 'x' } })],
+    });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('failed'));
+    await settle();
+    expect(el.textContent).toContain('Something went wrong reading your report');
+  });
+
+  it('switches to manual entry from the upload step, keeping answers already given', async () => {
+    const { clickButton, heading, field, flow, el } = await render({
+      saved: { stepId: 'report', draft: completeDraft({ setupMethod: 'report' }), editingFromSummary: false },
+    });
+    expect(heading()).toBe('Upload your InBody report');
+
+    await clickButton('Enter my details manually instead');
+
+    expect(heading()).toBe('A bit about you');
+    expect(flow.draft().setupMethod).toBe('manual');
+    expect(field('Height').value).toBe('168');
+    expect(field('Day').value).toBe('15');
+    expect(el.querySelector('.report-note')).toBeNull();
+  });
+});

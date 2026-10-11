@@ -32,3 +32,14 @@
   max-width: 32ch;
   color: var(--color-text-secondary);
 }
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.setup-label {
+  @include fx.text(body-sm, medium);
+}

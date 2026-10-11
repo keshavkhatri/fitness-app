@@ -26,6 +26,7 @@ import { EquipmentStepComponent } from './steps/equipment-step.component';
 import { FinishStepComponent } from './steps/finish-step.component';
 import { GoalTargetStepComponent } from './steps/goal-target-step.component';
 import { OnboardingStepForm } from './steps/onboarding-step-form';
+import { ReportStepComponent } from './steps/report-step.component';
 import { SingleChoiceStepComponent } from './steps/single-choice-step.component';
 import { SummaryStepComponent } from './steps/summary-step.component';
 import { WelcomeStepComponent } from './steps/welcome-step.component';
@@ -59,6 +60,7 @@ const REVIEW_RETURN_PATHS: readonly string[] = ['/you'];
     BasicsStepComponent,
     EquipmentStepComponent,
     GoalTargetStepComponent,
+    ReportStepComponent,
     SummaryStepComponent,
     FinishStepComponent,
   ],
@@ -79,12 +81,17 @@ export class OnboardingPage implements OnInit {
 
   protected readonly choiceSteps = CHOICE_STEPS;
   protected readonly saving = computed(() => this.flow.saveStatus() === 'saving');
+  /** The current step is working (e.g. reading a report): its primary action waits. */
+  protected readonly stepBusy = computed(() => this.stepForm()?.busy?.() ?? false);
   protected readonly reviewing = computed(() => this.flow.mode() === 'review');
   protected readonly primaryLabel = computed(() => {
     if (this.saving()) {
       return this.reviewing() ? 'Saving your details…' : 'Creating your profile…';
     }
-    return this.reviewing() && this.flow.step().kind === 'review' ? 'Save my details' : this.flow.step().primaryAction;
+    if (this.reviewing() && this.flow.step().kind === 'review') {
+      return 'Save my details';
+    }
+    return this.stepForm()?.primaryLabel?.() ?? this.flow.step().primaryAction;
   });
 
   private readonly content = viewChild.required(IonContent);

@@ -1,10 +1,46 @@
 @let f = form();
 @let e = errors();
+@let notes = reportNotes();
 
-<header class="header">
-  <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>A bit about you</h1>
-  <p class="helper">We use this to tailor your training and nutrition.</p>
-</header>
+<ng-template #reportNote let-field="field" let-note="note">
+  <p class="message report-note" [attr.data-tone]="note.tone" [id]="field + '-report-note'">
+    <ion-icon [name]="note.icon" aria-hidden="true" />{{ note.text }}
+  </p>
+</ng-template>
+
+@if (reportSummary(); as summary) {
+  <header class="header">
+    <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>Check your details</h1>
+    <p class="helper">
+      We filled in what we could read from your InBody report. Correct anything that's wrong and add what's missing.
+    </p>
+  </header>
+
+  <fit-notice
+    [tone]="summary.warnings.length || summary.needsCheck ? 'warning' : 'info'"
+    [title]="summary.testDate ? 'From your report of ' + summary.testDate : 'From your InBody report'"
+  >
+    <p>
+      Filled in {{ summary.filled }} of 3 details.
+      @if (summary.needsCheck) {
+        {{ summary.needsCheck === 1 ? '1 needs' : summary.needsCheck + ' need' }} checking.
+      }
+      Other report measurements aren't added to your profile.
+    </p>
+    @if (summary.warnings.length) {
+      <ul class="warnings">
+        @for (warning of summary.warnings; track warning) {
+          <li>{{ warning }}</li>
+        }
+      </ul>
+    }
+  </fit-notice>
+} @else {
+  <header class="header">
+    <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>A bit about you</h1>
+    <p class="helper">We use this to tailor your training and nutrition.</p>
+  </header>
+}
 
 <div class="fields">
   <div class="field-group">
@@ -32,7 +68,7 @@
         [value]="f.birthDay"
         (valueChange)="patch({ birthDay: $event })"
         [invalid]="!!e.dateOfBirth"
-        describedBy="dob-message"
+        [describedBy]="describedBy('dateOfBirth', 'dob-message')"
       />
       <fit-text-field
         label="Month"
@@ -42,7 +78,7 @@
         [value]="f.birthMonth"
         (valueChange)="patch({ birthMonth: $event })"
         [invalid]="!!e.dateOfBirth"
-        describedBy="dob-message"
+        [describedBy]="describedBy('dateOfBirth', 'dob-message')"
       />
       <fit-text-field
         label="Year"
@@ -52,7 +88,7 @@
         [value]="f.birthYear"
         (valueChange)="patch({ birthYear: $event })"
         [invalid]="!!e.dateOfBirth"
-        describedBy="dob-message"
+        [describedBy]="describedBy('dateOfBirth', 'dob-message')"
       />
     </div>
     @if (e.dateOfBirth) {
@@ -62,6 +98,9 @@
     } @else {
       <p class="message" id="dob-message">Used to calculate your age. You must be 18 or older.</p>
     }
+    @if (notes) {
+      <ng-container *ngTemplateOutlet="reportNote; context: { field: 'dateOfBirth', note: notes.dateOfBirth }" />
+    }
   </fieldset>
 
   <div class="field-group">
@@ -70,7 +109,7 @@
       name="sex"
       layout="chips"
       labelledBy="sex-label"
-      [describedBy]="e.sex ? 'sex-error' : 'sex-hint'"
+      [describedBy]="describedBy('sex', e.sex ? 'sex-error' : 'sex-hint')"
       [invalid]="!!e.sex"
       [options]="sexOptions"
       [selected]="selectedSex()"
@@ -83,19 +122,28 @@
     } @else {
       <p class="message" id="sex-hint">Used later to improve the accuracy of estimates.</p>
     }
+    @if (notes) {
+      <ng-container *ngTemplateOutlet="reportNote; context: { field: 'sex', note: notes.sex }" />
+    }
   </div>
 
   @if (isMetric()) {
-    <fit-text-field
-      #heightField
-      label="Height"
-      suffix="cm"
-      inputMode="decimal"
-      [maxLength]="5"
-      [value]="f.heightCm"
-      (valueChange)="patch({ heightCm: $event })"
-      [error]="e.height"
-    />
+    <div class="field-group">
+      <fit-text-field
+        #heightField
+        label="Height"
+        suffix="cm"
+        inputMode="decimal"
+        [maxLength]="5"
+        [value]="f.heightCm"
+        (valueChange)="patch({ heightCm: $event })"
+        [error]="e.height"
+        [describedBy]="describedBy('height')"
+      />
+      @if (notes) {
+        <ng-container *ngTemplateOutlet="reportNote; context: { field: 'height', note: notes.height }" />
+      }
+    </div>
   } @else {
     <fieldset class="field-group">
       <legend class="group-label">Height</legend>
@@ -109,7 +157,7 @@
           [value]="f.heightFeet"
           (valueChange)="patch({ heightFeet: $event })"
           [invalid]="!!e.height"
-          [describedBy]="e.height ? 'height-error' : null"
+          [describedBy]="describedBy('height', e.height ? 'height-error' : null)"
         />
         <fit-text-field
           label="Inches"
@@ -119,7 +167,7 @@
           [value]="f.heightInches"
           (valueChange)="patch({ heightInches: $event })"
           [invalid]="!!e.height"
-          [describedBy]="e.height ? 'height-error' : null"
+          [describedBy]="describedBy('height', e.height ? 'height-error' : null)"
         />
       </div>
       @if (e.height) {
@@ -127,18 +175,27 @@
           <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ e.height }}
         </p>
       }
+      @if (notes) {
+        <ng-container *ngTemplateOutlet="reportNote; context: { field: 'height', note: notes.height }" />
+      }
     </fieldset>
   }
 
-  <fit-text-field
-    #weightField
-    label="Weight"
-    inputMode="decimal"
-    enterKeyHint="done"
-    [suffix]="weightUnit()"
-    [maxLength]="6"
-    [value]="f.weight"
-    (valueChange)="patch({ weight: $event })"
-    [error]="e.weight"
-  />
+  <div class="field-group">
+    <fit-text-field
+      #weightField
+      label="Weight"
+      inputMode="decimal"
+      enterKeyHint="done"
+      [suffix]="weightUnit()"
+      [maxLength]="6"
+      [value]="f.weight"
+      (valueChange)="patch({ weight: $event })"
+      [error]="e.weight"
+      [describedBy]="describedBy('weight')"
+    />
+    @if (notes) {
+      <ng-container *ngTemplateOutlet="reportNote; context: { field: 'weight', note: notes.weight }" />
+    }
+  </div>
 </div>

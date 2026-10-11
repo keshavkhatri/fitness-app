@@ -86,3 +86,12 @@ describe('onboarding draft', () => {
     });
   });
 });
+
+describe('setup method', () => {
+  it('restores a report setup and defaults anything else (e.g. older progress) to manual', () => {
+    expect(sanitizeDraft({ ...EMPTY_DRAFT, setupMethod: 'report' }).setupMethod).toBe('report');
+    expect(sanitizeDraft({ ...EMPTY_DRAFT, setupMethod: 'ocr' }).setupMethod).toBe('manual');
+    const { setupMethod: _omitted, ...older } = EMPTY_DRAFT;
+    expect(sanitizeDraft(older).setupMethod).toBe('manual');
+  });
+});

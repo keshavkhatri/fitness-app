@@ -1,0 +1,89 @@
+@use 'mixins' as fx;
+@use 'step';
+
+:host {
+  @include step.host;
+}
+
+.header {
+  @include step.header;
+}
+
+.title {
+  @include step.title;
+}
+
+.helper {
+  @include step.helper;
+}
+
+// Visually hidden: the "Choose image" button opens it.
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.file-icon {
+  flex-shrink: 0;
+  font-size: 32px;
+  color: var(--color-text-secondary);
+
+  &.done {
+    color: var(--color-success-text);
+  }
+}
+
+.file-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.file-name {
+  @include fx.text(body, medium);
+  overflow-wrap: anywhere;
+}
+
+.file-meta {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.status:empty {
+  display: none;
+}
+
+.message {
+  @include fx.text(body-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 16px;
+  }
+}
+
+.error {
+  color: var(--color-danger-text);
+}
+
+.issues {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}

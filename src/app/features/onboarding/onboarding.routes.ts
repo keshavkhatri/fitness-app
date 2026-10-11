@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { redirectIfOnboarded, requireProfile } from '../../core/profile/onboarding.guards';
 import { OnboardingFlow } from './state/onboarding-flow.service';
+import { ReportImport } from './state/report-import.service';
 
 const loadPage = () => import('./onboarding.page').then((m) => m.OnboardingPage);
 
@@ -10,7 +11,7 @@ export default [
     path: '',
     title: 'Welcome',
     canActivate: [redirectIfOnboarded],
-    providers: [OnboardingFlow],
+    providers: [OnboardingFlow, ReportImport],
     loadComponent: loadPage,
   },
   {

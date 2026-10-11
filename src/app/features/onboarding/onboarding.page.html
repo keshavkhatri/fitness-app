@@ -33,6 +33,9 @@
         @case ('goal') {
           <app-single-choice-step [config]="choiceSteps.goal" />
         }
+        @case ('report') {
+          <app-report-step />
+        }
         @case ('basics') {
           <app-basics-step />
         }
@@ -72,8 +75,8 @@
       type="button"
       size="lg"
       block
-      [disabled]="saving() || !flow.ready()"
-      [loading]="saving()"
+      [disabled]="saving() || stepBusy() || !flow.ready()"
+      [loading]="saving() || stepBusy()"
       (click)="primaryAction()"
     >
       {{ primaryLabel() }}

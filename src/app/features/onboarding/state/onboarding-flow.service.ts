@@ -113,6 +113,18 @@ export class OnboardingFlow {
     this.goTo(steps[Math.max(index - 1, 0)].id, false);
   }
 
+  /**
+   * Leaves the report upload for manual entry. Answers given so far are kept;
+   * from the upload step the user continues with their basics.
+   */
+  useManualEntry(): void {
+    const fromReport = this.stepId() === 'report';
+    this.update({ setupMethod: 'manual' });
+    if (fromReport) {
+      this.goTo('basics', false);
+    }
+  }
+
   /** Opens a section from the summary for editing. */
   edit(stepId: OnboardingStepId): void {
     this.goTo(stepId, true);
