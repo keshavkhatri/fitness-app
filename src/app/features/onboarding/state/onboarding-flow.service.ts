@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
+import { UserIdentityService } from '../../../core/identity/user-identity.service';
 import { FitnessProfileService } from '../../../core/profile/fitness-profile.service';
 import { UserFitnessProfile } from '../../../domain/fitness-profile';
 import { firstIncompleteStep, validateStep } from '../validation/onboarding-validation';
@@ -35,6 +36,7 @@ const EDIT_FOLLOW_UPS: Partial<Record<OnboardingStepId, OnboardingStepId>> = {
 export class OnboardingFlow {
   private readonly store = inject(OnboardingProgressStore);
   private readonly profiles = inject(FitnessProfileService);
+  private readonly identity = inject(UserIdentityService);
 
   private readonly state = signal<OnboardingProgress>(INITIAL_PROGRESS);
 
@@ -71,11 +73,11 @@ export class OnboardingFlow {
   /** The profile being reviewed (review mode), for values the questionnaire doesn't edit. */
   private reviewed: UserFitnessProfile | null = null;
 
-  /** Opens the summary of an existing profile for review/editing. */
-  startReview(profile: UserFitnessProfile): void {
+  /** Opens the summary of an existing profile (and the saved name) for review/editing. */
+  startReview(profile: UserFitnessProfile, name: string | null = null): void {
     this.reviewed = profile;
     this.mode.set('review');
-    this.state.set({ stepId: 'summary', draft: draftFromProfile(profile), editingFromSummary: false });
+    this.state.set({ stepId: 'summary', draft: draftFromProfile(profile, name), editingFromSummary: false });
     this.ready.set(true);
   }
 
@@ -159,12 +161,28 @@ export class OnboardingFlow {
       return false;
     }
     this.saveStatus.set('idle');
+    await this.saveName(draft.name);
     await this.store.clear().catch(() => undefined);
     if (this.mode() === 'new') {
       // Not persisted: progress was just cleared and the profile now exists.
       this.state.set({ ...this.state(), stepId: 'finish', editingFromSummary: false });
     }
     return true;
+  }
+
+  /**
+   * Saves the name for Home's greeting, keeping any photo. Cosmetic: a failed
+   * write never undoes the saved profile (the name can be set again in You).
+   */
+  private async saveName(name: string | null): Promise<void> {
+    try {
+      const current = await this.identity.load();
+      if (current.name !== name) {
+        await this.identity.save({ name, photo: current.photo });
+      }
+    } catch {
+      // Not critical.
+    }
   }
 
   private goTo(stepId: OnboardingStepId, editingFromSummary: boolean): void {

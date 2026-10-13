@@ -89,9 +89,11 @@ async function render(options: { answers?: (() => Promise<Response>)[]; saved?: 
     [...el.querySelectorAll<HTMLButtonElement>('main button')].find((b) => b.textContent?.includes(text))!.click();
     await settle();
   };
-  /** Welcome → (upload choice) → goal → the next step. */
+  /** Welcome → (upload choice) → name → goal → the next step. */
   const startWithReport = async () => {
     await choose('Upload InBody report');
+    await clickPrimary();
+    await type('Your name', 'Alex');
     await clickPrimary();
     await choose('Lose Fat');
     await clickPrimary();
@@ -112,13 +114,16 @@ describe('OnboardingPage (InBody report setup)', () => {
   });
 
   it('keeps the manual path as it was: no upload step, no report notes', async () => {
-    const { clickPrimary, choose, heading, flow, el, fetch } = await render();
+    const { clickPrimary, choose, type, heading, flow, el, fetch } = await render();
+    await clickPrimary();
+    expect(heading()).toBe('What should we call you?');
+    await type('Your name', 'Alex');
     await clickPrimary();
     await choose('Lose Fat');
     await clickPrimary();
 
     expect(heading()).toBe('A bit about you');
-    expect(flow.position()).toEqual({ current: 2, total: 9 });
+    expect(flow.position()).toEqual({ current: 3, total: 10 });
     expect(el.querySelector('.report-note')).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
   });

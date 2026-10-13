@@ -59,7 +59,8 @@ describe('onboarding validation', () => {
     });
 
     it('finds the first unanswered step', () => {
-      expect(firstIncompleteStep(EMPTY_DRAFT)).toBe('goal');
+      expect(firstIncompleteStep(EMPTY_DRAFT)).toBe('name');
+      expect(firstIncompleteStep({ ...EMPTY_DRAFT, name: 'Alex' })).toBe('goal');
       expect(firstIncompleteStep(completeDraft({ equipment: [] }))).toBe('equipment');
       expect(firstIncompleteStep(completeDraft())).toBeNull();
     });

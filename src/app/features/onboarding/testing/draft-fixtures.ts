@@ -4,6 +4,7 @@ import { EMPTY_DRAFT, OnboardingDraft } from '../state/onboarding-draft';
 export function completeDraft(overrides: Partial<OnboardingDraft> = {}): OnboardingDraft {
   return {
     ...EMPTY_DRAFT,
+    name: 'Alex',
     primaryGoal: 'lose-fat',
     basics: { dateOfBirth: '1991-06-15', sex: 'female', height: { centimeters: 168 }, weight: { kilograms: 80 } },
     trainingExperience: 'intermediate',

@@ -28,6 +28,7 @@ import {
   parseGoalTarget,
   pruneEquipmentForLocation,
 } from '../../../domain/fitness-profile';
+import { normalizeName } from '../../../core/identity/user-identity.service';
 
 /** Validated answers from the Basic Information step. */
 export interface BasicInfo {
@@ -48,6 +49,8 @@ export type SetupMethod = 'manual' | 'report';
  * validated; `null` means "not answered yet".
  */
 export interface OnboardingDraft {
+  /** How the app addresses the user (trimmed); saved to the identity store, not the profile. */
+  readonly name: string | null;
   readonly setupMethod: SetupMethod;
   readonly primaryGoal: PrimaryGoal | null;
   readonly unitSystem: UnitSystem;
@@ -61,6 +64,7 @@ export interface OnboardingDraft {
 }
 
 export const EMPTY_DRAFT: OnboardingDraft = {
+  name: null,
   setupMethod: 'manual',
   primaryGoal: null,
   unitSystem: 'metric',
@@ -141,6 +145,7 @@ export function sanitizeDraft(value: unknown): OnboardingDraft {
   const equipment = parseEquipment(raw['equipment']);
 
   return {
+    name: normalizeName(raw['name']),
     setupMethod: raw['setupMethod'] === 'report' ? 'report' : 'manual',
     primaryGoal,
     unitSystem: isUnitSystem(raw['unitSystem']) ? raw['unitSystem'] : 'metric',
@@ -154,9 +159,10 @@ export function sanitizeDraft(value: unknown): OnboardingDraft {
   };
 }
 
-/** Prefills a draft from an existing profile (used when reviewing details). */
-export function draftFromProfile(profile: UserFitnessProfile): OnboardingDraft {
+/** Prefills a draft from an existing profile and the saved name (used when reviewing details). */
+export function draftFromProfile(profile: UserFitnessProfile, name: string | null = null): OnboardingDraft {
   return {
+    name: normalizeName(name),
     setupMethod: 'manual',
     primaryGoal: profile.primaryGoal,
     unitSystem: profile.unitSystem,

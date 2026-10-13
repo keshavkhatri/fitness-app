@@ -42,6 +42,7 @@ export type ValidationResult<T, E> = { readonly ok: true; readonly value: T } | 
 // --- Draft-level (can the user move past this step?) ---------------------------
 
 export const STEP_REQUIRED_MESSAGES: Partial<Record<OnboardingStepId, string>> = {
+  name: 'Add your name to continue.',
   goal: 'Choose a goal to continue.',
   basics: 'Add your details to continue.',
   experience: 'Choose your experience level to continue.',
@@ -55,6 +56,8 @@ export const STEP_REQUIRED_MESSAGES: Partial<Record<OnboardingStepId, string>> =
 export function validateStep(stepId: OnboardingStepId, draft: OnboardingDraft): string | null {
   const required = STEP_REQUIRED_MESSAGES[stepId] ?? null;
   switch (stepId) {
+    case 'name':
+      return draft.name ? null : required;
     case 'goal':
       return draft.primaryGoal ? null : required;
     case 'basics':

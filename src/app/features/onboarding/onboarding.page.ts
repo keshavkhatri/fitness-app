@@ -15,6 +15,7 @@ import {
 import { Router } from '@angular/router';
 import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, Platform } from '@ionic/angular';
 
+import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { ASSESSMENT_PATH, ONBOARDING_PATH } from '../../core/profile/onboarding.guards';
 import { OnboardingMode } from './state/onboarding-flow.service';
@@ -25,6 +26,7 @@ import { CHOICE_STEPS } from './steps/choice-steps';
 import { EquipmentStepComponent } from './steps/equipment-step.component';
 import { FinishStepComponent } from './steps/finish-step.component';
 import { GoalTargetStepComponent } from './steps/goal-target-step.component';
+import { NameStepComponent } from './steps/name-step.component';
 import { OnboardingStepForm } from './steps/onboarding-step-form';
 import { ReportStepComponent } from './steps/report-step.component';
 import { SingleChoiceStepComponent } from './steps/single-choice-step.component';
@@ -60,6 +62,7 @@ const REVIEW_RETURN_PATHS: readonly string[] = ['/you'];
     BasicsStepComponent,
     EquipmentStepComponent,
     GoalTargetStepComponent,
+    NameStepComponent,
     ReportStepComponent,
     SummaryStepComponent,
     FinishStepComponent,
@@ -75,6 +78,7 @@ export class OnboardingPage implements OnInit {
 
   protected readonly flow = inject(OnboardingFlow);
   private readonly profiles = inject(FitnessProfileService);
+  private readonly identity = inject(UserIdentityService);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -163,9 +167,9 @@ export class OnboardingPage implements OnInit {
       await this.flow.restore();
       return;
     }
-    const profile = await this.profiles.load();
+    const [profile, identity] = await Promise.all([this.profiles.load(), this.identity.load().catch(() => null)]);
     if (profile) {
-      this.flow.startReview(profile);
+      this.flow.startReview(profile, identity?.name ?? null);
     } else {
       await this.router.navigateByUrl(ONBOARDING_PATH, { replaceUrl: true });
     }
