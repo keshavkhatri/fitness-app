@@ -1,5 +1,14 @@
 <fit-page title="You">
   <fit-card padding="none">
+    @let me = identity.identity();
+    <button type="button" class="entry" data-testid="identity-entry" (click)="openIdentity()">
+      <fit-avatar [name]="me.name" [photo]="me.photo" [size]="48" />
+      <span class="entry-text">
+        <span class="entry-title">{{ me.name ?? 'Add your name' }}</span>&ngsp;
+        <span class="entry-description">Name and photo for your greeting</span>
+      </span>
+      <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
+    </button>
     <button type="button" class="entry" data-testid="profile-entry" (click)="openProfile()">
       <span class="entry-icon" aria-hidden="true"><ion-icon name="person-circle-outline" /></span>
       <span class="entry-text">
@@ -13,6 +22,14 @@
   <section aria-labelledby="you-activity">
     <fit-section-header title="Activity" headingId="you-activity" />
     <fit-card padding="none">
+      <button type="button" class="entry" data-testid="quick-add-entry" aria-haspopup="dialog" (click)="openQuickAdd()">
+        <span class="entry-icon quick-add" aria-hidden="true"><ion-icon name="add" /></span>
+        <span class="entry-text">
+          <span class="entry-title">Quick add</span>&ngsp;
+          <span class="entry-description">Start a workout, log food, weight or measurements</span>
+        </span>
+        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
+      </button>
       <button type="button" class="entry" data-testid="progress-entry" (click)="openProgress()">
         <span class="entry-icon" aria-hidden="true"><ion-icon name="trending-up" /></span>
         <span class="entry-text">
@@ -100,4 +117,12 @@
       </ul>
     </fit-card>
   </section>
+
+  <app-identity-sheet
+    [(open)]="identityOpen"
+    [identity]="identity.identity()"
+    [saving]="identitySaving()"
+    [saveError]="identityError()"
+    (save)="saveIdentity($event)"
+  />
 </fit-page>

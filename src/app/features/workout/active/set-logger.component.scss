@@ -47,7 +47,7 @@
 }
 
 .row.next {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-strong);
 }
 
 .row[data-status='completed'] {
@@ -133,7 +133,7 @@
   width: 52px;
   height: 48px;
   border-radius: var(--radius-md);
-  border: 2px solid var(--color-primary);
+  border: 2px solid var(--color-primary-strong);
   color: var(--color-primary-text);
   font-size: 24px;
 }

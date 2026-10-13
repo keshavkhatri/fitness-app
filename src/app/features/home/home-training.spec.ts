@@ -2,8 +2,9 @@ import { calendarDateOf } from '../../domain/fitness-profile';
 import { WorkoutLog, startWorkoutLog, trainingOverview, weeklyActivity } from '../../domain/workout-session';
 import { finishedLog } from '../../domain/workout-session/testing/workout-log-fixtures';
 import { ACTIVITY_PROFILE, PROFILE, REST_PROFILE, SUNDAY, THURSDAY, planFor } from '../workout/testing/workout-fixtures';
+import { MUSCLE_AREAS } from '../workout/workout-content';
 import { toWorkoutScreen } from '../workout/workout-view-model';
-import { toHomeProgress, toHomeWeek, toHomeWorkout } from './home-training';
+import { toHomeWeek, toHomeWorkout } from './home-training';
 
 const ready = (profile = PROFILE) => ({ kind: 'ready' as const, plan: planFor(profile), origin: 'stored' as const, saved: true });
 const screen = (profile = PROFILE, today = THURSDAY) => toWorkoutScreen(ready(profile), today);
@@ -25,9 +26,31 @@ describe('Home training summaries', () => {
         descriptor: s.today.session.descriptor,
         countLabel: s.today.session.countLabel,
         durationLabel: s.today.session.durationLabel,
+        minutes: s.today.session.estimatedMinutes,
         exercises: s.today.session.exercises.map((e) => e.name),
+        focusAreas: [],
+        setsTotal: null,
       });
       expect(s.today.session.exercises.length).toBeGreaterThan(0);
+    });
+
+    it('with the plan’s sessions: the body areas trained and the planned set count', () => {
+      const plan = planFor(PROFILE);
+      const s = screen();
+      const view = toHomeWorkout(s, null, plan.sessions);
+      if (s.kind !== 'ready' || view.kind !== 'resistance') {
+        throw new Error('fixture: Thursday is a training day for the 4-day plan');
+      }
+      const session = plan.sessions.find((p) => p.id === view.sessionId);
+      if (session?.kind !== 'resistance') {
+        throw new Error('fixture: a resistance session');
+      }
+      expect(view.setsTotal).toBe(session.exercises.reduce((sum, e) => sum + e.sets, 0));
+      expect(view.setsTotal).toBeGreaterThan(0);
+      // The same areas Workout Detail shows for this session (no repeats, plan order).
+      expect(view.focusAreas.length).toBeGreaterThan(0);
+      expect(new Set(view.focusAreas).size).toBe(view.focusAreas.length);
+      expect(view.focusAreas.every((a) => Object.values(MUSCLE_AREAS).includes(a))).toBe(true);
     });
 
     it('an activity day opens the activity, never a workout', () => {
@@ -68,39 +91,6 @@ describe('Home training summaries', () => {
     });
   });
 
-  describe('progress', () => {
-    const at = (day: number, hour = 18) => new Date(2026, 9, day, hour, 0);
-
-    it('counts this Monday–Sunday week and shows the latest workout', () => {
-      const logs = [
-        finishedLog({ startedAt: at(4, 10), minutes: 40 }), // Sunday: previous week
-        finishedLog({ startedAt: at(5), minutes: 50 }), // Monday
-        finishedLog({ startedAt: at(7), minutes: 45 }), // Wednesday (latest)
-      ];
-      const view = toHomeProgress(overviewOf(logs, THURSDAY), THURSDAY);
-      expect(view).toMatchObject({ kind: 'ready', thisWeek: { count: 2, unit: 'workouts' } });
-      if (view.kind !== 'ready') {
-        throw new Error(view.kind);
-      }
-      expect(view.lastWorkout).toMatchObject({ id: logs[2].id, meta: 'Yesterday · 45 min', statusLabel: 'Completed' });
-    });
-
-    it('a new week starts on Monday: nothing yet this week, but the last workout is still shown', () => {
-      const logs = [finishedLog({ startedAt: at(11), minutes: 40 })]; // Sunday 11 Oct
-      const monday = new Date(2026, 9, 12, 8, 0);
-      expect(toHomeProgress(overviewOf(logs, monday), monday)).toMatchObject({ kind: 'ready', thisWeek: { count: 0, unit: 'workouts' } });
-      expect(toHomeProgress(overviewOf(logs, SUNDAY), SUNDAY)).toMatchObject({ thisWeek: { count: 1, unit: 'workout' } });
-    });
-
-    it('no finished workouts: empty, nothing fabricated', () => {
-      expect(toHomeProgress(overviewOf([], THURSDAY), THURSDAY)).toEqual({ kind: 'empty' });
-    });
-
-    it('history that can’t be read is an error', () => {
-      expect(toHomeProgress(null, THURSDAY)).toEqual({ kind: 'error' });
-    });
-  });
-
   describe('week strip', () => {
     const at = (day: number, hour = 18) => new Date(2026, 9, day, hour, 0);
     const weekOf = (logs: readonly WorkoutLog[], now: Date) => weeklyActivity(logs, calendarDateOf(now), localDate);
@@ -119,7 +109,7 @@ describe('Home training summaries', () => {
         'S11:rest',
       ]);
       expect(view.countLabel).toBe('2 of 4 workouts');
-      expect(view.accessibleLabel).toMatch(/^This week: 2 of 4 workouts done\. Today, Thursday: .+\. Open your weekly plan\.$/);
+      expect(view.accessibleLabel).toMatch(/^This week: 2 of 4 workouts done\. Today, Thursday: .+\.$/);
     });
 
     it('a rest day today is named as such', () => {

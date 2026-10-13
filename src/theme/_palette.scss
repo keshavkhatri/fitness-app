@@ -7,7 +7,26 @@
 //
 // Values marked "derived" were not part of the original brand spec and were
 // chosen to fill gaps (tints, accessible text variants, dark-mode semantics).
+//
+// Four palettes, one key set (enforced at compile time by `variant()`):
+//   $light / $dark     — the app-wide default ("classic") theme.
+//   $warm / $charcoal  — the redesign's screen themes, opted into per screen
+//                        (see `_tokens.scss` and docs/design-system.md).
 // =============================================================================
+
+@use 'sass:map';
+
+/// Returns `$base` with `$overrides` applied. Fails the build on a key that
+/// `$base` doesn't have, so a typo can never create a stray token and every
+/// palette keeps exactly the same keys.
+@function variant($base, $overrides) {
+  @each $key, $value in $overrides {
+    @if not map.has-key($base, $key) {
+      @error 'Unknown palette key `#{$key}`. Add it to $light and $dark first.';
+    }
+  }
+  @return map.merge($base, $overrides);
+}
 
 $light: (
   bg: #f7f8fa,
@@ -29,6 +48,11 @@ $light: (
   primary-soft: #eaf1ff,
   primary-text: #1a5fe6, // derived — AA on bg for small text
   on-primary: #ffffff,
+  // Primary as a graphic (progress fills, selection rings, active markers):
+  // must reach 3:1 on surfaces. Classic blue already does.
+  primary-strong: #1f6bff,
+  // Keyboard focus indicator (outline / focused field border), 3:1 on surfaces.
+  focus: #1f6bff,
 
   // Ink: the one dark hero surface per screen (today's workout on Home).
   ink: #14161c,
@@ -83,6 +107,8 @@ $dark: (
   primary-text: #6ea2ff, // derived
   // Dark text on the brighter dark-mode blue: white on #4D8DFF is only ~3.2:1.
   on-primary: #0b0d10,
+  primary-strong: #4d8dff,
+  focus: #4d8dff,
 
   ink: #20242e,
   on-ink: #ffffff,
@@ -113,4 +139,85 @@ $dark: (
   on-danger: #0b0d10, // derived
 
   scrim: #000000,
+);
+
+// =============================================================================
+// Redesign screen themes. Proposed brand values: warm #F5F4EE, ink #151714,
+// lime #C5F36B, card #FFFFFF; everything else derived. Ratios are WCAG 2.x.
+//
+// Lime is a FILL colour only on light surfaces: it is 1.16:1 on warm bg and
+// 1.28:1 on white, so it never carries text, icons, focus or progress strokes
+// there. Ink on lime is 14.1:1. On charcoal, lime works as text and graphics.
+// =============================================================================
+
+// Dashboard mode, light: warm background, white cards, ink text, lime actions.
+$warm: variant(
+  $light,
+  (
+    bg: #f5f4ee,
+    surface: #ffffff,
+    surface-elevated: #ffffff,
+    surface-muted: #eceae2, // derived
+    text: #151714, // 16.4:1 on bg
+    text-secondary: #5c5f57, // derived — 5.9:1 on bg, 6.5:1 on surface
+    text-tertiary: #8e8c84, // derived — placeholders/disabled only (3.1:1 on bg)
+    text-on-muted: #5c5f57, // 5.4:1 on surface-muted
+    border: #e4e2da, // derived
+    border-strong: #cfcdc4, // derived
+    track: #eceae2, // derived
+
+    primary: #c5f36b, // lime — fills only (see above)
+    primary-pressed: #b5e54f, // derived
+    primary-soft: #eaf6cf, // derived
+    primary-text: #3f5e0a, // derived — 6.8:1 on bg, 6.6:1 on primary-soft
+    on-primary: #151714, // 14.1:1 on lime
+    primary-strong: #5f8f14, // derived — 3.5:1 on bg, 3.9:1 on surface
+    focus: #151714, // an ink ring; a lime ring would be invisible
+
+    ink: #151714,
+    on-ink: #f5f4ee, // 16.4:1
+    on-ink-secondary: #a3a79c, // derived — 7.4:1 on ink
+    ink-accent: #c5f36b, // lime on ink, 14.1:1
+    ink-track: rgba(245, 244, 238, 0.14),
+
+    // #16a34a is 2.99:1 on the warm bg; one step deeper keeps 3:1.
+    success: #15963f, // derived — 3.5:1 on bg; ink on it 4.7:1
+
+    scrim: #151714,
+  )
+);
+
+// Dashboard mode, dark, and the immersive (active workout) mode.
+$charcoal: variant(
+  $dark,
+  (
+    bg: #0f100e,
+    surface: #1a1c19,
+    surface-elevated: #222520,
+    surface-muted: #2a2d28,
+    text: #f5f4ee, // 15.6:1 on surface
+    text-secondary: #a3a79c, // 7.0:1 on surface
+    text-tertiary: #6b7067, // placeholders/disabled only (3.4:1 on surface)
+    text-on-muted: #a3a79c, // 5.7:1 on surface-muted
+    border: #2c2f2a,
+    border-strong: #3d413a,
+    track: #2c2f2a,
+
+    primary: #c5f36b, // 13.4:1 on surface
+    primary-pressed: #b5e54f,
+    primary-soft: #26301a,
+    primary-text: #c5f36b, // 10.8:1 on primary-soft
+    on-primary: #151714,
+    primary-strong: #c5f36b,
+    focus: #c5f36b,
+
+    ink: #23261f, // raised hero; outlined because it is ~1.2:1 on bg
+    on-ink: #f5f4ee,
+    on-ink-secondary: #a3a79c, // 6.3:1 on ink
+    ink-accent: #c5f36b, // 12.0:1 on ink
+    ink-track: rgba(245, 244, 238, 0.12),
+    ink-outline: #5e6359, // 3.1:1 on bg
+
+    scrim: #000000,
+  )
 );

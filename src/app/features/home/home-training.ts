@@ -1,11 +1,12 @@
+import { Exercise, PlanSession } from '../../domain/workout-programming';
 import { ActivityDay, TrainingOverview, WorkoutLog } from '../../domain/workout-session';
 import { toResumeCard } from '../workout/active/active-workout-view-model';
-import { RecentWorkoutView, toRecentWorkouts } from '../workout/history/history-view-model';
+import { sessionFocusAreas } from '../workout/workout-detail-view-model';
 import { WORKOUT_COPY } from '../workout/workout-content';
-import { WorkoutScreen } from '../workout/workout-view-model';
+import { CATALOG, WorkoutScreen } from '../workout/workout-view-model';
 
 /**
- * Home's workout and progress cards, built from the Workout feature's own
+ * Home's workout and week cards, built from the Workout feature's own
  * presentation models (today's session by the plan's weekday layout, the
  * in-progress workout, the training overview). Nothing is recalculated here.
  */
@@ -28,8 +29,14 @@ export type HomeWorkoutView =
       readonly descriptor: string;
       readonly countLabel: string;
       readonly durationLabel: string;
+      /** The plan's rough estimate, in minutes. */
+      readonly minutes: number;
       /** Exercise names in plan order (Home shows the first few). */
       readonly exercises: readonly string[];
+      /** Broad body areas the session trains ("Chest", "Back"); empty when the plan session isn't given. */
+      readonly focusAreas: readonly string[];
+      /** Planned sets across the session; null when the plan session isn't given. */
+      readonly setsTotal: number | null;
     }
   | { readonly kind: 'activity'; readonly sessionId: string; readonly title: string; readonly summary: string }
   /** `upNext`: "Next up: Upper Body on Wednesday." when another session follows. */
@@ -37,7 +44,16 @@ export type HomeWorkoutView =
   | { readonly kind: 'no-profile' }
   | { readonly kind: 'unavailable' };
 
-export function toHomeWorkout(screen: WorkoutScreen, active: WorkoutLog | null): HomeWorkoutView {
+/**
+ * `sessions` (the plan's sessions) adds the session's body areas and planned
+ * set count; without it those stay empty/null (Quick Add only needs the kind).
+ */
+export function toHomeWorkout(
+  screen: WorkoutScreen,
+  active: WorkoutLog | null,
+  sessions: readonly PlanSession[] = [],
+  catalog: ReadonlyMap<string, Exercise> = CATALOG,
+): HomeWorkoutView {
   if (active) {
     const sets = active.exercises.flatMap((e) => e.sets);
     return {
@@ -53,6 +69,8 @@ export function toHomeWorkout(screen: WorkoutScreen, active: WorkoutLog | null):
   const { today, upNext } = screen;
   const s = today.session;
   if (s.kind === 'resistance' && today.sessionId) {
+    const planned = sessions.find((p) => p.id === today.sessionId);
+    const session = planned?.kind === 'resistance' ? planned : null;
     return {
       kind: 'resistance',
       sessionId: today.sessionId,
@@ -60,7 +78,10 @@ export function toHomeWorkout(screen: WorkoutScreen, active: WorkoutLog | null):
       descriptor: s.descriptor,
       countLabel: s.countLabel,
       durationLabel: s.durationLabel,
+      minutes: s.estimatedMinutes,
       exercises: s.exercises.map((e) => e.name),
+      focusAreas: session ? sessionFocusAreas(session, catalog) : [],
+      setsTotal: session ? session.exercises.reduce((sum, e) => sum + e.sets, 0) : null,
     };
   }
   if (s.kind === 'activity' && today.sessionId) {
@@ -73,32 +94,7 @@ export function toHomeWorkout(screen: WorkoutScreen, active: WorkoutLog | null):
   };
 }
 
-export type HomeProgressView =
-  | {
-      readonly kind: 'ready';
-      /** Finished in the current local week (Monday–Sunday). */
-      readonly thisWeek: { readonly count: number; readonly unit: string };
-      readonly lastWorkout: RecentWorkoutView;
-    }
-  /** No finished workouts yet: nothing to show, nothing invented. */
-  | { readonly kind: 'empty' }
-  | { readonly kind: 'error' };
-
-/** From `WorkoutHistoryService.overview()` (null when history can't be read). */
-export function toHomeProgress(overview: TrainingOverview | null, now: Date): HomeProgressView {
-  if (!overview) {
-    return { kind: 'error' };
-  }
-  const last = overview.lastWorkout ? toRecentWorkouts([overview.lastWorkout], now, 1)[0] : undefined;
-  if (overview.workoutsCompleted === 0 || !last) {
-    return { kind: 'empty' };
-  }
-  const count = overview.workoutsThisWeek;
-  const units = WORKOUT_COPY.progress.overview;
-  return { kind: 'ready', thisWeek: { count, unit: count === 1 ? units.workout : units.workouts }, lastWorkout: last };
-}
-
-// --- Week strip ---------------------------------------------------------------------------
+// --- This week ----------------------------------------------------------------------------
 
 export interface HomeWeekDayView {
   readonly key: string;
@@ -108,6 +104,8 @@ export interface HomeWeekDayView {
   readonly date: string;
   /** done: a training workout was finished that day; planned: a plan workout falls on it. */
   readonly state: 'done' | 'planned' | 'rest';
+  /** Minutes trained that day (finished training workouts). */
+  readonly minutes: number;
   readonly isToday: boolean;
 }
 
@@ -138,6 +136,7 @@ export function toHomeWeek(screen: WorkoutScreen, activity: readonly ActivityDay
       letter: day.shortWeekday.charAt(0),
       date: String(activity[i].date.day),
       state: activity[i].workouts > 0 ? 'done' : planned ? 'planned' : 'rest',
+      minutes: activity[i].minutes,
       isToday: day.isToday,
     };
   });
@@ -152,6 +151,6 @@ export function toHomeWeek(screen: WorkoutScreen, activity: readonly ActivityDay
     done,
     planned,
     countLabel,
-    accessibleLabel: `This week: ${countLabel} done. Today, ${today.weekday}: ${todayText}. Open your weekly plan.`,
+    accessibleLabel: `This week: ${countLabel} done. Today, ${today.weekday}: ${todayText}.`,
   };
 }

@@ -1,82 +1,87 @@
 @use 'mixins' as fx;
 
+// Home's tighter gutter (as the reference): more room for the cards on phones.
+:host {
+  --page-gutter: var(--space-4);
+}
+
+app-home-header {
+  margin-bottom: var(--space-1);
+}
+
+// --- Layout -------------------------------------------------------------------------------
 // Breakpoints are container queries on the content width, in em: with large
 // text the layout stays one column longer, before anything gets cramped.
 .dashboard {
   container-type: inline-size;
-}
-
-.grid,
-.col {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-// Phones: one column, DOM order = visual order.
-.col {
-  display: contents;
-}
-
-@container (min-width: 37.5em) {
-  .grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .col {
-    display: flex;
-    min-width: 0;
-  }
-}
-
-@container (min-width: 56.25em) {
-  .grid {
-    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
-    column-gap: var(--space-8);
-  }
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
 }
 
 section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  min-width: 0;
 }
 
-.link {
-  @include fx.button-reset;
-  @include fx.text(body-sm, semibold);
-  @include fx.focus-ring;
-
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: var(--tap-target-min);
-  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-3)) calc(-1 * var(--space-2)) 0;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary-text);
-
-  ion-icon {
-    font-size: 16px;
-  }
-}
-
-// Two columns down to 320px; one column once text grows past ~130%.
-.bento {
+// Two compact cards side by side down to 320px; one column once text grows.
+.compact {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5em), 1fr));
   gap: var(--space-3);
+  align-items: stretch;
+
+  > * {
+    min-width: 0;
+  }
+
+  // Both cards fill the row's height.
+  section > * {
+    flex: 1;
+  }
 }
 
-.tile-title {
-  @include fx.text(h3, bold);
+// Full width below the compact cards (spans both columns on tablets).
+.review {
+  grid-column: 1 / -1;
 }
 
-.tile-action {
-  @include fx.text(caption, semibold);
-  margin-top: auto;
-  padding-top: var(--space-2);
-  color: var(--color-primary-text);
+// Tablets: the day and the workout side by side, the compact cards below.
+@container (min-width: 37.5em) {
+  .dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .compact {
+    grid-column: 1 / -1;
+  }
+
+  .featured > * {
+    flex: 1;
+  }
+}
+
+// --- Compact error card ---------------------------------------------------------------------
+.compact-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+
+  p {
+    @include fx.text(body-sm);
+    color: var(--color-text-secondary);
+  }
+
+  button {
+    margin-top: auto;
+  }
+}
+
+.compact-title {
+  @include fx.text(body, semibold);
 }

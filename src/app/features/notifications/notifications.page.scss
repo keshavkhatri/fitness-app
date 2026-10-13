@@ -1,0 +1,78 @@
+@use 'mixins' as fx;
+
+ion-toolbar {
+  --background: var(--color-bg);
+}
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.item {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target-lg);
+  padding: var(--space-4);
+}
+
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: var(--icon-size-md);
+
+  &[data-tone='train'] {
+    background: var(--color-train-soft);
+    color: var(--color-train-text);
+  }
+
+  &[data-tone='body'] {
+    background: var(--color-body-soft);
+    color: var(--color-body-text);
+  }
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  @include fx.text(body, semibold);
+}
+
+.message {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.new {
+  @include fx.text(caption, semibold);
+  flex: none;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}

@@ -24,4 +24,14 @@ describe('FitnessMetricComponent', () => {
   it('omits the trend when none is given', () => {
     expect(render().querySelector('.trend')).toBeNull();
   });
+
+  it('exposes the hero size for styling', () => {
+    const fixture = TestBed.createComponent(FitnessMetricComponent);
+    fixture.componentRef.setInput('label', 'Rest');
+    fixture.componentRef.setInput('value', '1:30');
+    fixture.componentRef.setInput('size', 'xl');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).dataset['size']).toBe('xl');
+  });
 });

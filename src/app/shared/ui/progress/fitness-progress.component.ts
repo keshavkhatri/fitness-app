@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, numberAttribute } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input, numberAttribute } from '@angular/core';
 
 import { FitnessTone } from '../tone';
 
 export type FitnessProgressVariant = 'bar' | 'ring';
 
-const RING_RADIUS = 15.5;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+let nextGradientId = 0;
+/** The ring's viewBox is 36 × 36; the stroke stays inside it at any thickness. */
+const RING_CENTER = 18;
 
 /**
  * Accessible progress indicator (linear bar or ring).
@@ -17,16 +18,25 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
   template: `
     @if (variant() === 'ring') {
       <svg viewBox="0 0 36 36" aria-hidden="true">
-        <circle class="track" cx="18" cy="18" [attr.r]="radius" />
+        @if (gradient()) {
+          <defs>
+            <linearGradient [attr.id]="gradientId" x1="1" y1="0" x2="0" y2="1">
+              <stop offset="0" class="stop-start" />
+              <stop offset="1" class="stop-end" />
+            </linearGradient>
+          </defs>
+        }
+        <circle class="track" cx="18" cy="18" [attr.r]="radius()" />
         <!-- Skipped at 0% so the round line cap doesn't render a stray dot. -->
         @if (fraction() > 0) {
           <circle
             class="fill"
             cx="18"
             cy="18"
-            [attr.r]="radius"
-            [attr.stroke-dasharray]="circumference"
+            [attr.r]="radius()"
+            [attr.stroke-dasharray]="circumference()"
             [attr.stroke-dashoffset]="dashOffset()"
+            [attr.stroke]="gradient() ? 'url(#' + gradientId + ')' : null"
           />
         }
       </svg>
@@ -46,7 +56,9 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
     '[attr.aria-label]': 'label()',
     '[attr.data-variant]': 'variant()',
     '[attr.data-tone]': 'tone()',
+    '[class.gradient]': 'gradient()',
     '[style.--ring-size.px]': 'ringSize()',
+    '[style.--ring-thickness]': 'thickness()',
   },
 })
 export class FitnessProgressComponent {
@@ -59,9 +71,16 @@ export class FitnessProgressComponent {
   readonly variant = input<FitnessProgressVariant>('bar');
   readonly tone = input<Exclude<FitnessTone, 'neutral'>>('primary');
   readonly ringSize = input(72, { transform: numberAttribute });
+  /** Brand gradient fill (lime into its accessible strong shade); primary tone only. */
+  readonly gradient = input(false, { transform: booleanAttribute });
+  /** Stroke width in viewBox units (36 = the ring's size; up to 8). */
+  readonly thickness = input(3.5, { transform: numberAttribute });
 
-  protected readonly radius = RING_RADIUS;
-  protected readonly circumference = RING_CIRCUMFERENCE;
+  protected readonly gradientId = `fit-progress-gradient-${nextGradientId++}`;
+
+  // 0.75 inset keeps the default (3.5) at its original radius of 15.5.
+  protected readonly radius = computed(() => RING_CENTER - Math.min(Math.max(this.thickness(), 1), 8) / 2 - 0.75);
+  protected readonly circumference = computed(() => 2 * Math.PI * this.radius());
 
   protected readonly fraction = computed(() => {
     const max = this.max();
@@ -74,5 +93,5 @@ export class FitnessProgressComponent {
   /** `aria-valuenow` must stay within [0, max] even when the raw value overshoots. */
   protected readonly valueNow = computed(() => Math.min(Math.max(this.value(), 0), Math.max(this.max(), 0)));
 
-  protected readonly dashOffset = computed(() => RING_CIRCUMFERENCE * (1 - this.fraction()));
+  protected readonly dashOffset = computed(() => this.circumference() * (1 - this.fraction()));
 }

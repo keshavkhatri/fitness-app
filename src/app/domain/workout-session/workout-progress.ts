@@ -26,16 +26,22 @@ export interface ActivityDay {
   readonly date: CalendarDate;
   /** Training workouts (≥ 1 completed set) finished on this local day. */
   readonly workouts: number;
+  /** Their start-to-finish time, in whole minutes (0 without workouts). */
+  readonly minutes: number;
 }
 
 /** The seven days (Monday–Sunday) of the week containing `today`, with workouts per day. */
 export function weeklyActivity(logs: readonly WorkoutLog[], today: CalendarDate, localDate: LocalDateOf): ActivityDay[] {
   const training = completedWorkouts(logs).filter(isTrainingWorkout);
-  const finishedOn = training.map((log) => localDate(log.completedAt as string));
+  const finished = training.map((log) => ({
+    day: localDate(log.completedAt as string),
+    seconds: Math.max(0, (Date.parse(log.completedAt as string) - Date.parse(log.startedAt)) / 1000),
+  }));
   const monday = startOfWeek(today);
   return Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
-    return { date, workouts: finishedOn.filter((d) => sameDay(d, date)).length };
+    const that = finished.filter((f) => sameDay(f.day, date));
+    return { date, workouts: that.length, minutes: Math.round(that.reduce((n, f) => n + f.seconds, 0) / 60) };
   });
 }
 

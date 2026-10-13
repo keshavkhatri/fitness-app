@@ -1,11 +1,14 @@
 // Public API of the shared UI layer. Feature code imports from here only.
 export * from './tone';
+export * from './screen-theme';
+export * from './avatar/fitness-avatar.component';
 export * from './bottom-sheet/bottom-sheet.component';
 export * from './button/fitness-button.component';
 export * from './card/fitness-card.component';
 export * from './choice-group/choice-group.component';
 export * from './chip/fitness-chip.component';
 export * from './empty-state/empty-state.component';
+export * from './icon-button/fitness-icon-button.component';
 export * from './metric/fitness-metric.component';
 export * from './notice/notice.component';
 export * from './page/page-layout.component';

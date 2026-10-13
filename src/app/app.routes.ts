@@ -38,6 +38,8 @@ export const routes: Routes = [
       { path: 'home', loadChildren: () => import('./features/home/home.routes') },
       { path: 'workout', loadChildren: () => import('./features/workout/workout.routes') },
       { path: 'nutrition', loadChildren: () => import('./features/nutrition/nutrition.routes') },
+      // Its own tab; also reachable as /you/progress (You links there).
+      { path: 'progress', loadChildren: () => import('./features/workout/progress/progress.routes') },
       { path: 'you', loadChildren: () => import('./features/you/you.routes') },
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],

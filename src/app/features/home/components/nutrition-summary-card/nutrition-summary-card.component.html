@@ -1,36 +1,47 @@
 @let n = summary();
+@let p = protein();
 @let c = n.calories;
 
 <fit-card>
-  <div class="calories">
-    <fit-progress
-      variant="ring"
-      label="Calories"
-      [ringSize]="112"
-      [value]="c.progress?.value ?? 0"
-      [max]="c.progress?.max ?? 1"
-      [tone]="c.over ? 'warning' : 'primary'"
-      [valueText]="c.progress?.valueText ?? c.headline"
-    >
-      <span class="ring-value" data-testid="calories-eaten">{{ c.eaten }}</span>
-      <span class="ring-unit">kcal eaten</span>
-    </fit-progress>
+  <h2 class="title" [id]="headingId()">
+    <!-- Stretched over the card: the whole card opens Nutrition. -->
+    <button type="button" class="title-link" data-testid="home-nutrition-open" (click)="openNutrition.emit()">
+      <ion-icon name="restaurant-outline" aria-hidden="true" />Nutrition
+    </button>
+  </h2>
 
-    <div class="calorie-copy">
-      @if (c.balance) {
-        @if (c.over) {
-          <span class="caption over"><ion-icon name="alert-circle-outline" aria-hidden="true" />Over target</span>
-        } @else {
-          <span class="caption">Remaining</span>
-        }
-        <span class="remaining" data-testid="calories-balance">
-          {{ c.balance }}
-          <span class="unit">kcal</span>
-        </span>
-        <span class="caption" data-testid="calories-target">Daily target {{ c.target }} kcal</span>
+  <div class="body">
+    <div class="protein" data-testid="home-macro-protein">
+      @if (p.progress; as progress) {
+        <fit-progress
+          variant="ring"
+          gradient
+          [label]="p.label"
+          [ringSize]="72"
+          [thickness]="4.8"
+          [value]="progress.value"
+          [max]="progress.max"
+          [valueText]="progress.valueText"
+        >
+          <span class="ring-value">{{ tight(p.eaten) }}</span>
+          <span class="ring-target">of {{ tight(p.target) }}</span>
+        </fit-progress>
       } @else {
-        <span class="caption">Daily target</span>
-        <span class="no-target" data-testid="calories-target">Not available</span>
+        <!-- No protein target today: the intake alone, no ring. -->
+        <span class="no-target-value">{{ tight(p.eaten) }}</span>
+      }
+      <span class="protein-label">{{ p.label }}</span>
+    </div>
+
+    <div class="calories">
+      <span class="cal-label">Calories</span>
+      <span class="cal-value" data-testid="calories-eaten">{{ c.eaten }}</span>
+      <span class="cal-target" data-testid="calories-target">{{ c.target ? '/ ' + c.target + ' kcal' : 'kcal' }}</span>
+      @if (c.progress; as bar) {
+        <fit-progress class="cal-bar" label="Calories" gradient [tone]="c.over ? 'warning' : 'primary'" [value]="bar.value" [max]="bar.max" [valueText]="bar.valueText" />
+      }
+      @if (c.over) {
+        <span class="over">Over target</span>
       }
     </div>
   </div>
@@ -38,24 +49,7 @@
   @if (n.targetNote; as note) {
     <div class="note" data-testid="target-note">
       <p>{{ note }}</p>
-      <button fit-button type="button" variant="outline" (click)="openNutrition.emit()">Review in Nutrition</button>
+      <button type="button" class="note-link" (click)="openNutrition.emit()">Review</button>
     </div>
   }
-
-  <ul class="macros" aria-label="Macros">
-    @for (macro of n.macros; track macro.key) {
-      <!-- With a bar, the bar's label and value text carry the macro; the visible copy isn't read twice. -->
-      <li [attr.data-testid]="'home-macro-' + macro.key">
-        <span class="macro-label" [attr.aria-hidden]="macro.progress ? 'true' : null">{{ macro.label }}</span>
-        <span class="macro-value" [attr.aria-hidden]="macro.progress ? 'true' : null">
-          {{ macro.eaten }}@if (macro.target) {<span class="macro-target"> / {{ macro.target }}</span>}
-        </span>
-        @if (macro.progress; as p) {
-          <fit-progress class="macro-bar" [label]="macro.label" [value]="p.value" [max]="p.max" [valueText]="p.valueText" />
-        }
-      </li>
-    }
-  </ul>
-
-  <button fit-button type="button" variant="secondary" block icon="add" class="log-food" (click)="logFood.emit()">Log food</button>
 </fit-card>

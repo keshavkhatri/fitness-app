@@ -2,94 +2,117 @@
 
 :host {
   display: block;
+  container-type: inline-size;
 }
 
 fit-card {
-  padding: var(--space-5);
+  position: relative;
+  display: flex;
+  min-height: 212px;
+  border-radius: var(--radius-hero);
+  // Lime highlights on ink; the dashboard's ink focus ring would vanish here.
+  --color-focus: var(--color-ink-accent);
+  // The resume progress bar: accent fill on the ink track.
+  --color-primary-strong: var(--color-ink-accent);
+  --color-track: var(--color-ink-track);
 }
 
-// Decorative ember arcs in the top-right corner.
-.arcs {
+// --- Photo / generated placeholder ------------------------------------------------------
+.media {
   position: absolute;
-  top: -54px;
-  right: -54px;
-  width: 210px;
-  height: 210px;
+  inset: 0;
   pointer-events: none;
-
-  circle {
-    fill: none;
-    stroke: var(--color-ink-accent);
-    stroke-width: 14;
-    stroke-linecap: round;
-  }
 }
 
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// Darkens the left and bottom so white text stays readable over any photo.
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(var(--color-scrim-rgb), 0.72) 0%, rgba(var(--color-scrim-rgb), 0.25) 60%, transparent 100%),
+    linear-gradient(0deg, rgba(var(--color-scrim-rgb), 0.7) 0%, transparent 55%);
+}
+
+// --- Content ---------------------------------------------------------------------------
 .content {
   position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4);
+  color: var(--color-on-ink);
 }
 
-.top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+// Frosted pills over the photo.
+.eyebrow,
+.areas li {
+  background: rgba(var(--color-scrim-rgb), 0.45);
+  box-shadow: inset 0 0 0 var(--border-hairline) color-mix(in srgb, var(--color-on-ink) 24%, transparent);
+  backdrop-filter: blur(6px);
 }
 
 .eyebrow {
   @include fx.text(caption, semibold);
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: 6px;
-  color: var(--color-ink-accent);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-pill);
 
   ion-icon {
-    font-size: 16px;
+    font-size: var(--icon-size-sm);
+    color: var(--color-ink-accent);
+  }
+
+  .star {
+    color: var(--color-warning);
   }
 }
 
-.chip {
-  @include fx.text(caption, semibold);
-  padding: var(--space-1) 10px;
-  border-radius: var(--radius-pill);
-  background: var(--color-ink-track);
+// Title across; meta and chips on the left, the action on the right (narrow: below).
+.bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name name'
+    'meta meta'
+    'areas cta'
+    'focus cta'
+    'bar bar'
+    'status status';
+  align-items: center;
+  column-gap: var(--space-3);
 }
 
 .name {
-  @include fx.text(display, bold);
-  margin-top: 10px;
+  @include fx.text(h2, bold);
+  grid-area: name;
+  margin-bottom: var(--space-1);
   overflow-wrap: anywhere;
-}
-
-// Longer titles (rest, setup, unavailable) use the smaller step.
-fit-card:not([data-kind='resistance']):not([data-kind='resume']) .name {
-  @include fx.text(h1, bold);
-}
-
-.focus,
-.next {
-  @include fx.text(body-sm);
-  margin-top: 6px;
-  color: var(--color-on-ink-secondary);
-}
-
-.next {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-on-ink);
 }
 
 .meta {
   @include fx.text(body-sm);
+  grid-area: meta;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-4);
-  margin: var(--space-1) 0 0;
+  margin: 0 0 var(--space-3);
   padding: 0;
   list-style: none;
-  color: var(--color-on-ink-secondary);
+  color: var(--color-on-ink);
+  opacity: 0.92;
 
   li {
     display: inline-flex;
@@ -98,77 +121,71 @@ fit-card:not([data-kind='resistance']):not([data-kind='resume']) .name {
   }
 
   ion-icon {
-    font-size: 16px;
+    font-size: var(--icon-size-sm);
   }
 }
 
-.exercises {
+.areas {
+  grid-area: areas;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: var(--space-4) 0 0;
+  // One row, as the reference: chips that don't fit are clipped visually
+  // (still read by assistive tech; Workout Detail lists every area).
+  max-height: calc(var(--line-height-caption) + 8px + 2px);
+  overflow: hidden;
+  margin: 0;
   padding: 0;
   list-style: none;
 
   li {
     @include fx.text(caption, medium);
-    padding: 6px 10px;
-    border-radius: 10px;
-    background: var(--color-ink-track);
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
   }
+}
 
-  .more {
-    background: none;
-    box-shadow: inset 0 0 0 1px var(--color-ink-track);
-    color: var(--color-on-ink-secondary);
-  }
+.focus {
+  @include fx.text(body-sm);
+  grid-area: focus;
+  color: var(--color-on-ink-secondary);
 }
 
 .sets {
-  margin-top: 14px;
-  // Ember fill on the ink track.
-  --color-primary: var(--color-ink-accent);
-  --color-track: var(--color-ink-track);
-}
-
-.steps {
-  display: grid;
-  gap: 10px;
-  margin: var(--space-4) 0 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    @include fx.text(body, medium);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-  }
-}
-
-.step-number {
-  @include fx.text(caption, semibold);
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1.5px var(--color-ink-track);
-}
-
-.steps li:first-child .step-number {
-  background: var(--color-ink-accent);
-  color: var(--color-ink);
-  box-shadow: none;
+  grid-area: bar;
+  margin-top: var(--space-3);
 }
 
 .status {
   @include fx.text(body-sm, medium);
-  margin-top: var(--space-4);
-  color: var(--color-on-ink);
+  grid-area: status;
+  margin-top: var(--space-2);
 }
 
 .cta {
-  margin-top: var(--space-5);
+  grid-area: cta;
+  align-self: end;
+  min-width: 9.5em;
+  padding: 0 var(--space-4) 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-body-sm);
+
+  // Trailing chevron inside the label.
+  ion-icon {
+    margin-left: var(--space-3);
+    font-size: var(--icon-size-md);
+    vertical-align: -4px;
+  }
+}
+
+// Narrow cards: the action takes its own row, full width.
+@container (max-width: 340px) {
+  .bottom {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'name' 'meta' 'areas' 'focus' 'bar' 'status' 'cta';
+  }
+
+  .cta {
+    margin-top: var(--space-4);
+  }
 }

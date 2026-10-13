@@ -7,15 +7,18 @@ All data is stored on this device only (no account, backend or sync yet).
 Implemented so far:
 
 - **Onboarding + fitness profile**, then the **assessment** ("Your starting point": estimated BMR/maintenance and starting calorie and macro targets from the fitness calculation engine). The profile can be reviewed and edited later from the assessment or the You tab.
-- **Home**: greeting, today's workout card (open, start or resume), the plan's week strip with finished workouts, goal summary, latest recorded weight with its last-30-days change, today's nutrition against targets, and a progress summary. Each card loads independently; pull to refresh.
+- **Home** (redesigned dashboard, `fit-theme-dashboard`, matching the approved mockup): the Pulseform wordmark, a notification bell (dot while reminders are unread) and the avatar (opens You); a greeting with the user's name and the active-day **streak**; **"Your day, in motion"** with a ring (the mean of today's goals) and Move (logged steps vs 10,000), Train (today's planned workout done) and Recover (today's check-in) tiles, which open the steps and recovery check-ins; the featured workout (start, resume, activity, rest or setup) over a generated placeholder image (`home-media.ts` takes a real photo); compact Nutrition (protein ring, calories vs target) and This week (finished vs planned workouts, bars as tall as the time trained; opens Progress) cards. Each part loads independently; pull to refresh.
 - **Workout planning**: the deterministic workout generation engine (v2, frozen) builds the user's plan from the profile; the plan is persisted and kept in sync as the profile changes. The Workout tab shows today, the week, today's exercises and the plan; each session opens Workout Detail.
 - **Active workout logging** (full screen): one exercise at a time, set logging, rest timer, resumable after the app is closed, one workout in progress at a time, then a workout summary.
-- **Workout history and progress**: finished workouts and their details; Progress (You → Progress) shows weekly activity and per-exercise actual performance (latest and recent best top sets). No estimates, scores or streaks.
+- **Workout history and progress**: finished workouts and their details; Progress (its own tab, and You → Progress) shows weekly activity and per-exercise actual performance (latest and recent best top sets). No estimates, scores or streaks.
 - **Nutrition**: a daily food log with manually entered values, by meal and day, against the day's calculated targets. Add food lists Recent foods (distinct foods from the last 30 days) that fill in the form in one tap; the entry is still reviewed and saved as a new log.
 - **Body-weight history** (You → Weight history): add, edit and delete weigh-ins; a chart and first/latest summary per range. Recording a weight never changes the profile; an entry becomes the profile's weight only through the explicit, confirmed "Use as profile weight" action (after which the updated assessment is shown).
 - **Body measurements** (You → Measurements): tape circumferences (waist, chest, hips, arm, thigh), any subset per entry; history newest first, the latest value per site and the change between a site's two most recent readings. Separate from the profile and the weight history.
-- **Quick Add**: Start workout, Add food, Log weight, Add measurement and Add InBody work; Progress photo is shown as "Coming soon".
-- **You**: profile review, Progress, Weight history, Measurements, appearance (System/Light/Dark) and **Units** (metric/imperial). Notifications, connected health apps and subscription are listed but not built.
+- **Quick Add** (You → Quick add): Start workout, Add food, Log weight, Add measurement and Add InBody work; Progress photo is shown as "Coming soon".
+- **Daily check-ins**: steps (typed in; no health-app connection yet) and a recovery check-in (poor / fair / good / great), one value per day (`domain/daily-check-in`, `core/daily-check-in`).
+- **Streak**: consecutive days with anything recorded (a finished workout, food, a weigh-in, steps or a check-in); today not yet active keeps yesterday's streak.
+- **Notifications** (Home's bell): an in-app inbox of today's reminders built from the user's data (planned or in-progress workout, recovery check-in, nothing eaten yet, no weigh-in in a week); opening it marks them read. No push or system notifications yet.
+- **You**: name and photo (resized on the device; used by Home's greeting and avatar), profile review, Quick add, Progress, Weight history, Measurements, appearance (System/Light/Dark) and **Units** (metric/imperial). Notification settings (push), connected health apps and subscription are listed but not built.
 
 **InBody onboarding (AI-based):** the welcome screen offers *Enter manually* (the default; that path is unchanged) or *Upload InBody report*. The upload step says the image goes to an external AI service, checks the file (PNG/JPEG/WEBP, up to 8 MB) and posts it to the app's own extraction endpoint (`core/inbody`, `POST /v1/inbody-extractions`), which holds the OpenAI key (Responses API, Structured Outputs, `store: false`); the app never does. Every answer is re-validated (`parseInBodyExtraction`) and mapped (`inBodyPrefill`); a read report prefills sex, height and weight on the basics step, where each field shows the printed value or is flagged as uncertain, unreadable, absent or unusable for the user to correct. The profile is saved only from the summary's "Create My Profile", as before. Unsupported or unreadable reports, file, network, provider and invalid-response failures each have their own message, with retry and a switch to manual entry that keeps answers already given. The image and extraction stay in memory only; nothing is logged; weight history, assessments and workout plans are untouched; age is never turned into a date of birth and Fat Free Mass is not used as lean body mass. The endpoint is a public URL set in `src/environments` (`inbodyExtractionEndpoint`; never a key): the local server in development builds (`http://localhost:8787`); production builds set null, which hides the upload option until hosting is chosen. No local OCR.
 
@@ -46,11 +49,12 @@ Native platforms have not been added yet. Once the bundle ID is final: `npx cap 
 
 ```
 src/
-  theme/                    Design tokens: the ONLY place colors/type/spacing are defined
-    _palette.scss           Light + dark color values (Sass maps)
-    _tokens.scss            Emits CSS custom properties (--color-*, --space-*, --radius-*, --font-size-*)
+  theme/                    Design tokens: the ONLY place colors/type/spacing are defined (contract: docs/design-system.md)
+    _palette.scss           Color values (Sass maps): classic light + dark; redesign warm + charcoal (one key set)
+    _tokens.scss            Emits CSS custom properties (--color-*, --space-*, --radius-*, --font-size-*, …)
+                            and the opt-in screen themes (.fit-theme-dashboard, .fit-theme-immersive)
     _ionic-bridge.scss      Maps tokens onto Ionic's --ion-* variables
-    _mixins.scss            Component helpers: text(), focus-ring, button-reset, pressable
+    _mixins.scss            Component helpers: text(), eyebrow, focus-ring, safe-area-padding, button-reset, pressable
     theme.scss              Global entry: base styles, utility classes, Ionic overrides
   app/
     app.config.ts           Providers (Ionic platform mode, router, icon + theme init)
@@ -90,8 +94,8 @@ src/
       icons/                Central ionicon registration (only listed icons are bundled)
     shared/ui/              Design-system components (selector prefix `fit-`), import via `shared/ui`
     shell/
-      tabs/                 Bottom tab bar (Home, Workout, Quick Add, Nutrition, You)
-      quick-add/            Quick Add sheet + action registry (progress photo still "coming soon")
+      tabs/                 Bottom tab bar: Home, Train (workout), Fuel (nutrition), Progress, You
+      quick-add/            Quick Add sheet + action registry; QuickAddLauncher opens it (from You)
     features/
       home/                 Dashboard: page, routes, view models, section cards (all real data: profile goal, plan,
                             workout history, nutrition, recorded weight)
@@ -111,8 +115,9 @@ src/
 
 ## Conventions
 
+- **Design system:** [`docs/design-system.md`](docs/design-system.md) is the contract for tokens, screen themes, components, accessibility and responsive rules; screen redesigns follow it.
 - **Never hard-code colors or sizes in components.** Use `var(--color-*)`, `var(--space-*)`, `var(--radius-*)`, and `@use 'mixins' as fx; @include fx.text(h3, semibold);` (`src/theme` is on the Sass include path).
-- **Theming:** no class on `<html>` follows the OS; `theme-light` / `theme-dark` force a mode (managed by `ThemeService`).
+- **Theming:** no class on `<html>` follows the OS; `theme-light` / `theme-dark` force a mode (managed by `ThemeService`). Redesigned screens opt into a screen theme with a class on the page host (`fit-theme-dashboard` follows light/dark, `fit-theme-immersive` is always dark); screens without one keep the classic look. Focus indicators use `--color-focus` and stand-alone graphics `--color-primary-strong`, never the brand fill (lime is invisible on light surfaces).
 - **Components:** standalone, `OnPush`, signal inputs/outputs. `fit-*` is presentational and has no business logic. Feature-specific components live in `features/<area>/components`.
 - **Platform mode:** Ionic picks `ios`/`md` per platform for native behaviour (transitions, swipe-back). The look must be mode-independent: never rely on mode-only Ionic features (e.g. `collapse="condense"`) or on Ionic's mode-specific sizing; check new UI in both modes (append `?ionic:mode=ios` / `?ionic:mode=md` to the dev URL).
 - **Data:** pages load from core services with `resource()` (e.g. Home reads the profile, plan, history and nutrition services). If demo data is ever needed, it lives only in `*.demo.ts` files (enforced by lint, `no-restricted-imports`) and must be labelled in the UI.
@@ -121,7 +126,7 @@ src/
 - **Onboarding:** Answers are stored canonically in metric (cm/kg); `unitSystem` is display-only. The profile stores `dateOfBirth` (ISO `YYYY-MM-DD`), never age; derive age with `currentAge()` from `domain/fitness-profile/date-of-birth.ts`, and display age rather than the birth date. The app is adults-only (18+, `AGE_YEARS` in `profile-rules.ts`). `weight` is the profile's current weight, not a history; recorded weigh-ins live in the separate weight history and change the profile only through the explicit "Use as profile weight" action. No fitness calculations happen here; engines consume `UserFitnessProfile` later.
 - **Domain layer** (`src/app/domain`): framework-free TypeScript, enforced by lint (no Angular/Ionic/Capacitor/rxjs or app-layer imports). Calculations take an explicit `asOfDate` (no hidden clock) and return `{ ok, value | error }`. Formula/coefficient changes require a new `calculationVersion` in `calculation-config.ts`. Results are estimates; UI copy must say "estimated maintenance", "starting calorie target", "initial protein target". Assessments separate `estimates` (BMR, TDEE) from `targets`; consumers must handle `targets.calories.status` (`normal` / `floor-applied` / `review-required`) and `targets.macros.status` (`feasible` / `constrained` / `infeasible`, which has no gram targets). The calorie threshold is a product safety guard, not medical guidance.
 - **Units:** changing Units (You tab, `UnitPreferenceService`) only changes the profile's `unitSystem`: stored values stay metric and nothing is converted, the plan is kept, and an already reviewed assessment stays reviewed. A workout records its weight unit (kg/lb) when it starts.
-- **Quick Add:** the sheet only renders the actions it is given and emits the chosen one; the host (`TabsPage`) decides what happens. Ship an action by flipping `available` and handling `(actionSelected)`.
+- **Quick Add:** the sheet only renders the actions it is given and emits the chosen one; the host (`TabsPage`) decides what happens. Pages open it with `QuickAddLauncher.show()`. Ship an action by flipping `available` and handling `(actionSelected)`.
 - **Accessibility:** touch targets ≥ 40–44px, secondary text on muted surfaces uses `--color-text-on-muted` (AA), every progress bar has a label/value text, state never relies on color alone (filled icons for the active tab, text for trends and "Coming soon"), and reduced-motion is honoured via the motion tokens.
 
 ## Production readiness
@@ -130,5 +135,5 @@ Known items that must be resolved before a production release:
 
 - **Profile data is stored unencrypted.** `LocalFitnessProfileRepository` and `OnboardingProgressStore` keep personal and body data (date of birth, sex, height, weight, goals) as plain JSON in device storage (`localStorage` via `KeyValueStorage`). Review profile persistence (platform secure storage / encrypted local store, server as source of truth once the API exists) before release. Marked with `TODO(security, before production)` in both files.
 - **The workout plan is stored unencrypted too.** `LocalWorkoutPlanRepository` keeps the plan (goal, experience, training setup; no body data) as plain JSON in device storage. Covered by the same persistence review.
-- **Logs and histories are stored unencrypted too.** Workout logs, the food log, weight history and body measurements are plain JSON in device storage (same caveat in each repository). Covered by the same persistence review.
+- **Logs and histories are stored unencrypted too.** Workout logs, the food log, weight history, body measurements, daily check-ins and the user's name and photo are plain JSON in device storage (same caveat in each repository). Covered by the same persistence review.
 - **Minimum age (18) is enforced client-side only.** It must also be enforced by the backend once profiles are persisted server-side.

@@ -1,66 +1,68 @@
 @use 'mixins' as fx;
 
+// The bar uses the dashboard screen theme (the redesign's tab pages). Ionic
+// adds the bottom safe-area inset below this height (content-box).
 ion-tab-bar {
+  --background: var(--color-surface);
   --border: var(--border-hairline) solid var(--color-border);
-  height: 56px;
+  height: 64px;
+  padding-top: var(--space-1);
+  // The screen-theme class paints its own background; the bar is a surface.
+  background: var(--color-surface);
 }
 
 ion-tab-button {
-  --color: var(--color-text-secondary);
-  --color-selected: var(--color-primary-text);
+  --color: var(--color-text);
+  --color-selected: var(--color-text);
   --ripple-color: transparent;
+  --background: transparent;
+  --background-focused: var(--color-surface-muted);
   // Ionic md tab buttons default to min-width 80px + 12px side padding, which
   // truncates five labels on 320–360px screens. Keep sizing mode-independent.
   --padding-start: 0;
   --padding-end: 0;
+  position: relative;
   min-width: var(--tap-target-min);
 
   ion-icon {
-    font-size: 24px;
+    position: relative;
+    font-size: 26px;
   }
 
   ion-label {
     @include fx.text(caption, medium);
-    margin-top: 2px;
+    position: relative;
+    margin-top: 3px;
+    color: var(--color-text-secondary);
   }
 
-  &.tab-selected ion-label {
-    font-weight: var(--font-weight-semibold);
+  // Active: a soft brand glow behind icon and label, the filled icon variant
+  // and a bold label (never color alone).
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 64px;
+    height: 58px;
+    border-radius: var(--radius-lg);
+    background: radial-gradient(closest-side, rgba(var(--color-primary-rgb), 0.85), rgba(var(--color-primary-rgb), 0.35) 55%, transparent);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    transition:
+      opacity var(--motion-duration-base) var(--motion-ease),
+      transform var(--motion-duration-base) var(--motion-ease);
   }
-}
 
-.quick-add {
-  @include fx.button-reset;
-  @include fx.focus-ring;
+  &.tab-selected {
+    &::before {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
 
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  // Icon box + gap matches the 24px icon + 2px label offset of the tab buttons.
-  gap: 0;
-  min-width: var(--tap-target-min);
-  height: 100%;
-  color: var(--color-text-secondary);
-}
-
-.quick-add-icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 26px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: 22px;
-  transition: transform var(--motion-duration-fast) var(--motion-ease);
-}
-
-.quick-add:active .quick-add-icon {
-  transform: scale(0.94);
-}
-
-.quick-add-label {
-  @include fx.text(caption, medium);
+    ion-label {
+      color: var(--color-text);
+      font-weight: var(--font-weight-bold);
+    }
+  }
 }

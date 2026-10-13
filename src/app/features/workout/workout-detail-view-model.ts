@@ -135,8 +135,7 @@ function toResistanceDetail(
   dayLabel: string,
   catalog: ReadonlyMap<string, Exercise>,
 ): ResistanceDetailView {
-  const areas = session.exercises.flatMap((p) => catalog.get(p.exerciseId)?.primaryMuscles.map((m) => MUSCLE_AREAS[m]) ?? []);
-  const focus = [...new Set(areas)];
+  const focus = sessionFocusAreas(session, catalog);
   return {
     kind: 'resistance',
     dayLabel,
@@ -149,6 +148,12 @@ function toResistanceDetail(
     progression: progressionGuidance(session.exercises, catalog),
     cta: { label: WORKOUT_COPY.detail.startWorkout, pendingMessage: null },
   };
+}
+
+/** Broad body areas a session trains, in exercise order, without repeats ("Chest", "Back", …). */
+export function sessionFocusAreas(session: WorkoutSession, catalog: ReadonlyMap<string, Exercise> = CATALOG): string[] {
+  const areas = session.exercises.flatMap((p) => catalog.get(p.exerciseId)?.primaryMuscles.map((m) => MUSCLE_AREAS[m]) ?? []);
+  return [...new Set(areas)];
 }
 
 function toDetailExercise(planned: PlannedExercise, catalog: ReadonlyMap<string, Exercise>): DetailExerciseView {

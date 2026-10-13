@@ -2,112 +2,152 @@
 
 :host {
   display: block;
+  container-type: inline-size;
 }
 
 fit-card {
-  padding: var(--space-4);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-3);
+  border-color: transparent;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.title {
+  @include fx.text(body-sm, bold);
+}
+
+.title-link {
+  @include fx.button-reset;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  white-space: nowrap;
+
+  ion-icon {
+    flex: none;
+    font-size: var(--icon-size-md);
+  }
+
+  // The stretched hit area and its focus ring cover the whole card.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::after {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+
+// Protein ring on the left, calories on the right (stacked on very narrow cards).
+.body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.protein {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ring-value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+  line-height: 20px;
+}
+
+.ring-target {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.no-target-value {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+}
+
+.protein-label {
+  @include fx.text(caption, medium);
 }
 
 .calories {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.ring-value {
-  @include fx.text(h2, bold);
-  @include fx.tabular-numbers;
-  display: block;
-}
-
-.ring-unit,
-.caption {
-  @include fx.text(caption, medium);
-  display: block;
-  color: var(--color-text-secondary);
-}
-
-.caption.over {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-warning-text);
-
-  ion-icon {
-    font-size: 14px;
-  }
-}
-
-.calorie-copy {
-  display: flex;
-  flex: 1 1 9em;
+  flex: 1;
   flex-direction: column;
   min-width: 0;
 }
 
-.remaining {
-  @include fx.text(display, bold);
-  @include fx.tabular-numbers;
-  margin: 2px 0;
-  letter-spacing: -0.025em;
+.cal-label {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
 
-  .unit {
-    @include fx.text(body-sm, semibold);
-    margin-left: 3px;
-    letter-spacing: 0;
+.cal-value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+}
+
+.cal-target {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.cal-bar {
+  margin-top: var(--space-2);
+}
+
+.over {
+  @include fx.text(caption, semibold);
+  margin-top: var(--space-1);
+  color: var(--color-warning-text);
+}
+
+@container (max-width: 160px) {
+  .body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+// --- Withheld target -----------------------------------------------------------------
+.note {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+
+  p {
+    @include fx.text(caption);
     color: var(--color-text-secondary);
   }
 }
 
-// Columns have an em minimum, so they drop from three to fewer as text grows.
-.macros {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.75em), 1fr));
-  gap: var(--space-3);
-  margin: var(--space-4) 0 0;
-  padding: 14px 0 0;
-  border-top: var(--border-hairline) solid var(--color-border);
-  list-style: none;
-}
-
-.macro-label {
+.note-link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
   @include fx.text(caption, semibold);
-  display: block;
-  color: var(--color-text-secondary);
-}
 
-.macro-value {
-  @include fx.text(body-sm, semibold);
-  @include fx.tabular-numbers;
-  display: block;
-  margin-top: 2px;
-}
-
-.macro-target {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.macro-bar {
-  margin-top: 6px;
-}
-
-.no-target {
-  @include fx.text(body, semibold);
-}
-
-.note {
-  @include fx.text(body-sm);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  color: var(--color-text-secondary);
-}
-
-.log-food {
-  margin-top: var(--space-4);
+  min-height: var(--tap-target-min);
+  color: var(--color-primary-text);
 }

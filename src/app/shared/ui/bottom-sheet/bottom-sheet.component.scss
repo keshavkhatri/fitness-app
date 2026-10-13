@@ -11,7 +11,8 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0 auto;
-  padding: var(--space-6) var(--page-gutter) calc(var(--space-6) + var(--ion-safe-area-bottom, 0px));
+  padding: var(--space-6) var(--page-gutter);
+  @include fx.safe-area-padding(bottom, var(--space-6));
   color: var(--color-text);
 }
 

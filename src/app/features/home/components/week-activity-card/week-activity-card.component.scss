@@ -1,0 +1,138 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+  // The card's own width decides whether the title keeps its icon.
+  container-type: inline-size;
+}
+
+fit-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  height: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3);
+  border-color: transparent;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.title {
+  @include fx.text(body-sm, bold);
+  min-width: 0;
+}
+
+.title-link {
+  @include fx.button-reset;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  white-space: nowrap;
+
+  ion-icon {
+    flex: none;
+    font-size: var(--icon-size-md);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::after {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+
+.chevron {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-size: var(--icon-size-sm);
+}
+
+.count {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+}
+
+.unit {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+// --- Chart ---------------------------------------------------------------------------
+.chart {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  min-height: 84px;
+  margin-top: var(--space-2);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.bar {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  width: 9px;
+}
+
+// Done bars are filled; planned and rest bars are empty tracks of different
+// heights (never color alone).
+.fill {
+  width: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+  transition: height var(--motion-duration-ring) var(--motion-ease);
+}
+
+[data-state='done'] .fill {
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-strong));
+}
+
+.letter {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.today .letter {
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+// Very narrow cards (two columns at 320px): the title drops its icon rather
+// than running under the chevron.
+@container (max-width: 150px) {
+  .title-link ion-icon {
+    display: none;
+  }
+}

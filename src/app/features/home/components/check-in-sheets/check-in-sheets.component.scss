@@ -1,0 +1,12 @@
+@use 'mixins' as fx;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.error {
+  @include fx.text(body-sm, medium);
+  color: var(--color-danger-text);
+}

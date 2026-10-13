@@ -92,3 +92,9 @@ section {
   font-size: 18px;
   color: var(--color-text-tertiary);
 }
+
+// Quick Add keeps its brand-filled icon (it used to be the tab bar's center action).
+.entry-icon.quick-add {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}

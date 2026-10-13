@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
 
+import { ActivatedRoute } from '@angular/router';
+
 import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
@@ -9,6 +11,7 @@ import { ReviewEntryComponent } from '../../fitness-review/components/review-ent
 import { FITNESS_REVIEW_PATH } from '../../fitness-review/fitness-review-paths';
 import { WORKOUT_COPY } from '../workout-content';
 import { PerformanceCardListComponent } from './performance-card-list.component';
+import { progressBaseOf } from './progress-paths';
 import { ProgressScreen, toProgressScreen } from './progress-view-model';
 
 /**
@@ -40,6 +43,8 @@ export class ProgressPage {
   private readonly history = inject(WorkoutHistoryService);
   private readonly clock = inject(CLOCK);
   private readonly nav = inject(NavController);
+  /** `/progress` (its own tab: no back button) or `/you/progress`. */
+  protected readonly base = progressBaseOf(inject(ActivatedRoute));
 
   protected readonly copy = WORKOUT_COPY.progress;
   private readonly state = resource({ loader: async () => toProgressScreen(await this.history.progress(), this.clock()) });
@@ -82,11 +87,11 @@ export class ProgressPage {
   }
 
   protected openExercise(exerciseId: string): void {
-    void this.nav.navigateForward(['/you', 'progress', 'exercise', exerciseId]);
+    void this.nav.navigateForward([this.base, 'exercise', exerciseId]);
   }
 
   protected viewAll(): void {
-    void this.nav.navigateForward(['/you', 'progress', 'exercises']);
+    void this.nav.navigateForward([this.base, 'exercises']);
   }
 
   protected openBodyComposition(): void {

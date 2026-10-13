@@ -1,0 +1,160 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+// Borderless, softly lifted (as the reference). The ring sits top right,
+// beside both the title and the tiles; the tiles share the left column.
+fit-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'intro ring'
+    'tiles ring';
+  grid-template-rows: auto 1fr;
+  column-gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-2) var(--space-3);
+  border-color: transparent;
+  border-radius: var(--radius-hero);
+  box-shadow: var(--shadow-raised);
+}
+
+.intro {
+  grid-area: intro;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 0 var(--space-2) var(--space-2);
+}
+
+.ring,
+.ring-skeleton {
+  grid-area: ring;
+  align-self: start;
+}
+
+.title {
+  @include fx.text(h3, bold);
+}
+
+.status {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+// --- Ring ----------------------------------------------------------------------------
+.ring-value {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+}
+
+.ring-caption {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+
+// --- Tiles ---------------------------------------------------------------------------
+.tiles {
+  grid-area: tiles;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    min-width: 0;
+  }
+
+  li + li {
+    border-left: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.tile {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-card);
+  transition: background-color var(--motion-duration-fast) var(--motion-ease);
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+// Lime-tinted icon tiles with the brand's strong green (3:1 on the tint).
+.tile-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-size: var(--icon-size-lg);
+}
+
+.tile-label {
+  @include fx.text(body-sm, bold);
+}
+
+.tile-value {
+  @include fx.text(caption);
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 3px;
+  min-width: 0;
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+}
+
+.tile-value[data-emphasis='number'] .value {
+  @include fx.tabular-numbers;
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  height: 5px;
+  margin-top: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+  overflow: hidden;
+
+  &.inactive {
+    opacity: 0.5;
+  }
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-strong));
+  transition: width var(--motion-duration-ring) var(--motion-ease);
+}
+
+// Narrow phones (320px): the tiles take the full width under the ring.
+@container (max-width: 330px) {
+  fit-card {
+    grid-template-areas:
+      'intro ring'
+      'tiles tiles';
+    row-gap: var(--space-2);
+  }
+}

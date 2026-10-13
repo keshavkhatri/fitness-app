@@ -1,0 +1,47 @@
+@use 'mixins' as fx;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.photo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+}
+
+.photo-pick,
+.photo-remove {
+  @include fx.button-reset;
+  @include fx.text(body, semibold);
+
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target-min);
+  color: var(--color-primary-text);
+  cursor: pointer;
+}
+
+.photo-pick:focus-within,
+.photo-remove:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+.photo-remove {
+  color: var(--color-danger-text);
+}
+
+.error {
+  @include fx.text(body-sm, medium);
+  color: var(--color-danger-text);
+}

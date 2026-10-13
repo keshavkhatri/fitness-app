@@ -27,6 +27,14 @@
   @include fx.text(h1, bold);
 }
 
+:host([data-size='xl']) .number {
+  @include fx.text(display-xl, bold);
+}
+
+:host([data-size='xl']) .unit {
+  @include fx.text(h3, semibold);
+}
+
 .unit {
   @include fx.text(body-sm, medium);
   color: var(--color-text-secondary);

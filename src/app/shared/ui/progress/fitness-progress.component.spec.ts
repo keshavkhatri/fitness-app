@@ -39,4 +39,20 @@ describe('FitnessProgressComponent', () => {
     expect(el.querySelector('circle.track')).not.toBeNull();
     expect(el.querySelector('circle.fill')).toBeNull();
   });
+
+  it('ring geometry: the default keeps radius 15.5; thicker strokes stay inside the 36-unit box', () => {
+    const radius = (inputs: Record<string, unknown>) =>
+      Number(render({ value: 1, max: 2, label: 'x', variant: 'ring', ...inputs }).querySelector('circle.track')!.getAttribute('r'));
+    expect(radius({})).toBe(15.5);
+    expect(radius({ thickness: 6 })).toBe(14.25);
+    expect(radius({ thickness: 6 }) + 6 / 2).toBeLessThanOrEqual(18);
+  });
+
+  it('a gradient ring strokes its fill with its own gradient', () => {
+    const el = render({ value: 1, max: 2, label: 'x', variant: 'ring', gradient: true });
+    const id = el.querySelector('linearGradient')!.getAttribute('id');
+    expect(el.querySelector('circle.fill')!.getAttribute('stroke')).toBe(`url(#${id})`);
+    expect(el.classList.contains('gradient')).toBe(true);
+    expect(render({ value: 1, max: 2, label: 'x', variant: 'ring' }).querySelector('linearGradient')).toBeNull();
+  });
 });

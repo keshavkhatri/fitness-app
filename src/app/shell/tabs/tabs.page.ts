@@ -14,6 +14,7 @@ import { NEW_FOOD_PATH } from '../../features/nutrition/nutrition-paths';
 import { WORKOUT_PATH, activeWorkoutPath, workoutSessionPath } from '../../features/workout/workout-paths';
 import { toWorkoutScreen } from '../../features/workout/workout-view-model';
 
+import { QuickAddLauncher } from '../quick-add/quick-add-launcher.service';
 import { QuickAddSheetComponent } from '../quick-add/quick-add-sheet.component';
 import { QUICK_ADD_ACTIONS, QuickAddAction } from '../quick-add/quick-add.actions';
 
@@ -27,26 +28,18 @@ interface TabDestination {
   activeIcon: string;
 }
 
-interface TabBarAction {
-  kind: 'quick-add';
-  id: string;
-  label: string;
-  icon: string;
-}
-
-type TabBarItem = TabDestination | TabBarAction;
-
-const TAB_BAR_ITEMS: readonly TabBarItem[] = [
+/** Labels follow the redesign (Train, Fuel); the route ids are unchanged. */
+const TAB_BAR_ITEMS: readonly TabDestination[] = [
   { kind: 'tab', id: 'home', label: 'Home', icon: 'home-outline', activeIcon: 'home' },
-  { kind: 'tab', id: 'workout', label: 'Workout', icon: 'barbell-outline', activeIcon: 'barbell' },
-  { kind: 'quick-add', id: 'quick-add', label: 'Quick add', icon: 'add' },
-  { kind: 'tab', id: 'nutrition', label: 'Nutrition', icon: 'restaurant-outline', activeIcon: 'restaurant' },
-  { kind: 'tab', id: 'you', label: 'You', icon: 'person-circle-outline', activeIcon: 'person-circle' },
+  { kind: 'tab', id: 'workout', label: 'Train', icon: 'barbell-outline', activeIcon: 'barbell' },
+  { kind: 'tab', id: 'nutrition', label: 'Fuel', icon: 'nutrition-outline', activeIcon: 'nutrition' },
+  { kind: 'tab', id: 'progress', label: 'Progress', icon: 'stats-chart-outline', activeIcon: 'stats-chart' },
+  { kind: 'tab', id: 'you', label: 'You', icon: 'person-outline', activeIcon: 'person' },
 ];
 
 /**
- * Application shell: bottom tab bar with four routed destinations and a
- * central Quick Add action that opens a sheet instead of navigating.
+ * Application shell: bottom tab bar with five routed destinations, and the
+ * Quick Add sheet, opened from the You tab through `QuickAddLauncher`.
  */
 @Component({
   selector: 'app-tabs',
@@ -58,7 +51,8 @@ const TAB_BAR_ITEMS: readonly TabBarItem[] = [
 export class TabsPage {
   protected readonly tabBarItems = TAB_BAR_ITEMS;
   protected readonly activeTab = signal<string | undefined>(undefined);
-  protected readonly quickAddOpen = signal(false);
+  /** Two-way bound to the sheet: pages open it via `QuickAddLauncher`. */
+  protected readonly quickAddOpen = inject(QuickAddLauncher).open;
   protected readonly quickAddActions = QUICK_ADD_ACTIONS;
 
   private readonly nav = inject(NavController);
