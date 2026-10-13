@@ -126,6 +126,23 @@ ion-toolbar {
   font-size: 12.5px;
 }
 
+// The prescription, quiet under the chips: "Planned 4 sets · 6–10 reps · 120 sec rest".
+.planned {
+  @include fx.text(caption);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.planned-label {
+  @include fx.text(caption, semibold);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
 // Full-bleed hero under the title; the sets panel overlaps its bottom edge.
 // It takes the screen's spare height (up to a cap, then the panel does), so
 // the panel ends at the footer as in the design instead of leaving a band.

@@ -103,6 +103,33 @@ describe('active workout view model', () => {
     expect(toActiveWorkoutView(log).exercise.nextPendingSet).toBe(2);
   });
 
+  it('prefills pending sets: this workout first, then last time, then the plan (never an invented weight)', () => {
+    // Bench Press: 4 sets of 6–10 reps.
+    expect(toActiveWorkoutView(logFor()).exercise.sets[0].suggestion).toEqual({ weight: '', reps: '6', durationSeconds: '' });
+
+    let before = logFor();
+    before = must(completeSet(before, { exercise: 0, set: 0 }, { weight: 55, reps: 10 }, '2026-10-01T09:03:00.000Z'));
+    before = must(completeSet(before, { exercise: 0, set: 1 }, { weight: 57.5, reps: 8 }, '2026-10-01T09:06:00.000Z'));
+    const history = [{ ...before, id: 'old', status: 'completed' as const, completedAt: '2026-10-01T10:00:00.000Z' }];
+
+    let log = logFor();
+    let sets = toActiveWorkoutView(log, undefined, history).exercise.sets;
+    expect(sets.map((r) => [r.suggestion.weight, r.suggestion.reps])).toEqual([
+      ['55', '10'],
+      ['57.5', '8'],
+      ['57.5', '8'], // more sets than last time: its last set
+      ['57.5', '8'],
+    ]);
+
+    log = must(completeSet(log, { exercise: 0, set: 0 }, { weight: 60, reps: 9 }, '2026-10-08T09:03:00.000Z'));
+    sets = toActiveWorkoutView(log, undefined, history).exercise.sets;
+    expect(sets[1].suggestion).toMatchObject({ weight: '60', reps: '9' }); // today's set wins
+
+    // Another unit: last time's weights don't carry over.
+    const pounds = toActiveWorkoutView(logFor(PROFILE, 'day-1-upper', 'lb'), undefined, history).exercise.sets;
+    expect(pounds[0].suggestion).toMatchObject({ weight: '', reps: '6' });
+  });
+
   it('marks the first and last exercise', () => {
     const log = logFor();
     expect(toActiveWorkoutView({ ...log, currentExerciseIndex: 6 })).toMatchObject({ isFirst: false, isLast: true, position: '7 of 7 exercises' });

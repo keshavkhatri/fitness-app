@@ -47,6 +47,9 @@
               }
             </p>
           }
+          <p class="planned" data-testid="planned">
+            <span class="planned-label">{{ copy.planned }}</span>&ngsp;<span>{{ v.exercise.planned }}</span>
+          </p>
         </div>
 
         <app-exercise-demo class="hero" variant="stage" [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name">

@@ -1,5 +1,15 @@
 import { Exercise, MuscleGroup } from '../../../domain/workout-programming';
-import { ExerciseLog, LoggingMode, SetLog, SetStatus, WorkoutLog, nextPendingSet, pendingSetCount } from '../../../domain/workout-session';
+import {
+  ExerciseLog,
+  ExercisePerformanceSession,
+  LoggingMode,
+  SetLog,
+  SetStatus,
+  WorkoutLog,
+  exercisePerformance,
+  nextPendingSet,
+  pendingSetCount,
+} from '../../../domain/workout-session';
 import { WORKOUT_COPY } from '../workout-content';
 import { exerciseEquipment, exerciseMuscles, formatPrescription, targetValue, titleFor } from '../workout-formatting';
 import { CATALOG } from '../workout-view-model';
@@ -80,11 +90,23 @@ export interface SetRowView {
   readonly values: Readonly<Record<FieldKey, string>>;
   /** Accessible name of the row's main button. */
   readonly actionLabel: string;
-  /** Suggested input for a pending set: the latest completed values in this exercise, else the plan. */
+  /**
+   * Prefilled input for a pending set, to accept or change: the latest completed
+   * set in this exercise, else the same set last time it was done, else the plan
+   * (reps at the bottom of the range). Weight is never invented: empty without history.
+   */
   readonly suggestion: Readonly<Record<FieldKey, string>>;
 }
 
-export function toActiveWorkoutView(log: WorkoutLog, catalog: ReadonlyMap<string, Exercise> = CATALOG): ActiveWorkoutView {
+/**
+ * `history`: finished workouts, used only to prefill the current exercise's sets
+ * with what was lifted last time.
+ */
+export function toActiveWorkoutView(
+  log: WorkoutLog,
+  catalog: ReadonlyMap<string, Exercise> = CATALOG,
+  history: readonly WorkoutLog[] = [],
+): ActiveWorkoutView {
   const copy = WORKOUT_COPY.active;
   const index = log.currentExerciseIndex;
   const exercise = log.exercises[index];
@@ -101,7 +123,7 @@ export function toActiveWorkoutView(log: WorkoutLog, catalog: ReadonlyMap<string
     exerciseIndex: index,
     isFirst: index === 0,
     isLast: index === log.exercises.length - 1,
-    exercise: toExercise(exercise, log, catalog),
+    exercise: toExercise(exercise, log, catalog, lastTime(history, exercise, log)),
     next: log.exercises[index + 1] ? toNext(log.exercises[index + 1], catalog) : null,
     pendingTotal: sets.filter((s) => s.status === 'pending').length,
   };
@@ -145,7 +167,18 @@ function fieldsFor(exercise: ExerciseLog, log: WorkoutLog): FieldView[] {
   }
 }
 
-function toExercise(exercise: ExerciseLog, log: WorkoutLog, catalog: ReadonlyMap<string, Exercise>): ActiveExerciseView {
+/** The most recent finished session of this exercise, logged the same way and in the same unit. */
+function lastTime(history: readonly WorkoutLog[], exercise: ExerciseLog, log: WorkoutLog): ExercisePerformanceSession | null {
+  const sessions = exercisePerformance(history, exercise.exerciseId)?.sessions ?? [];
+  return sessions.find((s) => s.logging === exercise.logging && s.weightUnit === log.weightUnit) ?? null;
+}
+
+function toExercise(
+  exercise: ExerciseLog,
+  log: WorkoutLog,
+  catalog: ReadonlyMap<string, Exercise>,
+  last: ExercisePerformanceSession | null,
+): ActiveExerciseView {
   const next = nextPendingSet(exercise);
   return {
     exerciseId: exercise.exerciseId,
@@ -157,7 +190,7 @@ function toExercise(exercise: ExerciseLog, log: WorkoutLog, catalog: ReadonlyMap
     restSeconds: exercise.planned.restSeconds,
     mode: exercise.logging,
     fields: fieldsFor(exercise, log),
-    sets: exercise.sets.map((set, i) => toSetRow(set, i, exercise, log)),
+    sets: exercise.sets.map((set, i) => toSetRow(set, i, exercise, log, last)),
     pending: pendingSetCount(exercise),
     nextPendingSet: next >= 0 ? next : null,
   };
@@ -188,12 +221,17 @@ export function formatSetValues(set: SetLog, mode: LoggingMode, unit: WorkoutLog
   }
 }
 
-function toSetRow(set: SetLog, index: number, exercise: ExerciseLog, log: WorkoutLog): SetRowView {
+function toSetRow(set: SetLog, index: number, exercise: ExerciseLog, log: WorkoutLog, last: ExercisePerformanceSession | null): SetRowView {
   const copy = WORKOUT_COPY.active;
   const values = formatSetValues(set, exercise.logging, log.weightUnit);
   const previous = [...exercise.sets.slice(0, index)].reverse().find((s) => s.status === 'completed')
     ?? exercise.sets.find((s) => s.status === 'completed');
-  const plannedSeconds = exercise.planned.target.kind === 'time' ? `${exercise.planned.target.seconds}` : '';
+  // Last time: the same set, else its last set (when this workout has more sets).
+  const before = last ? (last.sets.find((s) => s.setNumber === set.setNumber) ?? last.sets[last.sets.length - 1]) : undefined;
+  const target = exercise.planned.target;
+  const plannedSeconds = target.kind === 'time' ? `${target.seconds}` : '';
+  const plannedReps = target.kind === 'reps' ? `${target.min}` : '';
+  const text = (n: number | null | undefined) => (n != null ? `${n}` : null);
   return {
     index,
     setNumber: set.setNumber,
@@ -212,9 +250,9 @@ function toSetRow(set: SetLog, index: number, exercise: ExerciseLog, log: Workou
           ? copy.undoSkip(set.setNumber)
           : copy.completeSet(set.setNumber),
     suggestion: {
-      weight: previous?.weight != null ? `${previous.weight}` : '',
-      reps: previous?.reps != null ? `${previous.reps}` : '',
-      durationSeconds: previous?.durationSeconds != null ? `${previous.durationSeconds}` : plannedSeconds,
+      weight: text(previous?.weight) ?? text(before?.weight) ?? '',
+      reps: text(previous?.reps) ?? text(before?.reps) ?? plannedReps,
+      durationSeconds: text(previous?.durationSeconds) ?? text(before?.durationSeconds) ?? plannedSeconds,
     },
   };
 }

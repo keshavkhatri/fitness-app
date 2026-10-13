@@ -3,6 +3,7 @@ import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, NavController } 
 
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CLOCK } from '../../../core/time/clock';
+import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../../core/workout/workout-log.service';
 import { SetEntry } from '../../../domain/workout-session';
 import {
@@ -91,6 +92,7 @@ export class ActiveWorkoutPage {
   readonly sessionId = input.required<string>();
 
   private readonly logs = inject(WorkoutLogService);
+  private readonly workoutHistory = inject(WorkoutHistoryService);
   private readonly nav = inject(NavController);
   private readonly clock = inject(CLOCK);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -99,11 +101,18 @@ export class ActiveWorkoutPage {
   protected readonly copy = WORKOUT_COPY.active;
   protected readonly backLabel = WORKOUT_COPY.detail.backToWorkout;
   private readonly loaded = resource({ loader: () => this.logs.loadActive() });
+  /** Finished workouts, to prefill sets with last time's values (none if history can't be read). */
+  private readonly history = resource({
+    loader: async () => {
+      const result = await this.workoutHistory.list();
+      return result.ok ? result.workouts : [];
+    },
+  });
 
   /** The in-progress workout for this route's session (another session's workout is not shown here). */
   protected readonly view = computed(() => {
     const log = this.logs.active();
-    return log && log.source.sessionId === this.sessionId() ? toActiveWorkoutView(log) : null;
+    return log && log.source.sessionId === this.sessionId() ? toActiveWorkoutView(log, undefined, this.history.hasValue() ? this.history.value() : []) : null;
   });
   protected readonly screen = computed<'loading' | 'active' | 'not-active'>(() =>
     this.view() ? 'active' : this.loaded.isLoading() ? 'loading' : 'not-active',

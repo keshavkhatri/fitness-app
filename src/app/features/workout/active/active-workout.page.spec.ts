@@ -118,6 +118,7 @@ describe('ActiveWorkoutPage', () => {
       expect(text('position')).toBe('1 of 7 exercises');
       expect(el.querySelector('fit-progress')?.getAttribute('aria-valuetext')).toBe('Exercise 1 of 7. 0 of 22 sets done.');
       expect(el.querySelector('#active-exercise')?.textContent?.trim()).toBe('Bench Press');
+      expect(text('planned')).toBe('Planned 4 sets · 6–10 reps · 120 sec rest');
       expect(rows()).toHaveLength(4);
       expect([...el.querySelectorAll('.head span')].map((s) => s.textContent?.trim())).toEqual(['Set', 'Weight (kg)', 'Reps', '']);
       const inputs = [...rows()[0].querySelectorAll('input')];
