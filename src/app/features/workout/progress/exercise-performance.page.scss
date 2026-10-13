@@ -1,12 +1,37 @@
 @use 'mixins' as fx;
 
+// Immersive (always dark): lime marks the charted series and the main action.
+
+ion-content {
+  --background: var(--color-bg);
+}
+
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-8);
+}
+
+.topbar {
+  margin: 0 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-1));
+}
+
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
 }
 
 .title {
@@ -14,54 +39,76 @@
   overflow-wrap: anywhere;
 }
 
-.note {
-  @include fx.text(body-sm);
-  margin-top: var(--space-1);
+// --- Best set and change -----------------------------------------------------------------------------
+.headline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'label label'
+    'value change'
+    'date change';
+  align-items: end;
+  column-gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.headline-label {
+  @include fx.text(body-sm, semibold);
+  grid-area: label;
   color: var(--color-text-secondary);
 }
 
-.highlights {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-  gap: var(--space-2);
-  margin: 0;
+.headline-value {
+  @include fx.text(display, bold);
+  @include fx.tabular-numbers;
+  grid-area: value;
+  overflow-wrap: anywhere;
 }
 
-.highlight {
+.headline-date {
+  @include fx.text(caption);
+  grid-area: date;
+  color: var(--color-text-secondary);
+}
+
+.change {
+  @include fx.text(body-sm, semibold);
+  grid-area: change;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 11em;
+  text-align: end;
+  color: var(--color-primary);
+
+  ion-icon {
+    font-size: var(--icon-size-md);
+  }
+
+  &[data-direction='same'] {
+    color: var(--color-text);
+  }
+}
+
+.since {
+  @include fx.text(caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+// --- Chart -----------------------------------------------------------------------------------------
+.chart-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  min-width: 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
-
-  dt {
-    @include fx.text(caption, semibold);
-    color: var(--color-text-secondary);
-    letter-spacing: var(--letter-spacing-wide);
-    text-transform: uppercase;
-  }
-
-  dd {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin: 0;
-  }
 }
 
-.value {
-  @include fx.text(h3, semibold);
-  @include fx.tabular-numbers;
-}
-
-.meta {
-  @include fx.text(caption);
-  color: var(--color-text-secondary);
-}
-
+// --- Sessions: light rows on the dark page -----------------------------------------------------
 .sessions {
   display: flex;
   flex-direction: column;
@@ -69,47 +116,11 @@
 }
 
 .section-title {
-  @include fx.text(h3, semibold);
+  @include fx.text(body, bold);
 }
 
-.session {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
-}
-
-.session-date {
-  @include fx.text(body, semibold);
-}
-
-.sets {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.set {
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 28px;
-}
-
-.set-label {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.set-value {
-  @include fx.text(body-sm, semibold);
-  @include fx.tabular-numbers;
+.show-all {
+  border-radius: var(--radius-pill);
 }
 
 .loading {

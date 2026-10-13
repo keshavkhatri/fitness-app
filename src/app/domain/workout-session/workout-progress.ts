@@ -1,4 +1,4 @@
-import { CalendarDate } from '../fitness-profile';
+import { CalendarDate, compareCalendarDates } from '../fitness-profile';
 import {
   ExercisePerformance,
   ExercisePerformanceSession,
@@ -118,4 +118,78 @@ export function recentBest(performance: ExercisePerformance, window = 5): Recent
     }
   }
   return { ...best, sessionsConsidered: comparable.length };
+}
+
+// --- Weekly consistency -----------------------------------------------------------------------
+
+export interface WeekCount {
+  /** The Monday of the local week. */
+  readonly weekStart: CalendarDate;
+  /** Training workouts (≥ 1 completed set) finished in that Monday–Sunday week. */
+  readonly workouts: number;
+}
+
+/**
+ * Training workouts per local week (Monday–Sunday) for the `weeks` weeks
+ * ending with the week of `today`, oldest first. A week with 0 is a week with
+ * no finished workout on this device; callers decide whether weeks before the
+ * first workout count (see `firstTrainingDate`).
+ */
+export function weeklyWorkoutCounts(logs: readonly WorkoutLog[], today: CalendarDate, weeks: number, localDate: LocalDateOf): WeekCount[] {
+  const days = completedWorkouts(logs)
+    .filter(isTrainingWorkout)
+    .map((log) => localDate(log.completedAt as string));
+  const currentMonday = startOfWeek(today);
+  return Array.from({ length: weeks }, (_, i) => {
+    const weekStart = addDays(currentMonday, -7 * (weeks - 1 - i));
+    const weekEnd = addDays(weekStart, 6);
+    const workouts = days.filter((d) => compareCalendarDates(d, weekStart) >= 0 && compareCalendarDates(d, weekEnd) <= 0).length;
+    return { weekStart, workouts };
+  });
+}
+
+/** The local date of the first finished training workout, or null without one. */
+export function firstTrainingDate(logs: readonly WorkoutLog[], localDate: LocalDateOf): CalendarDate | null {
+  const training = completedWorkouts(logs).filter(isTrainingWorkout);
+  const first = training[training.length - 1];
+  return first ? localDate(first.completedAt as string) : null;
+}
+
+// --- Volume -----------------------------------------------------------------------------------
+
+/**
+ * Recorded training volume: weight × reps summed over completed weighted
+ * (weight-and-reps) sets, in the log's unit. Null when there were none
+ * (bodyweight and timed work have no load to add up).
+ */
+export function workoutVolume(log: WorkoutLog): number | null {
+  const sets = log.exercises
+    .filter((e) => e.logging === 'weight-reps')
+    .flatMap((e) => e.sets)
+    .filter((s) => s.status === 'completed' && s.weight !== null && s.reps !== null);
+  return sets.length > 0 ? sets.reduce((sum, s) => sum + (s.weight as number) * (s.reps as number), 0) : null;
+}
+
+/** The same for one exercise in one workout (its completed sets); null unless weight and reps were logged. */
+export function sessionVolume(session: ExercisePerformanceSession): number | null {
+  if (session.logging !== 'weight-reps') {
+    return null;
+  }
+  const sets = session.sets.filter((s) => s.weight !== null && s.reps !== null);
+  return sets.length > 0 ? sets.reduce((sum, s) => sum + (s.weight as number) * (s.reps as number), 0) : null;
+}
+
+/**
+ * Total recorded volume across finished training workouts, per weight unit
+ * (kg and lb are never added together). Units without weighted sets are absent.
+ */
+export function totalVolumeByUnit(logs: readonly WorkoutLog[]): Partial<Record<WorkoutLog['weightUnit'], number>> {
+  const totals: Partial<Record<WorkoutLog['weightUnit'], number>> = {};
+  for (const log of completedWorkouts(logs).filter(isTrainingWorkout)) {
+    const volume = workoutVolume(log);
+    if (volume !== null) {
+      totals[log.weightUnit] = (totals[log.weightUnit] ?? 0) + volume;
+    }
+  }
+  return totals;
 }

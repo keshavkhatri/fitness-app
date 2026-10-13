@@ -1,0 +1,69 @@
+@use 'mixins' as fx;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.axis-unit {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.grid line {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.tick,
+.date {
+  fill: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.point {
+  fill: var(--color-surface);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+// The latest session: larger and filled (not colour alone).
+.point.latest {
+  fill: var(--color-primary);
+}
+
+.latest {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.latest-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+}
+
+.latest-date,
+.note {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}

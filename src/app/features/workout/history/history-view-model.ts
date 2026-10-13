@@ -10,6 +10,7 @@ import {
   completionStatus,
   isBetterSet,
   summarizeWorkoutLog,
+  workoutVolume,
 } from '../../../domain/workout-session';
 import { formatSetValues } from '../active/active-workout-view-model';
 import { formatDuration } from '../summary/workout-summary-view-model';
@@ -187,6 +188,8 @@ export interface HistorySetView {
   readonly label: string;
   /** "60 kg × 8", "Skipped" or "Not done" */
   readonly value: string;
+  /** The table's cells: weight and reps for a completed weighted set (["60", "8"]); otherwise the value alone. */
+  readonly cells: readonly string[];
   readonly status: SetLog['status'];
 }
 
@@ -195,8 +198,10 @@ export interface HistoryExerciseView {
   readonly exerciseId: string;
   /** The name recorded in the log. */
   readonly name: string;
-  /** "4 sets" (as logged; each one is listed with its result). */
+  /** What was planned: "4 sets · 6–10 reps" (rest left out). */
   readonly setsLabel: string;
+  /** Column headings for weighted exercises (["Weight (kg)", "Reps"]); null otherwise (one value per set). */
+  readonly columns: readonly string[] | null;
   /** The heaviest set (weight, then reps), most reps or longest time; null without a completed set. */
   readonly best: string | null;
   /** What the plan prescribed at the time: "4 sets · 6–10 reps · 120 sec rest" */
@@ -232,11 +237,14 @@ export interface HistoryDetailView {
 
 function toHistorySet(set: SetLog, exercise: ExerciseLog, unit: WorkoutLog['weightUnit']): HistorySetView {
   const d = copy.detail;
+  const value = set.status === 'completed' ? (formatSetValues(set, exercise.logging, unit) ?? '') : set.status === 'skipped' ? d.skipped : d.notDone;
+  const weighted = exercise.logging === 'weight-reps';
   return {
     key: set.setNumber,
     setNumber: set.setNumber,
     label: WORKOUT_COPY.active.set(set.setNumber),
-    value: set.status === 'completed' ? (formatSetValues(set, exercise.logging, unit) ?? '') : set.status === 'skipped' ? d.skipped : d.notDone,
+    value,
+    cells: weighted && set.status === 'completed' ? [`${set.weight}`, `${set.reps}`] : [value],
     status: set.status,
   };
 }
@@ -253,18 +261,6 @@ function bestSet(exercise: ExerciseLog, unit: WorkoutLog['weightUnit']): string 
   return formatSetValues(best.log, exercise.logging, unit);
 }
 
-/**
- * Weight × reps over the completed weighted sets, in the log's unit. Null when
- * there were none (bodyweight and timed work have no load to add up).
- */
-export function trainingVolume(log: WorkoutLog): number | null {
-  const sets = log.exercises
-    .filter((e) => e.logging === 'weight-reps')
-    .flatMap((e) => e.sets)
-    .filter((s) => s.status === 'completed' && s.weight !== null && s.reps !== null);
-  return sets.length > 0 ? sets.reduce((sum, s) => sum + (s.weight as number) * (s.reps as number), 0) : null;
-}
-
 const volumeFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
 export function toHistoryDetail(log: WorkoutLog, now: Date): HistoryDetailView {
@@ -274,7 +270,7 @@ export function toHistoryDetail(log: WorkoutLog, now: Date): HistoryDetailView {
   const day = localDateOf(finishedAt);
   const summary = WORKOUT_COPY.summary;
   const d = copy.detail;
-  const volume = trainingVolume(log);
+  const volume = workoutVolume(log);
   const metrics: HistoryMetricView[] = [
     {
       key: 'exercises',
@@ -313,7 +309,8 @@ export function toHistoryDetail(log: WorkoutLog, now: Date): HistoryDetailView {
         key: `${i}-${exercise.exerciseId}`,
         exerciseId: exercise.exerciseId,
         name: exercise.name,
-        setsLabel: copy.sets(exercise.sets.length),
+        setsLabel: prescriptionParts(exercise.planned).slice(0, 2).join(' · '),
+        columns: exercise.logging === 'weight-reps' ? [d.weightColumn(log.weightUnit), d.repsColumn] : null,
         best: bestSet(exercise, log.weightUnit),
         planned: formatPrescription(exercise.planned),
         plannedParts: prescriptionParts(exercise.planned),

@@ -18,4 +18,12 @@ export default [
     title: 'Progress',
     loadComponent: () => import('./exercise-performance.page').then((m) => m.ExercisePerformancePage),
   },
+  {
+    // The one historical-workout screen (also at /workout/history/:workoutId), mounted in this
+    // stack too, as Progress itself is under /progress and /you/progress: a session opened from
+    // an exercise's performance comes back to it, without switching tabs.
+    path: 'workout/:workoutId',
+    title: 'Progress',
+    loadComponent: () => import('../history/workout-history-detail.page').then((m) => m.WorkoutHistoryDetailPage),
+  },
 ] satisfies Routes;

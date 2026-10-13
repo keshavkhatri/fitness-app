@@ -1,24 +1,31 @@
-import { ProgressResult } from '../../../core/workout/workout-history.service';
-import { CalendarDate, calendarDateOf, compareCalendarDates } from '../../../domain/fitness-profile';
+import { BodyCompositionHistoryState } from '../../../core/body-composition/body-composition-history.service';
+import { WeightHistoryState } from '../../../core/body-measurements/weight-history.service';
+import { WorkoutHistoryResult } from '../../../core/workout/workout-history.service';
+import { BodyCompositionMetric, latestReportedValues, metricChange } from '../../../domain/body-composition';
+import { weightHistory } from '../../../domain/body-measurements';
+import { CalendarDate, IsoCalendarDate, calendarDateOf, compareCalendarDates } from '../../../domain/fitness-profile';
 import {
-  ActivityDay,
-  ExercisePerformance,
-  ExercisePerformanceSession,
   LoggingMode,
   PerformedSet,
   WeightUnit,
   addDays,
-  recentBest,
-  topSet,
+  firstTrainingDate,
+  performedExercises,
+  startOfWeek,
+  totalVolumeByUnit,
+  trainingOverview,
+  weeklyWorkoutCounts,
 } from '../../../domain/workout-session';
-import { dayLabel } from '../history/history-view-model';
+import { formatReportedValue, shortDateOf } from '../../body-composition/body-composition-history-view-model';
+import { formatChange, formatDisplayWeight } from '../../body-weight/weight-history-view-model';
 import { formatDuration } from '../summary/workout-summary-view-model';
-import { WEEKDAYS, WORKOUT_COPY } from '../workout-content';
+import { WORKOUT_COPY } from '../workout-content';
 
 /**
- * Presentation models for Progress. Everything shown is something the user
- * logged (completed sets, finished workouts); nothing is estimated. Dates are
- * formatted here in local time; calculations live in the domain.
+ * Presentation models for the Progress overview. Everything shown is
+ * something the user recorded (weigh-ins, body-composition reports, finished
+ * workouts); nothing is estimated. Calculations live in the domain; dates are
+ * formatted here in local time.
  */
 
 const copy = WORKOUT_COPY.progress;
@@ -50,166 +57,223 @@ export function formatPerformedSet(set: PerformedSet, logging: LoggingMode, unit
   }
 }
 
-const formatTopSet = (session: ExercisePerformanceSession) => formatPerformedSet(topSet(session), session.logging, session.weightUnit);
+// --- Body metrics -----------------------------------------------------------------------------
 
-// --- Progress screen --------------------------------------------------------------------------
+export interface BodyMetricView {
+  readonly key: 'weight' | 'body-fat' | 'muscle';
+  readonly label: string;
+  /** "72.4" and "kg" (the unit as recorded), or null when nothing was recorded. */
+  readonly value: string | null;
+  readonly unit: string;
+  /** Difference from the previous recording; null with a single recording (or different units). */
+  readonly change: { readonly text: string; readonly spoken: string; readonly direction: 'up' | 'down' | 'same' } | null;
+  /** "vs Oct 1" (the previous recording's date), "Oct 8" (only one), or "Not recorded". */
+  readonly caption: string;
+}
 
-export interface WeekDayView {
+const splitValue = (text: string): { value: string; unit: string } => {
+  const match = /^(.*?)\s*(kg|lb|%)$/.exec(text);
+  return match ? { value: match[1], unit: match[2] } : { value: text, unit: '' };
+};
+
+const direction = (n: number): 'up' | 'down' | 'same' => (n > 0 ? 'up' : n < 0 ? 'down' : 'same');
+
+function weightMetric(state: WeightHistoryState, today: IsoCalendarDate): BodyMetricView {
+  const base = { key: 'weight' as const, label: copy.body.weight };
+  if (state.status !== 'ready' || state.entries.length === 0) {
+    return { ...base, value: null, unit: '', change: null, caption: copy.body.notRecorded };
+  }
+  const [latest, previous] = weightHistory(state.entries, state.unitSystem);
+  const shown = splitValue(formatDisplayWeight(latest.displayWeight, state.unitSystem));
+  if (!previous || latest.changeSincePrevious === null) {
+    return { ...base, ...shown, change: null, caption: shortDateOf(latest.entry.date, today) };
+  }
+  const change = latest.changeSincePrevious + 0;
+  const text = change === 0 ? copy.body.noChange : formatChange(change, state.unitSystem);
+  return {
+    ...base,
+    ...shown,
+    change: { text, spoken: text, direction: direction(change) },
+    caption: copy.body.vs(shortDateOf(previous.entry.date, today)),
+  };
+}
+
+function compositionMetric(
+  state: BodyCompositionHistoryState,
+  metric: BodyCompositionMetric,
+  key: 'body-fat' | 'muscle',
+  label: string,
+  today: IsoCalendarDate,
+): BodyMetricView {
+  const base = { key, label };
+  const latest = state.status === 'ready' ? latestReportedValues(state.assessments).find((l) => l.metric === metric) : undefined;
+  if (state.status !== 'ready' || !latest?.value || !latest.assessment) {
+    return { ...base, value: null, unit: '', change: null, caption: copy.body.notRecorded };
+  }
+  const shown = splitValue(formatReportedValue(latest.value));
+  const difference = metricChange(state.assessments, metric);
+  if (!difference || difference.kind !== 'change') {
+    return { ...base, ...shown, change: null, caption: shortDateOf(latest.assessment.date, today) };
+  }
+  const points = difference.unit === '%';
+  const magnitude = `${Math.abs(difference.change)}`;
+  const sign = difference.change > 0 ? '+' : '−';
+  const text = difference.change === 0 ? copy.body.noChange : `${sign}${magnitude}${points ? ' pts' : ` ${difference.unit}`}`;
+  const spoken = difference.change === 0 ? copy.body.noChange : `${sign}${magnitude} ${points ? 'percentage points' : difference.unit}`;
+  return {
+    ...base,
+    ...shown,
+    change: { text, spoken, direction: direction(difference.change) },
+    caption: copy.body.vs(shortDateOf(difference.previous.date, today)),
+  };
+}
+
+export function toBodyMetrics(weights: WeightHistoryState, composition: BodyCompositionHistoryState, today: IsoCalendarDate): readonly BodyMetricView[] {
+  return [
+    weightMetric(weights, today),
+    compositionMetric(composition, 'body-fat-percentage', 'body-fat', copy.body.bodyFat, today),
+    compositionMetric(composition, 'skeletal-muscle-mass', 'muscle', copy.body.muscle, today),
+  ];
+}
+
+// --- Workout consistency -------------------------------------------------------------------------
+
+/** Weeks the consistency chart looks back over (this week included). */
+export const CONSISTENCY_WEEKS = 12;
+
+export interface ConsistencyWeekView {
   readonly key: string;
-  /** "M", "T", … (visual only) */
-  readonly letter: string;
-  /** "Monday: workout completed" */
+  readonly workouts: number;
+  /** Bar height 0..1, against the larger of the plan's weekly sessions and the busiest week. */
+  readonly height: number;
+  readonly isCurrent: boolean;
+  /** "Week of Sep 28: 2 workouts" */
   readonly spoken: string;
-  readonly status: 'done' | 'none' | 'upcoming';
-  readonly isToday: boolean;
 }
 
-export interface PerformanceCardView {
-  readonly exerciseId: string;
-  readonly name: string;
-  /** Top set of the latest session, e.g. "62.5 kg × 7". */
-  readonly latest: string;
-  /** "Last performed · Oct 8" */
-  readonly lastPerformed: string;
+export interface ConsistencyView {
+  /** Weeks with at least one workout, and the weeks counted (never before the first workout). */
+  readonly activeWeeks: number;
+  readonly weeksCounted: number;
+  /** Rounded share of counted weeks with a workout, 0–100. */
+  readonly percent: number;
+  /** "8 of 12 weeks" */
+  readonly summary: string;
+  readonly weeks: readonly ConsistencyWeekView[];
+  /** The current plan's resistance sessions per week, as a reference line (0..1 height); null without a plan. */
+  readonly planned: { readonly perWeek: number; readonly height: number; readonly label: string } | null;
+  /** First and last week labels for the axis. */
+  readonly axis: { readonly start: string; readonly end: string };
 }
 
-export interface FactView {
-  readonly key: string;
+const monthDayShort = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+const weekLabel = (date: CalendarDate) => monthDayShort.format(new Date(date.year, date.month - 1, date.day));
+
+/**
+ * Finished training workouts per Monday–Sunday week over the last
+ * CONSISTENCY_WEEKS weeks, starting no earlier than the week of the first
+ * workout (weeks before it are unknown, not inactive). Null without workouts.
+ */
+export function toConsistency(result: WorkoutHistoryResult & { ok: true }, plannedPerWeek: number | null, now: Date): ConsistencyView | null {
+  const today = calendarDateOf(now);
+  const localDate = (instant: string) => calendarDateOf(new Date(instant));
+  const first = firstTrainingDate(result.workouts, localDate);
+  if (!first) {
+    return null;
+  }
+  const sinceFirst = Math.floor((daysBetween(startOfWeek(first), startOfWeek(today))) / 7) + 1;
+  const weeksCounted = Math.min(CONSISTENCY_WEEKS, sinceFirst);
+  const counts = weeklyWorkoutCounts(result.workouts, today, weeksCounted, localDate);
+  const scale = Math.max(plannedPerWeek ?? 0, ...counts.map((c) => c.workouts), 1);
+  const activeWeeks = counts.filter((c) => c.workouts > 0).length;
+  const current = startOfWeek(today);
+  return {
+    activeWeeks,
+    weeksCounted,
+    percent: Math.round((activeWeeks / weeksCounted) * 100),
+    summary: copy.consistency.summary(activeWeeks, weeksCounted),
+    weeks: counts.map((c) => ({
+      key: `${c.weekStart.year}-${c.weekStart.month}-${c.weekStart.day}`,
+      workouts: c.workouts,
+      height: c.workouts / scale,
+      isCurrent: compareCalendarDates(c.weekStart, current) === 0,
+      spoken: copy.consistency.spokenWeek(weekLabel(c.weekStart), c.workouts, compareCalendarDates(c.weekStart, current) === 0),
+    })),
+    planned: plannedPerWeek ? { perWeek: plannedPerWeek, height: plannedPerWeek / scale, label: copy.consistency.planned(plannedPerWeek) } : null,
+    axis: { start: weekLabel(counts[0].weekStart), end: copy.consistency.thisWeek },
+  };
+}
+
+const daysBetween = (a: CalendarDate, b: CalendarDate) =>
+  Math.round((Date.UTC(b.year, b.month - 1, b.day) - Date.UTC(a.year, a.month - 1, a.day)) / 86_400_000);
+
+// --- Key workout metrics -------------------------------------------------------------------------
+
+export interface KeyMetricView {
+  readonly key: 'workouts' | 'volume' | 'duration';
   readonly label: string;
   readonly value: string;
+  /** What the number covers: "All time", "kg sets, all time". */
+  readonly caption: string;
 }
 
-/** A count tile: the number large, its unit below ("4" / "workouts"). */
-export interface CountView {
-  readonly key: string;
-  readonly label: string;
-  readonly count: number;
-  readonly unit: string;
+/** Whole units: a total of thousands loses nothing by dropping half a kilo. */
+const grouped = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
+/**
+ * - Workouts: finished workouts with at least one completed set, all time.
+ * - Volume: weight × reps of completed weighted sets, all time, in the unit of
+ *   the latest workout (kg and lb are never added together; the caption says
+ *   which). Omitted without weighted sets.
+ * - Average duration: start-to-finish time of those workouts, averaged.
+ */
+export function toKeyMetrics(result: WorkoutHistoryResult & { ok: true }, now: Date): readonly KeyMetricView[] {
+  const overview = trainingOverview(result.workouts, calendarDateOf(now), (i) => calendarDateOf(new Date(i)));
+  if (overview.workoutsCompleted === 0) {
+    return [];
+  }
+  const metrics: KeyMetricView[] = [{ key: 'workouts', label: copy.metrics.workouts, value: `${overview.workoutsCompleted}`, caption: copy.metrics.allTime }];
+  const volumes = totalVolumeByUnit(result.workouts);
+  const unit: WeightUnit = overview.lastWorkout?.weightUnit ?? 'kg';
+  const volume = volumes[unit];
+  if (volume) {
+    const otherUnit = (Object.keys(volumes) as WeightUnit[]).some((u) => u !== unit);
+    metrics.push({
+      key: 'volume',
+      label: copy.metrics.volume,
+      value: `${grouped.format(volume)} ${unit}`,
+      caption: otherUnit ? copy.metrics.unitOnly(unit) : copy.metrics.allTime,
+    });
+  }
+  metrics.push({
+    key: 'duration',
+    label: copy.metrics.duration,
+    value: formatDuration(overview.totalDurationSeconds / overview.workoutsCompleted),
+    caption: copy.metrics.perWorkout,
+  });
+  return metrics;
 }
 
-export type ProgressScreen =
+// --- The overview ------------------------------------------------------------------------------
+
+export type ProgressWorkoutsView =
   | {
       readonly kind: 'ready';
-      readonly overview: readonly CountView[];
-      readonly week: { readonly summary: string; readonly days: readonly WeekDayView[] };
-      readonly activity: readonly FactView[];
-      readonly recent: readonly PerformanceCardView[];
-      /** More exercises exist than the recent list shows. */
-      readonly hasMoreExercises: boolean;
+      readonly consistency: ConsistencyView;
+      readonly metrics: readonly KeyMetricView[];
+      /** Some exercise has completed sets (the rows themselves come from the exercise list model). */
+      readonly hasExercises: boolean;
     }
   | { readonly kind: 'empty' }
   | { readonly kind: 'error' };
 
-export const RECENT_PERFORMANCE_LIMIT = 4;
-
-function toWeekDay(day: ActivityDay, index: number, today: CalendarDate): WeekDayView {
-  const weekday = WEEKDAYS[index];
-  const upcoming = compareCalendarDates(day.date, today) > 0;
-  return {
-    key: weekday.key,
-    letter: weekday.short.charAt(0),
-    spoken: copy.week.days(weekday.name, day.workouts, upcoming),
-    status: day.workouts > 0 ? 'done' : upcoming ? 'upcoming' : 'none',
-    isToday: compareCalendarDates(day.date, today) === 0,
-  };
-}
-
-export function toPerformanceCard(performance: ExercisePerformance, today: CalendarDate): PerformanceCardView {
-  const latest = performance.sessions[0];
-  return {
-    exerciseId: performance.exerciseId,
-    name: performance.exerciseName,
-    latest: formatTopSet(latest),
-    lastPerformed: copy.recent.lastPerformed(performedOnLabel(localDateOf(latest.completedAt), today)),
-  };
-}
-
-export function toProgressScreen(result: ProgressResult, now: Date): ProgressScreen {
+export function toProgressWorkouts(result: WorkoutHistoryResult, plannedPerWeek: number | null, now: Date): ProgressWorkoutsView {
   if (!result.ok) {
     return { kind: 'error' };
   }
-  const { overview, week, exercises } = result;
-  if (overview.workoutsCompleted === 0) {
+  const consistency = toConsistency(result, plannedPerWeek, now);
+  if (!consistency) {
     return { kind: 'empty' };
   }
-  const today = calendarDateOf(now);
-  const workouts = WORKOUT_COPY.history.workouts;
-  return {
-    kind: 'ready',
-    overview: [
-      { key: 'week', label: copy.overview.thisWeek, count: overview.workoutsThisWeek },
-      { key: 'month', label: copy.overview.thisMonth, count: overview.workoutsThisMonth },
-      { key: 'total', label: copy.overview.total, count: overview.workoutsCompleted },
-    ].map((tile) => ({ ...tile, unit: tile.count === 1 ? copy.overview.workout : copy.overview.workouts })),
-    week: { summary: workouts(overview.workoutsThisWeek), days: week.map((d, i) => toWeekDay(d, i, today)) },
-    activity: [
-      { key: 'sets', label: copy.activity.sets, value: `${overview.totalSetsCompleted}` },
-      { key: 'time', label: copy.activity.time, value: formatDuration(overview.totalDurationSeconds) },
-      {
-        key: 'last',
-        label: copy.activity.last,
-        value: overview.lastWorkoutDate ? dayLabel(overview.lastWorkoutDate, today) : copy.activity.none,
-      },
-    ],
-    recent: exercises.slice(0, RECENT_PERFORMANCE_LIMIT).map((p) => toPerformanceCard(p, today)),
-    hasMoreExercises: exercises.length > RECENT_PERFORMANCE_LIMIT,
-  };
+  return { kind: 'ready', consistency, metrics: toKeyMetrics(result, now), hasExercises: performedExercises(result.workouts).length > 0 };
 }
-
-/** Every performed exercise, most recent first (the "View all exercises" list). */
-export function toExerciseList(result: ProgressResult, now: Date): readonly PerformanceCardView[] | null {
-  if (!result.ok) {
-    return null;
-  }
-  const today = calendarDateOf(now);
-  return result.exercises.map((p) => toPerformanceCard(p, today));
-}
-
-// --- Exercise performance detail -----------------------------------------------------------
-
-export interface PerformanceSessionView {
-  readonly key: string;
-  /** "Thursday, Oct 8" */
-  readonly dateLabel: string;
-  readonly sets: readonly { readonly key: number; readonly label: string; readonly value: string }[];
-}
-
-export interface ExercisePerformanceView {
-  readonly name: string;
-  readonly latest: { readonly value: string; readonly date: string };
-  readonly recentBest: { readonly value: string; readonly date: string; readonly note: string } | null;
-  readonly sessions: readonly PerformanceSessionView[];
-}
-
-export const PERFORMANCE_SESSION_LIMIT = 10;
-
-export function toExercisePerformance(performance: ExercisePerformance, now: Date): ExercisePerformanceView {
-  const today = calendarDateOf(now);
-  const latest = performance.sessions[0];
-  const best = recentBest(performance);
-  const date = (instant: string) => performedOnLabel(localDateOf(instant), today);
-  return {
-    name: performance.exerciseName,
-    latest: { value: formatTopSet(latest), date: date(latest.completedAt) },
-    recentBest: best
-      ? {
-          value: formatPerformedSet(best.set, best.session.logging, best.session.weightUnit),
-          date: date(best.session.completedAt),
-          note: copy.detail.recentBestNote(best.sessionsConsidered),
-        }
-      : null,
-    sessions: performance.sessions.slice(0, PERFORMANCE_SESSION_LIMIT).map((session) => {
-      const day = localDateOf(session.completedAt);
-      return {
-        key: `${session.workoutId}`,
-        dateLabel: dayLabel(day, today),
-        sets: session.sets.map((set) => ({
-          key: set.setNumber,
-          label: WORKOUT_COPY.active.set(set.setNumber),
-          value: formatPerformedSet(set, session.logging, session.weightUnit),
-        })),
-      };
-    }),
-  };
-}
-

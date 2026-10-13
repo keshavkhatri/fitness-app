@@ -1,0 +1,73 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--space-1) 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  list-style: none;
+
+  li + li {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.session {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  text-align: start;
+}
+
+.index {
+  @include fx.text(caption, semibold);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}
+
+.session-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.session-date {
+  @include fx.text(body-sm, semibold);
+}
+
+.session-detail {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.session-value {
+  @include fx.text(body-sm, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: var(--icon-size-md);
+  color: var(--color-text-secondary);
+}
