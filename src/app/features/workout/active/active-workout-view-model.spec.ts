@@ -25,7 +25,7 @@ describe('active workout view model', () => {
       sessionId: 'day-1-upper',
       startedAt: expect.any(String),
       title: 'Upper Body A',
-      position: 'Exercise 1 of 7',
+      position: '1 of 7 exercises',
       progress: { value: 0, max: 22, text: 'Exercise 1 of 7. 0 of 22 sets done.' },
       isFirst: true,
       isLast: false,
@@ -55,7 +55,7 @@ describe('active workout view model', () => {
   it('previews the next exercise, and has none after the last', () => {
     const log = logFor();
     const view = toActiveWorkoutView(log);
-    expect(view.next).toEqual({ name: 'Barbell Row', muscles: expect.any(Array), planned: expect.stringContaining('sets'), handled: 0 });
+    expect(view.next).toEqual({ exerciseId: 'barbell-row', name: 'Barbell Row', muscles: expect.any(Array), planned: expect.stringContaining('sets'), handled: 0 });
     expect(view.next?.planned).not.toContain('rest');
     expect(view.next?.muscles.length).toBeGreaterThan(0);
 
@@ -105,7 +105,7 @@ describe('active workout view model', () => {
 
   it('marks the first and last exercise', () => {
     const log = logFor();
-    expect(toActiveWorkoutView({ ...log, currentExerciseIndex: 6 })).toMatchObject({ isFirst: false, isLast: true, position: 'Exercise 7 of 7' });
+    expect(toActiveWorkoutView({ ...log, currentExerciseIndex: 6 })).toMatchObject({ isFirst: false, isLast: true, position: '7 of 7 exercises' });
   });
 
   it('formats recorded values per logging mode', () => {

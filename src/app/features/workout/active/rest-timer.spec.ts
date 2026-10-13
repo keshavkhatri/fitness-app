@@ -79,6 +79,6 @@ describe('RestTimer', () => {
   });
 
   it('formats a clock', () => {
-    expect([0, 5, 60, 90, 125].map(formatClock)).toEqual(['0:00', '0:05', '1:00', '1:30', '2:05']);
+    expect([0, 5, 60, 90, 125].map(formatClock)).toEqual(['00:00', '00:05', '01:00', '01:30', '02:05']);
   });
 });

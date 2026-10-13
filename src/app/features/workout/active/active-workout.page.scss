@@ -127,12 +127,16 @@ ion-toolbar {
 }
 
 // Full-bleed hero under the title; the sets panel overlaps its bottom edge.
+// It takes the screen's spare height (up to a cap, then the panel does), so
+// the panel ends at the footer as in the design instead of leaving a band.
 .hero {
   --stage-bottom: 36px;
   --stage-inset: var(--space-5);
 
-  display: block;
-  height: clamp(180px, 55vw, 240px);
+  display: grid; // the stage stretches to the flexed height (a % height wouldn't resolve)
+  flex: 1000 0 auto;
+  min-height: clamp(180px, 55vw, 240px);
+  max-height: 400px;
   margin-top: -2px;
 }
 
@@ -174,7 +178,7 @@ ion-toolbar {
 
 .tiles {
   display: grid;
-  grid-template-columns: 1.13fr 1fr;
+  grid-template-columns: minmax(0, 1.13fr) minmax(0, 1fr);
   gap: 10px;
   min-height: 140px;
   margin-top: 11px;
