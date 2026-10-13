@@ -3,6 +3,7 @@ import { OnboardingDraft } from './onboarding-draft';
 
 export const ONBOARDING_STEP_IDS = [
   'welcome',
+  'name',
   'goal',
   'report',
   'basics',
@@ -37,6 +38,8 @@ export interface OnboardingStep {
 
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   { id: 'welcome', kind: 'intro', primaryAction: 'Get Started' },
+  // Home greets the user by this name (saved with the profile, not part of it).
+  { id: 'name', kind: 'question', primaryAction: 'Continue' },
   { id: 'goal', kind: 'question', primaryAction: 'Continue' },
   {
     id: 'report',

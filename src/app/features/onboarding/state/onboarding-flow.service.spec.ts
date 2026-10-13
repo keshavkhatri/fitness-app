@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
+import { UserIdentityService } from '../../../core/identity/user-identity.service';
 import { FitnessProfileService } from '../../../core/profile/fitness-profile.service';
 import { KeyValueStorage } from '../../../core/storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../../../core/storage/testing/memory-key-value-storage';
@@ -42,7 +43,12 @@ describe('OnboardingFlow', () => {
 
   it('does not advance past an unanswered question', async () => {
     const flow = await createFlow();
-    flow.next(); // welcome → goal
+    flow.next(); // welcome → name
+
+    expect(flow.next()).toBe(false);
+    expect(flow.stepId()).toBe('name');
+    flow.update({ name: 'Alex' });
+    flow.next(); // name → goal
 
     expect(flow.next()).toBe(false);
     expect(flow.stepId()).toBe('goal');
@@ -51,14 +57,20 @@ describe('OnboardingFlow', () => {
   it('walks forward and back through the steps', async () => {
     const flow = await createFlow();
     flow.next();
+    expect(flow.stepId()).toBe('name');
+    expect(flow.position()).toEqual({ current: 1, total: 10 });
+    flow.update({ name: 'Alex' });
+    flow.next();
     flow.update({ primaryGoal: 'lose-fat' });
     flow.next();
 
     expect(flow.stepId()).toBe('basics');
-    expect(flow.position()).toEqual({ current: 2, total: 9 });
+    expect(flow.position()).toEqual({ current: 3, total: 10 });
 
     flow.back();
     expect(flow.stepId()).toBe('goal');
+    flow.back();
+    expect(flow.stepId()).toBe('name');
     flow.back();
     expect(flow.stepId()).toBe('welcome');
   });
@@ -70,7 +82,7 @@ describe('OnboardingFlow', () => {
       editingFromSummary: false,
     });
 
-    expect(flow.position()).toEqual({ current: 7, total: 8 });
+    expect(flow.position()).toEqual({ current: 8, total: 9 });
     flow.next();
     expect(flow.stepId()).toBe('summary');
   });
@@ -84,15 +96,18 @@ describe('OnboardingFlow', () => {
   it('persists answers and position, and restores them', async () => {
     const flow = await createFlow();
     flow.next();
+    flow.update({ name: 'Alex' });
+    flow.next();
     flow.update({ primaryGoal: 'build-muscle' });
     flow.next();
 
-    expect(savedProgress()).toMatchObject({ stepId: 'basics', draft: { primaryGoal: 'build-muscle' } });
+    expect(savedProgress()).toMatchObject({ stepId: 'basics', draft: { name: 'Alex', primaryGoal: 'build-muscle' } });
 
     TestBed.resetTestingModule();
     const restored = await createFlow();
     expect(restored.stepId()).toBe('basics');
     expect(restored.draft().primaryGoal).toBe('build-muscle');
+    expect(restored.draft().name).toBe('Alex');
   });
 
   it('starts fresh when saved progress is corrupt', async () => {
@@ -151,7 +166,7 @@ describe('OnboardingFlow', () => {
     async function reviewFlow() {
       const flow = await createFlow();
       const profile = toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!;
-      flow.startReview(profile);
+      flow.startReview(profile, 'Alex');
       return { flow, profile };
     }
 
@@ -160,6 +175,19 @@ describe('OnboardingFlow', () => {
       expect(flow.mode()).toBe('review');
       expect(flow.stepId()).toBe('summary');
       expect(flow.draft()).toEqual(completeDraft());
+    });
+
+    it('a profile saved before names existed asks for one before saving, then saves it', async () => {
+      const flow = await createFlow();
+      flow.startReview(toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!);
+      expect(await flow.complete()).toBe(false);
+      expect(flow.stepId()).toBe('name');
+
+      flow.update({ name: 'Sam' });
+      flow.next();
+      expect(flow.stepId()).toBe('summary');
+      expect(await flow.complete()).toBe(true);
+      expect(TestBed.inject(UserIdentityService).identity().name).toBe('Sam');
     });
 
     it('does not persist in-progress edits', async () => {
@@ -187,7 +215,7 @@ describe('OnboardingFlow', () => {
       const energyCalibration = { maintenanceKcal: 2450, observedFrom: '2026-09-01', observedTo: '2026-09-28', acceptedAt: '2026-09-29T09:00:00.000Z' };
       async function calibratedReview() {
         const flow = await createFlow();
-        flow.startReview({ ...toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!, energyCalibration });
+        flow.startReview({ ...toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!, energyCalibration }, 'Alex');
         return flow;
       }
 
@@ -219,6 +247,17 @@ describe('OnboardingFlow', () => {
       expect(storage.values.has(PROGRESS_KEY)).toBe(false);
       expect(JSON.parse(storage.values.get(PROFILE_KEY)!).profile.primaryGoal).toBe('lose-fat');
       expect(TestBed.inject(FitnessProfileService).hasProfile()).toBe(true);
+      // The name goes to the identity store (Home's greeting), not into the profile.
+      expect(JSON.parse(storage.values.get('fitness.identity')!)).toEqual({ version: 1, name: 'Alex', photo: null });
+      expect(JSON.parse(storage.values.get(PROFILE_KEY)!).profile.name).toBeUndefined();
+    });
+
+    it('keeps a photo already saved with the name', async () => {
+      const photo = 'data:image/jpeg;base64,/9j/4AAQ';
+      storage.values.set('fitness.identity', JSON.stringify({ version: 1, name: 'Old', photo }));
+      const flow = await createFlow({ stepId: 'summary', draft: completeDraft(), editingFromSummary: false });
+      expect(await flow.complete()).toBe(true);
+      expect(JSON.parse(storage.values.get('fitness.identity')!)).toEqual({ version: 1, name: 'Alex', photo });
     });
 
     it('reports an error and keeps the answers when saving fails', async () => {

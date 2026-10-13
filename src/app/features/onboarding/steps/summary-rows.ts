@@ -32,6 +32,7 @@ export function buildSummaryRows(draft: OnboardingDraft, now: Date = new Date())
   const days = draft.trainingDaysPerWeek;
 
   const rows: SummaryRow[] = [
+    { id: 'name', label: 'Name', value: draft.name ?? MISSING, editStep: 'name' },
     { id: 'goal', label: 'Goal', value: draft.primaryGoal ? labelFor(GOAL_OPTIONS, draft.primaryGoal) : MISSING, editStep: 'goal' },
     { id: 'age', label: 'Age', value: age !== null ? `${age} years` : MISSING, editStep: 'basics' },
     { id: 'sex', label: 'Sex', value: basics ? labelFor(SEX_OPTIONS, basics.sex) : MISSING, editStep: 'basics' },

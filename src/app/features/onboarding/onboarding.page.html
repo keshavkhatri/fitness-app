@@ -30,6 +30,9 @@
         @case ('welcome') {
           <app-welcome-step />
         }
+        @case ('name') {
+          <app-name-step />
+        }
         @case ('goal') {
           <app-single-choice-step [config]="choiceSteps.goal" />
         }

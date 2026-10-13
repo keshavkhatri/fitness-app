@@ -7,6 +7,7 @@ const NOW = new Date(2026, 9, 7);
 describe('buildSummaryRows', () => {
   it('summarises the profile in metric', () => {
     expect(asMap(buildSummaryRows(completeDraft(), NOW))).toEqual({
+      name: 'Alex',
       goal: 'Lose Fat',
       age: '35 years',
       sex: 'Female',

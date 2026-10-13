@@ -52,8 +52,11 @@ describe('onboarding draft', () => {
   it('draftFromProfile round-trips with toFitnessProfile', () => {
     const now = new Date('2026-10-07T12:00:00Z');
     const profile = toFitnessProfile(completeDraft(), now)!;
-    expect(draftFromProfile(profile)).toEqual(completeDraft());
-    expect(toFitnessProfile(draftFromProfile(profile), now)).toEqual(profile);
+    // The name isn't part of the profile: it comes from the identity store.
+    expect(draftFromProfile(profile, 'Alex')).toEqual(completeDraft());
+    expect(draftFromProfile(profile).name).toBeNull();
+    expect(toFitnessProfile(draftFromProfile(profile, 'Alex'), now)).toEqual(profile);
+    expect('name' in profile).toBe(false);
   });
 
   describe('sanitizeDraft (restoring untrusted data)', () => {
