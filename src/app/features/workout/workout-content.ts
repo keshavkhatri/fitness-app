@@ -132,6 +132,29 @@ export const WORKOUT_COPY = {
   subtitle: 'Your training plan',
   loading: 'Loading your training plan',
 
+  /** The Workout tab's plan view (the redesigned tab). */
+  planTab: {
+    views: 'Workout views',
+    planLabel: 'Plan',
+    historyLabel: 'History',
+    weekLabel: 'This week, by day',
+    today: 'Today',
+    done: 'Done',
+    restDay: 'Rest day',
+    weekTitle: 'This week',
+    weekProgress: (done: number, total: number) => `${done} of ${total} done`,
+    status: { done: 'Done', 'in-progress': 'In progress', upcoming: 'Planned', missed: 'Not done' } as const,
+    todayEyebrow: "Today's workout",
+    doneEyebrow: 'Done today',
+    start: 'Start workout',
+    resume: 'Resume workout',
+    viewRecord: 'View workout',
+    viewActivity: 'View activity',
+    viewPlan: 'View this week',
+    focus: 'Focus',
+    planTitle: 'Your plan',
+  },
+
   today: {
     workoutEyebrow: "Today's workout",
     activityEyebrow: "Today's activity",
@@ -168,14 +191,15 @@ export const WORKOUT_COPY = {
     back: 'Back',
     today: 'Today',
     exercisesTitle: 'Exercises',
+    focusLabel: 'Focus',
     progressionTitle: 'Progression',
     bodyweight: 'Bodyweight',
     substitution: {
       title: 'Modified exercise',
       message: 'A substitute chosen for your available equipment.',
     },
-    startWorkout: 'Start Workout',
-    resumeWorkout: 'Resume Workout',
+    startWorkout: 'Start workout',
+    resumeWorkout: 'Resume workout',
     startFailed: "We couldn't start this workout. Please try again.",
     conflict: {
       title: 'Another workout is in progress',
@@ -322,7 +346,7 @@ export const WORKOUT_COPY = {
   },
 
   history: {
-    title: 'Workout History',
+    title: 'Workout history',
     back: 'Back',
     loading: 'Loading workout history',
     today: 'Today',
@@ -336,6 +360,10 @@ export const WORKOUT_COPY = {
     completed: 'Completed',
     partial: (done: number, total: number) => `Finished · ${done}/${total} sets`,
     skippedCount: (n: number) => `${n} skipped`,
+    all: 'All',
+    filterLabel: 'Filter by workout type',
+    exerciseCount: (n: number) => (n === 1 ? '1 exercise' : `${n} exercises`),
+    setsOf: (done: number, total: number) => `${done} of ${total} sets`,
     empty: {
       title: 'No completed workouts yet',
       message: 'Complete your first workout and your history will appear here.',
@@ -361,6 +389,14 @@ export const WORKOUT_COPY = {
       notDone: 'Not done',
       allSetsDone: 'All sets done',
       setsDone: (done: number, total: number) => `${done} of ${total} sets done`,
+      exercisesMetric: 'Exercises',
+      setsMetric: 'Sets done',
+      volumeMetric: (unit: string) => `Volume (${unit})`,
+      max: 'Max',
+      views: 'Workout record views',
+      exercisesTab: 'Exercises',
+      summaryTab: 'Summary',
+      summaryTitle: 'Summary',
       notFound: {
         title: 'Workout not found',
         message: "We couldn't find this workout in your history.",

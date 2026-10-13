@@ -1,88 +1,185 @@
 @use 'mixins' as fx;
 
+// Immersive (always dark): an image hero with the record's facts, three
+// totals, then a light sheet with the exercises (or the summary).
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+.topbar {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-3) 0;
+}
+
+.back {
+  --background: rgba(var(--color-scrim-rgb), 0.45);
+  --background-hover: rgba(var(--color-scrim-rgb), 0.6);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
+  backdrop-filter: blur(6px);
+}
+
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   max-width: var(--page-max-width);
+  min-height: 100%;
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
 }
 
-.summary {
+// --- Hero ------------------------------------------------------------------------------------
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: calc(var(--ion-safe-area-top, 0px) + clamp(220px, 62vw, 280px));
+}
+
+.hero-art {
+  position: absolute;
+  inset: 0;
+}
+
+.fade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, var(--color-bg) 0%, rgba(var(--color-scrim-rgb), 0.5) 40%, transparent 72%),
+    linear-gradient(180deg, rgba(var(--color-scrim-rgb), 0.45) 0%, transparent 25%);
+}
+
+.hero-text {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.when {
-  @include fx.text(body-sm, semibold);
-  color: var(--color-primary-text);
+  padding: 0 var(--page-gutter);
 }
 
 .title {
-  @include fx.text(h1, bold);
+  @include fx.text(display, bold);
   overflow-wrap: anywhere;
 }
 
-.status {
-  @include fx.text(body-sm, semibold);
+.when-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.when {
+  @include fx.text(body-sm);
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  color: var(--color-success-text);
-
-  &[data-status='partial'] {
-    color: var(--color-warning-text);
-  }
+  gap: 6px;
+  color: var(--color-text-secondary);
 
   ion-icon {
-    font-size: 18px;
+    font-size: var(--icon-size-sm);
   }
 }
 
-.facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-  margin: var(--space-2) 0 0;
+.dot {
+  margin: 0 2px;
 }
 
-.fact {
-  display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
-  gap: 2px;
-  min-width: 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
+.status {
+  @include fx.text(caption, semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--color-border);
 
-  dt {
-    @include fx.text(caption);
-    color: var(--color-text-secondary);
+  ion-icon {
+    font-size: var(--icon-size-sm);
+    color: var(--color-success);
   }
 
-  dd {
-    @include fx.text(h3, semibold);
-    @include fx.tabular-numbers;
-    margin: 0;
+  &[data-status='partial'] ion-icon {
+    color: var(--color-warning);
   }
 }
 
-.exercises {
+// --- Totals ------------------------------------------------------------------------------------
+.metrics {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 var(--page-gutter);
+}
+
+.metric {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  text-align: center;
+
+  ion-icon {
+    margin-bottom: var(--space-1);
+    font-size: var(--icon-size-md);
+  }
 }
 
-.section-title {
-  @include fx.text(h3, semibold);
+.metric-value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+  order: 1;
+  margin: 0;
+}
+
+.metric-label {
+  @include fx.text(caption);
+  order: 2;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+// --- Light sheet --------------------------------------------------------------------------------
+.sheet {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--page-gutter) var(--space-8);
+  border-radius: var(--radius-hero) var(--radius-hero) 0 0;
+  background: var(--color-bg);
+}
+
+.loading,
+.not-found {
+  margin: calc(var(--ion-safe-area-top, 0px) + 64px) var(--page-gutter) 0;
 }
 
 .loading {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  margin: 0;
 }

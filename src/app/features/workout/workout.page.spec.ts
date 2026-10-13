@@ -65,7 +65,7 @@ async function render({ profile = PROFILE, storedPlan, today = THURSDAY, failWri
   const text = (testId: string) => clean(el.querySelector(`[data-testid="${testId}"]`));
   const all = (testId: string) => [...el.querySelectorAll(`[data-testid="${testId}"]`)];
   const buttons = () => [...el.querySelectorAll<HTMLButtonElement>('button')];
-  const button = (label: string) => buttons().find((b) => clean(b) === label);
+  const button = (label: string) => buttons().find((b) => clean(b) === label || b.getAttribute('aria-label') === label);
   const settle = async () => {
     await fixture.whenStable();
     fixture.detectChanges();
@@ -75,16 +75,18 @@ async function render({ profile = PROFILE, storedPlan, today = THURSDAY, failWri
 
 describe('WorkoutPage', () => {
   describe('plan states from WorkoutPlanService', () => {
-    it('first generated plan: today, the week, today’s exercises and plan facts', async () => {
-      const { el, text, all, storage } = await render();
+    it('first generated plan: the switch, the week, today’s workout, the week’s sessions and plan facts', async () => {
+      const { el, text, all, storage, clean } = await render();
 
       expect(el.querySelector('h1')?.textContent).toBe('Workout');
-      expect(text('today-title')).toBe('Upper Body B');
-      expect(all('today-meta')[0].querySelectorAll('li')).toHaveLength(2);
-      expect([...all('today-meta')[0].querySelectorAll('li')].map((li) => li.textContent?.trim())).toEqual(['7 exercises', 'About 50 min']);
-      expect(all('week-day')).toHaveLength(7);
-      expect(all('exercise')).toHaveLength(7);
-      expect(all('prescription').map((p) => p.textContent?.replace(/\s+/g, ' ').trim())[0]).toBe('4 sets · 6–10 reps · 120 sec rest');
+      expect(el.querySelector('[data-testid="switch-plan"]')?.getAttribute('aria-current')).toBe('page');
+      expect(all('strip-day')).toHaveLength(7);
+      expect(clean(el.querySelector('#workout-today'))).toBe('Today•Thursday, 8 Oct');
+      expect(clean(el.querySelector('[data-testid="plan-today"] h2'))).toBe('Upper Body B');
+      expect([...el.querySelectorAll('[data-testid="plan-today"] .meta li')].map((li) => clean(li))).toEqual(['About 50 min', '7 exercises']);
+      expect([...el.querySelectorAll('[data-testid="plan-today-areas"] li')].map((li) => clean(li))).toEqual(['Chest', 'Back', 'Shoulders']);
+      expect(all('plan-week-row')).toHaveLength(4);
+      expect(text('plan-week-progress')).toBe('0 of 4 done');
       expect(el.querySelector('dl')?.textContent).toContain('Build muscle');
       expect(all('plan-notice')).toHaveLength(0);
       expect(storage.values.has('fitness.workout-plan')).toBe(true);
@@ -92,22 +94,21 @@ describe('WorkoutPage', () => {
 
     it('existing stored plan renders as stored (no regeneration, no notice)', async () => {
       const stored = planFor();
-      const { text, all, storage } = await render({ storedPlan: stored });
-      expect(text('today-title')).toBe('Upper Body B');
+      const { el, all, storage, clean } = await render({ storedPlan: stored });
+      expect(clean(el.querySelector('[data-testid="plan-today"] h2'))).toBe('Upper Body B');
       expect(all('plan-notice')).toHaveLength(0);
       expect(JSON.parse(storage.values.get('fitness.workout-plan')!).plan).toEqual(stored);
     });
 
     it('regenerated plan renders with a non-blocking update notice', async () => {
-      const { text, all } = await render({ storedPlan: planFor(profileWith({ primaryGoal: 'get-stronger' })) });
+      const { all } = await render({ storedPlan: planFor(profileWith({ primaryGoal: 'get-stronger' })) });
       expect(all('plan-notice').map((n) => n.querySelector('h2')?.textContent)).toEqual(['Your plan was updated']);
-      expect(text('today-title')).toBe('Upper Body B');
-      expect(all('exercise')).toHaveLength(7);
+      expect(all('plan-week-row')).toHaveLength(4);
     });
 
     it('a plan that could not be saved still renders, with a subtle warning', async () => {
-      const { text, all, storage } = await render({ failWrites: true });
-      expect(text('today-title')).toBe('Upper Body B');
+      const { all, storage } = await render({ failWrites: true });
+      expect(all('plan-today')).toHaveLength(1);
       expect(all('plan-notice').map((n) => n.querySelector('h2')?.textContent)).toEqual(["Your plan isn't saved on this device"]);
       expect(storage.values.has('fitness.workout-plan')).toBe(false);
     });
@@ -162,153 +163,107 @@ describe('WorkoutPage', () => {
     });
   });
 
-  describe('recent workouts', () => {
-    const local = (day: number, hour: number) => new Date(2026, 9, day, hour, 0);
-    const logs = [
-      finishedLog({ startedAt: local(8, 7), minutes: 45 }),
-      finishedLog({ startedAt: local(5, 7), minutes: 42, complete: (e) => e < 3, skipRest: true }),
-      finishedLog({ startedAt: local(1, 7), minutes: 50 }),
-      finishedLog({ startedAt: local(2, 7), minutes: 40 }),
-    ];
-
-    it('shows the latest three finished workouts compactly, newest first', async () => {
-      const { all, clean } = await render({ history: logs });
-      const items = all('recent-item');
-      expect(items.map((i) => [clean(i.querySelector('.recent-title')), clean(i.querySelector('.recent-meta')), clean(i.querySelector('.recent-status'))])).toEqual([
-        ['Upper Body A', 'Today · 45 min', 'Completed'],
-        ['Upper Body A', 'Mon · 42 min', 'Finished · 10/22 sets'],
-        ['Upper Body A', 'Fri · 40 min', 'Completed'], // within the last week: weekday
-      ]);
-    });
-
-    it('opens a workout from history, or the full history', async () => {
-      const { all, button, settle, forward } = await render({ history: logs });
-      (all('recent-item')[1] as HTMLButtonElement).click();
-      await settle();
-      expect(forward).toHaveBeenCalledWith(['/workout', 'history', logs[1].id]);
-      button('View History')!.click();
+  describe('Plan / History switch', () => {
+    it('History opens the history route (a link, not a second state of this page)', async () => {
+      const { el, settle, forward } = await render();
+      const history = el.querySelector<HTMLAnchorElement>('[data-testid="switch-history"]')!;
+      expect(history.getAttribute('href')).toBe('/workout/history');
+      expect(history.closest('nav')?.getAttribute('aria-label')).toBe('Workout views');
+      history.click();
       await settle();
       expect(forward).toHaveBeenCalledWith(['/workout', 'history']);
     });
-
-    it('without history: a short note and a way to history; the plan stays primary', async () => {
-      const { text, button, el } = await render();
-      expect(text('recent')).toContain('Workouts you finish will appear here.');
-      expect(button('View History')).toBeDefined();
-      const order = [...el.querySelectorAll('h2')].map((h) => h.textContent?.trim());
-      expect(order.indexOf('Recent workouts')).toBeGreaterThan(order.indexOf("Today's workout"));
-    });
   });
 
-  describe('interrupted workout', () => {
-    it('offers to resume a workout in progress, first on the page', async () => {
-      const { el, button, settle, forward } = await render({ activeSession: 'day-1-upper' });
-      const card = el.querySelector('[data-testid="resume"]')!;
-      expect([...card.querySelectorAll('h2, p, button')].map((n) => n.textContent?.trim())).toEqual([
-        'Workout in progress',
-        'Upper Body A',
-        '0 of 22 sets done',
-        'Resume Workout',
-      ]);
-      expect(el.querySelector('h2')?.textContent?.trim()).toBe('Workout in progress');
-      button('Resume Workout')!.click();
+  describe('today’s workout', () => {
+    it('Start workout starts today’s session and opens the Active Workout (the plan is unchanged)', async () => {
+      const { button, settle, forward, storage } = await render();
+      const plan = storage.values.get('fitness.workout-plan');
+      button('Start workout')!.click();
+      await settle();
+      expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-3-upper', 'active']);
+      expect(JSON.parse(storage.values.get('fitness.workout-active')!).log.source.sessionId).toBe('day-3-upper');
+      expect(storage.values.get('fitness.workout-plan')).toBe(plan);
+    });
+
+    it('another workout in progress: the card resumes it (one workout at a time)', async () => {
+      const { el, button, settle, forward, clean } = await render({ activeSession: 'day-1-upper' });
+      expect(el.querySelector('[data-testid="plan-today"]')?.getAttribute('data-kind')).toBe('resume');
+      expect(clean(el.querySelector('[data-testid="plan-today"] h2'))).toBe('Upper Body A');
+      expect(clean(el.querySelector('[data-testid="plan-today-progress"]'))).toBe('0 of 22 sets done');
+      expect(button('Start workout')).toBeUndefined();
+      button('Resume workout')!.click();
       await settle();
       expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-1-upper', 'active']);
     });
 
-    it('shows no resume card without a workout in progress', async () => {
-      const { el } = await render();
-      expect(el.querySelector('[data-testid="resume"]')).toBeNull();
-    });
-  });
-
-  describe('session kinds', () => {
-    it('resistance day: View Workout opens today’s session in Workout Detail (by session id)', async () => {
-      const { button, forward, settle } = await render();
-      expect(button('Start Workout')).toBeUndefined(); // starting happens from Workout Detail
-      button('View Workout')!.click();
+    it('done today: the card shows the record instead of a second start', async () => {
+      const done = finishedLog({ plan: planFor(), sessionId: 'day-3-upper', startedAt: new Date(2026, 9, 8, 7, 0), minutes: 50 });
+      const { el, button, settle, forward, all } = await render({ history: [done] });
+      expect(el.querySelector('[data-testid="plan-today"]')?.getAttribute('data-kind')).toBe('done');
+      expect(button('Start workout')).toBeUndefined();
+      button('View workout')!.click();
       await settle();
-      expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-3-upper']);
+      expect(forward).toHaveBeenCalledWith(['/workout', 'history', done.id]);
+      expect(all('plan-week-row')[2].getAttribute('data-status')).toBe('done');
     });
 
-    it('activity day: activity hero with View Activity; never a workout', async () => {
-      const { text, button, all, el, settle, forward } = await render({ profile: ACTIVITY_PROFILE });
-      expect(text('today-title')).toBe('Light Activity');
-      expect(el.querySelector('#workout-today-heading')?.textContent?.trim()).toBe("Today's activity");
-      expect(text('today-meta')).toBe('Recovery · 20–30 min');
-      expect(button('Start Workout')).toBeUndefined();
-      expect(all('exercise')).toHaveLength(0);
-      expect(el.querySelector('#workout-exercises')).toBeNull();
-
-      button('View Activity')!.click();
+    it('activity day: the activity, with a way to its detail; never a workout start', async () => {
+      const { el, button, settle, forward, clean } = await render({ profile: ACTIVITY_PROFILE });
+      expect(clean(el.querySelector('[data-testid="plan-today"] h2'))).toBe('Light Activity');
+      expect(button('Start workout')).toBeUndefined();
+      button('View activity')!.click();
       await settle();
       expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-4-light-activity']);
     });
 
-    it('rest day: calm message, next session, no workout CTA; preview opens the next session', async () => {
-      const { text, button, all, el, settle, forward } = await render({ profile: REST_PROFILE });
-      expect(text('today-title')).toBe('Rest Day');
-      expect(el.querySelector('app-today-hero')?.textContent).toContain('Recovery is part of your plan.');
-      expect(text('up-next')).toBe('Next up: Full Body C on Friday.');
-      expect(button('Start Workout')).toBeUndefined();
-      expect(button('View Workout')).toBeUndefined();
-      expect(all('exercise')).toHaveLength(0);
-      button('Preview Full Body C')!.click();
-      await settle();
-      expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-3-full-body']);
-    });
-
-    it('bodyweight-only plan shows the substitution honestly', async () => {
-      const { el } = await render({ profile: HOME_PROFILE, today: MONDAY });
-      expect(el.textContent).toContain('Closest option for your equipment');
+    it('rest day: says so with what comes next; the action moves to the week', async () => {
+      const { el, text, button, clean } = await render({ profile: REST_PROFILE });
+      expect(clean(el.querySelector('[data-testid="plan-today"] h2'))).toBe('Rest Day');
+      expect(text('plan-today-next')).toBe('Next up: Full Body C on Friday.');
+      expect(button('Start workout')).toBeUndefined();
+      button('View this week')!.click();
+      expect(document.activeElement?.id).toBe('workout-week');
     });
   });
 
-  describe('weekly schedule', () => {
-    it('shows the generated week Monday first, today highlighted, with every day type distinguishable', async () => {
-      const { all, clean } = await render();
-      const rows = all('week-day');
-      expect(rows.map((r) => clean(r.querySelector('.visually-hidden')))).toEqual([
-        'Monday. Upper Body A. 7 exercises, about 50 minutes.',
-        'Tuesday. Lower Body A. 7 exercises, about 45 minutes.',
-        'Wednesday. Rest day.',
-        'Thursday, today. Upper Body B. 7 exercises, about 50 minutes.',
-        'Friday. Lower Body B. 7 exercises, about 40 minutes.',
-        'Saturday. Rest day.',
-        'Sunday. Rest day.',
-      ]);
-      const current = rows.map((r) => r.closest('li')!.getAttribute('aria-current'));
-      expect(current).toEqual([null, null, null, 'date', null, null, null]);
-      expect(rows[3].closest('li')?.textContent).toContain('Today');
-    });
-
-    it('training days open Workout Detail by session id; rest days are not interactive; no detail sheet', async () => {
-      const { el, all, settle, forward } = await render();
-      const rows = all('week-day');
-      expect(rows.map((r) => r.tagName)).toEqual(['BUTTON', 'BUTTON', 'DIV', 'BUTTON', 'BUTTON', 'DIV', 'DIV']);
-
-      (rows[1] as HTMLButtonElement).click();
+  describe('the week', () => {
+    it('the strip shows Monday–Sunday with dates; today is current; training days are buttons, rest days are not', async () => {
+      const { all, settle, forward, clean } = await render();
+      const days = all('strip-day');
+      expect(days.map((d) => clean(d.querySelector('.date')))).toEqual(['5', '6', '7', '8', '9', '10', '11']);
+      expect(days.map((d) => d.getAttribute('aria-current'))).toEqual([null, null, null, 'date', null, null, null]);
+      expect(days.map((d) => d.tagName)).toEqual(['BUTTON', 'BUTTON', 'SPAN', 'BUTTON', 'BUTTON', 'SPAN', 'SPAN']);
+      expect(days[3].getAttribute('aria-label')).toBe('Thursday 8 October, today. Upper Body B.');
+      expect(days[2].getAttribute('aria-label')).toBe('Wednesday 7 October. Rest day.');
+      (days[1] as HTMLButtonElement).click();
       await settle();
       expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-2-lower']);
-      expect(el.querySelector('fit-bottom-sheet, ion-modal')).toBeNull();
+    });
+
+    it('rows: each training session with its length, date and status; a row opens its detail', async () => {
+      const monday = finishedLog({ plan: planFor(), sessionId: 'day-1-upper', startedAt: new Date(2026, 9, 5, 18, 0), minutes: 50 });
+      const { all, settle, forward, text } = await render({ history: [monday] });
+      const rows = all('plan-week-row');
+      expect(rows.map((r) => [r.getAttribute('data-status'), r.getAttribute('aria-label')])).toEqual([
+        ['done', 'Upper Body A, Mon, 5 Oct. About 50 minutes, 7 exercises. Done.'],
+        ['missed', 'Lower Body A, Tue, 6 Oct. About 45 minutes, 7 exercises. Not done.'],
+        ['upcoming', 'Upper Body B, Today. About 50 minutes, 7 exercises. Planned.'],
+        ['upcoming', 'Lower Body B, Fri, 9 Oct. About 40 minutes, 7 exercises. Planned.'],
+      ]);
+      expect(text('plan-week-progress')).toBe('1 of 4 done');
+      expect(all('strip-day')[0].getAttribute('data-state')).toBe('done');
+      (rows[3] as HTMLButtonElement).click();
+      await settle();
+      expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-4-lower']);
     });
   });
 
   describe('accessibility', () => {
-    it('has one h1, section h2s and exercise h3s in order', async () => {
+    it('has one h1 and section h2s in order', async () => {
       const { el } = await render();
-      const headings = [...el.querySelectorAll('h1, h2, h3')].map((h) => `${h.tagName}:${h.textContent?.trim()}`);
-      expect(headings.filter((h) => h.startsWith('H1'))).toEqual(['H1:Workout']);
-      expect(headings.filter((h) => h.startsWith('H2'))).toEqual([
-        "H2:Today's workout",
-        'H2:This week',
-        "H2:Today's exercises",
-        'H2:Recent workouts',
-        'H2:Your plan',
-      ]);
-      const levels = headings.map((h) => Number(h[1]));
-      levels.forEach((level, i) => i > 0 && expect(level - levels[i - 1]).toBeLessThanOrEqual(1));
-      expect(headings.filter((h) => h.startsWith('H3'))).toHaveLength(7);
+      const headings = [...el.querySelectorAll('h1, h2, h3')].map((h) => `${h.tagName}:${h.textContent?.replace(/\s+/g, ' ').trim()}`);
+      expect(headings).toEqual(['H1:Workout', 'H2:Today•Thursday, 8 Oct', 'H2:Upper Body B', 'H2:This week', 'H2:Your plan']);
     });
 
     it('every button has an accessible name and explicit type', async () => {
@@ -328,13 +283,6 @@ describe('WorkoutPage', () => {
         const id = section.getAttribute('aria-labelledby')!;
         expect(el.querySelector(`#${id}`), id).not.toBeNull();
       }
-    });
-
-    it('today’s hero is a labelled region with a named action', async () => {
-      const { el } = await render();
-      const hero = el.querySelector('app-today-hero section');
-      expect(hero?.getAttribute('aria-labelledby')).toBe('workout-today-heading');
-      expect(hero?.querySelector('button')?.textContent?.trim()).toBe('View Workout');
     });
   });
 });

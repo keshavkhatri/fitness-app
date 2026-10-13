@@ -1,11 +1,9 @@
-import { calendarDateOf } from '../../../domain/fitness-profile';
-import { trainingOverview } from '../../../domain/workout-session';
+import { completedWorkouts } from '../../../domain/workout-session';
 import { BODYWEIGHT_PROFILE, finishedLog, planFor } from '../../../domain/workout-session/testing/workout-log-fixtures';
-import { dayLabel, shortDayLabel, toHistoryDetail, toHistoryItem, toHistoryScreen, toRecentWorkouts } from './history-view-model';
+import { dayLabel, filterHistory, shortDayLabel, toHistoryDetail, toHistoryItem, toHistoryScreen, trainingVolume } from './history-view-model';
 
 const local = (month: number, day: number, hour = 9, minute = 0) => new Date(2026, month - 1, day, hour, minute);
 const NOW = local(10, 8, 20); // Thursday 8 Oct 2026, 8 pm
-const localDate = (instant: string) => calendarDateOf(new Date(instant));
 const day = (year: number, month: number, d: number) => ({ year, month, day: d });
 
 const full = finishedLog({ startedAt: local(10, 8, 18), minutes: 45 });
@@ -34,53 +32,55 @@ describe('history view model', () => {
   });
 
   describe('history list', () => {
-    it('groups by local completion day, newest first, with consistency counts', () => {
-      const workouts = [full, partial, monday];
-      const screen = toHistoryScreen({ ok: true, workouts }, trainingOverview(workouts, calendarDateOf(NOW), localDate), NOW);
+    const lower = (() => {
+      const plan = planFor();
+      return finishedLog({ plan, sessionId: plan.sessions.find((x) => x.kind === 'resistance' && x.sessionType === 'lower')!.id, startedAt: local(9, 29, 18), minutes: 46 });
+    })();
+    const september = finishedLog({ startedAt: local(9, 24, 18), minutes: 40 });
+
+    it('groups by local month, newest first, with a count per month', () => {
+      const screen = toHistoryScreen({ ok: true, workouts: completedWorkouts([full, partial, monday, lower, september]) });
       expect(screen.kind).toBe('ready');
       if (screen.kind !== 'ready') {
         return;
       }
-      expect(screen.consistency).toEqual({ thisWeek: '3 workouts', thisMonth: '3 workouts' });
-      expect(screen.groups.map((g) => [g.label, g.items.map((i) => i.id)])).toEqual([
-        ['Today', [full.id]],
-        ['Yesterday', [partial.id]],
-        ['Monday, Oct 5', [monday.id]],
+      expect(screen.months.map((m) => [m.label, m.countLabel, m.items.map((i) => i.id)])).toEqual([
+        ['October 2026', '3 workouts', [full.id, partial.id, monday.id]],
+        ['September 2026', '2 workouts', [lower.id, september.id]],
       ]);
     });
 
-    it('items show name, time, duration, exercises and sets; partial workouts say so in words', () => {
+    it('offers a filter by session type only when there is more than one type, and filters by it', () => {
+      const one = toHistoryScreen({ ok: true, workouts: [full, monday] });
+      expect(one.kind === 'ready' && one.filters).toEqual([]);
+
+      const mixed = toHistoryScreen({ ok: true, workouts: completedWorkouts([full, lower, september]) });
+      if (mixed.kind !== 'ready') {
+        throw new Error('expected a ready screen');
+      }
+      expect(mixed.filters.map((f) => f.label)).toEqual(['All', 'Upper Body', 'Lower Body']);
+      expect(filterHistory(mixed.months, 'all')).toBe(mixed.months);
+      expect(filterHistory(mixed.months, 'lower').map((m) => [m.label, m.countLabel, m.items.map((i) => i.title)])).toEqual([
+        ['September 2026', '1 workout', ['Lower Body A']],
+      ]);
+    });
+
+    it('items show the date and recorded duration, then exercises; partial workouts add the sets done', () => {
       expect(toHistoryItem(full)).toEqual({
         id: full.id,
         title: 'Upper Body A',
-        time: '6:45 PM',
-        meta: '45 min · 7 of 7 exercises · 22 sets',
-        metaParts: ['6:45 PM', '45 min', '7 of 7 exercises', '22 sets'],
+        sessionType: 'upper',
+        meta: 'Thu, 8 Oct · 45 min',
+        detail: '7 exercises',
         status: 'complete',
-        statusLabel: 'Completed',
-        skippedLabel: null,
+        accessibleLabel: 'Upper Body A, Thursday, Oct 8, 2026. 45 min, 7 exercises.',
       });
-      expect(toHistoryItem(partial)).toMatchObject({
-        status: 'partial',
-        statusLabel: 'Finished · 13/22 sets',
-        skippedLabel: '9 skipped',
-        meta: '38 min · 4 of 7 exercises · 13 sets',
-      });
+      expect(toHistoryItem(partial)).toMatchObject({ status: 'partial', meta: 'Wed, 7 Oct · 38 min', detail: '7 exercises · 13 of 22 sets' });
     });
 
     it('empty and error states', () => {
-      const empty = trainingOverview([], calendarDateOf(NOW), localDate);
-      expect(toHistoryScreen({ ok: true, workouts: [] }, empty, NOW)).toEqual({ kind: 'empty' });
-      expect(toHistoryScreen({ ok: false }, null, NOW)).toEqual({ kind: 'error' });
-    });
-
-    it('recent workouts: at most three, compact day and duration', () => {
-      const recent = toRecentWorkouts([full, partial, monday, finishedLog({ startedAt: local(9, 30), minutes: 40 })], NOW);
-      expect(recent.map((r) => [r.title, r.meta, r.statusLabel])).toEqual([
-        ['Upper Body A', 'Today · 45 min', 'Completed'],
-        ['Upper Body A', 'Yesterday · 38 min', 'Finished · 13/22 sets'],
-        ['Upper Body A', 'Mon · 50 min', 'Completed'],
-      ]);
+      expect(toHistoryScreen({ ok: true, workouts: [] })).toEqual({ kind: 'empty' });
+      expect(toHistoryScreen({ ok: false })).toEqual({ kind: 'error' });
     });
   });
 
@@ -98,9 +98,10 @@ describe('history view model', () => {
         exercises: '4 of 7',
         completed: '13',
         skipped: '9',
+        volume: '4,070',
       });
       const bench = view.exercises[0];
-      expect(bench).toMatchObject({ heading: '1. Bench Press', planned: '4 sets · 6–10 reps · 120 sec rest', progress: 'All sets done' });
+      expect(bench).toMatchObject({ name: 'Bench Press', setsLabel: '4 sets', planned: '4 sets · 6–10 reps · 120 sec rest', progress: 'All sets done' });
       expect(bench.sets.map((s) => `${s.label} · ${s.value}`)).toEqual([
         'Set 1 · 40 kg × 10',
         'Set 2 · 42.5 kg × 9',
@@ -109,6 +110,35 @@ describe('history view model', () => {
       ]);
       expect(view.exercises[4]).toMatchObject({ progress: '0 of 3 sets done' });
       expect(view.exercises[4].sets.every((s) => s.value === 'Skipped')).toBe(true);
+    });
+
+    it('totals: exercises with a done set (of all), sets done, and volume from weighted sets', () => {
+      const view = toHistoryDetail(partial, NOW);
+      expect(view).toMatchObject({ dateLabel: 'Wed, 7 Oct 2026', duration: '38 min' });
+      // Independent of the implementation: the fixture's weight 40 + 5e (+2.5 after the first set), reps 10 − s.
+      let expected = 0;
+      partial.exercises.forEach((e, ei) => {
+        if (e.logging === 'weight-reps') {
+          e.sets.forEach((set, si) => {
+            if (set.status === 'completed') {
+              expected += (40 + ei * 5 + (si === 0 ? 0 : 2.5)) * (10 - si);
+            }
+          });
+        }
+      });
+      expect(trainingVolume(partial)).toBe(expected);
+      expect(view.metrics.map((m) => [m.key, m.value, m.label])).toEqual([
+        ['exercises', '4/7', 'Exercises'],
+        ['sets', '13', 'Sets done'],
+        ['volume', new Intl.NumberFormat('en-US').format(expected), 'Volume (kg)'],
+      ]);
+      expect(toHistoryDetail(full, NOW).metrics[0].value).toBe('7');
+    });
+
+    it('max is the heaviest set, then the most reps (ties: the earlier set); none without a done set', () => {
+      const view = toHistoryDetail(partial, NOW);
+      expect(view.exercises[0].best).toBe('42.5 kg × 9');
+      expect(view.exercises[4].best).toBeNull();
     });
 
     it('sets neither done nor skipped read "Not done", and are counted', () => {
@@ -126,6 +156,10 @@ describe('history view model', () => {
       expect(timed.sets[0].value).toBe('30 sec');
       const pushUps = view.exercises.find((e) => e.name === 'Push-Up')!;
       expect(pushUps.sets[0].value).toBe('10 reps');
+      expect(pushUps.best).toBe('10 reps');
+      // No weighted work: no volume to report.
+      expect(trainingVolume(log)).toBeNull();
+      expect(view.metrics.map((m) => m.key)).toEqual(['exercises', 'sets']);
     });
 
     it('uses names and prescriptions recorded in the log, even if the catalog or plan changed', () => {
@@ -136,7 +170,7 @@ describe('history view model', () => {
         ),
       };
       const view = toHistoryDetail(changed, NOW);
-      expect(view.exercises[0]).toMatchObject({ heading: '1. Flat Barbell Press (2026 name)', planned: '4 sets · 5 reps · 120 sec rest' });
+      expect(view.exercises[0]).toMatchObject({ name: 'Flat Barbell Press (2026 name)', planned: '4 sets · 5 reps · 120 sec rest' });
     });
   });
 });

@@ -10,6 +10,7 @@ import {
   formatMinuteRange,
   formatPrescription,
   plural,
+  prescriptionOf,
   prescriptionStats,
   sessionTitle,
 } from './workout-formatting';
@@ -40,6 +41,10 @@ export interface ResistanceDetailView extends DetailHeader {
   readonly durationLabel: string;
   /** Broad body areas in session order, e.g. "Chest · Back · Shoulders · Arms"; null when unknown. */
   readonly focus: string | null;
+  /** The same areas, for chips. */
+  readonly focusAreas: readonly string[];
+  /** The plan's estimate, in minutes. */
+  readonly minutes: number;
   readonly exercises: readonly DetailExerciseView[];
   /** Progression guidance phrased from the plan's own progression rules. */
   readonly progression: readonly string[];
@@ -53,6 +58,8 @@ export interface DetailExerciseView {
   readonly stats: readonly PrescriptionStat[];
   /** Full sentence form, e.g. "4 sets · 6–10 reps · 120 sec rest". */
   readonly prescription: string;
+  /** Sets and target only, for the row: "4 sets · 6–10 reps". */
+  readonly brief: string;
   /** Primary muscles and equipment, e.g. "Chest · Barbell, bench, rack". */
   readonly metadata: string | null;
   readonly substitution: { readonly title: string; readonly message: string } | null;
@@ -144,6 +151,8 @@ function toResistanceDetail(
     countLabel: plural(session.exercises.length, 'exercise', 'exercises'),
     durationLabel: `About ${session.estimatedDurationMinutes} min`,
     focus: focus.length > 0 ? focus.join(' · ') : null,
+    focusAreas: focus,
+    minutes: session.estimatedDurationMinutes,
     exercises: session.exercises.map((planned) => toDetailExercise(planned, catalog)),
     progression: progressionGuidance(session.exercises, catalog),
     cta: { label: WORKOUT_COPY.detail.startWorkout, pendingMessage: null },
@@ -164,6 +173,7 @@ function toDetailExercise(planned: PlannedExercise, catalog: ReadonlyMap<string,
     name: exercise?.name ?? planned.exerciseId,
     stats: prescriptionStats(planned),
     prescription: formatPrescription(planned),
+    brief: formatPrescription({ ...prescriptionOf(planned), restSeconds: 0 }),
     metadata: exerciseMetadata(exercise),
     substitution: planned.selection.substitute ? WORKOUT_COPY.detail.substitution : null,
   };

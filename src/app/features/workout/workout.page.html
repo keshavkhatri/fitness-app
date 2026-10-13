@@ -1,73 +1,54 @@
-<fit-page [title]="copy.title">
-  <p class="subtitle">{{ copy.subtitle }}</p>
+<fit-page [title]="copy.title" customHeader>
+  <header class="header" fitPageHeader>
+    <h1 class="heading">{{ copy.title }}</h1>
+    <!-- Plan is this page; History is its own route (links, not a radio group). -->
+    <nav class="switch" [attr.aria-label]="tab.views">
+      <a class="switch-option selected" href="/workout" aria-current="page" data-testid="switch-plan" (click)="$event.preventDefault()">{{ tab.planLabel }}</a>
+      <a class="switch-option" href="/workout/history" data-testid="switch-history" (click)="openHistory($event)">{{ tab.historyLabel }}</a>
+    </nav>
+  </header>
 
   @let s = screen();
   @if (s && s.kind === 'ready') {
-    @if (resume(); as r) {
-      <section class="resume" aria-labelledby="workout-resume" data-testid="resume">
-        <div class="resume-text">
-          <h2 class="resume-eyebrow" id="workout-resume">{{ copy.resume.eyebrow }}</h2>
-          <p class="resume-title">{{ r.title }}</p>
-          <p class="resume-progress">{{ r.progress }}</p>
-        </div>
-        <button fit-button type="button" icon="play-outline" (click)="resumeWorkout(r.sessionId)">{{ copy.resume.action }}</button>
-      </section>
-    }
-
+    @let v = view();
     @for (notice of s.notices; track notice.title) {
       <fit-notice [tone]="notice.tone" [headingLevel]="2" [title]="notice.title" data-testid="plan-notice">
         {{ notice.message }}
       </fit-notice>
     }
 
-    <app-today-hero [day]="s.today" [upNext]="s.upNext" (openSession)="openDay($event)" />
+    @if (v) {
+      <app-plan-date-strip [days]="v.days" [label]="tab.weekLabel" (selectDay)="openSession($event)" />
 
-    <section class="section" aria-labelledby="workout-week">
-      <fit-section-header [title]="copy.week.title" headingId="workout-week" />
-      <p class="caption">{{ copy.week.caption }}</p>
-      <app-week-schedule [week]="s.week" (selectDay)="openDay($event)" />
-    </section>
-
-    @if (s.today.session.kind === 'resistance') {
-      <section class="section" aria-labelledby="workout-exercises">
-        <fit-section-header [title]="copy.exercises.title" headingId="workout-exercises" />
-        <app-exercise-list [exercises]="s.today.session.exercises" />
+      <section class="today" aria-labelledby="workout-today">
+        <h2 class="row-heading" id="workout-today">
+          <span class="strong">{{ tab.today }}</span><span class="dot" aria-hidden="true">•</span>{{ v.todayLabel }}
+        </h2>
+        <app-plan-today-card
+          [feature]="v.feature"
+          [starting]="starting()"
+          [statusMessage]="startMessage()"
+          (startSession)="startSession($event)"
+          (resumeSession)="resumeWorkout($event)"
+          (openSession)="openSession($event)"
+          (openRecord)="openWorkoutLog($event)"
+          (openWeek)="focusWeek()"
+        />
       </section>
+
+      @if (v.rows.length > 0) {
+        <section class="week" aria-labelledby="workout-week" data-testid="plan-week">
+          <div class="row-heading">
+            <h2 class="strong" id="workout-week" tabindex="-1" #weekHeading>{{ tab.weekTitle }}</h2>
+            <span class="progress" data-testid="plan-week-progress">{{ v.weekProgress }}</span>
+          </div>
+          <app-plan-week-list [rows]="v.rows" (openSession)="openSession($event)" />
+        </section>
+      }
     }
 
-    @if (recent(); as items) {
-      <section class="section" aria-labelledby="workout-recent" data-testid="recent">
-        <fit-section-header [title]="copy.history.recent.title" headingId="workout-recent">
-          @if (items.length > 0) {
-            <button fit-button type="button" variant="ghost" (click)="openHistory()">{{ copy.history.recent.viewAll }}</button>
-          }
-        </fit-section-header>
-        @if (items.length > 0) {
-          <ol class="recent">
-            @for (item of items; track item.id) {
-              <li>
-                <button type="button" class="recent-item" data-testid="recent-item" [attr.data-status]="item.status" (click)="openWorkoutLog(item.id)">
-                  <span class="recent-text">
-                    <span class="recent-title">{{ item.title }}</span>&ngsp;
-                    <span class="recent-meta">{{ item.meta }}</span>
-                  </span>&ngsp;
-                  <span class="recent-status">
-                    <ion-icon [name]="item.status === 'complete' ? 'checkmark-circle' : 'flag-outline'" aria-hidden="true" />
-                    <span>{{ item.statusLabel }}</span>
-                  </span>
-                </button>
-              </li>
-            }
-          </ol>
-        } @else {
-          <p class="caption recent-empty">{{ copy.history.recent.empty }}</p>
-          <button fit-button type="button" variant="outline" (click)="openHistory()">{{ copy.history.recent.viewAll }}</button>
-        }
-      </section>
-    }
-
-    <section class="section" aria-labelledby="workout-plan">
-      <fit-section-header [title]="copy.plan.title" headingId="workout-plan" />
+    <section class="plan" aria-labelledby="workout-plan">
+      <h2 class="row-heading strong" id="workout-plan">{{ tab.planTitle }}</h2>
       <app-plan-summary [facts]="s.plan" />
     </section>
   } @else if (s?.kind === 'no-profile') {
@@ -88,10 +69,9 @@
   } @else {
     <div class="loading" aria-busy="true" data-testid="loading">
       <span class="visually-hidden" role="status">{{ copy.loading }}</span>
-      <fit-skeleton height="248px" radius="card" />
-      <fit-skeleton width="40%" height="24px" />
+      <fit-skeleton height="64px" radius="card" />
+      <fit-skeleton height="228px" radius="card" />
       <fit-skeleton height="200px" radius="card" />
     </div>
   }
 </fit-page>
-

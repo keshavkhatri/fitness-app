@@ -1,0 +1,140 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+fit-card {
+  position: relative;
+  display: flex;
+  min-height: 228px;
+  border-radius: var(--radius-lg);
+  // Lime highlights on ink; the dashboard's ink focus ring would vanish here.
+  --color-focus: var(--color-ink-accent);
+  --color-primary-strong: var(--color-ink-accent);
+  --color-track: var(--color-ink-track);
+}
+
+// --- Generated placeholder (photography comes later) ------------------------------------
+.media {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  app-workout-art {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+// Darkens the left and bottom so white text stays readable over any image.
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(var(--color-scrim-rgb), 0.7) 0%, rgba(var(--color-scrim-rgb), 0.2) 65%, transparent 100%),
+    linear-gradient(0deg, rgba(var(--color-scrim-rgb), 0.75) 0%, transparent 60%);
+}
+
+// --- Content ---------------------------------------------------------------------------
+.content {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  color: var(--color-on-ink);
+}
+
+// Frosted pills over the image.
+.eyebrow,
+.areas li {
+  background: rgba(var(--color-scrim-rgb), 0.45);
+  box-shadow: inset 0 0 0 var(--border-hairline) color-mix(in srgb, var(--color-on-ink) 24%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.eyebrow {
+  @include fx.text(caption, semibold);
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  padding: 5px var(--space-3) 5px 10px;
+  border-radius: var(--radius-pill);
+
+  ion-icon {
+    font-size: var(--icon-size-sm);
+    color: var(--color-ink-accent);
+  }
+}
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0 var(--space-1);
+}
+
+.name {
+  @include fx.text(h2, bold);
+  margin-bottom: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include fx.text(body-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  ion-icon {
+    font-size: var(--icon-size-sm);
+  }
+}
+
+.areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include fx.text(caption, medium);
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+  }
+}
+
+.line {
+  @include fx.text(body-sm);
+  color: var(--color-on-ink-secondary);
+}
+
+.sets {
+  margin-top: var(--space-3);
+}
+
+.status {
+  @include fx.text(body-sm, medium);
+  margin-top: var(--space-2);
+}
+
+.cta {
+  margin-top: var(--space-4);
+  border-radius: var(--radius-card);
+  font-size: var(--font-size-body);
+}

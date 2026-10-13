@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
+import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { WORKOUT_COPY } from '../workout-content';
 import { HistoryExerciseView } from './history-view-model';
 
 /**
- * A finished workout's exercises: the prescription at the time ("Planned")
- * and the recorded sets ("Actual"), labelled separately so one is never
- * mistaken for the other. Status is shown by icon and text.
+ * A finished workout's exercises in recorded order: one card each with the
+ * best set ("Max"), then every set as recorded. Status is shown by icon and
+ * text (done, skipped, not done). Read-only.
  */
 @Component({
   selector: 'app-history-exercise-list',
@@ -15,39 +16,34 @@ import { HistoryExerciseView } from './history-view-model';
     <ol class="exercise-list">
       @for (exercise of exercises(); track exercise.key) {
         <li class="exercise" data-testid="history-exercise">
-          <div class="exercise-head">
-            <h3 class="exercise-name">{{ exercise.heading }}</h3>
-            <p class="exercise-progress">{{ exercise.progress }}</p>
+          <div class="head">
+            <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" /></span>
+            <div class="identity">
+              <h3 class="name">{{ exercise.name }}</h3>
+              <p class="count">{{ exercise.setsLabel }}<span class="visually-hidden">, {{ exercise.progress }}</span></p>
+            </div>
+            @if (exercise.best; as best) {
+              <p class="best" data-testid="history-best">
+                <span class="best-label">{{ copy.detail.max }}<span class="visually-hidden">:</span></span>&ngsp;
+                <span class="best-value">{{ best }}</span>
+              </p>
+            }
           </div>
-          <dl class="planned">
-            <dt>{{ copy.detail.planned }}</dt>
-            <dd data-testid="planned">
-              @for (part of exercise.plannedParts; track $index; let first = $first) {
-                @if (!first) {
-                  <span class="separator" aria-hidden="true"> · </span>
-                }
-                <span class="part">{{ part }}</span>
-              }
-            </dd>
-          </dl>
-          <p class="actual-label" aria-hidden="true">{{ copy.detail.actual }}</p>
           <ol class="sets" [attr.aria-label]="copy.detail.actualSets(exercise.name)" data-testid="actual-sets">
             @for (set of exercise.sets; track set.key) {
               <li class="set" [attr.data-status]="set.status">
-                <span class="set-label">{{ set.label }}</span>&ngsp;
-                <span class="set-value">
+                <span class="set-number" aria-hidden="true">{{ set.setNumber }}</span>
+                <span class="visually-hidden">{{ set.label }}: </span>
+                <span class="set-value">{{ set.value }}</span>
+                <span class="set-status" aria-hidden="true">
                   @switch (set.status) {
                     @case ('completed') {
-                      <ion-icon name="checkmark-circle" aria-hidden="true" />
+                      <ion-icon name="checkmark" />
                     }
                     @case ('skipped') {
-                      <ion-icon name="remove-circle-outline" aria-hidden="true" />
-                    }
-                    @default {
-                      <ion-icon name="ellipse-outline" aria-hidden="true" />
+                      <ion-icon name="remove" />
                     }
                   }
-                  <span>{{ set.value }}</span>
                 </span>
               </li>
             }
@@ -57,7 +53,7 @@ import { HistoryExerciseView } from './history-view-model';
     </ol>
   `,
   styleUrl: './history-exercise-list.component.scss',
-  imports: [IonIcon],
+  imports: [IonIcon, WorkoutArtComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HistoryExerciseListComponent {

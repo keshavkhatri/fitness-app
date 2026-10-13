@@ -528,6 +528,39 @@ copy its patterns.
 - The current set is scrolled above the footer when it changes (short phones).
 - Elapsed time is measured from the log's start, so it is right after a resume.
 
+## Reference implementation: Workout screens
+
+The Workout tab and the screens it opens (`features/workout`).
+
+- **Plan (the tab), dashboard theme**, following Appearance. A custom header (h1 and a
+  Plan / History switch: two links in an ink pill, the current one lime with
+  `aria-current="page"`; History is its own route, not a second state of the
+  page). Then a Monday–Sunday date strip (today filled lime, a dot for planned
+  training, an olive dot once a workout is done; training days are buttons,
+  rest days aren't; it bleeds 12px into the gutter so seven 44px targets fit at
+  320px), today's workout as the one ink hero (`plan/plan-today-card`: start,
+  resume the workout in progress, done today → its record, activity, rest), the
+  week's sessions as compact rows with date and status by icon and text, and the
+  plan's facts.
+- **Workout Detail, History and History Detail: immersive (always dark)**, like the
+  Active Workout they lead to or come from (`holdAlwaysDark()` for the status bar).
+  An image hero that fades into the page, the back button over it (an
+  `ion-back-button`, so Back returns to wherever the user came from), then light
+  lists (`fit-theme-dashboard` on the list) on the dark page.
+- Workout Detail's exercise rows open in place (`aria-expanded`) to the full
+  prescription, muscles, equipment, demonstration and any substitution: there is
+  no exercise screen to link to.
+- History groups by local month. A filter by session type appears only when the
+  history has more than one type (logs are always resistance work, so a
+  Strength/Cardio split would be invented). History Detail shows recorded totals
+  only: exercises with a done set, sets done, and volume (weight × reps of done
+  weighted sets, in the log's unit; omitted without weighted work). "Max" is the
+  domain's `isBetterSet` rule (heaviest, then most reps). Exercises / Summary is a
+  `fit-segmented-control`; Summary holds the totals and what was planned at the time.
+- Imagery: no photos ship yet; heroes and thumbnails use the generated
+  `app-workout-art` (seeded by session, exercise or workout id, decorative,
+  `aria-hidden`). Swap in real images there when they exist.
+
 ## Open design decisions
 
 - Domain hues (ember for training, teal for body) stay alongside lime

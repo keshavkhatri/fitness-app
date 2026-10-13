@@ -1,18 +1,19 @@
 import { WorkoutHistoryResult } from '../../../core/workout/workout-history.service';
-import { CalendarDate, calendarDateOf, compareCalendarDates, toIsoCalendarDate } from '../../../domain/fitness-profile';
+import { CalendarDate, calendarDateOf, compareCalendarDates } from '../../../domain/fitness-profile';
+import { SESSION_TYPES, SessionType } from '../../../domain/workout-programming';
 import {
   ExerciseLog,
+  PerformedSet,
   SetLog,
-  TrainingOverview,
   WorkoutLog,
   addDays,
   completionStatus,
-  groupByCompletionDay,
+  isBetterSet,
   summarizeWorkoutLog,
 } from '../../../domain/workout-session';
 import { formatSetValues } from '../active/active-workout-view-model';
 import { formatDuration } from '../summary/workout-summary-view-model';
-import { WORKOUT_COPY } from '../workout-content';
+import { SESSION_TITLES, WORKOUT_COPY } from '../workout-content';
 import { formatPrescription, prescriptionParts, titleFor } from '../workout-formatting';
 
 /**
@@ -32,6 +33,8 @@ const weekdayMonthDay = new Intl.DateTimeFormat('en-US', { weekday: 'long', mont
 const weekdayMonthDayYear = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
 const shortWeekday = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
 const shortMonthDay = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
+const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 const timeOfDay = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
 
 /** "Today", "Yesterday", "Monday, Oct 5", or with the year when it isn't this year. */
@@ -62,108 +65,124 @@ export const formatTime = (instant: string) => timeOfDay.format(new Date(instant
 
 // --- History list -----------------------------------------------------------------------
 
+/** "Thu, 8 Oct" (the month group carries the year). */
+export const compactDate = (date: CalendarDate) =>
+  `${WEEKDAYS_SHORT[toLocalDate(date).getDay()]}, ${date.day} ${MONTHS[date.month - 1].slice(0, 3)}`;
+
+/** "Thu, 8 Oct 2026" */
+export const compactDateWithYear = (date: CalendarDate) => `${compactDate(date)} ${date.year}`;
+
 export interface HistoryItemView {
   readonly id: string;
   readonly title: string;
-  /** "6:45 PM" (the day is the group heading). */
-  readonly time: string;
-  /** "45 min · 7 of 7 exercises · 22 sets" */
+  readonly sessionType: SessionType;
+  /** "Thu, 8 Oct · 50 min" (recorded start to finish). */
   readonly meta: string;
-  /** The same as parts that must not break across lines (time first). */
-  readonly metaParts: readonly string[];
+  /** "7 exercises", or with the sets done when some weren't: "7 exercises · 16 of 22 sets". */
+  readonly detail: string;
   readonly status: 'complete' | 'partial';
-  /** Always in words: "Completed" or "Finished · 16/22 sets". */
-  readonly statusLabel: string;
-  /** "3 skipped" when sets were skipped. */
-  readonly skippedLabel: string | null;
+  /** One sentence for the card's button. */
+  readonly accessibleLabel: string;
 }
 
-export interface HistoryGroupView {
+export interface HistoryMonthView {
+  /** "2026-10" */
   readonly key: string;
+  /** "October 2026" */
   readonly label: string;
+  /** "4 workouts" */
+  readonly countLabel: string;
   readonly items: readonly HistoryItemView[];
 }
 
-export interface ConsistencyView {
-  readonly thisWeek: string;
-  readonly thisMonth: string;
+export type HistoryFilter = SessionType | 'all';
+
+export interface HistoryFilterView {
+  readonly value: HistoryFilter;
+  readonly label: string;
 }
 
 export type HistoryScreen =
-  | { readonly kind: 'ready'; readonly consistency: ConsistencyView; readonly groups: readonly HistoryGroupView[] }
+  | {
+      readonly kind: 'ready';
+      /** "All" plus each session type in the history; empty when there is only one type (nothing to filter). */
+      readonly filters: readonly HistoryFilterView[];
+      readonly months: readonly HistoryMonthView[];
+    }
   | { readonly kind: 'empty' }
   | { readonly kind: 'error' };
 
 export function toHistoryItem(log: WorkoutLog): HistoryItemView {
   const s = summarizeWorkoutLog(log);
   const status = completionStatus(log);
-  const parts = [formatDuration(s.durationSeconds), copy.exercises(s.exercisesCompleted, s.totalExercises), copy.sets(s.setsCompleted)];
-  const time = formatTime(log.completedAt ?? log.startedAt);
+  const day = localDateOf(log.completedAt ?? log.startedAt);
+  const duration = formatDuration(s.durationSeconds);
+  const exercises = copy.exerciseCount(s.totalExercises);
+  const detail = status === 'complete' ? exercises : `${exercises} · ${copy.setsOf(s.setsCompleted, s.totalSets)}`;
+  const title = titleFor(log.sessionType, log.variant);
   return {
     id: log.id,
-    title: titleFor(log.sessionType, log.variant),
-    time,
-    meta: parts.join(' · '),
-    metaParts: [time, ...parts],
+    title,
+    sessionType: log.sessionType,
+    meta: `${compactDate(day)} · ${duration}`,
+    detail,
     status,
-    statusLabel: status === 'complete' ? copy.completed : copy.partial(s.setsCompleted, s.totalSets),
-    skippedLabel: s.setsSkipped > 0 ? copy.skippedCount(s.setsSkipped) : null,
+    accessibleLabel: `${title}, ${weekdayMonthDayYear.format(toLocalDate(day))}. ${duration}, ${detail}.`,
   };
 }
 
-export function toConsistency(overview: TrainingOverview): ConsistencyView {
-  return { thisWeek: copy.workouts(overview.workoutsThisWeek), thisMonth: copy.workouts(overview.workoutsThisMonth) };
-}
-
-export function toHistoryScreen(result: WorkoutHistoryResult, overview: TrainingOverview | null, now: Date): HistoryScreen {
-  if (!result.ok || !overview) {
+/** Finished workouts (newest first, as the history service returns them) grouped by local month. */
+export function toHistoryScreen(result: WorkoutHistoryResult): HistoryScreen {
+  if (!result.ok) {
     return { kind: 'error' };
   }
   if (result.workouts.length === 0) {
     return { kind: 'empty' };
   }
-  const today = calendarDateOf(now);
+  const types = SESSION_TYPES.filter((type) => result.workouts.some((log) => log.sessionType === type));
   return {
     kind: 'ready',
-    consistency: toConsistency(overview),
-    groups: groupByCompletionDay(result.workouts, localDateOf).map((day) => ({
-      key: toIsoCalendarDate(day.date) ?? `${day.date.year}-${day.date.month}-${day.date.day}`,
-      label: dayLabel(day.date, today),
-      items: day.workouts.map(toHistoryItem),
-    })),
+    filters: types.length > 1 ? [{ value: 'all', label: copy.all }, ...types.map((type) => ({ value: type, label: SESSION_TITLES[type] }))] : [],
+    months: groupByMonth(result.workouts.map((log) => ({ log, item: toHistoryItem(log) }))),
   };
 }
 
-// --- Recent workouts (Workout tab) --------------------------------------------------------
-
-export interface RecentWorkoutView {
-  readonly id: string;
-  readonly title: string;
-  /** "Today · 45 min" */
-  readonly meta: string;
-  readonly status: 'complete' | 'partial';
-  readonly statusLabel: string;
+/** The months with only the workouts of one session type (months left empty are dropped). */
+export function filterHistory(months: readonly HistoryMonthView[], filter: HistoryFilter): readonly HistoryMonthView[] {
+  if (filter === 'all') {
+    return months;
+  }
+  return months.flatMap((month) => {
+    const items = month.items.filter((item) => item.sessionType === filter);
+    return items.length > 0 ? [{ ...month, countLabel: copy.workouts(items.length), items }] : [];
+  });
 }
 
-export function toRecentWorkouts(workouts: readonly WorkoutLog[], now: Date, limit = 3): RecentWorkoutView[] {
-  const today = calendarDateOf(now);
-  return workouts.slice(0, limit).map((log) => {
-    const item = toHistoryItem(log);
-    const day = shortDayLabel(localDateOf(log.completedAt ?? log.startedAt), today);
-    return {
-      id: log.id,
-      title: item.title,
-      meta: `${day} · ${formatDuration(summarizeWorkoutLog(log).durationSeconds)}`,
-      status: item.status,
-      statusLabel: item.statusLabel,
-    };
-  });
+function groupByMonth(entries: readonly { log: WorkoutLog; item: HistoryItemView }[]): HistoryMonthView[] {
+  const months: { key: string; date: CalendarDate; items: HistoryItemView[] }[] = [];
+  for (const { log, item } of entries) {
+    const date = localDateOf(log.completedAt ?? log.startedAt);
+    const key = `${date.year}-${String(date.month).padStart(2, '0')}`;
+    const month = months.find((m) => m.key === key);
+    if (month) {
+      month.items.push(item);
+    } else {
+      months.push({ key, date, items: [item] });
+    }
+  }
+  return months.map(({ key, date, items }) => ({
+    key,
+    label: `${MONTHS[date.month - 1]} ${date.year}`,
+    countLabel: copy.workouts(items.length),
+    items,
+  }));
 }
 
 // --- Historical workout detail ----------------------------------------------------------
 
 export interface HistorySetView {
   readonly key: number;
+  readonly setNumber: number;
   /** "Set 1" */
   readonly label: string;
   /** "60 kg × 8", "Skipped" or "Not done" */
@@ -173,9 +192,13 @@ export interface HistorySetView {
 
 export interface HistoryExerciseView {
   readonly key: string;
-  /** "1. Bench Press" (the name recorded in the log) */
-  readonly heading: string;
+  readonly exerciseId: string;
+  /** The name recorded in the log. */
   readonly name: string;
+  /** "4 sets" (as logged; each one is listed with its result). */
+  readonly setsLabel: string;
+  /** The heaviest set (weight, then reps), most reps or longest time; null without a completed set. */
+  readonly best: string | null;
   /** What the plan prescribed at the time: "4 sets · 6–10 reps · 120 sec rest" */
   readonly planned: string;
   /** The same as parts that must not break across lines. */
@@ -185,12 +208,24 @@ export interface HistoryExerciseView {
   readonly sets: readonly HistorySetView[];
 }
 
+export interface HistoryMetricView {
+  readonly key: 'exercises' | 'sets' | 'volume';
+  readonly value: string;
+  readonly label: string;
+}
+
 export interface HistoryDetailView {
   readonly title: string;
-  /** "Thursday, Oct 8 · 6:45 PM" */
+  /** "Thu, 8 Oct 2026" */
+  readonly dateLabel: string;
+  /** "Thursday, Oct 8 · 6:45 PM" (spoken and on the summary). */
   readonly completedLabel: string;
+  /** Recorded start to finish: "50 min". */
+  readonly duration: string;
   readonly status: 'complete' | 'partial';
   readonly statusLabel: string;
+  /** Exercises and sets done, and the training volume when weighted sets were done. */
+  readonly metrics: readonly HistoryMetricView[];
   readonly facts: readonly { readonly key: string; readonly label: string; readonly value: string }[];
   readonly exercises: readonly HistoryExerciseView[];
 }
@@ -199,17 +234,58 @@ function toHistorySet(set: SetLog, exercise: ExerciseLog, unit: WorkoutLog['weig
   const d = copy.detail;
   return {
     key: set.setNumber,
+    setNumber: set.setNumber,
     label: WORKOUT_COPY.active.set(set.setNumber),
     value: set.status === 'completed' ? (formatSetValues(set, exercise.logging, unit) ?? '') : set.status === 'skipped' ? d.skipped : d.notDone,
     status: set.status,
   };
 }
 
+/** The exercise's best completed set by the domain's rule (ties go to the earlier set). */
+function bestSet(exercise: ExerciseLog, unit: WorkoutLog['weightUnit']): string | null {
+  const done = exercise.sets
+    .filter((set) => set.status === 'completed')
+    .map((set): PerformedSet & { log: SetLog } => ({ ...set, completedAt: set.completedAt ?? '', log: set }));
+  if (done.length === 0) {
+    return null;
+  }
+  const best = done.reduce((top, set) => (isBetterSet(exercise.logging, set, top) ? set : top));
+  return formatSetValues(best.log, exercise.logging, unit);
+}
+
+/**
+ * Weight × reps over the completed weighted sets, in the log's unit. Null when
+ * there were none (bodyweight and timed work have no load to add up).
+ */
+export function trainingVolume(log: WorkoutLog): number | null {
+  const sets = log.exercises
+    .filter((e) => e.logging === 'weight-reps')
+    .flatMap((e) => e.sets)
+    .filter((s) => s.status === 'completed' && s.weight !== null && s.reps !== null);
+  return sets.length > 0 ? sets.reduce((sum, s) => sum + (s.weight as number) * (s.reps as number), 0) : null;
+}
+
+const volumeFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+
 export function toHistoryDetail(log: WorkoutLog, now: Date): HistoryDetailView {
   const s = summarizeWorkoutLog(log);
   const status = completionStatus(log);
   const finishedAt = log.completedAt ?? log.startedAt;
+  const day = localDateOf(finishedAt);
   const summary = WORKOUT_COPY.summary;
+  const d = copy.detail;
+  const volume = trainingVolume(log);
+  const metrics: HistoryMetricView[] = [
+    {
+      key: 'exercises',
+      value: s.exercisesCompleted === s.totalExercises ? `${s.totalExercises}` : `${s.exercisesCompleted}/${s.totalExercises}`,
+      label: d.exercisesMetric,
+    },
+    { key: 'sets', value: `${s.setsCompleted}`, label: d.setsMetric },
+  ];
+  if (volume !== null && volume > 0) {
+    metrics.push({ key: 'volume', value: volumeFormat.format(volume), label: d.volumeMetric(log.weightUnit) });
+  }
   const facts: { key: string; label: string; value: string }[] = [
     { key: 'duration', label: summary.duration, value: formatDuration(s.durationSeconds) },
     { key: 'exercises', label: summary.exercises, value: summary.exercisesValue(s.exercisesCompleted, s.totalExercises) },
@@ -219,21 +295,29 @@ export function toHistoryDetail(log: WorkoutLog, now: Date): HistoryDetailView {
   if (s.setsIncomplete > 0) {
     facts.push({ key: 'incomplete', label: summary.setsIncomplete, value: `${s.setsIncomplete}` });
   }
+  if (volume !== null && volume > 0) {
+    facts.push({ key: 'volume', label: d.volumeMetric(log.weightUnit), value: volumeFormat.format(volume) });
+  }
   return {
     title: titleFor(log.sessionType, log.variant),
-    completedLabel: `${dayLabel(localDateOf(finishedAt), calendarDateOf(now))} · ${formatTime(finishedAt)}`,
+    dateLabel: compactDateWithYear(day),
+    completedLabel: `${dayLabel(day, calendarDateOf(now))} · ${formatTime(finishedAt)}`,
+    duration: formatDuration(s.durationSeconds),
     status,
     statusLabel: status === 'complete' ? copy.completed : copy.partial(s.setsCompleted, s.totalSets),
+    metrics,
     facts,
     exercises: log.exercises.map((exercise, i) => {
       const done = exercise.sets.filter((set) => set.status === 'completed').length;
       return {
         key: `${i}-${exercise.exerciseId}`,
-        heading: `${exercise.order}. ${exercise.name}`,
+        exerciseId: exercise.exerciseId,
         name: exercise.name,
+        setsLabel: copy.sets(exercise.sets.length),
+        best: bestSet(exercise, log.weightUnit),
         planned: formatPrescription(exercise.planned),
         plannedParts: prescriptionParts(exercise.planned),
-        progress: done === exercise.sets.length ? copy.detail.allSetsDone : copy.detail.setsDone(done, exercise.sets.length),
+        progress: done === exercise.sets.length ? d.allSetsDone : d.setsDone(done, exercise.sets.length),
         sets: exercise.sets.map((set) => toHistorySet(set, exercise, log.weightUnit)),
       };
     }),

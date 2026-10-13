@@ -1,0 +1,103 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  list-style: none;
+}
+
+.row {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  text-align: start;
+}
+
+.thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  @include fx.text(body-sm, semibold);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.date {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.today .date {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+// Done: a filled check; in progress: lime play; planned / not done: an empty ring.
+.status {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+  font-size: 14px;
+}
+
+[data-status='done'] .status {
+  background: var(--color-success);
+  box-shadow: none;
+  color: var(--color-on-success);
+}
+
+[data-status='in-progress'] .status {
+  background: var(--color-primary);
+  box-shadow: none;
+  color: var(--color-on-primary);
+}
+
+[data-status='missed'] .status {
+  box-shadow: inset 0 0 0 1.5px var(--color-border);
+}
+
