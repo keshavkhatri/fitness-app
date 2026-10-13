@@ -5,123 +5,133 @@
 }
 
 .exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
-  background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
 }
 
 .exercise {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4);
-
-  & + & {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
-.exercise-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
+.head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
 }
 
-.exercise-name {
-  @include fx.text(body, semibold);
+.thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.identity {
+  min-width: 0;
+}
+
+.name {
+  @include fx.text(body-sm, semibold);
   overflow-wrap: anywhere;
 }
 
-.exercise-progress {
-  @include fx.text(caption, medium);
+.count {
+  @include fx.text(caption);
   color: var(--color-text-secondary);
 }
 
-// Planned (the prescription at the time) and actual (what was logged) are labelled separately.
-.planned {
+.best {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-2);
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
-
-  dt {
-    @include fx.text(caption, semibold);
-    align-self: center;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-wide);
-  }
-
-  dd {
-    @include fx.text(body-sm, medium);
-    margin: 0;
-    color: var(--color-text-on-muted);
-  }
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: end;
 }
 
-.actual-label {
-  @include fx.text(caption, semibold);
-  margin-top: var(--space-1);
+.best-label {
+  @include fx.text(caption);
+  font-size: 11px;
   color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wide);
 }
 
+.best-value {
+  @include fx.text(body-sm, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+// --- Sets, indented under the thumbnail ------------------------------------------------------
 .sets {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 var(--space-2);
   list-style: none;
 }
 
 .set {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-2);
-  min-height: 32px;
+  gap: var(--space-3);
+  min-height: 28px;
 }
 
-.set-label {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
+.set-number {
+  @include fx.text(caption, semibold);
+  @include fx.tabular-numbers;
+
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-size: 11px;
 }
 
 .set-value {
-  @include fx.text(body-sm, semibold);
+  @include fx.text(body-sm);
   @include fx.tabular-numbers;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-
-  ion-icon {
-    flex-shrink: 0;
-    font-size: 16px;
-    color: var(--color-success-text);
-  }
+  color: var(--color-text);
 }
 
 .set[data-status='skipped'] .set-value,
 .set[data-status='pending'] .set-value {
   color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-
-  ion-icon {
-    color: var(--color-text-tertiary);
-  }
 }
 
-// Lines break between parts ("45 min · 7 of 7 exercises · 22 sets"), never inside one.
-.part {
-  white-space: nowrap;
+// Done: a filled green check; skipped: a grey minus; not done: an empty ring.
+.set-status {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+  font-size: 13px;
+}
+
+.set[data-status='completed'] .set-status {
+  background: var(--color-success);
+  box-shadow: none;
+  color: var(--color-on-success);
+}
+
+.set[data-status='skipped'] .set-status {
+  background: var(--color-surface-muted);
+  box-shadow: none;
+  color: var(--color-text-secondary);
 }

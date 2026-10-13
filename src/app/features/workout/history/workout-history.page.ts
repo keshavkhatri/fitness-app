@@ -1,25 +1,28 @@
-import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, resource, signal } from '@angular/core';
+import { IonBackButton, IonContent, IonIcon, NavController } from '@ionic/angular';
 
-import { CLOCK } from '../../../core/time/clock';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
-import { HistoryScreen, toHistoryScreen } from './history-view-model';
+import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
+import { HistoryFilter, HistoryScreen, filterHistory, toHistoryScreen } from './history-view-model';
 
-/** Finished workouts, newest first, grouped by local day, with simple consistency counts. */
+/**
+ * Finished workouts, newest first, grouped by local month; a filter by session
+ * type when the history has more than one. Immersive (dark), like the record
+ * it opens. Read-only.
+ */
 @Component({
   selector: 'app-workout-history',
   templateUrl: './workout-history.page.html',
   styleUrl: './workout-history.page.scss',
+  host: { class: 'fit-theme-immersive' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
     IonContent,
     IonIcon,
+    WorkoutArtComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -29,14 +32,12 @@ import { HistoryScreen, toHistoryScreen } from './history-view-model';
 })
 export class WorkoutHistoryPage {
   private readonly history = inject(WorkoutHistoryService);
-  private readonly clock = inject(CLOCK);
   private readonly nav = inject(NavController);
 
   protected readonly copy = WORKOUT_COPY.history;
   private readonly state = resource({
     loader: async () => {
-      const [result, overview] = await Promise.all([this.history.list(), this.history.overview()]);
-      return toHistoryScreen(result, overview, this.clock());
+      return toHistoryScreen(await this.history.list());
     },
   });
 
@@ -50,6 +51,19 @@ export class WorkoutHistoryPage {
     }
     return this.state.error() ? { kind: 'error' } : null;
   });
+
+  /** The selected session type (UI state only). */
+  protected readonly filter = signal<HistoryFilter>('all');
+  protected readonly months = computed(() => {
+    const screen = this.screen();
+    return screen?.kind === 'ready' ? filterHistory(screen.months, this.filter()) : [];
+  });
+
+  constructor() {
+    // Light status-bar text while this always-dark screen is open.
+    const releaseStatusBar = inject(ThemeService).holdAlwaysDark();
+    inject(DestroyRef).onDestroy(releaseStatusBar);
+  }
 
   protected readonly announcement = computed(() => {
     switch (this.screen()?.kind) {

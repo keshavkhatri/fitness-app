@@ -1,16 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, resource, signal } from '@angular/core';
-import {
-  IonBackButton,
-  IonButtons,
-  IonContent,
-  IonFooter,
-  IonHeader,
-  IonIcon,
-  IonTitle,
-  IonToolbar,
-  NavController,
-} from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, resource, signal } from '@angular/core';
+import { IonBackButton, IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
 
+import { ThemeService } from '../../core/theme/theme.service';
 import { CLOCK } from '../../core/time/clock';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
@@ -20,10 +11,9 @@ import {
   EmptyStateComponent,
   FitnessButtonComponent,
   FitnessCardComponent,
-  FitnessChipComponent,
   LoadingSkeletonComponent,
-  SectionHeaderComponent,
 } from '../../shared/ui';
+import { WorkoutArtComponent } from '../home/components/workout-art/workout-art.component';
 import { ExerciseDetailListComponent } from './components/exercise-detail-list.component';
 import { WORKOUT_COPY } from './workout-content';
 import { titleFor } from './workout-formatting';
@@ -33,7 +23,8 @@ import { WORKOUT_PATH, activeWorkoutPath } from './workout-paths';
 export { WORKOUT_PATH, activeWorkoutPath } from './workout-paths';
 
 /**
- * One session of the current plan, in full, before starting it. The session
+ * One session of the current plan, in full, before starting it: an image
+ * hero (name, length, focus areas), the exercises, and Start (or Resume). The session
  * comes from WorkoutPlanService (the same plan the Workout tab shows) and is
  * found by its plan id from the route.
  */
@@ -41,23 +32,20 @@ export { WORKOUT_PATH, activeWorkoutPath } from './workout-paths';
   selector: 'app-workout-detail',
   templateUrl: './workout-detail.page.html',
   styleUrl: './workout-detail.page.scss',
+  // Immersive and always dark, like the Active Workout it leads to.
+  host: { class: 'fit-theme-immersive' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
     IonContent,
     IonFooter,
     IonIcon,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
-    FitnessChipComponent,
     LoadingSkeletonComponent,
-    SectionHeaderComponent,
     ExerciseDetailListComponent,
     BottomSheetComponent,
+    WorkoutArtComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -71,6 +59,12 @@ export class WorkoutDetailPage {
   private readonly logs = inject(WorkoutLogService);
 
   protected readonly copy = WORKOUT_COPY.detail;
+
+  constructor() {
+    // Light status-bar text while this always-dark screen is open.
+    const releaseStatusBar = inject(ThemeService).holdAlwaysDark();
+    inject(DestroyRef).onDestroy(releaseStatusBar);
+  }
   protected readonly workoutPath = WORKOUT_PATH;
 
   private readonly state = resource({

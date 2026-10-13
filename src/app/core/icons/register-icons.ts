@@ -64,6 +64,9 @@ import {
   playSkipForward,
   remove,
   timerOutline,
+  flash,
+  leafOutline,
+  flame,
 } from 'ionicons/icons';
 
 /**
@@ -137,5 +140,8 @@ export function registerAppIcons(): void {
     playSkipForward,
     remove,
     timerOutline,
-  });
+    flash,
+    leafOutline,
+    flame,
+});
 }

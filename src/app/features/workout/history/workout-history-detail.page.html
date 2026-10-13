@@ -1,49 +1,63 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/workout/history" [text]="copy.back" />
-    </ion-buttons>
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
+  <div class="topbar">
+    <ion-back-button class="back" defaultHref="/workout/history" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+  </div>
+
   <main class="body">
     <p class="visually-hidden" role="status">{{ state.isLoading() ? copy.loading : '' }}</p>
 
     @if (view(); as v) {
-      <header class="summary" data-testid="history-detail">
-        <p class="when" data-testid="completed-label"><span class="visually-hidden">{{ copy.detail.completedAt }}: </span>{{ v.completedLabel }}</p>
-        <h1 class="title">{{ v.title }}</h1>
-        <p class="status" [attr.data-status]="v.status" data-testid="detail-status">
-          <ion-icon [name]="v.status === 'complete' ? 'checkmark-circle' : 'flag-outline'" aria-hidden="true" />
-          <span>{{ v.statusLabel }}</span>
-        </p>
-        <dl class="facts">
-          @for (fact of v.facts; track fact.key) {
-            <div class="fact" [attr.data-key]="fact.key">
-              <dt>{{ fact.label }}</dt>
-              <dd>{{ fact.value }}</dd>
-            </div>
-          }
-        </dl>
+      <header class="hero" data-testid="history-detail">
+        <div class="hero-art" aria-hidden="true">
+          <app-workout-art [seed]="workoutId()" />
+          <span class="fade"></span>
+        </div>
+        <div class="hero-text">
+          <h1 class="title">{{ v.title }}</h1>
+          <div class="when-row">
+            <p class="when" data-testid="completed-label">
+              <ion-icon name="calendar-outline" aria-hidden="true" />
+              <span class="visually-hidden">{{ copy.detail.completedAt }}: {{ v.completedLabel }}. Duration: </span>
+              <span aria-hidden="true">{{ v.dateLabel }}</span><span class="dot" aria-hidden="true">•</span>{{ v.duration }}
+            </p>
+            <p class="status" [attr.data-status]="v.status" data-testid="detail-status">
+              <ion-icon [name]="v.status === 'complete' ? 'checkmark-circle' : 'flag-outline'" aria-hidden="true" />
+              <span>{{ v.statusLabel }}</span>
+            </p>
+          </div>
+        </div>
       </header>
 
-      <section class="exercises" aria-labelledby="history-exercises">
-        <h2 class="section-title" id="history-exercises">{{ copy.detail.exercisesTitle }}</h2>
-        <app-history-exercise-list [exercises]="v.exercises" />
+      <dl class="metrics" data-testid="history-metrics">
+        @for (m of v.metrics; track m.key) {
+          <div class="metric" [attr.data-key]="m.key">
+            <ion-icon [name]="metricIcon[m.key]" aria-hidden="true" />
+            <dt class="metric-label">{{ m.label }}</dt>
+            <dd class="metric-value">{{ m.value }}</dd>
+          </div>
+        }
+      </dl>
+
+      <section class="sheet fit-theme-dashboard" aria-labelledby="history-sheet-title">
+        <h2 class="visually-hidden" id="history-sheet-title">{{ tab() === 'exercises' ? copy.detail.exercisesTitle : copy.detail.summaryTitle }}</h2>
+        <fit-segmented-control class="tabs" name="history-view" [legend]="copy.detail.views" [options]="tabs" [(value)]="tab" />
+
+        @if (tab() === 'exercises') {
+          <app-history-exercise-list [exercises]="v.exercises" />
+        } @else {
+          <app-history-summary [facts]="v.facts" [exercises]="v.exercises" />
+        }
       </section>
     } @else if (state.isLoading()) {
       <h1 class="visually-hidden">{{ copy.title }}</h1>
       <div class="loading" aria-busy="true" data-testid="history-detail-loading">
-        <fit-skeleton width="40%" height="16px" />
-        <fit-skeleton width="70%" height="34px" />
-        <fit-skeleton height="140px" radius="card" />
-        <fit-skeleton height="200px" radius="card" />
+        <fit-skeleton height="300px" />
+        <fit-skeleton height="96px" radius="card" />
+        <fit-skeleton height="240px" radius="card" />
       </div>
     } @else {
       <h1 class="visually-hidden">{{ copy.detail.notFound.title }}</h1>
-      <fit-card data-testid="history-detail-not-found">
+      <fit-card class="not-found" data-testid="history-detail-not-found">
         <fit-empty-state icon="barbell-outline" [title]="copy.detail.notFound.title" [description]="copy.detail.notFound.message">
           <button fit-button type="button" (click)="backToHistory()">{{ copy.detail.notFound.action }}</button>
         </fit-empty-state>

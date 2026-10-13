@@ -1,0 +1,77 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+  // Into the page gutter: seven 44px targets fit at 320px (the circles still line up visually).
+  margin-inline: calc(-1 * var(--space-3));
+}
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// The whole column is the target (letter, date and mark).
+.day {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 64px;
+  padding: 2px 0 4px;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+
+button.day {
+  @include fx.pressable;
+}
+
+.letter {
+  @include fx.text(caption, medium);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.date {
+  @include fx.tabular-numbers;
+  @include fx.text(body-sm, semibold);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}
+
+.today .date {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+// A small dot for planned training; a filled check-dot once a workout is done.
+.mark {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+}
+
+.day[data-state='training'] .mark {
+  background: var(--color-text-secondary);
+}
+
+.day[data-state='activity'] .mark {
+  box-shadow: inset 0 0 0 1.5px var(--color-text-secondary);
+}
+
+.day[data-state='done'] .mark {
+  background: var(--color-primary-strong);
+}

@@ -84,7 +84,9 @@ describe('workout detail view model', () => {
         countLabel: '7 exercises',
         durationLabel: 'About 50 min',
         focus: 'Chest · Back · Shoulders · Arms',
-        cta: { label: 'Start Workout' },
+        focusAreas: ['Chest', 'Back', 'Shoulders', 'Arms'],
+        minutes: 50,
+        cta: { label: 'Start workout' },
       });
       expect(detail.cta.pendingMessage).toBeNull(); // resistance sessions really start (Active Workout)
     });
@@ -104,6 +106,7 @@ describe('workout detail view model', () => {
           { value: '120 sec', label: 'rest', spokenLabel: 'rest' },
         ],
         prescription: '4 sets · 6–10 reps · 120 sec rest',
+        brief: '4 sets · 6–10 reps',
         metadata: 'Chest · Barbell, bench, rack',
         substitution: null,
       });

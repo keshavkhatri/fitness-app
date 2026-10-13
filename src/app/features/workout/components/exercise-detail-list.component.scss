@@ -1,61 +1,107 @@
 @use 'mixins' as fx;
 
+// A light list (the page sets the dashboard theme on it) of compact rows.
 :host {
   display: block;
 }
 
 .exercises {
   margin: 0;
-  padding: 0;
-  list-style: none;
+  padding: var(--space-1) 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  list-style: none;
 }
 
-.exercise {
-  display: flex;
-  flex-direction: column;
+.exercise + .exercise {
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.heading {
+  margin: 0;
+}
+
+.row {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4);
-
-  & + & {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  text-align: start;
 }
 
-.head {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.thumb {
-  @include fx.text(body, semibold);
+.order {
+  @include fx.text(caption, semibold);
   @include fx.tabular-numbers;
 
   display: grid;
   place-items: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
-  color: var(--color-text-on-muted);
 }
 
-.identity {
+.thumb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  padding-top: 2px;
 }
 
 .name {
-  @include fx.text(body, semibold);
+  @include fx.text(body-sm, semibold);
   overflow-wrap: anywhere;
+}
+
+.brief {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.chevron {
+  font-size: var(--icon-size-md);
+  color: var(--color-text-secondary);
+  transition: transform var(--motion-duration-fast) ease;
+}
+
+.open .chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+
+// --- The opened row ---------------------------------------------------------------------------
+.more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-3) var(--space-4);
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .metadata {
@@ -76,11 +122,10 @@
   flex-direction: column-reverse;
   justify-content: flex-end;
   gap: 2px;
-  // Tight horizontal padding: at 320px each column is ~80px wide.
+  min-width: 0;
   padding: var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-surface-muted);
-  min-width: 0;
 }
 
 .value {

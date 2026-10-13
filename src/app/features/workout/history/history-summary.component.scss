@@ -1,0 +1,77 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+
+  dt {
+    @include fx.text(caption);
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    @include fx.text(body, semibold);
+    margin: 0;
+  }
+}
+
+.planned-title {
+  @include fx.text(body, bold);
+  margin-top: var(--space-2);
+}
+
+.planned-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-3) 0;
+
+    & + li {
+      border-top: var(--border-hairline) solid var(--color-border);
+    }
+  }
+}
+
+.planned-name {
+  @include fx.text(body-sm, semibold);
+}
+
+.planned-value,
+.planned-progress {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.part {
+  white-space: nowrap;
+}

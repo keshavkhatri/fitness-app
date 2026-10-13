@@ -1,63 +1,107 @@
 @use 'mixins' as fx;
 
+// Immersive (always dark): light workout cards grouped by month.
+
+ion-content {
+  --background: var(--color-bg);
+}
+
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--page-gutter) var(--space-8);
+}
+
+.topbar {
+  margin: 0 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-1));
+}
+
+.back {
+  --background: var(--color-surface);
+  --background-hover: var(--color-surface-elevated);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
 }
 
 .title {
   @include fx.text(h1, bold);
 }
 
-.consistency {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+// --- Filters: the selected type is light on the dark page; they wrap rather than scroll ---
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  flex: 1 1 auto;
+  min-width: 56px;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+
+  &[aria-pressed='true'] {
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+// --- Months ------------------------------------------------------------------------------
+.month {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
-.stat {
+.month-head {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: var(--space-4);
-  border-radius: var(--radius-card);
-  background: var(--color-primary-soft);
-}
-
-.stat-label {
-  @include fx.text(caption, semibold);
-  color: var(--color-primary-text);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-}
-
-.stat-value {
-  @include fx.text(h3, semibold);
-  @include fx.tabular-numbers;
-}
-
-.day {
-  display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-2);
 }
 
-.day-label {
-  @include fx.text(body, semibold);
-  color: var(--color-text-secondary);
+.month-label {
+  @include fx.text(body, bold);
 }
 
+.month-count {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+// The cards are light (dashboard theme on the list) on the dark page.
 .items {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin: 0;
   padding: 0;
+  background: none;
   list-style: none;
 }
 
@@ -66,74 +110,52 @@
   @include fx.focus-ring;
   @include fx.pressable;
 
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  min-height: 64px;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2);
+  padding-right: var(--space-3);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
-  box-shadow: var(--shadow-card);
+  color: var(--color-text);
+  text-align: start;
 }
 
-.item-main {
+.thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.text {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
 .item-title {
-  @include fx.text(body, semibold);
+  @include fx.text(body-sm, semibold);
   overflow-wrap: anywhere;
 }
 
-.item-meta {
-  @include fx.text(body-sm);
-  @include fx.tabular-numbers;
+.item-meta,
+.item-detail {
+  @include fx.text(caption);
   color: var(--color-text-secondary);
-}
-
-.item-status {
-  @include fx.text(caption, semibold);
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-  margin-top: 2px;
-  color: var(--color-success-text);
-
-  ion-icon {
-    flex-shrink: 0;
-    font-size: 16px;
-  }
-}
-
-.item[data-status='partial'] .item-status {
-  color: var(--color-warning-text);
-}
-
-.item-skipped {
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
 }
 
 .chevron {
-  flex-shrink: 0;
-  font-size: 18px;
-  color: var(--color-text-tertiary);
+  font-size: var(--icon-size-md);
+  color: var(--color-text-secondary);
 }
 
 .loading {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-// Lines break between parts ("45 min · 7 of 7 exercises · 22 sets"), never inside one.
-.part {
-  white-space: nowrap;
 }

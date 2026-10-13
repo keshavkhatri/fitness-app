@@ -63,7 +63,7 @@ async function open(url: string, { profile = PROFILE, storedPlan, brokenEngine =
     await harness.fixture.whenStable();
     harness.detectChanges();
   };
-  const exerciseNames = () => all('detail-exercise').map((e) => clean(e.querySelector('h3'))?.replace(/^\d+\. /, ''));
+  const exerciseNames = () => all('detail-exercise').map((e) => clean(e.querySelector('.name'))?.replace(/^\d+\. /, ''));
 
   return { harness, el, storage, back, forward, save, navigate, clean, text, all, buttons, button, settle, exerciseNames };
 }
@@ -75,16 +75,14 @@ describe('WorkoutDetailPage', () => {
   describe('ready: resistance session', () => {
     it('renders the session the route id points to, in full and in programmed order', async () => {
       const plan = planFor();
-      const { el, text, all, exerciseNames } = await open('/workout/session/day-3-upper', { storedPlan: plan });
+      const { el, text, all, clean, exerciseNames } = await open('/workout/session/day-3-upper', { storedPlan: plan });
 
       expect(el.querySelector('h1')?.textContent?.trim()).toBe('Upper Body B');
       expect(text('day-label')).toBe('Thursday · Today');
-      expect([...el.querySelectorAll('[data-testid="session-meta"] li')].map((li) => li.textContent?.trim())).toEqual([
-        'Hypertrophy',
-        '7 exercises',
-        'About 50 min',
-      ]);
-      expect(text('session-focus')).toBe('Focus: Chest · Back · Shoulders · Arms');
+      expect([...el.querySelectorAll('[data-testid="session-meta"] li')].map((li) => clean(li))).toEqual(['About 50 min', '7 exercises']);
+      expect(el.querySelector('[data-testid="session-focus"]')?.getAttribute('aria-label')).toBe('Focus');
+      expect([...el.querySelectorAll('[data-testid="session-focus"] li')].map((li) => li.textContent?.trim())).toEqual(['Chest', 'Back', 'Shoulders', 'Arms']);
+      expect(clean(all('detail-exercise')[0].querySelector('.brief'))).toBe('4 sets · 6–10 reps');
       expect(exerciseNames()).toEqual(catalogNames(plan.sessions[2] as WorkoutSession));
 
       const firstStats = [...all('detail-stats')[0].querySelectorAll('.stat')].map((s) => [
@@ -155,7 +153,7 @@ describe('WorkoutDetailPage', () => {
     it('Start Workout starts a workout log from this session and opens Active Workout; the plan is unchanged', async () => {
       const { button, settle, forward, storage } = await open('/workout/session/day-3-upper');
       const planBefore = storage.values.get(PLAN_KEY);
-      button('Start Workout')!.click();
+      button('Start workout')!.click();
       await settle();
       expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-3-upper', 'active']);
       const active = JSON.parse(storage.values.get('fitness.workout-active')!).log;
@@ -167,8 +165,8 @@ describe('WorkoutDetailPage', () => {
       const { button, settle, forward } = await open('/workout/session/day-3-upper', {
         before: () => void TestBed.inject(WorkoutLogService).start('day-3-upper'),
       });
-      expect(button('Start Workout')).toBeUndefined();
-      button('Resume Workout')!.click();
+      expect(button('Start workout')).toBeUndefined();
+      button('Resume workout')!.click();
       await settle();
       expect(forward).toHaveBeenCalledWith(['/workout', 'session', 'day-3-upper', 'active']);
     });
@@ -177,7 +175,7 @@ describe('WorkoutDetailPage', () => {
       const { harness, button, settle, forward, storage } = await open('/workout/session/day-3-upper', {
         before: () => void TestBed.inject(WorkoutLogService).start('day-1-upper'),
       });
-      button('Start Workout')!.click();
+      button('Start workout')!.click();
       await settle();
       expect(forward).not.toHaveBeenCalled();
       const sheet = harness.fixture.debugElement.query(By.directive(BottomSheetComponent)).componentInstance as BottomSheetComponent;
@@ -200,7 +198,7 @@ describe('WorkoutDetailPage', () => {
       ]);
       expect(text('activity-guidance')).toContain('Walking, easy cycling or mobility work.');
       expect(all('detail-exercise')).toHaveLength(0);
-      expect(button('Start Workout')).toBeUndefined();
+      expect(button('Start workout')).toBeUndefined();
       expect(button('Start Activity')).toBeDefined();
     });
 
@@ -217,7 +215,7 @@ describe('WorkoutDetailPage', () => {
       const { el, text, button, back, settle } = await open('/workout/session/rest-wed');
       expect(el.querySelector('h1')?.textContent?.trim()).toBe('Rest Day');
       expect(text('rest')).toContain('There is no workout scheduled for this day.');
-      expect(button('Start Workout')).toBeUndefined();
+      expect(button('Start workout')).toBeUndefined();
       expect(el.querySelector('ion-footer')).toBeNull();
       button('Back to Workout')!.click();
       await settle();
@@ -285,17 +283,40 @@ describe('WorkoutDetailPage', () => {
       const { el } = await open('/workout/session/day-3-upper');
       const backButton = el.querySelector('ion-back-button') as HTMLElement & { defaultHref?: string; text?: string };
       expect(backButton.defaultHref).toBe('/workout');
-      expect(backButton.text).toBe('Back');
+      expect(backButton.getAttribute('aria-label')).toBe('Back');
     });
 
     it('one h1, then section h2s and numbered exercise h3s', async () => {
       const { el } = await open('/workout/session/day-3-upper');
-      const headings = [...el.querySelectorAll('h1, h2, h3')].map((h) => `${h.tagName}:${h.textContent?.replace(/\s+/g, ' ').trim()}`);
+      // As read aloud: without aria-hidden parts (the visual order badge).
+      const spoken = (h: Element) => {
+        const copy = h.cloneNode(true) as Element;
+        copy.querySelectorAll('[aria-hidden="true"]').forEach((n) => n.remove());
+        return copy.textContent?.replace(/\s+/g, ' ').trim();
+      };
+      const headings = [...el.querySelectorAll('h1, h2, h3')].map((h) => `${h.tagName}:${spoken(h)}`);
       expect(headings.filter((h) => h.startsWith('H1'))).toEqual(['H1:Upper Body B']);
-      expect(headings.filter((h) => h.startsWith('H2'))).toEqual(['H2:Exercises', 'H2:Progression']);
-      expect(headings.filter((h) => h.startsWith('H3'))[0]).toBe('H3:1. Bench Press');
+      expect(headings.filter((h) => h.startsWith('H2'))).toEqual(['H2:Exercises (7)', 'H2:Progression']);
+      expect(headings.filter((h) => h.startsWith('H3'))[0]).toBe('H3:1. Bench Press 4 sets · 6–10 reps');
       const levels = headings.map((h) => Number(h[1]));
       levels.forEach((level, i) => i > 0 && expect(level - levels[i - 1]).toBeLessThanOrEqual(1));
+    });
+
+    it('an exercise row opens in place to its full prescription and closes again', async () => {
+      const { el, all, settle } = await open('/workout/session/day-3-upper');
+      const first = all('detail-exercise')[0];
+      const toggle = first.querySelector<HTMLButtonElement>('[data-testid="detail-exercise-toggle"]')!;
+      const more = el.querySelector<HTMLElement>(`#${toggle.getAttribute('aria-controls')}`)!;
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(more.hidden).toBe(true);
+      toggle.click();
+      await settle();
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(more.hidden).toBe(false);
+      expect(more.textContent).toContain('Chest · Barbell, bench, rack');
+      toggle.click();
+      await settle();
+      expect(more.hidden).toBe(true);
     });
 
     it('prescriptions are a definition list with spoken labels (per side read as "per side")', async () => {

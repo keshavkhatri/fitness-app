@@ -1,78 +1,80 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="workoutPath" [text]="copy.back" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is the session title below. -->
-    <ion-title aria-hidden="true">{{ copy.pageTitle }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true">
+  <!-- Back sits over the image (no toolbar), as on the Active Workout. -->
+  <div class="topbar">
+    <ion-back-button class="back" [defaultHref]="workoutPath" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+  </div>
 
-<ion-content>
   <main class="body">
     <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
 
     @let s = screen();
     @if (s && s.kind === 'ready') {
       @let d = s.detail;
-      <header class="summary">
-        <p class="day" data-testid="day-label">{{ d.dayLabel }}</p>
-        <h1 class="title">{{ d.title }}</h1>
+      <header class="hero">
+        <div class="hero-art" aria-hidden="true">
+          <app-workout-art [seed]="sessionId()" />
+          <span class="fade"></span>
+        </div>
+        <div class="hero-text">
+          <p class="day" data-testid="day-label">{{ d.dayLabel }}</p>
+          <h1 class="title">{{ d.title }}</h1>
 
-        @switch (d.kind) {
-          @case ('resistance') {
-            <ul class="meta" data-testid="session-meta">
-              <li><fit-chip tone="primary">{{ d.descriptor }}</fit-chip></li>
-              <li><ion-icon name="barbell-outline" aria-hidden="true" />{{ d.countLabel }}</li>
-              <li><ion-icon name="time-outline" aria-hidden="true" />{{ d.durationLabel }}</li>
-            </ul>
-            @if (d.focus; as focus) {
-              <p class="focus" data-testid="session-focus"><span class="visually-hidden">Focus: </span>{{ focus }}</p>
+          @switch (d.kind) {
+            @case ('resistance') {
+              <ul class="meta" data-testid="session-meta">
+                <li><ion-icon name="time-outline" aria-hidden="true" /><span class="visually-hidden">About </span>{{ d.minutes }} min</li>
+                <li><ion-icon name="apps-outline" aria-hidden="true" />{{ d.countLabel }}</li>
+              </ul>
+              @if (d.focusAreas.length) {
+                <ul class="chips" data-testid="session-focus" [attr.aria-label]="copy.focusLabel">
+                  @for (area of d.focusAreas; track area) {
+                    <li>{{ area }}</li>
+                  }
+                </ul>
+              }
+            }
+            @case ('activity') {
+              <ul class="meta" data-testid="session-meta">
+                <li><ion-icon name="leaf-outline" aria-hidden="true" />{{ d.typeLabel }}</li>
+                <li><ion-icon name="time-outline" aria-hidden="true" />{{ d.durationLabel }}</li>
+                <li><ion-icon name="pulse-outline" aria-hidden="true" />{{ d.intensityLabel }}</li>
+              </ul>
             }
           }
-          @case ('activity') {
-            <ul class="meta" data-testid="session-meta">
-              <li><fit-chip>{{ d.typeLabel }}</fit-chip></li>
-              <li><ion-icon name="time-outline" aria-hidden="true" />{{ d.durationLabel }}</li>
-              <li><ion-icon name="pulse-outline" aria-hidden="true" />{{ d.intensityLabel }}</li>
-            </ul>
-          }
-        }
+        </div>
       </header>
 
       @switch (d.kind) {
         @case ('resistance') {
           <section class="section" aria-labelledby="detail-exercises">
-            <fit-section-header [title]="copy.exercisesTitle" headingId="detail-exercises" />
-            <app-exercise-detail-list [exercises]="d.exercises" />
+            <h2 class="section-title" id="detail-exercises">{{ copy.exercisesTitle }} ({{ d.exercises.length }})</h2>
+            <app-exercise-detail-list class="fit-theme-dashboard" [exercises]="d.exercises" />
           </section>
 
           @if (d.progression.length > 0) {
             <section class="section" aria-labelledby="detail-progression" data-testid="progression">
-              <fit-section-header [title]="copy.progressionTitle" headingId="detail-progression" />
-              <fit-card tone="muted" padding="sm">
-                <ul class="guidance">
-                  @for (line of d.progression; track $index) {
-                    <li>{{ line }}</li>
-                  }
-                </ul>
-              </fit-card>
+              <h2 class="section-title" id="detail-progression">{{ copy.progressionTitle }}</h2>
+              <ul class="guidance">
+                @for (line of d.progression; track $index) {
+                  <li>{{ line }}</li>
+                }
+              </ul>
             </section>
           }
         }
         @case ('activity') {
           <section class="section" aria-labelledby="detail-activity" data-testid="activity-guidance">
-            <fit-section-header [title]="copy.activityTitle" headingId="detail-activity" />
-            <fit-card padding="sm">
+            <h2 class="section-title" id="detail-activity">{{ copy.activityTitle }}</h2>
+            <div class="panel">
               <p class="lead">{{ d.suggestions }}</p>
               <p class="note">{{ d.guidance }}</p>
-            </fit-card>
+            </div>
           </section>
         }
         @default {
-          <fit-card data-testid="rest">
+          <div class="panel" data-testid="rest">
             <p class="lead">{{ d.message }}</p>
-          </fit-card>
+          </div>
           <button fit-button type="button" variant="outline" block (click)="backToWorkout()">{{ copy.backToWorkout }}</button>
         }
       }
@@ -94,10 +96,9 @@
     } @else {
       <h1 class="visually-hidden">{{ copy.pageTitle }}</h1>
       <div class="loading" aria-busy="true" data-testid="loading">
-        <fit-skeleton width="30%" height="16px" />
-        <fit-skeleton width="65%" height="34px" />
-        <fit-skeleton width="80%" height="20px" />
-        <fit-skeleton height="360px" radius="card" />
+        <fit-skeleton height="300px" />
+        <fit-skeleton width="40%" height="20px" />
+        <fit-skeleton height="320px" radius="card" />
       </div>
     }
   </main>
@@ -114,7 +115,8 @@
         type="button"
         size="lg"
         block
-        icon="play-outline"
+        class="start"
+        icon="play"
         [disabled]="starting()"
         [loading]="starting()"
         (click)="start()"
@@ -125,7 +127,12 @@
   </ion-footer>
 }
 
-<fit-bottom-sheet [title]="copy.conflict.title" [description]="copy.conflict.message(conflictTitle())" [(open)]="conflictOpen">
+<fit-bottom-sheet
+  screenTheme="immersive"
+  [title]="copy.conflict.title"
+  [description]="copy.conflict.message(conflictTitle())"
+  [(open)]="conflictOpen"
+>
   <div class="conflict-actions" data-testid="conflict">
     <button fit-button type="button" size="lg" block (click)="resumeOther()">{{ copy.conflict.resume(conflictTitle()) }}</button>
     <button fit-button type="button" size="lg" block variant="outline" (click)="replaceAndStart()">{{ copy.conflict.replace }}</button>
