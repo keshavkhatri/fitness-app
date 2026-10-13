@@ -115,6 +115,15 @@ describe('Progress', () => {
       expect(forward).toHaveBeenCalledWith(['/you/progress', 'exercises']);
     });
 
+    it('links to the weekly review', async () => {
+      const { el, forward, settle } = await render(ProgressPage, LOGS);
+      const entry = el.querySelector<HTMLButtonElement>('[data-testid="review-entry"]')!;
+      expect(clean(entry)).toBe('Weekly review What went well and what to focus on next');
+      entry.click();
+      await settle();
+      expect(forward).toHaveBeenCalledWith('/you/review');
+    });
+
     it('partial workouts count when something was completed', async () => {
       const partial = finishedLog({ startedAt: local(10, 8, 7), minutes: 25, complete: (e, s) => e === 0 && s < 2, skipRest: true });
       const { el } = await render(ProgressPage, [partial]);

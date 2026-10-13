@@ -48,6 +48,22 @@ describe('parseFitnessProfile', () => {
     expect(parseFitnessProfile(JSON.parse(serialized), NOW)).toEqual(VALID_PROFILE);
   });
 
+  it('keeps a valid accepted calorie calibration; drops an invalid one without rejecting the profile', () => {
+    const energyCalibration = { maintenanceKcal: 2450, observedFrom: '2026-01-01', observedTo: '2026-01-28', acceptedAt: '2026-01-29T09:00:00.000Z' };
+    expect(parseFitnessProfile(JSON.parse(JSON.stringify({ ...VALID_PROFILE, energyCalibration })), NOW)).toEqual({ ...VALID_PROFILE, energyCalibration });
+    for (const bad of [
+      { ...energyCalibration, maintenanceKcal: 800 },
+      { ...energyCalibration, maintenanceKcal: 2450.5 },
+      { ...energyCalibration, observedFrom: '2026-02-01' },
+      { ...energyCalibration, acceptedAt: 'yesterday' },
+      'nonsense',
+    ]) {
+      const parsed = parseFitnessProfile({ ...VALID_PROFILE, energyCalibration: bad }, NOW);
+      expect(parsed).toEqual(VALID_PROFILE);
+      expect(parsed && 'energyCalibration' in parsed).toBe(false);
+    }
+  });
+
   it('rejects legacy profiles that stored age instead of date of birth', () => {
     const legacy: Record<string, unknown> = { ...VALID_PROFILE, age: 29 };
     delete legacy['dateOfBirth'];

@@ -52,6 +52,8 @@
         <p class="note">{{ copy.week.note }}</p>
       </section>
 
+      <app-review-entry (open)="openReview()" />
+
       <section class="section" aria-labelledby="progress-activity">
         <h2 class="section-title" id="progress-activity">{{ copy.activity.title }}</h2>
         <dl class="facts" data-testid="activity">

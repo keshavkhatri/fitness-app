@@ -1,6 +1,7 @@
 import {
   AGE_YEARS,
   HEIGHT_CM,
+  MAINTENANCE_KCAL,
   IsoCalendarDate,
   UserFitnessProfile,
   WEIGHT_KG,
@@ -20,6 +21,7 @@ import {
   FitnessAssessmentResult,
   FitnessCalculationError,
   FitnessCalculationErrorCode,
+  MaintenanceBasis,
   SafeguardKind,
 } from './fitness-assessment.model';
 import { planMacros } from './macros';
@@ -42,8 +44,9 @@ export interface CalculationOptions {
  *     age          = completed years from dateOfBirth on asOfDate
  *     BMR          = Mifflin-St Jeor (sex-neutral midpoint for "prefer not to say")
  *     TDEE         = BMR × activity multiplier
+ *     maintenance  = TDEE, or an accepted Calorie Check-in figure (profile.energyCalibration)
  *   Initial planning targets
- *     calories     = TDEE × (1 + goal adjustment), then the product safety threshold
+ *     calories     = maintenance × (1 + goal adjustment), then the product safety threshold
  *                    (see resolveCalorieTarget; calculated value always preserved)
  *     protein      = g/kg × body weight, or × adjusted weight above the threshold (protein.ts)
  *     fat          = preferred share of calories, never below the minimum share
@@ -105,10 +108,17 @@ export function calculateFitnessAssessment(
   const goal = profile.primaryGoal;
   const bmr = estimateBmr({ weightKg, heightCm, ageYears, sex: profile.sex });
   const tdee = estimateTdee(bmr.kcal, profile.activityLevel, config);
+  // An accepted Calorie Check-in replaces the formula's maintenance; everything after is unchanged.
+  const calibration = profile.energyCalibration;
+  const maintenance: MaintenanceBasis =
+    calibration && Number.isInteger(calibration.maintenanceKcal) && isWithin(calibration.maintenanceKcal, MAINTENANCE_KCAL)
+      ? { source: 'check-in', kcal: calibration.maintenanceKcal, observedFrom: calibration.observedFrom, observedTo: calibration.observedTo, acceptedAt: calibration.acceptedAt }
+      : { source: 'formula', kcal: Math.round(tdee) };
+  const maintenanceKcal = maintenance.source === 'check-in' ? maintenance.kcal : tdee;
   const adjustment = config.goalCalorieAdjustments[goal];
   const calories = resolveCalorieTarget(
-    goalCalorieTarget(tdee, goal, config),
-    tdee,
+    goalCalorieTarget(maintenanceKcal, goal, config),
+    maintenanceKcal,
     productSafetyThresholdFor(bmr.sexBasis, config),
   );
   const finalCalorieKcal = Math.round(calories.finalKcal);
@@ -157,6 +167,7 @@ export function calculateFitnessAssessment(
       explanation: {
         bmr: { method: bmr.method, sexBasis: bmr.sexBasis, inputs: { weightKg, heightCm, ageYears } },
         activity: { level: profile.activityLevel, multiplier: config.activityMultipliers[profile.activityLevel] },
+        maintenance,
         goalAdjustment: { goal, fraction: adjustment },
         protein: protein.method,
         fat: { method: 'share-of-calories', ...config.fat },

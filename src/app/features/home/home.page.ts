@@ -34,6 +34,8 @@ import { HomeHeaderComponent } from './components/home-header/home-header.compon
 import { NutritionSummaryCardComponent } from './components/nutrition-summary-card/nutrition-summary-card.component';
 import { TodayWorkoutCardComponent } from './components/today-workout-card/today-workout-card.component';
 import { WeekActivityCardComponent } from './components/week-activity-card/week-activity-card.component';
+import { ReviewEntryComponent } from '../fitness-review/components/review-entry.component';
+import { FITNESS_REVIEW_PATH } from '../fitness-review/fitness-review-paths';
 import { greetingFor } from './greeting';
 import { HomeDayView, HomeTileAction, toHomeDay } from './home-today';
 import { HomeWeekView, HomeWorkoutView, toHomeWeek, toHomeWorkout } from './home-training';
@@ -57,6 +59,7 @@ export const YOU_PATH = '/you';
     FitnessCardComponent,
     LoadingSkeletonComponent,
     PageLayoutComponent,
+    ReviewEntryComponent,
     CheckInSheetsComponent,
     DaySummaryCardComponent,
     HomeHeaderComponent,
@@ -348,6 +351,10 @@ export class HomePage {
 
   protected openWorkoutTab(): void {
     void this.router.navigateByUrl(WORKOUT_PATH);
+  }
+
+  protected openReview(): void {
+    void this.nav.navigateForward(FITNESS_REVIEW_PATH);
   }
 
   protected openProgress(): void {

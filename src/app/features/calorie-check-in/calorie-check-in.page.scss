@@ -1,0 +1,140 @@
+@use 'mixins' as fx;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-10);
+}
+
+.intro,
+.stack,
+.sheet,
+.actions,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.intro {
+  gap: var(--space-1);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.card-title,
+.row-label {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-text-secondary);
+}
+
+.caption,
+.period,
+.row-detail {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.text {
+  @include fx.text(body);
+}
+
+.emphasis,
+.outcome {
+  @include fx.text(body, semibold);
+}
+
+.outcome {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+.headline {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-3);
+  align-items: baseline;
+}
+
+.row-value {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+  margin: 0;
+  text-align: end;
+
+  &.next {
+    color: var(--color-primary-text);
+  }
+}
+
+.row-detail {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.how-list,
+.missing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-5);
+  @include fx.text(body-sm);
+}
+
+.missing {
+  padding: 0;
+  list-style: none;
+  gap: var(--space-3);
+}
+
+.missing-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-target-min);
+  color: var(--color-primary-text);
+  cursor: pointer;
+}
+
+summary.link {
+  list-style-position: inside;
+}
+
+.status {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-danger-text);
+}
+
+.sheet {
+  padding-bottom: var(--space-4);
+}

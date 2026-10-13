@@ -1,5 +1,6 @@
 import {
   BodyHeight,
+  EnergyCalibration,
   BodyWeight,
   EquipmentId,
   GoalTarget,
@@ -15,7 +16,7 @@ import {
 } from './fitness-profile.model';
 import { IsoCalendarDate, ageOn, calendarDateOf, compareCalendarDates, parseIsoCalendarDate } from './date-of-birth';
 import { normalizeGoalTarget } from './goal-targets';
-import { AGE_YEARS, HEIGHT_CM, WEIGHT_KG, isWithin } from './profile-rules';
+import { AGE_YEARS, HEIGHT_CM, MAINTENANCE_KCAL, WEIGHT_KG, isWithin } from './profile-rules';
 
 /**
  * Runtime validation for profile data crossing a trust boundary (local
@@ -62,6 +63,25 @@ export function parseGoalTarget(value: unknown): GoalTarget {
   return { targetWeight: isRecord(value) ? parseBodyWeight(value['targetWeight']) : null };
 }
 
+const withCalibration = (calibration: EnergyCalibration | null) => (calibration ? { energyCalibration: calibration } : {});
+
+/** A valid accepted calibration, or null (an invalid one is dropped, so targets fall back to the formula). */
+export function parseEnergyCalibration(value: unknown): EnergyCalibration | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const { maintenanceKcal, observedFrom, observedTo, acceptedAt } = value;
+  return Number.isInteger(maintenanceKcal) &&
+    isWithin(maintenanceKcal as number, MAINTENANCE_KCAL) &&
+    parseIsoCalendarDate(observedFrom) !== null &&
+    parseIsoCalendarDate(observedTo) !== null &&
+    (observedFrom as string) <= (observedTo as string) &&
+    typeof acceptedAt === 'string' &&
+    !Number.isNaN(Date.parse(acceptedAt))
+    ? { maintenanceKcal: maintenanceKcal as number, observedFrom: observedFrom as string, observedTo: observedTo as string, acceptedAt }
+    : null;
+}
+
 export function parseFitnessProfile(value: unknown, now: Date = new Date()): UserFitnessProfile | null {
   if (!isRecord(value)) {
     return null;
@@ -104,6 +124,7 @@ export function parseFitnessProfile(value: unknown, now: Date = new Date()): Use
     equipment,
     activityLevel,
     goalTarget: normalizeGoalTarget(primaryGoal, parseGoalTarget(value['goalTarget'])),
+    ...withCalibration(parseEnergyCalibration(value['energyCalibration'])),
     updatedAt,
   };
 }

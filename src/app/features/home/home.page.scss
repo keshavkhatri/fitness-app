@@ -42,6 +42,11 @@ section {
   }
 }
 
+// Full width below the compact cards (spans both columns on tablets).
+.review {
+  grid-column: 1 / -1;
+}
+
 // Tablets: the day and the workout side by side, the compact cards below.
 @container (min-width: 37.5em) {
   .dashboard {

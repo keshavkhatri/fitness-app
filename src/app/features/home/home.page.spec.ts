@@ -427,6 +427,19 @@ describe('HomePage', () => {
       expect(navigateByUrl).toHaveBeenCalledWith('/progress');
     });
 
+    it('the weekly review is reachable from Home, with or without a plan', async () => {
+      const { el, fixture, forward } = await render();
+      const entry = el.querySelector<HTMLButtonElement>('[data-testid=review-entry]')!;
+      expect(clean(entry)).toBe('Weekly review What went well and what to focus on next');
+      entry.click();
+      await fixture.whenStable();
+      expect(forward).toHaveBeenCalledWith('/you/review');
+
+      TestBed.resetTestingModule();
+      const noPlan = await render({ profile: null });
+      expect(noPlan.el.querySelector('[data-testid=review-entry]')).not.toBeNull();
+    });
+
     it('no completed workouts: nothing fabricated', async () => {
       const { el } = await render();
       expect(count(el)).toBe('0/4');

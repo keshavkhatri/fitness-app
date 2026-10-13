@@ -36,7 +36,18 @@ describe('toAssessmentViewModel', () => {
         calorieTarget: { kind: 'target', kcal: '2,306', notice: null },
         bmr: '1,750 kcal',
         maintenance: '2,713 kcal',
+        maintenanceCaption: 'Estimated daily energy needs at your activity level',
       });
+    });
+
+    it('with an accepted Calorie Check-in, shows the maintenance the target is built on and where it came from', () => {
+      const calibrated = viewFor({
+        ...NORMAL_PROFILE,
+        energyCalibration: { maintenanceKcal: 2500, observedFrom: '2026-09-01', observedTo: '2026-09-28', acceptedAt: '2026-09-29T12:00:00.000Z' },
+      });
+      expect(calibrated.energy).toMatchObject({ bmr: '1,750 kcal', maintenance: '2,500 kcal' });
+      expect(calibrated.energy.maintenanceCaption).toMatch(/^From your calorie check-in on Sep 29, 2026: /);
+      expect(calibrated.energy.calorieTarget).toMatchObject({ kind: 'target', kcal: '2,125' });
     });
 
     it('shows gram targets with approximate calorie shares', () => {

@@ -39,7 +39,7 @@ import { EnergyViewModel } from '../assessment-view-model';
         <div class="estimate">
           <dt>{{ copy.maintenanceLabel }}</dt>
           <dd class="value" data-testid="maintenance">{{ energy().maintenance }}</dd>
-          <dd class="caption">{{ copy.maintenanceCaption }}</dd>
+          <dd class="caption" data-testid="maintenance-caption">{{ energy().maintenanceCaption }}</dd>
         </div>
       </dl>
     </fit-card>

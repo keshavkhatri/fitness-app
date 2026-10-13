@@ -43,7 +43,9 @@ export interface EnergyViewModel {
     | { readonly kind: 'target'; readonly kcal: string; readonly notice: NoticeViewModel | null }
     | { readonly kind: 'review'; readonly notice: NoticeViewModel };
   readonly bmr: string;
+  /** The maintenance the calorie target is built on (formula, or an accepted Calorie Check-in). */
   readonly maintenance: string;
+  readonly maintenanceCaption: string;
 }
 
 export interface MacroRowViewModel {
@@ -111,8 +113,18 @@ function toEnergy(assessment: FitnessAssessment): EnergyViewModel {
             notice: calories.status === 'floor-applied' ? { tone: 'info', ...notices.calorieAdjusted } : null,
           },
     bmr: kcal(assessment.estimates.bmrKcal),
-    maintenance: kcal(assessment.estimates.tdeeKcal),
+    maintenance: kcal(assessment.explanation.maintenance.kcal),
+    maintenanceCaption: maintenanceCaption(assessment),
   };
+}
+
+const acceptedDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+function maintenanceCaption(assessment: FitnessAssessment): string {
+  const basis = assessment.explanation.maintenance;
+  return basis.source === 'check-in'
+    ? ASSESSMENT_COPY.energy.maintenanceFromCheckIn(acceptedDate.format(new Date(basis.acceptedAt)))
+    : ASSESSMENT_COPY.energy.maintenanceCaption;
 }
 
 function onHold(): MacrosViewModel {

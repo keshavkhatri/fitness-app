@@ -80,6 +80,9 @@
       }
       <!-- No plan (setup or unavailable): no week to compare against, so no card. -->
     </div>
+
+    <!-- The Weekly Fitness Review (from main); below the mockup's cards, as a row. -->
+    <app-review-entry class="review" (open)="openReview()" />
   </div>
 
   <app-check-in-sheets
