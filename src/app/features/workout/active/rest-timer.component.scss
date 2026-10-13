@@ -2,6 +2,7 @@
 
 :host {
   display: block;
+  container-type: inline-size;
 }
 
 .rest {
@@ -64,4 +65,16 @@
   background: color-mix(in srgb, var(--color-surface-muted) 70%, var(--color-border-strong));
   color: var(--color-text);
   font-size: 15px;
+}
+
+// Narrow tiles: a smaller ring (the size is bound inline, hence !important).
+@container (max-width: 150px) {
+  .ring {
+    --ring-size: 112px !important;
+  }
+
+  .time {
+    font-size: 24px;
+    line-height: 30px;
+  }
 }

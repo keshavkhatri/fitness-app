@@ -2,6 +2,7 @@
 
 :host {
   display: block;
+  container-type: inline-size;
 }
 
 .card {
@@ -80,9 +81,26 @@
 
 .chip {
   @include fx.text(caption, medium);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   padding: 2px var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
   color: var(--color-text-secondary);
+}
+
+// Narrow tiles (small phones, large text): the thumbnail above the name.
+@container (max-width: 150px) {
+  .body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .thumb {
+    width: 100%;
+    height: 56px;
+  }
 }

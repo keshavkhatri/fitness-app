@@ -99,16 +99,23 @@ describe('ActiveWorkoutPage', () => {
       await action.run();
       await settle();
     };
+    /** Opens the options menu and picks an action (skip set, rest controls, finish, leave). */
+    const menu = async (label: string) => {
+      await click('More workout options');
+      await choose(label);
+    };
+    /** The screen-reader text of a cell (the visible values sit beside it, hidden from AT). */
+    const spoken = (testId: string) => clean(el.querySelector(`[data-testid="${testId}"] .visually-hidden`));
     const stored = () => JSON.parse(storage.values.get(ACTIVE_KEY) ?? 'null')?.log;
 
-    return { fixture, el, storage, logs, root, back, settle, clean, text, rows, buttons, button, type, click, completeRow, dialog, choose, stored };
+    return { fixture, el, storage, logs, root, back, settle, clean, text, spoken, rows, buttons, button, type, click, completeRow, dialog, choose, menu, stored };
   }
 
   describe('current exercise', () => {
     it('shows the workout, position, progress and the current exercise’s sets', async () => {
       const { el, text, rows } = await render();
       expect(text('workout-title')).toBe('Upper Body A');
-      expect(text('position')).toBe('Exercise 1 of 7');
+      expect(text('position')).toBe('1 of 7 exercises');
       expect(el.querySelector('fit-progress')?.getAttribute('aria-valuetext')).toBe('Exercise 1 of 7. 0 of 22 sets done.');
       expect(el.querySelector('#active-exercise')?.textContent?.trim()).toBe('Bench Press');
       expect(text('planned')).toBe('Planned 4 sets · 6–10 reps · 120 sec rest');
@@ -139,14 +146,14 @@ describe('ActiveWorkoutPage', () => {
 
   describe('logging sets', () => {
     it('completes a set: saved, shown as done with text and icon, announced, rest started, next set prefilled', async () => {
-      const { rows, type, completeRow, text, stored, fixture } = await render();
+      const { rows, type, completeRow, text, spoken, stored, fixture } = await render();
       await type(0, 'weight', '60');
       await type(0, 'reps', '8');
       await completeRow(0);
 
       const row = rows()[0];
       expect(row.dataset['status']).toBe('completed');
-      expect(text('set-result')).toBe('Done: 60 kg × 8');
+      expect(spoken('set-result')).toBe('Done: 60 kg × 8');
       expect(row.querySelector('[data-testid="set-action"]')?.getAttribute('aria-label')).toBe('Set 1 done: 60 kg × 8. Undo');
       expect(text('announcement')).toBe('Set 1 completed.');
       expect(stored().exercises[0].sets[0]).toMatchObject({ status: 'completed', weight: 60, reps: 8 });
@@ -193,10 +200,10 @@ describe('ActiveWorkoutPage', () => {
     });
 
     it('skips a set (distinct from completed) and can undo the skip', async () => {
-      const { rows, click, text, stored, completeRow } = await render();
-      await click('Skip set 1');
+      const { rows, menu, text, spoken, stored, completeRow } = await render();
+      await menu('Skip set 1'); // from the options menu
       expect(rows()[0].dataset['status']).toBe('skipped');
-      expect(text('set-result')).toBe('Skipped');
+      expect(spoken('set-result')).toBe('Skipped');
       expect(text('announcement')).toBe('Set 1 skipped.');
       expect(stored().exercises[0].sets[0]).toMatchObject({ status: 'skipped', weight: null, reps: null });
       expect(rows()[0].querySelector('[data-testid="set-action"]')?.getAttribute('aria-label')).toBe('Set 1 skipped. Undo');
@@ -218,7 +225,7 @@ describe('ActiveWorkoutPage', () => {
 
   describe('rest timer', () => {
     it('counts down programmed rest, can pause, resume, restart and skip, and announces completion', async () => {
-      const { type, completeRow, fixture, text, click, el, settle } = await render();
+      const { type, completeRow, fixture, text, click, menu, el, settle } = await render();
       await type(0, 'weight', '60');
       await type(0, 'reps', '8');
       await completeRow(0);
@@ -236,7 +243,7 @@ describe('ActiveWorkoutPage', () => {
       expect(text('rest-time')).toContain('1:30');
 
       await click('Resume');
-      await click('Restart');
+      await menu('Restart Rest'); // restart and skip live in the options menu
       expect(text('rest-time')).toContain('2:00');
 
       now = new Date(now.getTime() + 121_000);
@@ -250,13 +257,13 @@ describe('ActiveWorkoutPage', () => {
     });
 
     it('skipping rest never blocks logging the next set', async () => {
-      const { type, completeRow, click, el, rows } = await render();
+      const { type, completeRow, menu, el, rows } = await render();
       await type(0, 'weight', '60');
       await type(0, 'reps', '8');
       await completeRow(0);
       await completeRow(1); // log the next set while resting (prefilled)
       expect(rows()[1].dataset['status']).toBe('completed');
-      await click('Skip Rest');
+      await menu('Skip Rest');
       expect(el.querySelector('[data-testid="rest-timer"]')).toBeNull();
     });
 
@@ -284,7 +291,7 @@ describe('ActiveWorkoutPage', () => {
 
     it('shows the exercise name, its muscles and equipment, and a demonstration area', async () => {
       const { el, text } = await render();
-      expect(text('exercise-meta')).toBe('Chest Barbell, bench, rack');
+      expect(text('exercise-meta')).toBe('Chest');
       expect(el.querySelector('[data-testid="demo-stage"]')).not.toBeNull();
     });
 
@@ -342,15 +349,15 @@ describe('ActiveWorkoutPage', () => {
       await logs.skipExercise(0);
       await settle();
       expect(el.querySelector('[data-testid="complete-set"]')).toBeNull();
-      expect(text('advance')).toBe('Next Exercise');
-      await click('Next Exercise');
+      expect(text('advance')).toBe('Next exercise');
+      await click('Next exercise');
       expect(dialog()).toBeNull();
-      expect(text('position')).toBe('Exercise 2 of 7');
+      expect(text('position')).toBe('2 of 7 exercises');
 
       await logs.goToExercise(6);
       await logs.skipExercise(6);
       await settle();
-      expect(text('advance')).toBe('Finish Workout');
+      expect(text('advance')).toBe('Finish workout');
     });
 
     it('previews the next exercise; the card moves on like the footer button (asking first)', async () => {
@@ -360,7 +367,7 @@ describe('ActiveWorkoutPage', () => {
       await click('Next exercise: Barbell Row');
       expect(dialog()).toMatchObject({ title: 'Move to the next exercise?' });
       await choose('Next Exercise');
-      expect(text('position')).toBe('Exercise 2 of 7');
+      expect(text('position')).toBe('2 of 7 exercises');
     });
 
     it('on the last exercise the card is about finishing', async () => {
@@ -391,7 +398,7 @@ describe('ActiveWorkoutPage', () => {
       const { click, dialog, choose } = await render();
       await click('More workout options');
       expect(dialog()?.title).toBe('Workout options');
-      expect(dialog()?.actions.map((a) => a.label)).toEqual(['Finish Workout', 'Skip exercise', 'Leave Workout', 'Keep Working']);
+      expect(dialog()?.actions.map((a) => a.label)).toEqual(['Skip set 1', 'Skip exercise', 'Finish Workout', 'Leave Workout', 'Keep Working']);
       await choose('Leave Workout');
       expect(dialog()).toMatchObject({ title: 'Leave this workout?' });
     });
@@ -407,26 +414,28 @@ describe('ActiveWorkoutPage', () => {
 
   describe('moving between exercises', () => {
     it('Next asks for confirmation when sets are not done; Previous goes back', async () => {
-      const { click, dialog, choose, text, el } = await render();
-      expect(el.querySelector('button[aria-label="Previous exercise"]')).toBeNull(); // nothing before the first exercise
-      await click('Next Exercise');
+      const { click, dialog, choose, menu, text, el } = await render();
+      await click('More workout options');
+      expect(dialog()?.actions.map((a) => a.label)).not.toContain('Previous exercise'); // nothing before the first exercise
+      await choose('Keep Working');
+      await click('Next exercise');
       expect(dialog()).toMatchObject({ title: 'Move to the next exercise?', message: '4 sets are not done yet. You can come back to them before finishing.' });
       await choose('Next Exercise');
-      expect(text('position')).toBe('Exercise 2 of 7');
+      expect(text('position')).toBe('2 of 7 exercises');
       expect(el.querySelector('#active-exercise')?.textContent?.trim()).toBe('Barbell Row');
-      expect(text('announcement')).toBe('Barbell Row. Exercise 2 of 7');
+      expect(text('announcement')).toBe('Barbell Row. 2 of 7 exercises');
 
-      await click('Previous exercise');
-      expect(text('position')).toBe('Exercise 1 of 7');
+      await menu('Previous exercise'); // from the options menu
+      expect(text('position')).toBe('1 of 7 exercises');
     });
 
     it('moves on directly when every set is handled', async () => {
       const { click, dialog, text, logs, settle } = await render();
       await logs.skipExercise(0);
       await settle();
-      await click('Next Exercise');
+      await click('Next exercise');
       expect(dialog()).toBeNull();
-      expect(text('position')).toBe('Exercise 2 of 7');
+      expect(text('position')).toBe('2 of 7 exercises');
     });
 
     it('skipping an exercise needs confirmation, keeps completed sets and moves on', async () => {
@@ -439,7 +448,7 @@ describe('ActiveWorkoutPage', () => {
       expect(dialog()).toMatchObject({ title: 'Skip this exercise?', message: 'Your completed sets will be kept.' });
       await choose('Skip Exercise');
       expect(stored().exercises[0].sets.map((s: { status: string }) => s.status)).toEqual(['completed', 'skipped', 'skipped', 'skipped']);
-      expect(text('position')).toBe('Exercise 2 of 7');
+      expect(text('position')).toBe('2 of 7 exercises');
     });
   });
 
@@ -448,14 +457,14 @@ describe('ActiveWorkoutPage', () => {
       const { logs, settle, click, dialog, choose, root, storage } = await render();
       await logs.goToExercise(6);
       await settle();
-      await click('Finish Workout');
+      await click('Finish workout');
       expect(dialog()).toMatchObject({ title: 'Finish workout?', message: 'You have 22 incomplete sets.' });
       expect(dialog()?.actions.map((a) => a.label)).toEqual(['Finish Anyway', 'Keep Working']);
 
       await choose('Keep Working');
       expect(logs.active()?.status).toBe('in-progress');
 
-      await click('Finish Workout');
+      await click('Finish workout');
       await choose('Finish Anyway');
       const id = 'wl-1791450000000-day-1-upper';
       expect(root).toHaveBeenCalledWith(['/workout', 'summary', id]);
@@ -473,7 +482,7 @@ describe('ActiveWorkoutPage', () => {
       }
       await logs.goToExercise(log.exercises.length - 1);
       await settle();
-      await click('Finish Workout');
+      await click('Finish workout');
       expect(dialog()).toMatchObject({ message: 'Every set is done. Nice work.' });
       expect(dialog()?.actions[0].label).toBe('Finish Workout');
     });
@@ -526,7 +535,7 @@ describe('ActiveWorkoutPage', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
-      expect(el.querySelector('[data-testid="position"]')?.textContent?.trim()).toBe('Exercise 3 of 7');
+      expect(el.querySelector('[data-testid="position"]')?.textContent?.trim()).toBe('3 of 7 exercises');
       expect(el.querySelector('fit-progress')?.getAttribute('aria-valuetext')).toBe('Exercise 3 of 7. 1 of 22 sets done.');
     });
   });
