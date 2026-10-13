@@ -60,4 +60,56 @@ describe('ExerciseDemoComponent', () => {
     TestBed.resetTestingModule();
     expect(render('push-up', null).el.textContent?.trim()).toBe('');
   });
+
+  describe('stage layout (active workout)', () => {
+    function stage(exerciseId: string, base: string | null = BASE) {
+      TestBed.configureTestingModule({ providers: [provideIonicAngular(), { provide: EXERCISE_MEDIA_BASE_URL, useValue: base }] });
+      const fixture = TestBed.createComponent(ExerciseDemoComponent);
+      fixture.componentRef.setInput('exerciseId', exerciseId);
+      fixture.componentRef.setInput('name', 'Push-Up');
+      fixture.componentRef.setInput('variant', 'stage');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const q = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+      return { fixture, el, q };
+    }
+
+    it('is always there, loads nothing until "How to do it" is pressed, then shows the photos with the credit', () => {
+      const { fixture, el, q } = stage('push-up');
+      expect(q('demo-stage')).not.toBeNull();
+      expect(el.querySelector('img')).toBeNull();
+      expect(q('demo-toggle')?.textContent?.trim()).toBe('How to do it');
+      expect(q('demo-toggle')?.getAttribute('aria-expanded')).toBe('false');
+
+      q('demo-toggle')!.click();
+      fixture.detectChanges();
+      expect([...el.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toEqual([`${BASE}Pushups/0.jpg`, `${BASE}Pushups/1.jpg`]);
+      expect(q('demo-toggle')?.getAttribute('aria-expanded')).toBe('true');
+      expect(q('demo-play')).not.toBeNull();
+      expect(el.textContent).toContain('public domain');
+
+      q('demo-toggle')!.click(); // hide again
+      fixture.detectChanges();
+      expect(el.querySelector('img')).toBeNull();
+    });
+
+    it('keeps the area (without a button) for an exercise with no demonstration, or when media is off', () => {
+      for (const [id, base] of [['burpees', BASE], ['push-up', null]] as const) {
+        TestBed.resetTestingModule();
+        const { el, q } = stage(id, base);
+        expect(q('demo-stage')).not.toBeNull();
+        expect(q('demo-toggle')).toBeNull();
+        expect(el.querySelector('img')).toBeNull();
+      }
+    });
+
+    it('offers a retry when the photos fail to load', () => {
+      const { fixture, el, q } = stage('push-up');
+      q('demo-toggle')!.click();
+      fixture.detectChanges();
+      el.querySelector('img')!.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+      expect(q('demo-failed')?.textContent).toContain("couldn't be loaded");
+    });
+  });
 });

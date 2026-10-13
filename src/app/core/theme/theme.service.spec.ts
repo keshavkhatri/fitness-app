@@ -44,6 +44,26 @@ describe('ThemeService', () => {
     expect(root.classList.contains('theme-light')).toBe(true);
   });
 
+  it('an always-dark screen makes the status bar dark without changing the preference or <html>', () => {
+    const service = createService();
+    service.setPreference('light');
+    TestBed.tick();
+    expect(service.statusBarTheme()).toBe('light');
+
+    const releaseA = service.holdAlwaysDark();
+    const releaseB = service.holdAlwaysDark();
+    expect(service.statusBarTheme()).toBe('dark');
+    expect(service.preference()).toBe('light');
+    expect(service.resolvedTheme()).toBe('light');
+    expect(root.classList.contains('theme-light')).toBe(true);
+
+    releaseA();
+    releaseA(); // releasing twice never releases the other hold
+    expect(service.statusBarTheme()).toBe('dark');
+    releaseB();
+    expect(service.statusBarTheme()).toBe('light');
+  });
+
   it('restores a stored preference', async () => {
     storage.values.set(KEY, 'dark');
     const service = createService();

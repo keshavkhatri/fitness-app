@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, resource, signal } from '@angular/core';
-import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, resource, signal, viewChild } from '@angular/core';
+import { IonContent, IonFooter, IonHeader, IonToolbar, NavController } from '@ionic/angular';
 
+import { ThemeService } from '../../../core/theme/theme.service';
+import { CLOCK } from '../../../core/time/clock';
 import { WorkoutLogService } from '../../../core/workout/workout-log.service';
 import { SetEntry } from '../../../domain/workout-session';
 import {
@@ -8,18 +10,22 @@ import {
   EmptyStateComponent,
   FitnessButtonComponent,
   FitnessCardComponent,
+  FitnessIconButtonComponent,
   FitnessProgressComponent,
   LoadingSkeletonComponent,
   NoticeComponent,
 } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
 import { ExerciseDemoComponent } from '../components/exercise-demo.component';
+import { ActiveFooterComponent } from './active-footer.component';
+import { NextExerciseCardComponent } from './next-exercise-card.component';
 import { RestTimerComponent } from './rest-timer.component';
 import { RestTimer } from './rest-timer';
 import { DraftEdit, SetError, SetLoggerComponent } from './set-logger.component';
 import { FieldKey, toActiveWorkoutView } from './active-workout-view-model';
+import { formatElapsed, spokenElapsed } from './workout-clock';
 
-type DialogKind = 'skip-exercise' | 'leave-incomplete' | 'finish' | 'exit' | 'discard';
+type DialogKind = 'menu' | 'skip-exercise' | 'leave-incomplete' | 'finish' | 'exit' | 'discard';
 
 interface DialogAction {
   readonly label: string;
@@ -59,19 +65,23 @@ const parseNumber = (text: string | undefined): number | null => {
     IonToolbar,
     IonContent,
     IonFooter,
-    IonIcon,
     BottomSheetComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
+    FitnessIconButtonComponent,
     FitnessProgressComponent,
     LoadingSkeletonComponent,
     NoticeComponent,
+    ActiveFooterComponent,
+    NextExerciseCardComponent,
     RestTimerComponent,
     ExerciseDemoComponent,
     SetLoggerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Always dark (see docs/design-system.md, "Immersive mode"): used mid-set, often at arm's length.
+  host: { class: 'fit-theme-immersive' },
 })
 export class ActiveWorkoutPage {
   /** Route parameter (`/workout/session/:sessionId/active`). */
@@ -79,6 +89,8 @@ export class ActiveWorkoutPage {
 
   private readonly logs = inject(WorkoutLogService);
   private readonly nav = inject(NavController);
+  private readonly clock = inject(CLOCK);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly timer = inject(RestTimer);
 
   protected readonly copy = WORKOUT_COPY.active;
@@ -94,6 +106,15 @@ export class ActiveWorkoutPage {
     this.view() ? 'active' : this.loaded.isLoading() ? 'loading' : 'not-active',
   );
   protected readonly saveFailed = this.logs.saveFailed;
+  private readonly content = viewChild(IonContent);
+
+  /** Shown while resting or whenever this exercise has programmed rest (to start by hand). */
+  protected readonly restVisible = computed(() => this.timer.status() !== 'idle' || (this.view()?.exercise.restSeconds ?? 0) > 0);
+
+  /** Ticks every second while a workout is shown; the elapsed time is always measured from its start. */
+  private readonly now = signal(this.clock());
+  protected readonly workoutTime = computed(() => formatElapsed(this.view()?.startedAt ?? '', this.now()));
+  protected readonly workoutTimeSpoken = computed(() => spokenElapsed(this.view()?.startedAt ?? '', this.now()));
 
   /** Unsaved input, per exercise then set. */
   private readonly drafts = signal<Readonly<Record<number, Readonly<Record<number, Partial<Record<FieldKey, string>>>>>>>({});
@@ -108,10 +129,32 @@ export class ActiveWorkoutPage {
   protected readonly dialog = computed(() => this.dialogFor(this.dialogKind()));
 
   constructor() {
+    // The status bar gets light text even in a light Appearance while this always-dark screen is open.
+    const releaseStatusBar = inject(ThemeService).holdAlwaysDark();
+    inject(DestroyRef).onDestroy(releaseStatusBar);
+
     effect(() => {
       if (this.timer.status() === 'done') {
         this.announcement.set(this.copy.rest.complete);
       }
+    });
+
+    // When the current set changes, keep it above the footer (matters on short phones).
+    effect(() => {
+      const view = this.view();
+      if (view) {
+        void [view.exerciseIndex, view.exercise.nextPendingSet];
+        this.scheduleReveal();
+      }
+    });
+
+    effect((onCleanup) => {
+      if (!this.view()) {
+        return;
+      }
+      this.now.set(this.clock());
+      const interval = setInterval(() => this.now.set(this.clock()), 1000);
+      onCleanup(() => clearInterval(interval));
     });
   }
 
@@ -126,6 +169,26 @@ export class ActiveWorkoutPage {
       ...all,
       [exercise]: { ...all[exercise], [setIndex]: { ...all[exercise]?.[setIndex], [field]: value } },
     }));
+    // The user is fixing it: drop the message (completing again re-validates).
+    if (this.errorsByExercise()[exercise]?.[setIndex]) {
+      this.setError(exercise, setIndex, null);
+    }
+  }
+
+  /** The footer's main action: completes the current set with what is in its inputs. */
+  protected completeCurrent(): void {
+    const set = this.view()?.exercise.nextPendingSet;
+    if (set !== null && set !== undefined) {
+      void this.completeSet(set);
+    }
+  }
+
+  /** Starts the exercise's programmed rest by hand. */
+  protected startRest(): void {
+    const seconds = this.view()?.exercise.restSeconds ?? 0;
+    if (seconds > 0) {
+      this.timer.start(seconds);
+    }
   }
 
   protected async completeSet(setIndex: number): Promise<void> {
@@ -210,6 +273,15 @@ export class ActiveWorkoutPage {
     void this.goTo(view.exerciseIndex + 1);
   }
 
+  /** The footer's way on and the "Next up" card: the next exercise (asking first if sets are left), or finishing on the last. */
+  protected openNext(): void {
+    if (this.view()?.isLast) {
+      this.openDialog('finish');
+    } else {
+      this.next();
+    }
+  }
+
   protected previous(): void {
     const view = this.view();
     if (view && !view.isFirst) {
@@ -219,6 +291,12 @@ export class ActiveWorkoutPage {
 
   private async goTo(index: number): Promise<void> {
     await this.logs.goToExercise(index);
+    const view = this.view();
+    if (view) {
+      this.announcement.set(`${view.exercise.name}. ${view.position}`);
+    }
+    // A new exercise starts at its top: demonstration first, then the sets.
+    void this.content()?.scrollToTop(0);
   }
 
   protected openDialog(kind: DialogKind): void {
@@ -238,6 +316,17 @@ export class ActiveWorkoutPage {
     const d = this.copy.dialogs;
     const cancel = (label: string): DialogAction => ({ label, variant: 'ghost', run: () => this.closeDialog() });
     switch (kind) {
+      case 'menu':
+        return {
+          title: this.copy.menu.title,
+          message: '',
+          actions: [
+            { label: this.copy.finish, variant: 'primary', run: () => this.dialogKind.set('finish') },
+            ...(view.exercise.pending > 0 ? [{ label: this.copy.skipExercise, variant: 'outline' as const, run: () => this.dialogKind.set('skip-exercise') }] : []),
+            { label: this.copy.leaveWorkout, variant: 'outline', run: () => this.dialogKind.set('exit') },
+            cancel(d.exit.cancel),
+          ],
+        };
       case 'skip-exercise':
         return {
           title: d.skipExercise.title,
@@ -334,6 +423,33 @@ export class ActiveWorkoutPage {
   }
 
   // --- Helpers ----------------------------------------------------------------------------
+
+  private scheduleReveal(): void {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => void this.revealCurrentSet());
+    }
+  }
+
+  /** Scrolls the minimum needed so the current set isn't hidden under the footer (or above the top). */
+  private async revealCurrentSet(): Promise<void> {
+    const content = this.content();
+    const row = this.host.nativeElement.querySelector('[aria-current="step"]');
+    if (!content || !row || typeof content.getScrollElement !== 'function') {
+      return;
+    }
+    try {
+      const area = (await content.getScrollElement()).getBoundingClientRect();
+      const rect = row.getBoundingClientRect();
+      const margin = 12;
+      if (rect.bottom > area.bottom - margin) {
+        await content.scrollByPoint(0, rect.bottom - area.bottom + margin, 250);
+      } else if (rect.top < area.top + margin) {
+        await content.scrollByPoint(0, rect.top - area.top - margin, 250);
+      }
+    } catch {
+      // Scrolling is a convenience; never let it break logging.
+    }
+  }
 
   private setError(exercise: number, set: number, error: SetError | null): void {
     this.errorsByExercise.update((all) => {

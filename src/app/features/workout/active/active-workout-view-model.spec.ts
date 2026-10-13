@@ -23,6 +23,7 @@ describe('active workout view model', () => {
     expect(view).toMatchObject({
       workoutId: 'wl',
       sessionId: 'day-1-upper',
+      startedAt: expect.any(String),
       title: 'Upper Body A',
       position: 'Exercise 1 of 7',
       progress: { value: 0, max: 22, text: 'Exercise 1 of 7. 0 of 22 sets done.' },
@@ -31,8 +32,9 @@ describe('active workout view model', () => {
       pendingTotal: 22,
     });
     expect(view.exercise).toMatchObject({
-      heading: '1. Bench Press',
-      metadata: 'Chest · Barbell, bench, rack',
+      name: 'Bench Press',
+      muscles: ['Chest'],
+      equipment: 'Barbell, bench, rack',
       planned: '4 sets · 6–10 reps · 120 sec rest',
       restSeconds: 120,
       mode: 'weight-reps',
@@ -40,14 +42,34 @@ describe('active workout view model', () => {
       nextPendingSet: 0,
     });
     expect(view.exercise.fields.map((f) => [f.key, f.label, f.inputMode, f.placeholder])).toEqual([
-      ['weight', 'kg', 'decimal', 'kg'],
+      ['weight', 'Weight (kg)', 'decimal', 'kg'],
       ['reps', 'Reps', 'numeric', '6–10'],
     ]);
   });
 
   it('labels weight in pounds for imperial logs', () => {
     const view = toActiveWorkoutView(logFor(PROFILE, 'day-1-upper', 'lb'));
-    expect(view.exercise.fields[0]).toMatchObject({ label: 'lb', spoken: 'weight in pounds' });
+    expect(view.exercise.fields[0]).toMatchObject({ label: 'Weight (lb)', spoken: 'weight in pounds' });
+  });
+
+  it('previews the next exercise, and has none after the last', () => {
+    const log = logFor();
+    const view = toActiveWorkoutView(log);
+    expect(view.next).toEqual({ name: 'Barbell Row', muscles: expect.any(Array), planned: expect.stringContaining('sets'), handled: 0 });
+    expect(view.next?.planned).not.toContain('rest');
+    expect(view.next?.muscles.length).toBeGreaterThan(0);
+
+    const last = toActiveWorkoutView({ ...log, currentExerciseIndex: log.exercises.length - 1 });
+    expect(last.isLast).toBe(true);
+    expect(last.next).toBeNull();
+  });
+
+  it('counts sets already handled in the next exercise', () => {
+    const log = logFor();
+    const exercises = log.exercises.map((e, i) =>
+      i === 1 ? { ...e, sets: e.sets.map((set, j) => (j === 0 ? { ...set, status: 'skipped' as const } : set)) } : e,
+    );
+    expect(toActiveWorkoutView({ ...log, exercises }).next?.handled).toBe(1);
   });
 
   it('per-side and timed exercises get matching fields', () => {

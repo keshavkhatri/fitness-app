@@ -59,6 +59,10 @@ import {
   statsChart,
   statsChartOutline,
   walk,
+  ellipsisHorizontal,
+  pause,
+  playSkipForward,
+  remove,
 } from 'ionicons/icons';
 
 /**
@@ -127,5 +131,9 @@ export function registerAppIcons(): void {
     statsChart,
     statsChartOutline,
     walk,
+    ellipsisHorizontal,
+    pause,
+    playSkipForward,
+    remove,
   });
 }

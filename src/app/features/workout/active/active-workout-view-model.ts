@@ -1,7 +1,7 @@
 import { Exercise } from '../../../domain/workout-programming';
 import { ExerciseLog, LoggingMode, SetLog, SetStatus, WorkoutLog, nextPendingSet, pendingSetCount } from '../../../domain/workout-session';
 import { WORKOUT_COPY } from '../workout-content';
-import { exerciseMetadata, formatPrescription, targetValue, titleFor } from '../workout-formatting';
+import { exerciseEquipment, exerciseMuscles, formatPrescription, targetValue, titleFor } from '../workout-formatting';
 import { CATALOG } from '../workout-view-model';
 
 /**
@@ -11,6 +11,8 @@ import { CATALOG } from '../workout-view-model';
 export interface ActiveWorkoutView {
   readonly workoutId: string;
   readonly sessionId: string;
+  /** ISO instant the workout started (the page shows the elapsed time from it). */
+  readonly startedAt: string;
   readonly title: string;
   /** "Exercise 2 of 7" (progress is always given as text, not only as a bar). */
   readonly position: string;
@@ -19,16 +21,28 @@ export interface ActiveWorkoutView {
   readonly isFirst: boolean;
   readonly isLast: boolean;
   readonly exercise: ActiveExerciseView;
+  /** The exercise after this one; null on the last. */
+  readonly next: NextExerciseView | null;
   /** Pending sets in the whole workout (for the finish confirmation). */
   readonly pendingTotal: number;
+}
+
+export interface NextExerciseView {
+  readonly name: string;
+  readonly muscles: readonly string[];
+  /** "3 sets · 8–12 reps" */
+  readonly planned: string;
+  /** Sets already handled there (it can have been started before). */
+  readonly handled: number;
 }
 
 export interface ActiveExerciseView {
   readonly exerciseId: string;
   readonly name: string;
-  /** "2. Cable Row" */
-  readonly heading: string;
-  readonly metadata: string | null;
+  /** Primary muscles ("Chest"), shown as chips. */
+  readonly muscles: readonly string[];
+  /** "Barbell, bench, rack" or "Bodyweight"; null when unknown. */
+  readonly equipment: string | null;
   /** "3 sets · 8–12 reps · 90 sec rest" */
   readonly planned: string;
   readonly restSeconds: number;
@@ -44,7 +58,7 @@ export type FieldKey = 'weight' | 'reps' | 'durationSeconds';
 
 export interface FieldView {
   readonly key: FieldKey;
-  /** Column heading, e.g. "kg", "Reps", "Seconds". */
+  /** Column heading, e.g. "Weight (kg)", "Reps", "Seconds". */
   readonly label: string;
   /** Spoken unit for input labels, e.g. "weight in kilograms". */
   readonly spoken: string;
@@ -75,6 +89,7 @@ export function toActiveWorkoutView(log: WorkoutLog, catalog: ReadonlyMap<string
   return {
     workoutId: log.id,
     sessionId: log.source.sessionId,
+    startedAt: log.startedAt,
     title: titleFor(log.sessionType, log.variant),
     position: copy.exerciseOf(index + 1, log.exercises.length),
     progress: { value: handled, max: sets.length, text: copy.progressText(index + 1, log.exercises.length, done, sets.length) },
@@ -82,6 +97,7 @@ export function toActiveWorkoutView(log: WorkoutLog, catalog: ReadonlyMap<string
     isFirst: index === 0,
     isLast: index === log.exercises.length - 1,
     exercise: toExercise(exercise, log, catalog),
+    next: log.exercises[index + 1] ? toNext(log.exercises[index + 1], catalog) : null,
     pendingTotal: sets.filter((s) => s.status === 'pending').length,
   };
 }
@@ -114,7 +130,7 @@ function fieldsFor(exercise: ExerciseLog, log: WorkoutLog): FieldView[] {
       return [
         {
           key: 'weight',
-          label: log.weightUnit,
+          label: `${columns.weight} (${log.weightUnit})`,
           spoken: log.weightUnit === 'kg' ? 'weight in kilograms' : 'weight in pounds',
           inputMode: 'decimal',
           placeholder: log.weightUnit,
@@ -129,8 +145,8 @@ function toExercise(exercise: ExerciseLog, log: WorkoutLog, catalog: ReadonlyMap
   return {
     exerciseId: exercise.exerciseId,
     name: exercise.name,
-    heading: `${exercise.order}. ${exercise.name}`,
-    metadata: exerciseMetadata(catalog.get(exercise.exerciseId)),
+    muscles: exerciseMuscles(catalog.get(exercise.exerciseId)),
+    equipment: exerciseEquipment(catalog.get(exercise.exerciseId)),
     planned: formatPrescription(exercise.planned),
     restSeconds: exercise.planned.restSeconds,
     mode: exercise.logging,
@@ -138,6 +154,15 @@ function toExercise(exercise: ExerciseLog, log: WorkoutLog, catalog: ReadonlyMap
     sets: exercise.sets.map((set, i) => toSetRow(set, i, exercise, log)),
     pending: pendingSetCount(exercise),
     nextPendingSet: next >= 0 ? next : null,
+  };
+}
+
+function toNext(exercise: ExerciseLog, catalog: ReadonlyMap<string, Exercise>): NextExerciseView {
+  return {
+    name: exercise.name,
+    muscles: exerciseMuscles(catalog.get(exercise.exerciseId)),
+    planned: formatPrescription({ ...exercise.planned, restSeconds: 0 }),
+    handled: exercise.sets.filter((s) => s.status !== 'pending').length,
   };
 }
 

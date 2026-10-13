@@ -17,9 +17,12 @@ export interface SetError {
 
 /**
  * The current exercise's sets as rows: large inputs for what the exercise
- * records (weight + reps, reps, or seconds) and one large button per set to
- * complete it (or undo a completed/skipped set). Status is shown with text and
- * an icon, never by color alone. Presentational: values come from the page.
+ * records (weight + reps, reps, or seconds) and one round button per set to
+ * complete it (or undo a completed/skipped set, which puts its values back
+ * into the inputs to edit). The next set to do is the highlighted "current"
+ * row; later sets are quieter but stay editable; completed and skipped sets
+ * read as results. Status is always text or an icon as well as color.
+ * Presentational: values come from the page.
  */
 @Component({
   selector: 'app-set-logger',
@@ -35,8 +38,25 @@ export interface SetError {
       </div>
       <ol class="rows">
         @for (row of ex.sets; track row.index) {
-          <li class="row" data-testid="set-row" [attr.data-status]="row.status" [class.next]="row.index === ex.nextPendingSet">
-            <span class="number" aria-hidden="true">{{ row.setNumber }}</span>
+          <li
+            class="row"
+            data-testid="set-row"
+            [attr.data-status]="row.status"
+            [attr.aria-current]="row.index === ex.nextPendingSet ? 'step' : null"
+            [class.current]="row.index === ex.nextPendingSet"
+          >
+            <span class="badge" aria-hidden="true">
+              @if (row.status === 'completed') {
+                <ion-icon name="checkmark" />
+              } @else if (row.status === 'skipped') {
+                <ion-icon name="remove" />
+              } @else {
+                {{ row.setNumber }}
+              }
+            </span>
+            @if (row.index === ex.nextPendingSet) {
+              <span class="visually-hidden">{{ copy.currentSet }}.&ngsp;</span>
+            }
             @switch (row.status) {
               @case ('pending') {
                 @for (field of ex.fields; track field.key) {
@@ -53,19 +73,19 @@ export interface SetError {
                     [placeholder]="field.placeholder"
                     [value]="valueFor(row, field.key)"
                     (input)="edit(row, field.key, $event)"
+                    (focus)="select($event)"
                     (keydown.enter)="complete.emit(row.index)"
                   />
                 }
               }
               @case ('completed') {
                 <span class="result" data-testid="set-result">
-                  <ion-icon name="checkmark-circle" aria-hidden="true" />
+                  <span class="visually-hidden">{{ copy.done }}:&ngsp;</span>
                   <span>{{ row.valuesText }}</span>
                 </span>
               }
               @default {
                 <span class="result skipped" data-testid="set-result">
-                  <ion-icon name="remove-circle-outline" aria-hidden="true" />
                   <span>{{ copy.skipped }}</span>
                 </span>
               }
@@ -77,7 +97,7 @@ export interface SetError {
               [attr.aria-label]="row.actionLabel"
               (click)="row.status === 'pending' ? complete.emit(row.index) : undo.emit(row.index)"
             >
-              <ion-icon [name]="row.status === 'pending' ? 'checkmark' : 'arrow-undo-outline'" aria-hidden="true" />
+              <ion-icon [name]="row.status === 'pending' ? 'checkmark' : row.status === 'completed' ? 'checkmark' : 'arrow-undo-outline'" aria-hidden="true" />
             </button>
             @if (errorFor(row); as error) {
               <p class="error" role="alert" [id]="errorId(row)" data-testid="set-error">{{ error.message }}</p>
@@ -123,5 +143,10 @@ export class SetLoggerComponent {
 
   protected edit(row: SetRowView, field: FieldKey, event: Event): void {
     this.draftChange.emit({ setIndex: row.index, field, value: (event.target as HTMLInputElement).value });
+  }
+
+  /** Tapping a number selects it, so the new value replaces it without deleting first. */
+  protected select(event: Event): void {
+    (event.target as HTMLInputElement).select();
   }
 }

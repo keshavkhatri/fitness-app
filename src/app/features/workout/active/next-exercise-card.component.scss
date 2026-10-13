@@ -1,0 +1,80 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.card {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  height: 100%;
+  min-height: var(--tap-target-min);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: start;
+}
+
+.eyebrow {
+  @include fx.text(caption, medium);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.thumb {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-primary-text);
+  font-size: 24px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.name {
+  @include fx.text(body-sm, semibold);
+  overflow-wrap: anywhere;
+}
+
+.chip {
+  @include fx.text(caption, medium);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.planned {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}

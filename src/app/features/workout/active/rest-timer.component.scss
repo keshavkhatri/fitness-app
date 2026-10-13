@@ -7,39 +7,78 @@
 .rest {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-card);
-  background: var(--color-primary-soft);
+  align-items: center;
+  gap: var(--space-1);
+  height: 100%;
+  padding: var(--space-3) var(--space-2) var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
-.rest[data-status='done'] {
-  background: var(--color-success-soft);
+.ring {
+  --ring-size: 124px;
 }
 
-.info {
+.center {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
+  flex-direction: column;
+  align-items: center;
 }
 
 .title {
-  @include fx.text(body, semibold);
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
 }
 
 .time {
   @include fx.text(h2, bold);
   @include fx.tabular-numbers;
+  line-height: 1;
+}
+
+.round {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+.rest[data-status='running'] .round {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.rest[data-status='done'] .time {
+  color: var(--color-success-text);
 }
 
 .actions {
   display: flex;
-  gap: var(--space-2);
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+}
 
-  button {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 0 var(--space-2);
+.text {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  min-width: 0;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+
+  &:active {
+    background: var(--color-surface-muted);
   }
 }

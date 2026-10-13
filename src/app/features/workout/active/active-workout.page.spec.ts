@@ -5,6 +5,7 @@ import { NavController, provideIonicAngular } from '@ionic/angular';
 import { KeyValueStorage } from '../../../core/storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../../../core/storage/testing/memory-key-value-storage';
 import { CLOCK } from '../../../core/time/clock';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { WorkoutLogService } from '../../../core/workout/workout-log.service';
 import { UserFitnessProfile } from '../../../domain/fitness-profile';
 import { HOME_PROFILE, PROFILE } from '../testing/workout-fixtures';
@@ -22,6 +23,8 @@ interface RenderOptions {
   sessionId?: string;
   /** Session to start before rendering; null starts nothing. */
   started?: string | null;
+  /** Seconds between starting the workout and opening this screen (elapsed workout time). */
+  openAfterSeconds?: number;
 }
 
 const ACTIVE_KEY = 'fitness.workout-active';
@@ -33,7 +36,7 @@ describe('ActiveWorkoutPage', () => {
     now = new Date('2026-10-08T09:00:00.000Z');
   });
 
-  async function render({ profile = PROFILE, sessionId = 'day-1-upper', started = sessionId }: RenderOptions = {}) {
+  async function render({ profile = PROFILE, sessionId = 'day-1-upper', started = sessionId, openAfterSeconds = 0 }: RenderOptions = {}) {
     const storage = new MemoryKeyValueStorage();
     storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile }));
     TestBed.configureTestingModule({
@@ -51,6 +54,7 @@ describe('ActiveWorkoutPage', () => {
     if (started) {
       await logs.start(started);
     }
+    now = new Date(now.getTime() + openAfterSeconds * 1000);
 
     const fixture = TestBed.createComponent(ActiveWorkoutPage);
     fixture.componentRef.setInput('sessionId', sessionId);
@@ -106,10 +110,10 @@ describe('ActiveWorkoutPage', () => {
       expect(text('workout-title')).toBe('Upper Body A');
       expect(text('position')).toBe('Exercise 1 of 7');
       expect(el.querySelector('fit-progress')?.getAttribute('aria-valuetext')).toBe('Exercise 1 of 7. 0 of 22 sets done.');
-      expect(el.querySelector('#active-exercise')?.textContent?.trim()).toBe('1. Bench Press');
+      expect(el.querySelector('#active-exercise')?.textContent?.trim()).toBe('Bench Press');
       expect(text('planned')).toBe('Planned 4 sets · 6–10 reps · 120 sec rest');
       expect(rows()).toHaveLength(4);
-      expect([...el.querySelectorAll('.head span')].map((s) => s.textContent?.trim())).toEqual(['Set', 'kg', 'Reps', '']);
+      expect([...el.querySelectorAll('.head span')].map((s) => s.textContent?.trim())).toEqual(['Set', 'Weight (kg)', 'Reps', '']);
       const inputs = [...rows()[0].querySelectorAll('input')];
       expect(inputs.map((i) => i.getAttribute('aria-label'))).toEqual(['Set 1, weight in kilograms', 'Set 1, reps']);
       expect(inputs.map((i) => i.getAttribute('inputmode'))).toEqual(['decimal', 'numeric']);
@@ -142,7 +146,7 @@ describe('ActiveWorkoutPage', () => {
 
       const row = rows()[0];
       expect(row.dataset['status']).toBe('completed');
-      expect(text('set-result')).toBe('60 kg × 8');
+      expect(text('set-result')).toBe('Done: 60 kg × 8');
       expect(row.querySelector('[data-testid="set-action"]')?.getAttribute('aria-label')).toBe('Set 1 done: 60 kg × 8. Undo');
       expect(text('announcement')).toBe('Set 1 completed.');
       expect(stored().exercises[0].sets[0]).toMatchObject({ status: 'completed', weight: 60, reps: 8 });
@@ -266,15 +270,151 @@ describe('ActiveWorkoutPage', () => {
     });
   });
 
+  describe('immersive screen', () => {
+    it('is always dark: the immersive theme on the page, a dark status bar while it is open', async () => {
+      const { fixture, el } = await render();
+      const theme = TestBed.inject(ThemeService);
+      theme.setPreference('light');
+      expect(el.classList.contains('fit-theme-immersive')).toBe(true);
+      expect(theme.statusBarTheme()).toBe('dark');
+      expect(theme.preference()).toBe('light'); // the user's setting is untouched
+      fixture.destroy();
+      expect(theme.statusBarTheme()).toBe('light');
+    });
+
+    it('shows the exercise name, its muscles and equipment, and a demonstration area', async () => {
+      const { el, text } = await render();
+      expect(text('exercise-meta')).toBe('Chest Barbell, bench, rack');
+      expect(el.querySelector('[data-testid="demo-stage"]')).not.toBeNull();
+    });
+
+    it('marks the current set, then the next one as it is completed; later sets stay editable', async () => {
+      const { rows, type, completeRow } = await render();
+      const current = () => rows().map((r) => r.getAttribute('aria-current'));
+      expect(current()).toEqual(['step', null, null, null]);
+      expect(rows()[0].textContent).toContain('Current set');
+      expect(rows()[2].querySelector('input')?.disabled).toBe(false);
+
+      await type(0, 'weight', '60');
+      await type(0, 'reps', '8');
+      await completeRow(0);
+      expect(current()).toEqual([null, 'step', null, null]);
+      expect(rows().map((r) => r.dataset['status'])).toEqual(['completed', 'pending', 'pending', 'pending']);
+    });
+
+    it('the footer completes the current set with what is typed (or prefilled)', async () => {
+      const { rows, type, click, text, stored, fixture } = await render();
+      await type(0, 'weight', '62,5');
+      await type(0, 'reps', '8');
+      await click('Complete set');
+      expect(rows()[0].dataset['status']).toBe('completed');
+      expect(stored().exercises[0].sets[0]).toMatchObject({ status: 'completed', weight: 62.5, reps: 8 });
+      expect(fixture.debugElement.injector.get(RestTimer).status()).toBe('running');
+      expect(text('announcement')).toBe('Set 1 completed.');
+
+      await click('Complete set'); // set 2 is prefilled from set 1
+      expect(stored().exercises[0].sets[1]).toMatchObject({ status: 'completed', weight: 62.5, reps: 8 });
+    });
+
+    it('the footer’s main action reports a missing value on the set instead of saving it', async () => {
+      const { rows, click, text, stored } = await render();
+      await click('Complete set');
+      expect(rows()[0].dataset['status']).toBe('pending');
+      expect(text('set-error')).toBe('Enter the weight you used.');
+      expect(stored().exercises[0].sets[0].status).toBe('pending');
+    });
+
+    it('a set’s error goes away as soon as its input is edited, and returns if it is still invalid', async () => {
+      const { rows, click, type, text, el, settle } = await render();
+      await click('Complete set');
+      expect(text('set-error')).toBe('Enter the weight you used.');
+      await type(0, 'weight', '60');
+      expect(el.querySelector('[data-testid="set-error"]')).toBeNull();
+      expect(rows()[0].querySelector('input')?.getAttribute('aria-invalid')).toBeNull();
+      await type(0, 'weight', '');
+      await click('Complete set');
+      expect(text('set-error')).toBe('Enter the weight you used.');
+      await settle();
+    });
+
+    it('with every set handled, the footer’s one action is the next step (next exercise, or finishing)', async () => {
+      const { el, text, logs, settle, click, dialog } = await render();
+      await logs.skipExercise(0);
+      await settle();
+      expect(el.querySelector('[data-testid="complete-set"]')).toBeNull();
+      expect(text('advance')).toBe('Next Exercise');
+      await click('Next Exercise');
+      expect(dialog()).toBeNull();
+      expect(text('position')).toBe('Exercise 2 of 7');
+
+      await logs.goToExercise(6);
+      await logs.skipExercise(6);
+      await settle();
+      expect(text('advance')).toBe('Finish Workout');
+    });
+
+    it('previews the next exercise; the card moves on like the footer button (asking first)', async () => {
+      const { text, click, dialog, choose } = await render();
+      expect(text('next-up')).toContain('Next up');
+      expect(text('next-up')).toContain('Barbell Row');
+      await click('Next exercise: Barbell Row');
+      expect(dialog()).toMatchObject({ title: 'Move to the next exercise?' });
+      await choose('Next Exercise');
+      expect(text('position')).toBe('Exercise 2 of 7');
+    });
+
+    it('on the last exercise the card is about finishing', async () => {
+      const { logs, settle, text, click, dialog } = await render();
+      await logs.goToExercise(6);
+      await settle();
+      expect(text('next-up')).toContain('Last exercise');
+      await click('Last exercise. Finish Workout');
+      expect(dialog()).toMatchObject({ title: 'Finish workout?' });
+    });
+
+    it('rest can be started by hand from the rest card, using the programmed rest', async () => {
+      const { text, click, fixture, el } = await render();
+      expect(el.querySelector('[data-testid="rest-idle"]')).not.toBeNull();
+      expect(text('rest-time')).toContain('2:00');
+      await click('Start rest');
+      expect(fixture.debugElement.injector.get(RestTimer).status()).toBe('running');
+      expect(el.querySelector('[data-testid="rest-timer"]')).not.toBeNull();
+    });
+
+    it('shows the time since the workout started, measured from its start', async () => {
+      const { text } = await render({ openAfterSeconds: 504 });
+      expect(text('workout-time')).toContain('8:24');
+      expect(text('workout-time')).toContain('Workout time: 8 minutes 24 seconds');
+    });
+
+    it('the options menu offers finishing, skipping this exercise and leaving, each still confirmed', async () => {
+      const { click, dialog, choose } = await render();
+      await click('More workout options');
+      expect(dialog()?.title).toBe('Workout options');
+      expect(dialog()?.actions.map((a) => a.label)).toEqual(['Finish Workout', 'Skip exercise', 'Leave Workout', 'Keep Working']);
+      await choose('Leave Workout');
+      expect(dialog()).toMatchObject({ title: 'Leave this workout?' });
+    });
+
+    it('no skip option once this exercise has nothing left to skip', async () => {
+      const { click, dialog, logs, settle } = await render();
+      await logs.skipExercise(0);
+      await settle();
+      await click('More workout options');
+      expect(dialog()?.actions.map((a) => a.label)).toEqual(['Finish Workout', 'Leave Workout', 'Keep Working']);
+    });
+  });
+
   describe('moving between exercises', () => {
     it('Next asks for confirmation when sets are not done; Previous goes back', async () => {
       const { click, dialog, choose, text, el } = await render();
-      expect(el.querySelector('button[aria-label="Previous exercise"]')?.hasAttribute('disabled')).toBe(true);
+      expect(el.querySelector('button[aria-label="Previous exercise"]')).toBeNull(); // nothing before the first exercise
       await click('Next Exercise');
       expect(dialog()).toMatchObject({ title: 'Move to the next exercise?', message: '4 sets are not done yet. You can come back to them before finishing.' });
       await choose('Next Exercise');
       expect(text('position')).toBe('Exercise 2 of 7');
-      expect(el.querySelector('#active-exercise')?.textContent?.trim()).toBe('2. Barbell Row');
+      expect(el.querySelector('#active-exercise')?.textContent?.trim()).toBe('Barbell Row');
+      expect(text('announcement')).toBe('Barbell Row. Exercise 2 of 7');
 
       await click('Previous exercise');
       expect(text('position')).toBe('Exercise 1 of 7');
@@ -294,7 +434,8 @@ describe('ActiveWorkoutPage', () => {
       await type(0, 'weight', '60');
       await type(0, 'reps', '8');
       await completeRow(0);
-      await click('Skip exercise');
+      await click('More workout options');
+      await choose('Skip exercise'); // from the options menu
       expect(dialog()).toMatchObject({ title: 'Skip this exercise?', message: 'Your completed sets will be kept.' });
       await choose('Skip Exercise');
       expect(stored().exercises[0].sets.map((s: { status: string }) => s.status)).toEqual(['completed', 'skipped', 'skipped', 'skipped']);
@@ -394,7 +535,7 @@ describe('ActiveWorkoutPage', () => {
     it('one h1 (workout) and an h2 for the current exercise', async () => {
       const { el } = await render();
       expect([...el.querySelectorAll('h1')].map((h) => h.textContent?.trim())).toEqual(['Upper Body A']);
-      expect(el.querySelector('section[aria-labelledby="active-exercise"] h2')?.textContent?.trim()).toBe('1. Bench Press');
+      expect(el.querySelector('section[aria-labelledby="active-exercise"] h2')?.textContent?.trim()).toBe('Bench Press');
     });
 
     it('every button has an accessible name and explicit type', async () => {

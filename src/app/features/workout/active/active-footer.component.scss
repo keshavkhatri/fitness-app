@@ -1,0 +1,82 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+// No tab bar here: respect the bottom safe area.
+.footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-gutter) calc(var(--space-3) + var(--ion-safe-area-bottom, 0px));
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.clock-label {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.clock-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+
+  ion-icon {
+    flex: none;
+    font-size: 18px;
+  }
+}
+
+.footer .main {
+  min-width: 0;
+  padding: 0 var(--space-4);
+}
+
+// With nothing left to do here the one action takes the width of the other two.
+.main.wide {
+  grid-column: 2 / -1;
+}
+
+// "Next Exercise" may take two lines rather than squeeze the main action.
+.footer .side {
+  max-width: 112px;
+  padding: 0 var(--space-3);
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+
+@media (max-width: 359px) {
+  .clock-label,
+  .clock-value ion-icon {
+    display: none;
+  }
+
+  .footer {
+    gap: var(--space-2);
+  }
+
+  .footer .main {
+    padding: 0 var(--space-2);
+  }
+
+  .footer .side {
+    max-width: 88px;
+    padding: 0 var(--space-2);
+  }
+}

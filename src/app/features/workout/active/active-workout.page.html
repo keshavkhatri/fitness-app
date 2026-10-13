@@ -2,22 +2,21 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
     <div class="bar">
-      <button type="button" class="icon-button" [attr.aria-label]="copy.exit" (click)="v ? openDialog('exit') : backToWorkout()">
-        <ion-icon name="close" aria-hidden="true" />
-      </button>
+      <button fit-icon-button type="button" variant="tonal" icon="chevron-back" [attr.aria-label]="copy.exit" (click)="v ? openDialog('exit') : backToWorkout()"></button>
       <div class="heading">
         @if (v) {
-          <h1 class="title" data-testid="workout-title">{{ v.title }}</h1>
           <p class="position" data-testid="position">{{ v.position }}</p>
+          <fit-progress class="progress" [value]="v.progress.value" [max]="v.progress.max" [label]="copy.progressLabel" [valueText]="v.progress.text" />
         } @else {
-          <h1 class="title">{{ copy.noWorkout.title }}</h1>
+          <p class="position">{{ copy.noWorkout.title }}</p>
         }
       </div>
-      <span class="bar-spacer" aria-hidden="true"></span>
+      @if (v) {
+        <button fit-icon-button type="button" variant="tonal" icon="ellipsis-horizontal" aria-haspopup="dialog" [attr.aria-label]="copy.more" data-testid="more" (click)="openDialog('menu')"></button>
+      } @else {
+        <span class="bar-spacer" aria-hidden="true"></span>
+      }
     </div>
-    @if (v) {
-      <fit-progress class="progress" [value]="v.progress.value" [max]="v.progress.max" [label]="copy.progressLabel" [valueText]="v.progress.text" />
-    }
   </ion-toolbar>
 </ion-header>
 
@@ -33,36 +32,69 @@
 
     @if (v) {
       <section class="exercise" aria-labelledby="active-exercise" data-testid="current-exercise">
-        <div class="exercise-header">
-          <h2 class="exercise-name" id="active-exercise">{{ v.exercise.heading }}</h2>
-          @if (v.exercise.metadata; as metadata) {
-            <p class="metadata">{{ metadata }}</p>
+        <header class="exercise-header">
+          <h1 class="workout-title" data-testid="workout-title">{{ v.title }}</h1>
+          <h2 class="exercise-name" id="active-exercise">{{ v.exercise.name }}</h2>
+          @if (v.exercise.muscles.length || v.exercise.equipment) {
+            <p class="meta" data-testid="exercise-meta">
+              @for (muscle of v.exercise.muscles; track muscle) {
+                <span class="chip">{{ muscle }}</span>&ngsp;
+              }
+              @if (v.exercise.equipment; as equipment) {
+                <span class="equipment">{{ equipment }}</span>
+              }
+            </p>
           }
+        </header>
+
+        <app-exercise-demo variant="stage" [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name" />
+
+        <div class="sets" data-testid="sets">
           <p class="planned" data-testid="planned">
             <span class="planned-label">{{ copy.planned }}</span>&ngsp;<span>{{ v.exercise.planned }}</span>
           </p>
-          <app-exercise-demo [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name" />
+
+          <app-set-logger
+            [exercise]="v.exercise"
+            [drafts]="currentDrafts()"
+            [errors]="currentErrors()"
+            (draftChange)="editDraft($event)"
+            (complete)="completeSet($event)"
+            (undo)="undoSet($event)"
+          />
+
+          @if (!v.isFirst || v.exercise.nextPendingSet !== null) {
+            <div class="secondary-actions">
+              @if (!v.isFirst) {
+                <button fit-button type="button" variant="ghost" icon="chevron-back" [attr.aria-label]="copy.previousLabel" (click)="previous()">
+                  {{ copy.previous }}
+                </button>
+              }
+              @if (v.exercise.nextPendingSet !== null) {
+                <button fit-button type="button" variant="ghost" class="skip-set" (click)="skipSet(v.exercise.nextPendingSet)">
+                  {{ copy.skipSet(v.exercise.nextPendingSet + 1) }}
+                </button>
+              }
+            </div>
+          }
         </div>
 
-        <app-set-logger
-          [exercise]="v.exercise"
-          [drafts]="currentDrafts()"
-          [errors]="currentErrors()"
-          (draftChange)="editDraft($event)"
-          (complete)="completeSet($event)"
-          (undo)="undoSet($event)"
-        />
-
-        @if (v.exercise.pending > 0) {
-          <div class="secondary-actions">
-            @if (v.exercise.nextPendingSet !== null) {
-              <button fit-button type="button" variant="ghost" (click)="skipSet(v.exercise.nextPendingSet)">
-                {{ copy.skipSet(v.exercise.nextPendingSet + 1) }}
-              </button>
-            }
-            <button fit-button type="button" variant="ghost" (click)="openDialog('skip-exercise')">{{ copy.skipExercise }}</button>
-          </div>
-        }
+        <div class="tiles">
+          @if (restVisible()) {
+            <app-rest-timer
+              [status]="timer.status()"
+              [remaining]="timer.remainingSeconds()"
+              [total]="timer.totalSeconds()"
+              [plannedSeconds]="v.exercise.restSeconds"
+              (startRest)="startRest()"
+              (pauseRest)="timer.pause()"
+              (resumeRest)="timer.resume()"
+              (restartRest)="timer.restart()"
+              (skipRest)="timer.skip()"
+            />
+          }
+          <app-next-exercise-card class="next-card" [next]="v.next" (open)="openNext()" />
+        </div>
       </section>
     } @else if (screen() === 'not-active') {
       <fit-card data-testid="not-active">
@@ -74,7 +106,7 @@
       <div class="loading" aria-busy="true" data-testid="loading">
         <span class="visually-hidden">{{ copy.loading }}</span>
         <fit-skeleton width="70%" height="28px" />
-        <fit-skeleton height="56px" radius="md" />
+        <fit-skeleton height="180px" radius="card" />
         <fit-skeleton height="56px" radius="md" />
         <fit-skeleton height="56px" radius="md" />
       </div>
@@ -84,42 +116,18 @@
 
 @if (v) {
   <ion-footer class="ion-no-border">
-    <div class="footer">
-      @if (timer.status() !== 'idle') {
-        <app-rest-timer
-          [status]="timer.status()"
-          [remaining]="timer.remainingSeconds()"
-          [total]="timer.totalSeconds()"
-          (pauseRest)="timer.pause()"
-          (resumeRest)="timer.resume()"
-          (restartRest)="timer.restart()"
-          (skipRest)="timer.skip()"
-        />
-      }
-      <div class="nav">
-        <button
-          fit-button
-          type="button"
-          variant="outline"
-          size="lg"
-          icon="chevron-back"
-          [attr.aria-label]="copy.previousLabel"
-          [disabled]="v.isFirst"
-          (click)="previous()"
-        >
-          {{ copy.previous }}
-        </button>
-        @if (v.isLast) {
-          <button fit-button type="button" size="lg" icon="checkmark" (click)="openDialog('finish')">{{ copy.finish }}</button>
-        } @else {
-          <button fit-button type="button" size="lg" (click)="next()">{{ copy.next }}</button>
-        }
-      </div>
-    </div>
+    <app-active-footer
+      [time]="workoutTime()"
+      [spokenTime]="workoutTimeSpoken()"
+      [pending]="v.exercise.pending"
+      [isLast]="v.isLast"
+      (completeSet)="completeCurrent()"
+      (advance)="openNext()"
+    />
   </ion-footer>
 }
 
-<fit-bottom-sheet [title]="dialog()?.title ?? ''" [description]="dialog()?.message" [(open)]="dialogOpen">
+<fit-bottom-sheet [title]="dialog()?.title ?? ''" [description]="dialog()?.message" screenTheme="immersive" [(open)]="dialogOpen">
   @if (dialog(); as d) {
     <div class="dialog-actions" data-testid="dialog">
       @for (action of d.actions; track action.label) {

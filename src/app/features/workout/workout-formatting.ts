@@ -115,15 +115,23 @@ export function prescriptionStats(planned: PlannedExercise | PrescriptionLike): 
   return stats;
 }
 
+/** Primary muscles from the catalog, e.g. ["Chest", "Triceps"]; empty when unknown. */
+export const exerciseMuscles = (exercise: Exercise | undefined): string[] => exercise?.primaryMuscles.map((m) => MUSCLE_LABELS[m]) ?? [];
+
+/** "Barbell, bench, rack" or "Bodyweight"; null when the exercise isn't in the catalog. */
+export function exerciseEquipment(exercise: Exercise | undefined): string | null {
+  if (!exercise) {
+    return null;
+  }
+  return exercise.requires.length === 0
+    ? WORKOUT_COPY.detail.bodyweight
+    : exercise.requires.map((e, i) => (i === 0 ? EQUIPMENT_LABELS[e] : EQUIPMENT_LABELS[e].toLowerCase())).join(', ');
+}
+
 /** "Chest · Barbell, bench, rack" (primary muscles and equipment from the catalog); null when unknown. */
 export function exerciseMetadata(exercise: Exercise | undefined): string | null {
   if (!exercise) {
     return null;
   }
-  const muscles = exercise.primaryMuscles.map((m) => MUSCLE_LABELS[m]).join(' · ');
-  const equipment =
-    exercise.requires.length === 0
-      ? WORKOUT_COPY.detail.bodyweight
-      : exercise.requires.map((e, i) => (i === 0 ? EQUIPMENT_LABELS[e] : EQUIPMENT_LABELS[e].toLowerCase())).join(', ');
-  return [muscles, equipment].filter(Boolean).join(' · ') || null;
+  return [exerciseMuscles(exercise).join(' · '), exerciseEquipment(exercise)].filter(Boolean).join(' · ') || null;
 }

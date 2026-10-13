@@ -31,6 +31,9 @@ export class ThemeService {
   private readonly systemPrefersDark = signal(this.darkQuery?.matches ?? false);
   private readonly preferenceState = signal<ThemePreference>('system');
 
+  /** Screens that are always dark (the active workout) currently on top. */
+  private readonly alwaysDarkHolds = signal(0);
+
   readonly preference = this.preferenceState.asReadonly();
   readonly resolvedTheme = computed<ResolvedTheme>(() => {
     const preference = this.preferenceState();
@@ -40,11 +43,30 @@ export class ThemeService {
     return this.systemPrefersDark() ? 'dark' : 'light';
   });
 
+  /** The theme the native status bar follows: dark while an always-dark screen is open, otherwise the resolved theme. */
+  readonly statusBarTheme = computed<ResolvedTheme>(() => (this.alwaysDarkHolds() > 0 ? 'dark' : this.resolvedTheme()));
+
   constructor() {
     this.darkQuery?.addEventListener('change', (event) => this.systemPrefersDark.set(event.matches));
 
     effect(() => this.applyPreference(this.preferenceState()));
-    effect(() => void this.syncNativeStatusBar(this.resolvedTheme()));
+    effect(() => void this.syncNativeStatusBar(this.statusBarTheme()));
+  }
+
+  /**
+   * An always-dark screen (see fit-theme-immersive) is open: the status bar
+   * gets light text even in a light Appearance. Returns the release function;
+   * call it when the screen goes away. Doesn't change the stored preference.
+   */
+  holdAlwaysDark(): () => void {
+    this.alwaysDarkHolds.update((n) => n + 1);
+    let released = false;
+    return () => {
+      if (!released) {
+        released = true;
+        this.alwaysDarkHolds.update((n) => Math.max(0, n - 1));
+      }
+    };
   }
 
   /** Loads the stored preference. Awaited at startup to avoid a theme flash. */

@@ -4,10 +4,11 @@ The implementation contract for the app's UI, and for the redesign towards a
 modern, premium fitness companion. Every screen consumes this system; no
 screen defines its own colors, type sizes, spacing, radii or shadows.
 
-**Status:** Phase 1 (foundation: tokens, screen themes, shared primitives)
-and Phase 2 (Home, to the approved mockup) are in place. Home, its notifications page and the bottom tab bar use
-`fit-theme-dashboard`; every other screen still renders with the classic
-theme, unchanged. Screens adopt the redesign one at a time, in reviewed phases
+**Status:** Phase 1 (foundation: tokens, screen themes, shared primitives),
+Phase 2 (Home, to the approved mockup) and Phase 3 (the Active Workout) are in
+place. Home, its notifications page and the bottom tab bar use
+`fit-theme-dashboard`; the Active Workout uses `fit-theme-immersive`; every
+other screen still renders with the classic theme, unchanged. Screens adopt the redesign one at a time, in reviewed phases
 (see [Adopting the system](#adopting-the-system-in-a-screen)).
 
 Source of truth, in this order: `src/theme/*.scss` (values) → this document
@@ -112,10 +113,14 @@ Rules:
   inheritance). Never put both classes on one element.
 - `FitScreenTheme` and `SCREEN_THEME_CLASS` (`shared/ui/screen-theme.ts`)
   are the typed names; the CSS lives in `_tokens.scss`.
-- **Not handled yet:** the native status bar and `<meta name="theme-color">`
-  follow the app Appearance, not the screen theme. An immersive screen in
-  light Appearance needs light status-bar text; solve this with the active
-  workout redesign (a small `ThemeService` override), not per page.
+- **Status bar:** the native status bar follows the app Appearance, so an
+  always-dark screen holds it dark: call `ThemeService.holdAlwaysDark()` and
+  release it on destroy (the Active Workout does). It never changes the stored
+  preference or `<html>`. `<meta name="theme-color">` (the browser chrome)
+  still follows Appearance.
+- A screen-theme class paints `background-color: var(--color-bg)`. On a sheet's
+  `ion-modal` host (full viewport) that would hide the page behind the scrim, so
+  `fit-bottom-sheet` keeps its host transparent.
 
 ## Color tokens
 
@@ -332,9 +337,8 @@ Native elements stay native (`button[fit-button]`, not a `<div>` with a click).
 | `fit-bottom-sheet` | `title`, `description`, `[(open)]`, `screenTheme` **(new)** | Short focused tasks and confirmations. |
 | `fit-page` | `title`, `heading`, `kicker`, `refreshable`, `wide`, `customHeader` (projected `[fitPageHeader]` instead of toolbar + large title) · projected `[fitPageSubtitle]` and `[fitPageAside]` | Top-level tab pages (large title that collapses into the toolbar). |
 
-Known consolidation candidates (leave until their screens are redesigned;
-then replace with `fit-icon-button`): the active workout header's
-`.icon-button` and `fit-bottom-sheet`'s close button.
+Known consolidation candidate (leave until its screen is redesigned; then
+replace with `fit-icon-button`): `fit-bottom-sheet`'s close button.
 
 Do not add a component until two screens need it, or one screen needs it and
 it encodes an accessibility rule. Feature-specific pieces live in
@@ -494,6 +498,35 @@ copy its patterns.
 `FEATURED_WORKOUT_PHOTO` (`features/home/home-media.ts`) to a bundled photo in
 `src/assets/images/workouts/` to replace it. The avatar shows the user's photo
 (You → name and photo) or initials.
+
+## Reference implementation: Active Workout
+
+`features/workout/active` is the immersive-mode screen; copy its patterns.
+
+- Theme: `host: { class: 'fit-theme-immersive' }`, `screenTheme="immersive"` on its
+  sheet, and `ThemeService.holdAlwaysDark()` for the status bar. Dark in every
+  Appearance.
+- Header: tonal `fit-icon-button`s (exit, options) around the position ("Exercise
+  2 of 7") and a thin `fit-progress` bar. The workout's name is the page's h1,
+  set as a small eyebrow above the exercise name (an h2, `display` size).
+- Demonstration stage: `<app-exercise-demo variant="stage">` is always there so the
+  screen doesn't jump between exercises. A placeholder with a "How to do it"
+  pill; photos load only when asked, and the controls then sit under them (one
+  persistent button, so focus stays on it).
+- Sets: a raised panel. Completed rows read as results (badge check, "50 kg × 10",
+  a filled lime check that undoes and edits), the current row is highlighted
+  (`aria-current="step"`, "Current set" for screen readers, lime badge and
+  border), later rows are quiet but editable. Never colour alone: icon, text and
+  shape differ too.
+- Rest: a ring that drains, pause/resume in its centre, restart and skip. Before
+  any rest it shows the programmed rest with a start button. Next to it, a "Next
+  up" card (the same action as the footer's next button; confirmation first).
+- Persistent controls: workout time, "Complete set" (the current set, using what
+  is typed) and "Next Exercise" / "Finish Workout"; with nothing left on the
+  exercise the next step becomes the one big action. Respects the bottom safe area.
+  Below 360px the clock's icon and label are dropped to keep the labels whole.
+- The current set is scrolled above the footer when it changes (short phones).
+- Elapsed time is measured from the log's start, so it is right after a resume.
 
 ## Open design decisions
 

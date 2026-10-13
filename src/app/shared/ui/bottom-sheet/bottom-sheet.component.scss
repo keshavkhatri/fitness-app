@@ -1,5 +1,11 @@
 @use 'mixins' as fx;
 
+// A screen theme class on the modal host also paints a page background. The host covers the
+// whole viewport, so keep it transparent: the page must stay visible behind the scrim.
+ion-modal.bottom-sheet {
+  background-color: transparent;
+}
+
 .sheet {
   display: flex;
   flex-direction: column;
