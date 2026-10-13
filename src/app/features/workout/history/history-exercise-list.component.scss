@@ -135,3 +135,29 @@
   box-shadow: none;
   color: var(--color-text-secondary);
 }
+
+// Weighted exercises: a small table (Set · Weight · Reps · status).
+.columns {
+  @include fx.text(caption);
+  margin-bottom: calc(-1 * var(--space-1));
+  padding-left: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.columns,
+.tabular .set {
+  grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 22px;
+  text-align: center;
+
+  > :first-child {
+    text-align: start;
+  }
+}
+
+.tabular .set-value.wide {
+  grid-column: 2 / 4;
+}
+
+.set-number {
+  justify-self: start;
+}

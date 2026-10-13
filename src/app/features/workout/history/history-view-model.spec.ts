@@ -1,6 +1,6 @@
-import { completedWorkouts } from '../../../domain/workout-session';
+import { completedWorkouts, workoutVolume } from '../../../domain/workout-session';
 import { BODYWEIGHT_PROFILE, finishedLog, planFor } from '../../../domain/workout-session/testing/workout-log-fixtures';
-import { dayLabel, filterHistory, shortDayLabel, toHistoryDetail, toHistoryItem, toHistoryScreen, trainingVolume } from './history-view-model';
+import { dayLabel, filterHistory, shortDayLabel, toHistoryDetail, toHistoryItem, toHistoryScreen } from './history-view-model';
 
 const local = (month: number, day: number, hour = 9, minute = 0) => new Date(2026, month - 1, day, hour, minute);
 const NOW = local(10, 8, 20); // Thursday 8 Oct 2026, 8 pm
@@ -101,7 +101,13 @@ describe('history view model', () => {
         volume: '4,070',
       });
       const bench = view.exercises[0];
-      expect(bench).toMatchObject({ name: 'Bench Press', setsLabel: '4 sets', planned: '4 sets · 6–10 reps · 120 sec rest', progress: 'All sets done' });
+      expect(bench).toMatchObject({ name: 'Bench Press', setsLabel: '4 sets · 6–10 reps', columns: ['Weight (kg)', 'Reps'], planned: '4 sets · 6–10 reps · 120 sec rest', progress: 'All sets done' });
+      expect(bench.sets.map((s) => s.cells)).toEqual([
+        ['40', '10'],
+        ['42.5', '9'],
+        ['42.5', '8'],
+        ['42.5', '7'],
+      ]);
       expect(bench.sets.map((s) => `${s.label} · ${s.value}`)).toEqual([
         'Set 1 · 40 kg × 10',
         'Set 2 · 42.5 kg × 9',
@@ -126,7 +132,7 @@ describe('history view model', () => {
           });
         }
       });
-      expect(trainingVolume(partial)).toBe(expected);
+      expect(workoutVolume(partial)).toBe(expected);
       expect(view.metrics.map((m) => [m.key, m.value, m.label])).toEqual([
         ['exercises', '4/7', 'Exercises'],
         ['sets', '13', 'Sets done'],
@@ -156,9 +162,11 @@ describe('history view model', () => {
       expect(timed.sets[0].value).toBe('30 sec');
       const pushUps = view.exercises.find((e) => e.name === 'Push-Up')!;
       expect(pushUps.sets[0].value).toBe('10 reps');
+      expect(pushUps.columns).toBeNull();
+      expect(pushUps.sets[0].cells).toEqual(['10 reps']);
       expect(pushUps.best).toBe('10 reps');
       // No weighted work: no volume to report.
-      expect(trainingVolume(log)).toBeNull();
+      expect(workoutVolume(log)).toBeNull();
       expect(view.metrics.map((m) => m.key)).toEqual(['exercises', 'sets']);
     });
 

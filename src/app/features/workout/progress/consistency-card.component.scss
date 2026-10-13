@@ -1,0 +1,121 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.title {
+  @include fx.text(body, bold);
+}
+
+.summary {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.percent {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+}
+
+// --- Bars --------------------------------------------------------------------------------------
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.bars {
+  position: relative;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  height: 70px;
+  margin-top: 14px; // room for the counts above the tallest bar (heights stay relative to the bars)
+}
+
+.bar-slot {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.bar {
+  position: relative;
+  width: 100%;
+  min-height: 4px;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--color-primary-strong);
+
+  // No workout that week: a flat stub, so the week still reads as counted.
+  &.zero {
+    background: var(--color-border);
+  }
+
+  // This week is still in progress: outlined, not solid.
+  &.current {
+    background: color-mix(in srgb, var(--color-primary-strong) 35%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--color-primary-strong);
+  }
+}
+
+.count {
+  @include fx.tabular-numbers;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+// The plan's weekly sessions: a dashed reference line across the bars.
+.planned {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  margin-bottom: -1px;
+  border-top: 1.5px dashed var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.planned-label {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--color-text-secondary);
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}

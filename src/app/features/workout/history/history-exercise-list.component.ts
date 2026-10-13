@@ -29,12 +29,27 @@ import { HistoryExerciseView } from './history-view-model';
               </p>
             }
           </div>
-          <ol class="sets" [attr.aria-label]="copy.detail.actualSets(exercise.name)" data-testid="actual-sets">
+          @if (exercise.columns; as columns) {
+            <!-- Visual column headings; each row also reads as one sentence ("Set 1: 20 kg × 12"). -->
+            <div class="set columns" aria-hidden="true">
+              <span>{{ copy.detail.setColumn }}</span>
+              @for (column of columns; track column) {
+                <span>{{ column }}</span>
+              }
+              <span></span>
+            </div>
+          }
+          <ol class="sets" [class.tabular]="!!exercise.columns" [attr.aria-label]="copy.detail.actualSets(exercise.name)" data-testid="actual-sets">
             @for (set of exercise.sets; track set.key) {
               <li class="set" [attr.data-status]="set.status">
                 <span class="set-number" aria-hidden="true">{{ set.setNumber }}</span>
-                <span class="visually-hidden">{{ set.label }}: </span>
-                <span class="set-value">{{ set.value }}</span>
+                <span class="visually-hidden">{{ set.label }}: {{ set.value }}</span>
+                @if (exercise.columns && set.cells.length === 2) {
+                  <span class="set-value" aria-hidden="true">{{ set.cells[0] }}</span>
+                  <span class="set-value" aria-hidden="true">{{ set.cells[1] }}</span>
+                } @else {
+                  <span class="set-value wide" aria-hidden="true">{{ set.value }}</span>
+                }
                 <span class="set-status" aria-hidden="true">
                   @switch (set.status) {
                     @case ('completed') {

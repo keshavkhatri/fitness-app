@@ -1,25 +1,58 @@
 @use 'mixins' as fx;
 
-.body {
+// Home's tighter gutter (as the reference): more room for the cards on phones.
+:host {
+  --page-gutter: var(--space-4);
+}
+
+// --- Header --------------------------------------------------------------------------------
+.header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+  gap: var(--space-3);
+  padding-top: var(--space-2);
 }
 
-.title {
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.heading {
   @include fx.text(h1, bold);
+  flex: 1;
 }
 
-.subtitle,
-.note {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
 }
 
-.section {
+.profile {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+}
+
+// --- Sections ------------------------------------------------------------------------------------
+.section,
+.loading {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -27,150 +60,72 @@
 
 .section-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  margin-bottom: calc(-1 * var(--space-2));
 }
 
 .section-title {
-  @include fx.text(h3, semibold);
+  @include fx.text(body, bold);
 }
 
-.section-value {
-  @include fx.text(body, semibold);
-  @include fx.tabular-numbers;
-  white-space: nowrap;
-}
-
-// Three compact tiles; values wrap rather than overflow on narrow phones.
-.overview {
+.metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5em), 1fr));
   gap: var(--space-2);
   margin: 0;
 }
 
-.tile {
+.metric {
   display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
+  flex-direction: column;
   gap: 2px;
   min-width: 0;
   padding: var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
 
   dt {
-    @include fx.text(caption, medium);
+    @include fx.text(caption);
     color: var(--color-text-secondary);
   }
 
   dd {
-    display: flex;
-    flex-direction: column;
     margin: 0;
   }
 }
 
-.count {
-  @include fx.text(h2, bold);
+.metric-value {
+  @include fx.text(body, bold);
   @include fx.tabular-numbers;
-}
-
-.unit {
-  @include fx.text(caption, medium);
-  color: var(--color-text-secondary);
-}
-
-// Monday–Sunday: a check marks a day with a workout (also stated in text).
-.week {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-1);
-  margin: 0;
-  padding: var(--space-3);
-  list-style: none;
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
+  margin-top: var(--space-1) !important;
+
+  // The icon sits above the value, so values like "76,660 kg" stay on one line.
+  ion-icon {
+    font-size: var(--icon-size-md);
+  }
+
+  span {
+    white-space: nowrap;
+  }
 }
 
-.day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.letter {
-  @include fx.text(caption, semibold);
+.metric-caption {
+  @include fx.text(caption);
+  font-size: 11px;
   color: var(--color-text-secondary);
 }
 
-.today .letter {
-  color: var(--color-primary-text);
-}
-
-.mark {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-pill);
-  border: 2px solid var(--color-border);
-  font-size: 18px;
-}
-
-.day[data-status='done'] .mark {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.day[data-status='upcoming'] .mark {
-  border-style: dashed;
-}
-
-.today .mark {
-  outline: 2px solid var(--color-primary-soft);
-  outline-offset: 2px;
-}
-
-.facts {
-  margin: 0;
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  border: var(--border-hairline) solid var(--color-border);
-}
-
-.fact {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-
-  & + & {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
-
-  dt {
-    @include fx.text(body-sm);
-    color: var(--color-text-secondary);
-  }
-
-  dd {
-    @include fx.text(body, semibold);
-    @include fx.tabular-numbers;
-    margin: 0;
-    text-align: right;
-  }
-}
-
-.loading {
+.links {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-

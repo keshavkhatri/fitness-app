@@ -561,6 +561,45 @@ The Workout tab and the screens it opens (`features/workout`).
   `app-workout-art` (seeded by session, exercise or workout id, decorative,
   `aria-hidden`). Swap in real images there when they exist.
 
+## Reference implementation: Progress
+
+`features/workout/progress`, mounted at `/progress` (its own tab) and `/you/progress`.
+
+- **Overview (dashboard theme, follows Appearance).** Custom header (h1, avatar to You on
+  the tab; a back button under You) and an Overview / Workout / Body
+  `fit-segmented-control` that shows all of the page or one half (UI state, no routes).
+  - Body cards: the latest weigh-in (`weightHistory`), body-fat % and skeletal muscle
+    mass (`latestReportedValues` / `metricChange`), each with the difference from the
+    previous recording and its date ("vs Oct 1"; body fat in percentage points), its
+    date alone with one recording, "Not recorded" without one. Arrow and sign, never
+    judged good or bad.
+  - Weight trend: the weight history's own ranges (30 days / 90 days / all as 1M / 3M /
+    All), summary and chart (`weightRangeSummary`, `weightChart`), the latest value
+    called out; the line is olive on the white card.
+  - Consistency: finished training workouts per Monday–Sunday week
+    (`weeklyWorkoutCounts`) over the last 12 weeks, never before the week of the first
+    workout (unknown, not inactive). Ring = share of counted weeks with a workout; bars =
+    workouts per week (this week outlined: in progress); the current plan's resistance
+    sessions per week as a dashed reference line.
+  - Key metrics: total workouts (≥ 1 completed set), total volume (weight × reps of
+    completed weighted sets, `totalVolumeByUnit`; kg and lb never added; whole units),
+    average start-to-finish duration.
+- **Exercise list (dashboard).** Search (name or body area, case- and accent-insensitive),
+  body-area chips (only areas present), sort (most recent, name); they combine, "Clear
+  filters" resets. Rows: catalog area, the latest top set, and a mini trend of the top
+  set over the last six comparable sessions with the change in text ("+5 kg since Sep
+  30"); no trend from one session.
+- **Exercise Performance (immersive, always dark).** Ranges 1M / 3M / 6M / 1Y / All, each
+  shown only if it holds sessions none of the shorter ones does and fewer than all time.
+  Best set in the range (`isBetterSet`), the change of the charted metric first to last,
+  a chart of one recorded value per session (top weight, volume, most reps or longest
+  time; only sessions comparable with the latest, so kg and lb never share an axis). No
+  estimated 1RM exists in the app, so none is shown. Sessions open their workout.
+- **Workout history detail** is the one screen at `/workout/history/:id`, also mounted in
+  the Progress stack (`…/progress/workout/:id`) so Back returns to the exercise without
+  switching tabs. Weighted exercises show a Set / Weight / Reps table; "Best set" uses
+  the same rule.
+
 ## Open design decisions
 
 - Domain hues (ember for training, teal for body) stay alongside lime

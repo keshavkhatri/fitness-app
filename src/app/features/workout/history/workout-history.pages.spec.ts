@@ -174,8 +174,8 @@ describe('Workout History', () => {
 
       const bench = el.querySelectorAll('[data-testid="history-exercise"]')[0];
       expect(clean(bench.querySelector('h3'))).toBe('Bench Press');
-      expect(spoken(bench.querySelector('.count'))).toBe('4 sets, All sets done');
-      expect(clean(bench.querySelector('[data-testid="history-best"]'))).toBe('Max: 42.5 kg × 9');
+      expect(spoken(bench.querySelector('.count'))).toBe('4 sets · 6–10 reps, All sets done');
+      expect(clean(bench.querySelector('[data-testid="history-best"]'))).toBe('Best set: 42.5 kg × 9');
       const actual = bench.querySelector('[data-testid="actual-sets"]')!;
       expect(actual.getAttribute('aria-label')).toBe('Bench Press, actual sets');
       expect([...actual.querySelectorAll('li')].map((li) => spoken(li))).toEqual([

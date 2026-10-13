@@ -1,0 +1,123 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--space-1) 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  list-style: none;
+
+  li + li {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.row {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  text-align: start;
+}
+
+.thumb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  @include fx.text(body-sm, semibold);
+  overflow-wrap: anywhere;
+}
+
+.area,
+.caption {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+// Mini bars: one per recent session, olive on light (lime only on ink).
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 24px;
+}
+
+.bar {
+  width: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-primary-strong) 45%, transparent);
+
+  &:last-child {
+    background: var(--color-primary-strong);
+  }
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 64px;
+  text-align: end;
+}
+
+.change,
+.latest {
+  @include fx.text(caption, semibold);
+  @include fx.tabular-numbers;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+
+  ion-icon {
+    font-size: 12px;
+  }
+}
+
+.change[data-direction='up'] {
+  color: var(--color-success-text);
+}
+
+.chevron {
+  font-size: var(--icon-size-md);
+  color: var(--color-text-secondary);
+}
+
+// Narrow lists: the bars go, the change (in text) stays.
+@container (max-width: 330px) {
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .trend {
+    display: none;
+  }
+}

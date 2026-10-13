@@ -67,6 +67,10 @@ import {
   flash,
   leafOutline,
   flame,
+  arrowUp,
+  arrowDown,
+  searchOutline,
+  chevronDown,
 } from 'ionicons/icons';
 
 /**
@@ -143,5 +147,9 @@ export function registerAppIcons(): void {
     flash,
     leafOutline,
     flame,
+    arrowUp,
+    arrowDown,
+    searchOutline,
+    chevronDown,
 });
 }

@@ -1,86 +1,77 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      @if (base === '/you/progress') {
-        <ion-back-button defaultHref="/you" [text]="copy.back" />
+<fit-page [title]="copy.title" customHeader>
+  <header class="header" fitPageHeader>
+    <div class="title-row">
+      @if (inYou) {
+        <ion-back-button class="back" defaultHref="/you" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
       }
-    </ion-buttons>
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+      <h1 class="heading">{{ copy.title }}</h1>
+      @if (!inYou) {
+        <button type="button" class="profile" [attr.aria-label]="copy.profile" data-testid="progress-profile" (click)="openYou()">
+          <fit-avatar [name]="identityName()" [photo]="identityPhoto()" size="40" />
+        </button>
+      }
+    </div>
+    <fit-segmented-control class="switch" name="progress-view" [legend]="copy.views" [options]="views" [(value)]="view" />
+  </header>
+  <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
 
-<ion-content>
-  <main class="body">
-    <header class="intro">
-      <h1 class="title">{{ copy.title }}</h1>
-      <p class="subtitle">{{ copy.subtitle }}</p>
-    </header>
-    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+  @let v = view();
 
-    @let s = screen();
-    @if (s && s.kind === 'ready') {
-      <section aria-labelledby="progress-overview">
-        <h2 class="visually-hidden" id="progress-overview">{{ copy.overview.title }}</h2>
-        <dl class="overview" data-testid="overview">
-          @for (tile of s.overview; track tile.key) {
-            <div class="tile" [attr.data-key]="tile.key">
-              <dt>{{ tile.label }}</dt>
-              <dd><span class="count">{{ tile.count }}</span>&ngsp;<span class="unit">{{ tile.unit }}</span></dd>
+  <!-- Body: latest recordings and the weight trend -->
+  @if (v !== 'workout') {
+    <section aria-labelledby="progress-body" data-testid="body-metrics">
+      <h2 class="visually-hidden" id="progress-body">{{ copy.body.title }}</h2>
+      <app-body-metric-cards [metrics]="bodyMetrics()" (openMetric)="openBodyMetric($event)" />
+    </section>
+
+    <app-weight-trend-card
+      [state]="weightState()"
+      [(range)]="weightRange"
+      [trend]="weightTrend()"
+      [chart]="weightChart()"
+      (openHistory)="openWeightHistory()"
+      (addWeight)="addWeight()"
+    />
+  }
+
+  <!-- Workouts: consistency, totals, exercises -->
+  @if (v !== 'body') {
+    @let w = workouts();
+    @if (w && w.kind === 'ready') {
+      <app-consistency-card [consistency]="w.consistency" />
+
+      <section class="section" aria-labelledby="progress-metrics">
+        <h2 class="section-title" id="progress-metrics">{{ copy.metrics.title }}</h2>
+        <dl class="metrics" data-testid="key-metrics">
+          @for (m of w.metrics; track m.key) {
+            <div class="metric" [attr.data-key]="m.key">
+              <dt>{{ m.label }}</dt>
+              <dd class="metric-value">
+                <ion-icon [name]="metricIcon[m.key]" aria-hidden="true" />
+                <span>{{ m.value }}</span>
+              </dd>
+              <dd class="metric-caption">{{ m.caption }}</dd>
             </div>
           }
         </dl>
       </section>
 
-      <section class="section" aria-labelledby="progress-week">
-        <div class="section-head">
-          <h2 class="section-title" id="progress-week">{{ copy.week.title }}</h2>
-          <span class="section-value" data-testid="week-summary">{{ s.week.summary }}</span>
-        </div>
-        <ol class="week" data-testid="week-days">
-          @for (day of s.week.days; track day.key) {
-            <li class="day" [attr.data-status]="day.status" [class.today]="day.isToday" [attr.aria-current]="day.isToday ? 'date' : null">
-              <span class="visually-hidden">{{ day.spoken }}</span>
-              <span class="letter" aria-hidden="true">{{ day.letter }}</span>
-              <span class="mark" aria-hidden="true">
-                @if (day.status === 'done') {
-                  <ion-icon name="checkmark" />
-                }
-              </span>
-            </li>
-          }
-        </ol>
-        <p class="note">{{ copy.week.note }}</p>
-      </section>
-
-      <app-review-entry (open)="openReview()" />
-
-      <section class="section" aria-labelledby="progress-activity">
-        <h2 class="section-title" id="progress-activity">{{ copy.activity.title }}</h2>
-        <dl class="facts" data-testid="activity">
-          @for (fact of s.activity; track fact.key) {
-            <div class="fact">
-              <dt>{{ fact.label }}</dt>
-              <dd>{{ fact.value }}</dd>
-            </div>
-          }
-        </dl>
-      </section>
-
-      <section class="section" aria-labelledby="progress-recent">
-        <h2 class="section-title" id="progress-recent">{{ copy.recent.title }}</h2>
-        <p class="note">{{ copy.recent.note }}</p>
-        <app-performance-card-list [items]="s.recent" (openExercise)="openExercise($event)" />
-        @if (s.hasMoreExercises) {
-          <button fit-button type="button" variant="outline" block (click)="viewAll()">{{ copy.recent.viewAll }}</button>
-        }
-      </section>
-    } @else if (s?.kind === 'empty') {
+      @if (exerciseRows().length > 0) {
+        <section class="section" aria-labelledby="progress-exercises">
+          <div class="section-head">
+            <h2 class="section-title" id="progress-exercises">{{ copy.exercises.title }}</h2>
+            <button fit-button type="button" variant="ghost" size="md" (click)="viewAll()">{{ copy.exercises.seeAll }}</button>
+          </div>
+          <app-exercise-row-list [rows]="exerciseRows()" (openExercise)="openExercise($event)" />
+        </section>
+      }
+    } @else if (w?.kind === 'empty') {
       <fit-card data-testid="progress-empty">
         <fit-empty-state icon="trending-up" [title]="copy.empty.title" [description]="copy.empty.message">
           <button fit-button type="button" (click)="viewWorkout()">{{ copy.empty.action }}</button>
         </fit-empty-state>
       </fit-card>
-    } @else if (s?.kind === 'error') {
+    } @else if (w?.kind === 'error') {
       <fit-card data-testid="progress-error">
         <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
           <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
@@ -88,18 +79,24 @@
       </fit-card>
     } @else {
       <div class="loading" aria-busy="true" data-testid="progress-loading">
-        <fit-skeleton height="76px" radius="card" />
+        <fit-skeleton height="170px" radius="card" />
         <fit-skeleton height="96px" radius="card" />
-        <fit-skeleton height="140px" radius="card" />
       </div>
     }
+  }
 
-    <section class="section" aria-labelledby="progress-body">
-      <h2 class="section-title" id="progress-body">{{ copy.body.title }}</h2>
-      <p class="note">{{ copy.body.description }}</p>
-      <button fit-button type="button" variant="outline" block icon="pulse-outline" data-testid="body-composition-link" (click)="openBodyComposition()">
-        {{ copy.body.composition }}
-      </button>
-    </section>
-  </main>
-</ion-content>
+  @if (v === 'overview') {
+    <app-review-entry (open)="openReview()" />
+  }
+
+  @if (v === 'body') {
+    <nav class="section" aria-labelledby="progress-body-links">
+      <h2 class="section-title" id="progress-body-links">{{ copy.body.title }}</h2>
+      <ul class="links">
+        <li><button fit-button type="button" variant="outline" block icon="scale-outline" data-testid="weight-history-link" (click)="openWeightHistory()">{{ copy.body.links.weight }}</button></li>
+        <li><button fit-button type="button" variant="outline" block icon="pulse-outline" data-testid="body-composition-link" (click)="openBodyComposition()">{{ copy.body.links.composition }}</button></li>
+        <li><button fit-button type="button" variant="outline" block icon="resize-outline" data-testid="measurements-link" (click)="openMeasurements()">{{ copy.body.links.measurements }}</button></li>
+      </ul>
+    </nav>
+  }
+</fit-page>

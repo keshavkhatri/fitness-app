@@ -2,7 +2,22 @@ import { CalendarDate, calendarDateOf } from '../fitness-profile';
 import { BODYWEIGHT_PROFILE, finishedLog, planFor } from './testing/workout-log-fixtures';
 import { trainingOverview } from './workout-history';
 import { WorkoutLog } from './workout-log.model';
-import { isBetterSet, performedExercises, recentBest, recentExercisePerformance, topSet, weeklyActivity } from './workout-progress';
+import {
+  exercisePerformance,
+} from './workout-history';
+import {
+  firstTrainingDate,
+  isBetterSet,
+  performedExercises,
+  recentBest,
+  recentExercisePerformance,
+  sessionVolume,
+  topSet,
+  totalVolumeByUnit,
+  weeklyActivity,
+  weeklyWorkoutCounts,
+  workoutVolume,
+} from './workout-progress';
 
 const localDate = (instant: string) => calendarDateOf(new Date(instant));
 const day = (year: number, month: number, d: number): CalendarDate => ({ year, month, day: d });
@@ -136,6 +151,48 @@ describe('workout progress (domain)', () => {
       expect(isBetterSet('weight-reps', set(57.5, 12, null), set(60, 8, null))).toBe(false);
       expect(isBetterSet('reps', set(null, 15, null), set(null, 12, null))).toBe(true);
       expect(isBetterSet('duration', set(null, null, 45), set(null, null, 60))).toBe(false);
+    });
+  });
+
+  describe('weekly workout counts (Monday–Sunday weeks)', () => {
+    it('counts training workouts per local week, oldest week first, ending with this week', () => {
+      const logs = [
+        finishedLog({ startedAt: local(10, 5, 7), minutes: 40 }), // this week (Mon)
+        finishedLog({ startedAt: local(10, 8, 7), minutes: 40 }), // this week (Thu)
+        finishedLog({ startedAt: local(10, 4, 20), minutes: 40 }), // last week (Sun)
+        finishedLog({ startedAt: local(9, 21, 9), minutes: 40 }), // three weeks ago (Mon)
+        finishedLog({ startedAt: local(10, 6, 9), minutes: 5, complete: () => false }), // nothing completed
+      ];
+      const weeks = weeklyWorkoutCounts(logs, day(2026, 10, 8), 4, localDate);
+      expect(weeks.map((w) => [`${w.weekStart.month}/${w.weekStart.day}`, w.workouts])).toEqual([
+        ['9/14', 0],
+        ['9/21', 1],
+        ['9/28', 1],
+        ['10/5', 2],
+      ]);
+      expect(firstTrainingDate(logs, localDate)).toEqual(day(2026, 9, 21));
+      expect(firstTrainingDate([], localDate)).toBeNull();
+    });
+  });
+
+  describe('volume (weight × reps of completed weighted sets)', () => {
+    it('adds up a workout’s weighted sets, per exercise session, and never mixes units', () => {
+      const one = finishedLog({ startedAt: local(10, 5), minutes: 40, complete: (e, s) => e === 0 && s < 2, entry: () => ({ weight: 50, reps: 10 }) });
+      expect(workoutVolume(one)).toBe(1000);
+      const performance = exercisePerformance([one], one.exercises[0].exerciseId)!;
+      expect(sessionVolume(performance.sessions[0])).toBe(1000);
+
+      const pounds = finishedLog({ startedAt: local(10, 6), minutes: 40, weightUnit: 'lb', complete: (e, s) => e === 0 && s === 0, entry: () => ({ weight: 100, reps: 5 }) });
+      expect(totalVolumeByUnit([one, pounds])).toEqual({ kg: 1000, lb: 500 });
+    });
+
+    it('bodyweight and timed work have no volume (not zero: none)', () => {
+      const plan = planFor(BODYWEIGHT_PROFILE);
+      const log = finishedLog({ plan, sessionId: plan.sessions[0].id, startedAt: local(10, 5), minutes: 30 });
+      expect(workoutVolume(log)).toBeNull();
+      expect(totalVolumeByUnit([log])).toEqual({});
+      const performance = exercisePerformance([log], log.exercises[0].exerciseId)!;
+      expect(sessionVolume(performance.sessions[0])).toBeNull();
     });
   });
 });
