@@ -187,7 +187,7 @@ ion-toolbar {
 .panel {
   position: relative;
   z-index: 1;
-  margin-top: -24px;
+  margin: -24px var(--space-3) 0; // inset from the screen edges, like Home's cards
   padding: 12px 14px 20px;
   border-radius: 24px;
   background: color-mix(in srgb, var(--color-surface) 70%, var(--color-bg));
@@ -220,6 +220,7 @@ ion-footer {
   }
 
   .panel {
+    margin-inline: var(--space-2);
     padding-inline: 8px;
   }
 }
