@@ -1,4 +1,4 @@
-import { Exercise } from '../../../domain/workout-programming';
+import { Exercise, MuscleGroup } from '../../../domain/workout-programming';
 import { ExerciseLog, LoggingMode, SetLog, SetStatus, WorkoutLog, nextPendingSet, pendingSetCount } from '../../../domain/workout-session';
 import { WORKOUT_COPY } from '../workout-content';
 import { exerciseEquipment, exerciseMuscles, formatPrescription, targetValue, titleFor } from '../workout-formatting';
@@ -28,6 +28,7 @@ export interface ActiveWorkoutView {
 }
 
 export interface NextExerciseView {
+  readonly exerciseId: string;
   readonly name: string;
   readonly muscles: readonly string[];
   /** "3 sets · 8–12 reps" */
@@ -41,6 +42,8 @@ export interface ActiveExerciseView {
   readonly name: string;
   /** Primary muscles ("Chest"), shown as chips. */
   readonly muscles: readonly string[];
+  /** The same muscles as ids, for the anatomy figure. */
+  readonly muscleIds: readonly MuscleGroup[];
   /** "Barbell, bench, rack" or "Bodyweight"; null when unknown. */
   readonly equipment: string | null;
   /** "3 sets · 8–12 reps · 90 sec rest" */
@@ -73,6 +76,8 @@ export interface SetRowView {
   readonly status: SetStatus;
   /** Recorded values for a completed set, e.g. "60 kg × 8". */
   readonly valuesText: string | null;
+  /** The same values per field ("60", "8"); empty for a set that isn't completed. */
+  readonly values: Readonly<Record<FieldKey, string>>;
   /** Accessible name of the row's main button. */
   readonly actionLabel: string;
   /** Suggested input for a pending set: the latest completed values in this exercise, else the plan. */
@@ -146,6 +151,7 @@ function toExercise(exercise: ExerciseLog, log: WorkoutLog, catalog: ReadonlyMap
     exerciseId: exercise.exerciseId,
     name: exercise.name,
     muscles: exerciseMuscles(catalog.get(exercise.exerciseId)),
+    muscleIds: catalog.get(exercise.exerciseId)?.primaryMuscles ?? [],
     equipment: exerciseEquipment(catalog.get(exercise.exerciseId)),
     planned: formatPrescription(exercise.planned),
     restSeconds: exercise.planned.restSeconds,
@@ -159,6 +165,7 @@ function toExercise(exercise: ExerciseLog, log: WorkoutLog, catalog: ReadonlyMap
 
 function toNext(exercise: ExerciseLog, catalog: ReadonlyMap<string, Exercise>): NextExerciseView {
   return {
+    exerciseId: exercise.exerciseId,
     name: exercise.name,
     muscles: exerciseMuscles(catalog.get(exercise.exerciseId)),
     planned: formatPrescription({ ...exercise.planned, restSeconds: 0 }),
@@ -193,6 +200,11 @@ function toSetRow(set: SetLog, index: number, exercise: ExerciseLog, log: Workou
     label: copy.set(set.setNumber),
     status: set.status,
     valuesText: values,
+    values: {
+      weight: set.status === 'completed' && set.weight !== null ? `${set.weight}` : '',
+      reps: set.status === 'completed' && set.reps !== null ? `${set.reps}` : '',
+      durationSeconds: set.status === 'completed' && set.durationSeconds !== null ? `${set.durationSeconds}` : '',
+    },
     actionLabel:
       set.status === 'completed'
         ? copy.undoSet(set.setNumber, values ?? '')

@@ -16,19 +16,22 @@ export interface SetError {
 }
 
 /**
- * The current exercise's sets as rows: large inputs for what the exercise
- * records (weight + reps, reps, or seconds) and one round button per set to
- * complete it (or undo a completed/skipped set, which puts its values back
- * into the inputs to edit). The next set to do is the highlighted "current"
- * row; later sets are quieter but stay editable; completed and skipped sets
- * read as results. Status is always text or an icon as well as color.
- * Presentational: values come from the page.
+ * The current exercise's sets as rows: a set badge, one box per recorded
+ * value (weight + reps, reps, or seconds) and a round check per set.
+ * - current (the next set to do): highlighted, filled lime badge;
+ * - upcoming: plain boxes, still editable;
+ * - completed: a check badge, the recorded values, a filled check that undoes
+ *   the set (its values go back into the boxes to edit);
+ * - skipped: dashes and an undo control.
+ * Status is always text or an icon as well as colour. Presentational: values
+ * come from the page.
  */
 @Component({
   selector: 'app-set-logger',
   template: `
     @let ex = exercise();
-    <div class="table" [style.--field-count]="ex.fields.length">
+    <!-- Weight gets a little more room than reps, as in the design. -->
+    <div class="table" [style.--field-columns]="ex.fields.length === 2 ? 'minmax(0, 1.13fr) minmax(0, 1fr)' : 'minmax(0, 1fr)'">
       <div class="head" aria-hidden="true">
         <span>{{ copy.columns.set }}</span>
         @for (field of ex.fields; track field.key) {
@@ -45,13 +48,18 @@ export interface SetError {
             [attr.aria-current]="row.index === ex.nextPendingSet ? 'step' : null"
             [class.current]="row.index === ex.nextPendingSet"
           >
-            <span class="badge" aria-hidden="true">
-              @if (row.status === 'completed') {
-                <ion-icon name="checkmark" />
-              } @else if (row.status === 'skipped') {
-                <ion-icon name="remove" />
-              } @else {
-                {{ row.setNumber }}
+            <span class="set" aria-hidden="true">
+              @switch (row.status) {
+                @case ('completed') {
+                  <span class="tick"><ion-icon name="checkmark" /></span>
+                  <span class="number">{{ row.setNumber }}</span>
+                }
+                @case ('skipped') {
+                  <span class="badge"><ion-icon name="remove" /></span>
+                }
+                @default {
+                  <span class="badge">{{ row.setNumber }}</span>
+                }
               }
             </span>
             @if (row.index === ex.nextPendingSet) {
@@ -61,7 +69,7 @@ export interface SetError {
               @case ('pending') {
                 @for (field of ex.fields; track field.key) {
                   <input
-                    class="input"
+                    class="box"
                     type="text"
                     autocomplete="off"
                     [attr.inputmode]="field.inputMode"
@@ -80,24 +88,35 @@ export interface SetError {
               }
               @case ('completed') {
                 <span class="result" data-testid="set-result">
-                  <span class="visually-hidden">{{ copy.done }}:&ngsp;</span>
-                  <span>{{ row.valuesText }}</span>
+                  <span class="visually-hidden">{{ copy.done }}: {{ row.valuesText }}</span>
+                  @for (field of ex.fields; track field.key) {
+                    <span class="box value" aria-hidden="true">{{ row.values[field.key] }}</span>
+                  }
                 </span>
               }
               @default {
-                <span class="result skipped" data-testid="set-result">
-                  <span>{{ copy.skipped }}</span>
+                <span class="result" data-testid="set-result">
+                  <span class="visually-hidden">{{ copy.skipped }}</span>
+                  @for (field of ex.fields; track field.key) {
+                    <span class="box value muted" aria-hidden="true">–</span>
+                  }
                 </span>
               }
             }
             <button
               type="button"
-              class="action"
+              class="check"
               data-testid="set-action"
               [attr.aria-label]="row.actionLabel"
               (click)="row.status === 'pending' ? complete.emit(row.index) : undo.emit(row.index)"
             >
-              <ion-icon [name]="row.status === 'pending' ? 'checkmark' : row.status === 'completed' ? 'checkmark' : 'arrow-undo-outline'" aria-hidden="true" />
+              <span class="circle" aria-hidden="true">
+                @if (row.status === 'completed') {
+                  <ion-icon name="checkmark" />
+                } @else if (row.status === 'skipped') {
+                  <ion-icon name="arrow-undo-outline" />
+                }
+              </span>
             </button>
             @if (errorFor(row); as error) {
               <p class="error" role="alert" [id]="errorId(row)" data-testid="set-error">{{ error.message }}</p>

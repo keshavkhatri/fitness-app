@@ -6,11 +6,12 @@ import { WORKOUT_COPY } from '../workout-content';
 import { RestTimerStatus, formatClock } from './rest-timer';
 
 /**
- * The rest card: a ring that drains as the rest counts down, with pause or
- * resume in its centre, plus restart and skip. Before any rest it shows the
- * programmed rest with a start button, so rest can also be started by hand.
- * Never blocks the screen: the next set can be logged at any time. The
- * countdown itself isn't announced every second; the page announces completion.
+ * The rest card: a ring that drains as the rest counts down, with one control
+ * in its centre (start, pause, resume, or dismiss when done). Restart and skip
+ * live in the workout's options menu. Before any rest it shows the programmed
+ * rest, so rest can also be started by hand. Never blocks: the next set can be
+ * logged at any time. The countdown isn't announced every second; the page
+ * announces completion.
  */
 @Component({
   selector: 'app-rest-timer',
@@ -19,12 +20,12 @@ import { RestTimerStatus, formatClock } from './rest-timer';
       <fit-progress
         class="ring"
         variant="ring"
-        [ringSize]="124"
-        [thickness]="4.5"
+        [ringSize]="128"
+        [thickness]="2.2"
         [gradient]="status() !== 'done'"
         [tone]="status() === 'done' ? 'success' : 'primary'"
         [value]="ringValue()"
-        [max]="total()"
+        [max]="total() || 1"
         [label]="copy.title"
         [valueText]="status() === 'idle' ? copy.planned(clock()) : copy.remaining(clock())"
       >
@@ -37,33 +38,27 @@ import { RestTimerStatus, formatClock } from './rest-timer';
           @switch (status()) {
             @case ('idle') {
               <button type="button" class="round" [attr.aria-label]="copy.start" data-testid="rest-start" (click)="startRest.emit()">
-                <ion-icon name="play" aria-hidden="true" />
+                <span class="face" aria-hidden="true"><ion-icon name="play" /></span>
               </button>
             }
             @case ('running') {
               <button type="button" class="round" [attr.aria-label]="copy.pause" (click)="pauseRest.emit()">
-                <ion-icon name="pause" aria-hidden="true" />
+                <span class="face" aria-hidden="true"><ion-icon name="pause" /></span>
               </button>
             }
             @case ('paused') {
               <button type="button" class="round" [attr.aria-label]="copy.resume" (click)="resumeRest.emit()">
-                <ion-icon name="play" aria-hidden="true" />
+                <span class="face" aria-hidden="true"><ion-icon name="play" /></span>
               </button>
             }
             @default {
-              <button type="button" class="round" [attr.aria-label]="copy.dismiss" (click)="skipRest.emit()">
-                <ion-icon name="checkmark" aria-hidden="true" />
+              <button type="button" class="round" [attr.aria-label]="copy.dismiss" (click)="dismissRest.emit()">
+                <span class="face" aria-hidden="true"><ion-icon name="checkmark" /></span>
               </button>
             }
           }
         </div>
       </fit-progress>
-      @if (status() === 'running' || status() === 'paused') {
-        <div class="actions">
-          <button type="button" class="text" [attr.aria-label]="copy.restart" (click)="restartRest.emit()">{{ copy.restart }}</button>
-          <button type="button" class="text" [attr.aria-label]="copy.skip" (click)="skipRest.emit()">{{ copy.skipShort }}</button>
-        </div>
-      }
     </section>
   `,
   styleUrl: './rest-timer.component.scss',
@@ -80,8 +75,7 @@ export class RestTimerComponent {
   readonly startRest = output<void>();
   readonly pauseRest = output<void>();
   readonly resumeRest = output<void>();
-  readonly restartRest = output<void>();
-  readonly skipRest = output<void>();
+  readonly dismissRest = output<void>();
 
   protected readonly copy = WORKOUT_COPY.active.rest;
   protected readonly clock = computed(() => formatClock(this.status() === 'idle' ? this.plannedSeconds() : this.remaining()));

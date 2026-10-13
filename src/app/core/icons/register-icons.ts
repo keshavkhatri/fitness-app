@@ -63,6 +63,7 @@ import {
   pause,
   playSkipForward,
   remove,
+  timerOutline,
 } from 'ionicons/icons';
 
 /**
@@ -135,5 +136,6 @@ export function registerAppIcons(): void {
     pause,
     playSkipForward,
     remove,
+    timerOutline,
   });
 }

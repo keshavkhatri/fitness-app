@@ -228,9 +228,12 @@ export const WORKOUT_COPY = {
     lastExerciseHint: 'Finish when every set is done',
     nextUpLabel: (name: string) => `Next exercise: ${name}`,
     menu: { title: 'Workout options' },
+    nextShort: 'Next exercise',
+    finishShort: 'Finish workout',
+    restartRest: 'Restart Rest',
     leaveWorkout: 'Leave Workout',
     progressLabel: 'Workout progress',
-    exerciseOf: (n: number, total: number) => `Exercise ${n} of ${total}`,
+    exerciseOf: (n: number, total: number) => `${n} of ${total} exercises`,
     progressText: (exercise: number, total: number, done: number, sets: number) =>
       `Exercise ${exercise} of ${total}. ${done} of ${sets} sets done.`,
     planned: 'Planned',

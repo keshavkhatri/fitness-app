@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, resource, signal, viewChild } from '@angular/core';
-import { IonContent, IonFooter, IonHeader, IonToolbar, NavController } from '@ionic/angular';
+import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, NavController } from '@ionic/angular';
 
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CLOCK } from '../../../core/time/clock';
@@ -10,14 +10,15 @@ import {
   EmptyStateComponent,
   FitnessButtonComponent,
   FitnessCardComponent,
-  FitnessIconButtonComponent,
   FitnessProgressComponent,
   LoadingSkeletonComponent,
   NoticeComponent,
 } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
+import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { ExerciseDemoComponent } from '../components/exercise-demo.component';
 import { ActiveFooterComponent } from './active-footer.component';
+import { MuscleFigureComponent } from './muscle-figure.component';
 import { NextExerciseCardComponent } from './next-exercise-card.component';
 import { RestTimerComponent } from './rest-timer.component';
 import { RestTimer } from './rest-timer';
@@ -65,17 +66,19 @@ const parseNumber = (text: string | undefined): number | null => {
     IonToolbar,
     IonContent,
     IonFooter,
+    IonIcon,
     BottomSheetComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
-    FitnessIconButtonComponent,
     FitnessProgressComponent,
     LoadingSkeletonComponent,
     NoticeComponent,
     ActiveFooterComponent,
+    MuscleFigureComponent,
     NextExerciseCardComponent,
     RestTimerComponent,
+    WorkoutArtComponent,
     ExerciseDemoComponent,
     SetLoggerComponent,
   ],
@@ -320,12 +323,7 @@ export class ActiveWorkoutPage {
         return {
           title: this.copy.menu.title,
           message: '',
-          actions: [
-            { label: this.copy.finish, variant: 'primary', run: () => this.dialogKind.set('finish') },
-            ...(view.exercise.pending > 0 ? [{ label: this.copy.skipExercise, variant: 'outline' as const, run: () => this.dialogKind.set('skip-exercise') }] : []),
-            { label: this.copy.leaveWorkout, variant: 'outline', run: () => this.dialogKind.set('exit') },
-            cancel(d.exit.cancel),
-          ],
+          actions: this.menuActions(view, cancel(d.exit.cancel)),
         };
       case 'skip-exercise':
         return {
@@ -407,6 +405,38 @@ export class ActiveWorkoutPage {
           ],
         };
     }
+  }
+
+  /**
+   * The options menu: everything the screen keeps off its face. Rest controls
+   * while resting, then skipping a set or the exercise, going back, finishing
+   * and leaving (finishing, skipping an exercise and leaving still confirm).
+   */
+  private menuActions(view: NonNullable<ReturnType<typeof this.view>>, cancelAction: DialogAction): DialogAction[] {
+    const actions: DialogAction[] = [];
+    const run = (fn: () => void | Promise<void>) => async () => {
+      this.closeDialog();
+      await fn();
+    };
+    const resting = this.timer.status() === 'running' || this.timer.status() === 'paused';
+    if (resting) {
+      actions.push({ label: this.copy.rest.skip, variant: 'outline', run: run(() => this.timer.skip()) });
+      actions.push({ label: this.copy.restartRest, variant: 'outline', run: run(() => this.timer.restart()) });
+    }
+    const nextSet = view.exercise.nextPendingSet;
+    if (nextSet !== null) {
+      actions.push({ label: this.copy.skipSet(nextSet + 1), variant: 'outline', run: run(() => this.skipSet(nextSet)) });
+    }
+    if (view.exercise.pending > 0) {
+      actions.push({ label: this.copy.skipExercise, variant: 'outline', run: () => this.dialogKind.set('skip-exercise') });
+    }
+    if (!view.isFirst) {
+      actions.push({ label: this.copy.previousLabel, variant: 'outline', run: run(() => this.previous()) });
+    }
+    actions.push({ label: this.copy.finish, variant: 'primary', run: () => this.dialogKind.set('finish') });
+    actions.push({ label: this.copy.leaveWorkout, variant: 'outline', run: () => this.dialogKind.set('exit') });
+    actions.push(cancelAction);
+    return actions;
   }
 
   private async finish(): Promise<void> {

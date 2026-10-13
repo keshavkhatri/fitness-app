@@ -12,71 +12,133 @@
   gap: var(--space-3);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-3) var(--page-gutter) calc(var(--space-3) + var(--ion-safe-area-bottom, 0px));
-  border-top: var(--border-hairline) solid var(--color-border);
+  padding: var(--space-3) 12px calc(var(--space-3) + var(--ion-safe-area-bottom, 0px)) 18px;
 }
 
 .clock {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
 .clock-label {
   @include fx.text(caption);
-  color: var(--color-text-secondary);
-}
-
-.clock-value {
-  @include fx.text(body, bold);
-  @include fx.tabular-numbers;
-
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 4px;
+  color: var(--color-text-secondary);
 
   ion-icon {
-    flex: none;
-    font-size: 18px;
+    font-size: 12px;
   }
 }
 
-.footer .main {
-  min-width: 0;
-  padding: 0 var(--space-4);
+.clock-value {
+  @include fx.tabular-numbers;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 19px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 26px;
+
+  ion-icon {
+    flex: none;
+    font-size: 17px;
+  }
 }
 
-// With nothing left to do here the one action takes the width of the other two.
+.main,
+.side {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 58px;
+}
+
+.main {
+  @include fx.text(body, bold);
+  gap: 10px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 17px;
+  white-space: nowrap;
+
+  &:active {
+    background: var(--color-primary-pressed);
+  }
+}
+
+// With nothing left on this exercise the one action takes the width of the other two.
 .main.wide {
   grid-column: 2 / -1;
 }
 
-// "Next Exercise" may take two lines rather than squeeze the main action.
-.footer .side {
-  max-width: 112px;
-  padding: 0 var(--space-3);
-  line-height: 1.15;
+.tick {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--color-on-primary);
+  color: var(--color-primary);
+  font-size: 15px;
+}
+
+.chevron {
+  font-size: 18px;
+}
+
+// "Next exercise" on two lines, as an outlined button.
+.side {
+  @include fx.text(caption, semibold);
+  gap: 4px;
+  width: 92px;
+  padding: 0 var(--space-2);
+  border: var(--border-hairline) solid color-mix(in srgb, var(--color-text) 30%, transparent);
+  border-radius: 16px;
+  color: var(--color-text);
+  font-size: 12.5px;
+  line-height: 16px;
   text-align: center;
-  white-space: normal;
+
+  ion-icon {
+    flex: none;
+    font-size: 14px;
+  }
+}
+
+.side-label {
+  min-width: 0;
 }
 
 @media (max-width: 359px) {
+  .footer {
+    gap: var(--space-2);
+  }
+
   .clock-label,
   .clock-value ion-icon {
     display: none;
   }
 
-  .footer {
-    gap: var(--space-2);
+  .main {
+    gap: 8px;
+    padding: 0 var(--space-3);
+    font-size: 15px;
   }
 
-  .footer .main {
-    padding: 0 var(--space-2);
-  }
-
-  .footer .side {
-    max-width: 88px;
+  .side {
+    width: 80px;
     padding: 0 var(--space-2);
   }
 }

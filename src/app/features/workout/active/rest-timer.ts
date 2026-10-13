@@ -118,5 +118,5 @@ export class RestTimer {
   }
 }
 
-/** "1:30", "0:05" */
-export const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+/** "01:30", "00:05" */
+export const formatClock = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;

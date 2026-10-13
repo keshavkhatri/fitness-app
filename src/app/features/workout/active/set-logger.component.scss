@@ -1,110 +1,108 @@
 @use 'mixins' as fx;
 
+// Sits on the light sets panel (the page's dashboard-themed subtree).
 :host {
+  --done: color-mix(in srgb, var(--color-primary) 45%, var(--color-primary-strong));
+  --current: color-mix(in srgb, var(--color-primary) 38%, var(--color-surface));
+  --current-box: color-mix(in srgb, var(--color-primary) 42%, var(--color-surface));
+
   display: block;
 }
 
-// Columns: set badge · one column per field · round action button.
+// Set · one column per field · check.
 .head,
 .row {
   display: grid;
-  grid-template-columns: 36px repeat(var(--field-count), minmax(0, 1fr)) 48px;
+  grid-template-columns: 64px var(--field-columns) 32px;
   align-items: center;
-  gap: var(--space-2);
+  column-gap: 7px;
 }
 
 .head {
-  @include fx.text(caption, semibold);
-  padding: 0 var(--space-2) var(--space-2);
+  @include fx.text(body-sm);
+  padding: 0 var(--space-2) 5px;
   color: var(--color-text-secondary);
 
   span {
     text-align: center;
-  }
-
-  span:first-child {
-    text-align: start;
   }
 }
 
 .rows {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 1px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .row {
-  padding: var(--space-2);
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
-  transition: background-color var(--motion-duration-base) var(--motion-ease);
+  padding: 4px var(--space-2);
+  border-radius: 12px;
 }
 
-// Upcoming: quiet, still editable.
-.row[data-status='pending'] {
-  background: transparent;
-}
-
-// Current: the set to do now.
 .row.current {
-  border-color: var(--color-primary-strong);
-  background: var(--color-primary-soft);
+  background: var(--current);
 }
 
-.row[data-status='completed'] {
-  background: var(--color-surface-muted);
-}
+.set {
+  @include fx.text(body-sm, medium);
+  @include fx.tabular-numbers;
 
-.row[data-status='skipped'] {
-  background: transparent;
-  border-style: dashed;
-  border-color: var(--color-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-text);
 }
 
 .badge {
-  @include fx.text(body, bold);
-  @include fx.tabular-numbers;
-
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 27px;
+  height: 27px;
   border-radius: var(--radius-pill);
-  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
   color: var(--color-text-secondary);
-
-  ion-icon {
-    font-size: 20px;
-  }
 }
 
 .row.current .badge {
-  border-color: transparent;
   background: var(--color-primary);
   color: var(--color-on-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
-.row[data-status='completed'] .badge {
-  border-color: transparent;
-  background: var(--color-success-soft);
-  color: var(--color-success-text);
+.tick {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--done);
+  color: #ffffff;
+  font-size: 13px;
 }
 
-.input {
-  @include fx.text(h3, bold);
+.number {
+  min-width: 10px;
+}
+
+.box {
+  @include fx.text(h3, semibold);
   @include fx.tabular-numbers;
   @include fx.focus-ring;
 
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
   width: 100%;
   min-width: 0;
-  height: 52px;
-  padding: 0 var(--space-2);
-  border: var(--border-hairline) solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-elevated);
+  height: 35px;
+  padding: 0 var(--space-1);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
   text-align: center;
@@ -120,65 +118,61 @@
   }
 }
 
-.row.current .input {
-  border-color: var(--color-primary-strong);
+.row.current .box {
+  border-color: color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+  background: var(--current-box);
 }
 
-.row[data-status='pending']:not(.current) .input {
-  background: transparent;
-  color: var(--color-text-secondary);
+.value.muted {
+  color: var(--color-text-tertiary);
 }
 
-// Recorded values replace the inputs (spanning all field columns).
+// Completed/skipped values take the same field columns as inputs.
 .result {
-  @include fx.text(body, semibold);
-  @include fx.tabular-numbers;
-
-  display: flex;
-  align-items: center;
-  grid-column: 2 / -2;
-  min-height: 52px;
-  padding: 0 var(--space-2);
-  color: var(--color-text);
+  display: contents;
 }
 
-.result.skipped {
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.action {
+// A 40px column, a 44px touch target, a 22px circle.
+.check {
   @include fx.button-reset;
   @include fx.focus-ring;
-  @include fx.pressable;
 
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
+  margin: -4.5px -6px;
   border-radius: var(--radius-pill);
-  border: 2px solid var(--color-border-strong);
-  color: var(--color-text-tertiary);
-  font-size: 24px;
 }
 
-.row.current .action {
-  border-color: var(--color-primary-strong);
-  color: var(--color-primary-text);
+.circle {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
-.row[data-status='completed'] .action {
+.row.current .circle {
+  border-color: color-mix(in srgb, var(--color-text-secondary) 80%, var(--color-primary-strong));
+}
+
+.row[data-status='completed'] .circle {
   border-color: transparent;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: var(--done);
+  color: #ffffff;
 }
 
-.row[data-status='skipped'] .action {
-  font-size: 20px;
+.row[data-status='skipped'] .circle {
+  border-style: dashed;
 }
 
 .error {
   @include fx.text(caption, medium);
   grid-column: 2 / -1;
+  padding: var(--space-1) 0;
   color: var(--color-danger-text);
 }

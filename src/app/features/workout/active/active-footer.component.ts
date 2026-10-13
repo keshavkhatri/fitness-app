@@ -1,13 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
-import { FitnessButtonComponent } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
 
 /**
  * The workout's persistent controls: the time since it started, the main
  * action and the way on. With sets left it is "Complete set" (the current
- * set, with what is typed) beside "Next Exercise" / "Finish Workout"; with
+ * set, with what is typed) beside "Next exercise" / "Finish workout"; with
  * none left, that next step becomes the one big action. Presentational: the
  * page decides what each action does (and confirms first where it must).
  */
@@ -16,38 +15,36 @@ import { WORKOUT_COPY } from '../workout-content';
   template: `
     <div class="footer">
       <div class="clock" data-testid="workout-time">
-        <span class="clock-label">{{ copy.workoutTime }}</span>
+        <span class="clock-label" aria-hidden="true"><ion-icon name="timer-outline" />{{ copy.workoutTime }}</span>
         <span class="clock-value" aria-hidden="true"><ion-icon name="time-outline" />{{ time() }}</span>
         <span class="visually-hidden">{{ copy.workoutTime }}: {{ spokenTime() }}</span>
       </div>
       @if (pending() > 0) {
-        <button fit-button type="button" size="lg" icon="checkmark" class="main" data-testid="complete-set" (click)="completeSet.emit()">
-          {{ copy.completeSetShort }}
+        <button type="button" class="main" data-testid="complete-set" (click)="completeSet.emit()">
+          <span class="tick" aria-hidden="true"><ion-icon name="checkmark" /></span>{{ copy.completeSetShort }}
         </button>
-        <button fit-button type="button" size="lg" variant="outline" class="side" data-testid="advance" (click)="advance.emit()">
-          {{ isLast() ? copy.finish : copy.next }}
+        <button type="button" class="side" data-testid="advance" (click)="advance.emit()">
+          <span class="side-label">{{ isLast() ? copy.finishShort : copy.nextShort }}</span><ion-icon name="chevron-forward" aria-hidden="true" />
         </button>
       } @else {
-        <button
-          fit-button
-          type="button"
-          size="lg"
-          [icon]="isLast() ? 'checkmark' : undefined"
-          class="main wide"
-          data-testid="advance"
-          (click)="advance.emit()"
-        >
-          {{ isLast() ? copy.finish : copy.next }}
+        <button type="button" class="main wide" data-testid="advance" (click)="advance.emit()">
+          @if (isLast()) {
+            <span class="tick" aria-hidden="true"><ion-icon name="checkmark" /></span>
+          }
+          {{ isLast() ? copy.finishShort : copy.nextShort }}
+          @if (!isLast()) {
+            <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+          }
         </button>
       }
     </div>
   `,
   styleUrl: './active-footer.component.scss',
-  imports: [IonIcon, FitnessButtonComponent],
+  imports: [IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActiveFooterComponent {
-  /** "8:24" */
+  /** "08:24" */
   readonly time = input.required<string>();
   /** "8 minutes 24 seconds" */
   readonly spokenTime = input.required<string>();

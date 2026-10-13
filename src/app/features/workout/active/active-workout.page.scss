@@ -1,24 +1,20 @@
 @use 'mixins' as fx;
 
+// Matches the approved Active Workout mockup (390 pt wide reference).
+
 .body,
-.exercise {
+.exercise,
+.dialog-actions,
+.loading {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
 }
 
-.exercise-header,
-.dialog-actions,
-.heading {
-  display: flex;
-  flex-direction: column;
+.dialog-actions {
   gap: var(--space-2);
 }
 
-.loading,
-.sets {
-  display: flex;
-  flex-direction: column;
+.loading {
   gap: var(--space-3);
 }
 
@@ -34,105 +30,154 @@ ion-toolbar {
 
 .bar {
   display: grid;
-  grid-template-columns: var(--tap-target-min) minmax(0, 1fr) var(--tap-target-min);
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
-  gap: var(--space-3);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter);
+  padding: var(--space-1) var(--space-3);
+}
+
+.back,
+.more {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+.back {
+  font-size: 26px;
+}
+
+.more-face {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 20px;
 }
 
 .heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
-  text-align: center;
 }
 
 .position {
-  @include fx.text(body-sm, semibold);
+  @include fx.text(body-sm, medium);
+  font-size: 15px;
 }
 
+// fit-progress draws an 8px bar; the mockup's is ~5px.
+.progress {
+  width: 136px;
+  transform: scaleY(0.65);
+  --progress-color: var(--color-primary);
+}
+
+// The panel reaches down to the footer, as in the design.
 .body {
+  min-height: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-6);
+  padding: 7px 0 var(--space-3);
 }
 
-.workout-title {
-  @include fx.eyebrow;
-  color: var(--color-text-secondary);
+.intro {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 0 var(--space-5);
 }
 
 .exercise-name {
-  @include fx.text(display, bold);
+  font-size: 28px;
+  font-weight: var(--font-weight-bold);
+  line-height: 30px;
+  letter-spacing: var(--letter-spacing-tight);
   overflow-wrap: anywhere;
 }
 
-.meta {
+.chips {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: var(--space-2);
   margin: 0;
 }
 
 .chip {
-  @include fx.text(caption, semibold);
-  padding: var(--space-1) var(--space-3);
+  @include fx.text(caption, medium);
+  padding: 3px 11px;
+  border: var(--border-hairline) solid color-mix(in srgb, var(--color-text) 22%, transparent);
   border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  font-size: 12.5px;
 }
 
-.equipment {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
+// Full-bleed hero under the title; the sets panel overlaps its bottom edge.
+.hero {
+  --stage-bottom: 36px;
+  --stage-inset: var(--space-5);
+
+  display: block;
+  height: clamp(180px, 55vw, 240px);
+  margin-top: -2px;
 }
 
-.sets {
-  padding: var(--space-3);
-  border-radius: var(--radius-hero, 24px);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
+.hero-art {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
 
-.planned {
-  @include fx.text(body-sm, medium);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-2);
-  margin: 0;
-  padding: 0 var(--space-2);
-  color: var(--color-text-secondary);
+.hero-fade {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 46%;
+  background: linear-gradient(var(--color-bg), transparent);
 }
 
-.planned-label {
-  @include fx.text(caption, semibold);
-  align-self: center;
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wide);
+.hero-figure {
+  position: absolute;
+  top: 6%;
+  right: var(--space-4);
+  width: 76px;
+  height: 78%;
 }
 
-.secondary-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-2);
+// Light panel (dashboard theme) with the sets and the rest / next-up cards.
+.exercise,
+.panel {
+  flex: 1 0 auto;
+}
 
-  button {
-    min-height: var(--tap-target-min);
-    padding: 0 var(--space-3);
-  }
-
-  .skip-set {
-    margin-inline-start: auto;
-    color: var(--color-text-secondary);
-  }
+.panel {
+  position: relative;
+  z-index: 1;
+  margin-top: -24px;
+  padding: 12px 14px 20px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--color-surface) 70%, var(--color-bg));
 }
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: 1.13fr 1fr;
+  gap: 10px;
+  min-height: 140px;
+  margin-top: 11px;
 }
 
 .tiles:has(.next-card:only-child) {
@@ -143,9 +188,17 @@ ion-footer {
   background: var(--color-bg);
 }
 
-// Short phones: more room for the sets.
-@media (max-height: 700px) {
+@media (max-width: 359px) {
+  .intro {
+    padding: 0 var(--space-4);
+  }
+
   .exercise-name {
-    @include fx.text(h1, bold);
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .panel {
+    padding-inline: 8px;
   }
 }

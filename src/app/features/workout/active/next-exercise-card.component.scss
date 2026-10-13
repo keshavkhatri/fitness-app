@@ -11,25 +11,25 @@
 
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
   width: 100%;
   height: 100%;
-  min-height: var(--tap-target-min);
   padding: var(--space-3);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-muted) 55%, var(--color-surface));
   color: var(--color-text);
   text-align: start;
 }
 
 .eyebrow {
-  @include fx.text(caption, medium);
+  @include fx.text(body-sm);
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: var(--color-text-secondary);
 
   ion-icon {
+    color: var(--color-text);
     font-size: 16px;
   }
 }
@@ -42,14 +42,26 @@
 }
 
 .thumb {
-  display: grid;
+  position: relative; // the art fills its nearest positioned box
   flex: none;
+  width: 58px;
+  height: 74px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--color-ink);
+
+  app-workout-art {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.thumb.flag {
+  display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
   background: var(--color-surface-muted);
-  color: var(--color-primary-text);
+  color: var(--color-text);
   font-size: 24px;
 }
 
@@ -57,7 +69,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-1);
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -68,13 +80,9 @@
 
 .chip {
   @include fx.text(caption, medium);
+  white-space: nowrap;
   padding: 2px var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
-}
-
-.planned {
-  @include fx.text(caption);
   color: var(--color-text-secondary);
 }

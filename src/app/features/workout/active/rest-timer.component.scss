@@ -5,18 +5,18 @@
 }
 
 .rest {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
+  display: grid;
+  place-items: center;
   height: 100%;
-  padding: var(--space-3) var(--space-2) var(--space-2);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  padding: var(--space-2);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface-muted) 45%, var(--color-surface));
 }
 
+// The design's ring is lime end to end (the default gradient ends in the darker strong shade).
 .ring {
-  --ring-size: 124px;
+  // (Not from --color-primary-strong itself: a variable can't be defined from its own value.)
+  --color-primary-strong: color-mix(in srgb, var(--color-primary) 82%, var(--color-text));
 }
 
 .center {
@@ -26,59 +26,42 @@
 }
 
 .title {
-  @include fx.text(caption, medium);
+  @include fx.text(body-sm);
   color: var(--color-text-secondary);
 }
 
 .time {
-  @include fx.text(h2, bold);
   @include fx.tabular-numbers;
-  line-height: 1;
+  font-size: 28px;
+  font-weight: var(--font-weight-bold);
+  line-height: 34px;
+  letter-spacing: var(--letter-spacing-tight);
 }
 
+.rest[data-status='done'] .time {
+  color: var(--color-success);
+}
+
+// A 44px target around a 30px disc.
 .round {
   @include fx.button-reset;
   @include fx.focus-ring;
-  @include fx.pressable;
 
   display: grid;
   place-items: center;
   width: var(--tap-target-min);
   height: var(--tap-target-min);
+  margin: -4px 0 -8px;
   border-radius: var(--radius-pill);
-  background: var(--color-surface-muted);
+}
+
+.face {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-surface-muted) 70%, var(--color-border-strong));
   color: var(--color-text);
-  font-size: 18px;
-}
-
-.rest[data-status='running'] .round {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.rest[data-status='done'] .time {
-  color: var(--color-success-text);
-}
-
-.actions {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-1);
-  width: 100%;
-}
-
-.text {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-  @include fx.text(body-sm, semibold);
-
-  min-width: 0;
-  min-height: var(--tap-target-min);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  color: var(--color-text-secondary);
-
-  &:active {
-    background: var(--color-surface-muted);
-  }
+  font-size: 15px;
 }

@@ -25,8 +25,7 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
   template: `
     @if (variant() === 'stage') {
       @let d = demo();
-      <div class="wrap">
-      <div class="stage" data-testid="demo-stage">
+      <div class="stage" data-testid="demo-stage" [class.showing]="open() && !!d">
         @if (open() && d) {
           @if (failed()) {
             <div class="failed stage-failed" data-testid="demo-failed">
@@ -46,25 +45,25 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
                 />
               }
             </div>
+            <span class="stage-credit">{{ d.credit }}</span>
           }
         } @else {
-          <div class="placeholder" aria-hidden="true"><ion-icon name="barbell" /></div>
+          <!-- The page's stand-in imagery (decorative). -->
+          <div class="placeholder" aria-hidden="true"><ng-content /></div>
         }
-      </div>
-      @if (d) {
-        <!-- One persistent toggle (focus stays on it): over the placeholder when closed, under the photos when open. -->
-        <div class="stage-bar" [class.overlay]="!open()">
-          <button type="button" class="pill" [attr.aria-expanded]="open()" data-testid="demo-toggle" (click)="toggle()">
-            <ion-icon [name]="open() ? 'close' : 'play'" aria-hidden="true" />{{ open() ? copy.hide : howTo }}
-          </button>
-          @if (open() && !failed()) {
-            <button type="button" class="pill" data-testid="demo-play" (click)="togglePlay()">
-              <ion-icon [name]="playing() ? 'pause' : 'play'" aria-hidden="true" />{{ playing() ? copy.pause : copy.play }}
+        @if (d) {
+          <!-- One persistent toggle, so focus stays on it when the photos open or close. -->
+          <div class="stage-bar">
+            <button type="button" class="pill" [attr.aria-expanded]="open()" data-testid="demo-toggle" (click)="toggle()">
+              <span class="pill-face"><ion-icon [name]="open() ? 'close' : 'play'" aria-hidden="true" />{{ open() ? copy.hide : howTo }}</span>
             </button>
-            <span class="credit">{{ d.credit }}</span>
-          }
-        </div>
-      }
+            @if (open() && !failed()) {
+              <button type="button" class="pill" data-testid="demo-play" (click)="togglePlay()">
+                <span class="pill-face"><ion-icon [name]="playing() ? 'pause' : 'play'" aria-hidden="true" />{{ playing() ? copy.pause : copy.play }}</span>
+              </button>
+            }
+          </div>
+        }
       </div>
     } @else if (demo(); as d) {
       <button
@@ -114,28 +113,17 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
   styles: `
     @use 'mixins' as fx;
 
+    // Stage: fills the host (the page sizes it); controls float over its lower left.
     .stage {
       position: relative;
-      aspect-ratio: 16 / 9;
-      max-height: min(220px, 22vh);
+      height: 100%;
       overflow: hidden;
-      border-radius: var(--radius-lg);
-      background: var(--color-surface);
     }
 
     .placeholder {
-      display: grid;
-      place-items: center;
-      box-sizing: border-box;
       height: 100%;
-      padding-bottom: calc(var(--tap-target-min) + var(--space-3));
-      background: linear-gradient(160deg, var(--color-surface-elevated), var(--color-surface-muted));
-      color: var(--color-primary-text);
-      font-size: 56px;
-      opacity: 0.85;
     }
 
-    // More specific than the .frames rule below: fill the stage instead of keeping 4:3.
     .frames.stage-frames {
       width: 100%;
       height: 100%;
@@ -151,54 +139,55 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
       text-align: center;
     }
 
-    .wrap {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-
     .stage-bar {
+      position: absolute;
+      inset-inline-start: var(--stage-inset, var(--space-5));
+      bottom: var(--stage-bottom, var(--space-3));
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
       gap: var(--space-2);
     }
 
-    .stage-bar.overlay {
-      position: absolute;
-      inset-inline-start: var(--space-3);
-      bottom: var(--space-3);
-    }
-
-    .stage-bar .credit {
-      flex: 1 1 100%;
-    }
-
+    // A full 44px target around a compact pill.
     .pill {
       @include fx.button-reset;
       @include fx.focus-ring;
-      @include fx.text(body-sm, semibold);
+
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--tap-target-min);
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-face {
+      @include fx.text(caption, semibold);
 
       display: inline-flex;
       align-items: center;
       gap: var(--space-2);
-      min-height: var(--tap-target-min);
-      padding: 0 var(--space-4);
+      height: 32px;
+      padding: 0 var(--space-3);
+      border: var(--border-hairline) solid rgba(255, 255, 255, 0.22);
       border-radius: var(--radius-pill);
-      background: var(--color-surface-elevated);
-      border: var(--border-hairline) solid var(--color-border-strong);
-      color: var(--color-text);
+      background: rgba(20, 22, 20, 0.62);
+      color: #ffffff;
+      font-size: 13px;
+      backdrop-filter: blur(6px);
 
       ion-icon {
-        font-size: 16px;
+        font-size: 13px;
       }
     }
 
-    :host {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
+    .stage-credit {
+      @include fx.text(caption);
+      position: absolute;
+      top: var(--space-2);
+      inset-inline-end: var(--space-2);
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+      background: rgba(20, 22, 20, 0.62);
+      color: #ffffff;
+      font-size: 11px;
     }
 
     .demo {

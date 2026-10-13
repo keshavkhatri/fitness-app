@@ -2,7 +2,9 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
     <div class="bar">
-      <button fit-icon-button type="button" variant="tonal" icon="chevron-back" [attr.aria-label]="copy.exit" (click)="v ? openDialog('exit') : backToWorkout()"></button>
+      <button type="button" class="back" [attr.aria-label]="copy.exit" (click)="v ? openDialog('exit') : backToWorkout()">
+        <ion-icon name="chevron-back" aria-hidden="true" />
+      </button>
       <div class="heading">
         @if (v) {
           <p class="position" data-testid="position">{{ v.position }}</p>
@@ -12,9 +14,11 @@
         }
       </div>
       @if (v) {
-        <button fit-icon-button type="button" variant="tonal" icon="ellipsis-horizontal" aria-haspopup="dialog" [attr.aria-label]="copy.more" data-testid="more" (click)="openDialog('menu')"></button>
+        <button type="button" class="more" aria-haspopup="dialog" [attr.aria-label]="copy.more" data-testid="more" (click)="openDialog('menu')">
+          <span class="more-face" aria-hidden="true"><ion-icon name="ellipsis-horizontal" /></span>
+        </button>
       } @else {
-        <span class="bar-spacer" aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
       }
     </div>
   </ion-toolbar>
@@ -32,28 +36,26 @@
 
     @if (v) {
       <section class="exercise" aria-labelledby="active-exercise" data-testid="current-exercise">
-        <header class="exercise-header">
-          <h1 class="workout-title" data-testid="workout-title">{{ v.title }}</h1>
+        <!-- The workout is the page's subject for assistive tech; the screen shows the exercise. -->
+        <h1 class="visually-hidden" data-testid="workout-title">{{ v.title }}</h1>
+        <div class="intro">
           <h2 class="exercise-name" id="active-exercise">{{ v.exercise.name }}</h2>
-          @if (v.exercise.muscles.length || v.exercise.equipment) {
-            <p class="meta" data-testid="exercise-meta">
+          @if (v.exercise.muscles.length) {
+            <p class="chips" data-testid="exercise-meta">
               @for (muscle of v.exercise.muscles; track muscle) {
                 <span class="chip">{{ muscle }}</span>&ngsp;
               }
-              @if (v.exercise.equipment; as equipment) {
-                <span class="equipment">{{ equipment }}</span>
-              }
             </p>
           }
-        </header>
+        </div>
 
-        <app-exercise-demo variant="stage" [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name" />
+        <app-exercise-demo class="hero" variant="stage" [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name">
+          <app-workout-art class="hero-art" [seed]="v.exercise.exerciseId" />
+          <span class="hero-fade"></span>
+          <app-muscle-figure class="hero-figure" [muscles]="v.exercise.muscleIds" />
+        </app-exercise-demo>
 
-        <div class="sets" data-testid="sets">
-          <p class="planned" data-testid="planned">
-            <span class="planned-label">{{ copy.planned }}</span>&ngsp;<span>{{ v.exercise.planned }}</span>
-          </p>
-
+        <div class="panel fit-theme-dashboard" data-testid="sets">
           <app-set-logger
             [exercise]="v.exercise"
             [drafts]="currentDrafts()"
@@ -63,37 +65,21 @@
             (undo)="undoSet($event)"
           />
 
-          @if (!v.isFirst || v.exercise.nextPendingSet !== null) {
-            <div class="secondary-actions">
-              @if (!v.isFirst) {
-                <button fit-button type="button" variant="ghost" icon="chevron-back" [attr.aria-label]="copy.previousLabel" (click)="previous()">
-                  {{ copy.previous }}
-                </button>
-              }
-              @if (v.exercise.nextPendingSet !== null) {
-                <button fit-button type="button" variant="ghost" class="skip-set" (click)="skipSet(v.exercise.nextPendingSet)">
-                  {{ copy.skipSet(v.exercise.nextPendingSet + 1) }}
-                </button>
-              }
-            </div>
-          }
-        </div>
-
-        <div class="tiles">
-          @if (restVisible()) {
-            <app-rest-timer
-              [status]="timer.status()"
-              [remaining]="timer.remainingSeconds()"
-              [total]="timer.totalSeconds()"
-              [plannedSeconds]="v.exercise.restSeconds"
-              (startRest)="startRest()"
-              (pauseRest)="timer.pause()"
-              (resumeRest)="timer.resume()"
-              (restartRest)="timer.restart()"
-              (skipRest)="timer.skip()"
-            />
-          }
-          <app-next-exercise-card class="next-card" [next]="v.next" (open)="openNext()" />
+          <div class="tiles">
+            @if (restVisible()) {
+              <app-rest-timer
+                [status]="timer.status()"
+                [remaining]="timer.remainingSeconds()"
+                [total]="timer.totalSeconds()"
+                [plannedSeconds]="v.exercise.restSeconds"
+                (startRest)="startRest()"
+                (pauseRest)="timer.pause()"
+                (resumeRest)="timer.resume()"
+                (dismissRest)="timer.skip()"
+              />
+            }
+            <app-next-exercise-card class="next-card" [next]="v.next" (open)="openNext()" />
+          </div>
         </div>
       </section>
     } @else if (screen() === 'not-active') {
