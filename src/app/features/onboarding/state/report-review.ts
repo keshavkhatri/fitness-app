@@ -1,4 +1,4 @@
-import { toFeetInches, weightInUnit } from '../../../domain/fitness-profile';
+import { BodyHeight, BodyWeight, Sex } from '../../../domain/fitness-profile';
 import {
   ExtractedField,
   InBodyExtraction,
@@ -8,12 +8,12 @@ import {
   extractedField,
   hasValue,
 } from '../../../domain/inbody-extraction';
-import { BasicsField, BasicsFormInput } from '../validation/onboarding-validation';
+import { BasicsField } from '../validation/onboarding-validation';
 import { ReportImportFailure, ReportReading } from './report-import.service';
 
 /**
  * What the onboarding screens say about an uploaded InBody report: the
- * prefilled basics form, a note per field and the copy for every failure.
+ * prefilled values, a note per field and the copy for every failure.
  * Pure: no Angular, no DOM.
  *
  * Only height, weight and sex come from the report (see inBodyPrefill). The
@@ -21,25 +21,24 @@ import { ReportImportFailure, ReportReading } from './report-import.service';
  * on the report: nothing here adds them to the profile or the weight history.
  */
 
+/** The values the report filled in (canonical units, as read), by field. */
+export interface ReportPrefillValues {
+  readonly sex?: Sex;
+  readonly height?: BodyHeight;
+  readonly weight?: BodyWeight;
+}
+
 /**
- * The basics form with the report's values in place of the user's. Fields
- * the report couldn't fill keep whatever the user already entered.
+ * What the report gives each body-details screen to start from. Fields the
+ * report couldn't fill are left out: those screens keep the user's own answer.
+ * Height keeps the printed decimal (172.5 cm), never rounded to a ruler tick.
  */
-export function applyReportPrefill(form: BasicsFormInput, { profile }: ReportReading['prefill']): BasicsFormInput {
-  let next = form;
-  if (profile.sex.kind === 'prefilled') {
-    next = { ...next, sex: profile.sex.value };
-  }
-  if (profile.height.kind === 'prefilled') {
-    const height = profile.height.value;
-    const { feet, inches } = toFeetInches(height);
-    // To 0.1 cm, as printed: the form's own whole-cm rounding would change the reading.
-    next = { ...next, heightCm: String(Math.round(height.centimeters * 10) / 10), heightFeet: String(feet), heightInches: String(inches) };
-  }
-  if (profile.weight.kind === 'prefilled') {
-    next = { ...next, weight: String(weightInUnit(profile.weight.value, next.unitSystem)) };
-  }
-  return next;
+export function reportPrefillValues({ profile }: ReportReading['prefill']): ReportPrefillValues {
+  return {
+    ...(profile.sex.kind === 'prefilled' ? { sex: profile.sex.value } : {}),
+    ...(profile.height.kind === 'prefilled' ? { height: profile.height.value } : {}),
+    ...(profile.weight.kind === 'prefilled' ? { weight: profile.weight.value } : {}),
+  };
 }
 
 /**

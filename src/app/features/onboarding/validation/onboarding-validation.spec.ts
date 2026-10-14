@@ -1,38 +1,44 @@
-import { EMPTY_DRAFT } from '../state/onboarding-draft';
+import { EMPTY_BASICS, EMPTY_DRAFT } from '../state/onboarding-draft';
 import { completeDraft } from '../testing/draft-fixtures';
 import {
-  BasicsFormInput,
-  basicsFormFromDraft,
-  convertBasicsForm,
+  AboutFormInput,
+  HeightTextInput,
+  aboutFormFromDraft,
   firstIncompleteStep,
-  validateBasicsForm,
+  heightText,
+  validateAboutForm,
+  validateBirthDateInput,
   validateDateOfBirthInput,
+  validateHeightInput,
   validateStep,
   validateTargetWeightInput,
+  validateWeightInput,
+  weightText,
 } from './onboarding-validation';
 
 /** Fixed "today" for deterministic age checks: 7 October 2026, local time. */
 const NOW = new Date(2026, 9, 7);
 
-const metricForm = (overrides: Partial<BasicsFormInput> = {}): BasicsFormInput => ({
-  unitSystem: 'metric',
-  birthDay: '15',
-  birthMonth: '6',
-  birthYear: '1991',
+const about = (overrides: Partial<AboutFormInput> = {}): AboutFormInput => ({
+  name: 'Alex',
+  birthDate: '1991-06-15',
   sex: 'female',
-  heightCm: '168',
-  heightFeet: '',
-  heightInches: '',
-  weight: '80',
   ...overrides,
 });
-
-const imperialForm = (overrides: Partial<BasicsFormInput> = {}): BasicsFormInput =>
-  metricForm({ unitSystem: 'imperial', heightCm: '', heightFeet: '5', heightInches: '6', weight: '176', ...overrides });
-
-const errorsOf = (input: BasicsFormInput) => {
-  const result = validateBasicsForm(input, NOW);
+const aboutErrors = (input: AboutFormInput) => {
+  const result = validateAboutForm(input, NOW);
   return result.ok ? {} : result.errors;
+};
+
+const metricHeight = (cm: string): HeightTextInput => ({ unitSystem: 'metric', cm, feet: '', inches: '' });
+const imperialHeight = (feet: string, inches: string): HeightTextInput => ({ unitSystem: 'imperial', cm: '', feet, inches });
+const heightError = (input: HeightTextInput) => {
+  const result = validateHeightInput(input);
+  return result.ok ? null : result.errors;
+};
+const weightError = (text: string, unitSystem: 'metric' | 'imperial' = 'metric') => {
+  const result = validateWeightInput(text, unitSystem);
+  return result.ok ? null : result.errors;
 };
 
 const dobError = (day: string, month: string, year: string) => {
@@ -43,7 +49,7 @@ const dobError = (day: string, month: string, year: string) => {
 describe('onboarding validation', () => {
   describe('validateStep (draft level)', () => {
     it('blocks question steps until answered', () => {
-      for (const step of ['goal', 'basics', 'experience', 'frequency', 'location', 'equipment', 'activity'] as const) {
+      for (const step of ['basics', 'height', 'weight', 'activity', 'goal', 'experience', 'frequency', 'location', 'equipment'] as const) {
         expect(validateStep(step, EMPTY_DRAFT)).toEqual(expect.any(String));
         expect(validateStep(step, completeDraft())).toBeNull();
       }
@@ -54,13 +60,16 @@ describe('onboarding validation', () => {
     });
 
     it('flags a target that became inconsistent after editing current weight', () => {
-      const draft = completeDraft({ basics: { ...completeDraft().basics!, weight: { kilograms: 70 } } });
+      const draft = completeDraft({ basics: { ...completeDraft().basics, weight: { kilograms: 70 } } });
       expect(validateStep('goal-target', draft)).toContain('below your current weight (70 kg)');
     });
 
     it('finds the first unanswered step', () => {
-      expect(firstIncompleteStep(EMPTY_DRAFT)).toBe('name');
-      expect(firstIncompleteStep({ ...EMPTY_DRAFT, name: 'Alex' })).toBe('goal');
+      expect(firstIncompleteStep(EMPTY_DRAFT)).toBe('basics');
+      expect(firstIncompleteStep({ ...EMPTY_DRAFT, name: 'Alex' })).toBe('basics');
+      const aboutDone = { ...EMPTY_DRAFT, name: 'Alex', basics: { ...EMPTY_BASICS, dateOfBirth: '1991-06-15', sex: 'female' } } as const;
+      expect(firstIncompleteStep(aboutDone)).toBe('height');
+      expect(firstIncompleteStep({ ...aboutDone, basics: { ...aboutDone.basics, height: { centimeters: 170 } } })).toBe('weight');
       expect(firstIncompleteStep(completeDraft({ equipment: [] }))).toBe('equipment');
       expect(firstIncompleteStep(completeDraft())).toBeNull();
     });
@@ -103,133 +112,115 @@ describe('onboarding validation', () => {
     });
   });
 
-  describe('basic information', () => {
-    it('accepts valid metric input and stores canonical values', () => {
-      expect(validateBasicsForm(metricForm({ weight: '80,5' }), NOW)).toEqual({
+  describe('date of birth from the date picker', () => {
+    it('reads YYYY-MM-DD and checks it like a typed date', () => {
+      expect(validateBirthDateInput('1990-04-03', NOW)).toEqual({ ok: true, value: '1990-04-03' });
+      expect(validateBirthDateInput('2008-10-08', NOW)).toEqual({ ok: false, errors: 'You need to be 18 or older to use this app.' });
+      expect(validateBirthDateInput('2027-01-01', NOW)).toEqual({ ok: false, errors: "Date of birth can't be in the future." });
+    });
+
+    it('asks for a date when it is blank or incomplete', () => {
+      expect(validateBirthDateInput('', NOW)).toEqual({ ok: false, errors: 'Enter your date of birth.' });
+      expect(validateBirthDateInput('1990-04', NOW)).toEqual({ ok: false, errors: 'Enter your full date of birth.' });
+    });
+  });
+
+  describe('about you (name, sex, date of birth)', () => {
+    it('accepts valid answers, trimming the name', () => {
+      expect(validateAboutForm(about({ name: '  Alex  ' }), NOW)).toEqual({
         ok: true,
-        value: { dateOfBirth: '1991-06-15', sex: 'female', height: { centimeters: 168 }, weight: { kilograms: 80.5 } },
+        value: { name: 'Alex', dateOfBirth: '1991-06-15', sex: 'female' },
       });
     });
 
-    it('accepts valid imperial input, converting to metric', () => {
-      const result = validateBasicsForm(imperialForm(), NOW);
-      expect(result.ok && result.value.height.centimeters).toBe(167.6);
-      expect(result.ok && result.value.weight.kilograms).toBe(79.83);
-    });
-
-    it('requires every field', () => {
-      expect(
-        errorsOf(metricForm({ birthDay: '', birthMonth: '', birthYear: '', sex: null, heightCm: '', weight: '' })),
-      ).toEqual({
+    it('requires every answer', () => {
+      expect(aboutErrors(about({ name: ' ', birthDate: '', sex: null }))).toEqual({
+        name: 'Add your name to continue.',
         dateOfBirth: 'Enter your date of birth.',
         sex: 'Choose an option.',
-        height: 'Enter your height.',
-        weight: 'Enter your weight.',
       });
     });
 
     it('rejects under-18 users', () => {
-      expect(errorsOf(metricForm({ birthYear: '2010' })).dateOfBirth).toBe('You need to be 18 or older to use this app.');
+      expect(aboutErrors(about({ birthDate: '2010-01-01' })).dateOfBirth).toBe('You need to be 18 or older to use this app.');
     });
 
-    it('rejects non-numeric and malformed measurements', () => {
-      const errors = errorsOf(metricForm({ heightCm: 'tall', weight: '-80' }));
-      expect(errors.height).toBe('Enter your height in centimeters.');
-      expect(errors.weight).toBe('Enter your weight as a number.');
-      expect(errorsOf(imperialForm({ heightInches: '12' })).height).toBe('Enter feet, and inches from 0 to 11.');
+    it('prefills from saved answers, including partial ones', () => {
+      expect(aboutFormFromDraft(completeDraft())).toEqual({ name: 'Alex', birthDate: '1991-06-15', sex: 'female' });
+      expect(aboutFormFromDraft(EMPTY_DRAFT)).toEqual({ name: '', birthDate: '', sex: null });
+    });
+  });
+
+  describe('height typed in', () => {
+    const FORMAT = "Check number format. Use one decimal separator. Thousands separators aren't supported.";
+    const heightOf = (input: HeightTextInput) => {
+      const result = validateHeightInput(input);
+      return result.ok ? result.value : null;
+    };
+
+    it('stores canonical centimeters (0.1 cm)', () => {
+      expect(heightOf(metricHeight('168'))).toEqual({ centimeters: 168 });
+      expect(heightOf(metricHeight('168,5'))).toEqual({ centimeters: 168.5 });
+      expect(heightOf(imperialHeight('5', '6'))).toEqual({ centimeters: 167.6 });
     });
 
-    describe('feet-and-inches height', () => {
-      const FORMAT = "Check number format. Use one decimal separator. Thousands separators aren't supported.";
-      const heightOf = (heightFeet: string, heightInches: string) => {
-        const result = validateBasicsForm(imperialForm({ heightFeet, heightInches }), NOW);
-        return result.ok ? result.value.height : null;
-      };
-
-      it('accepts ordinary and decimal inches (dot or comma); blank inches mean 0', () => {
-        expect(heightOf('5', '6')).toEqual({ centimeters: 167.6 });
-        expect(heightOf('5', '6.5')).toEqual(heightOf('5', '6,5'));
-        expect(heightOf('5', '6.5')).toEqual({ centimeters: 168.9 });
-        expect(heightOf('5', '0,25')).not.toBeNull();
-        expect(heightOf('6', '')).toEqual({ centimeters: 182.9 });
-        expect(heightOf('5', '0')).toEqual(heightOf('5', ''));
-      });
-
-      it('rejects ambiguous separators instead of reading them as small decimals', () => {
-        for (const inches of ['1,234', '1.234', '11.999', '1,234.5', '1.234,5']) {
-          expect(errorsOf(imperialForm({ heightInches: inches })).height).toBe(FORMAT);
-        }
-      });
-
-      it('rejects malformed and out-of-range inches with the existing message', () => {
-        for (const inches of ['abc', '-1', '-0', '.5', '5.', '1e1', '12', '12.5', '6 in']) {
-          expect(errorsOf(imperialForm({ heightInches: inches })).height).toBe('Enter feet, and inches from 0 to 11.');
-        }
-        expect(errorsOf(imperialForm({ heightFeet: '', heightInches: '6' })).height).toBe('Enter your height.');
-        expect(errorsOf(imperialForm({ heightFeet: '5.5' })).height).toBe('Enter feet, and inches from 0 to 11.');
-      });
-
-      it('keeps the existing height range boundaries', () => {
-        expect(heightOf('1', '7.7')).toEqual({ centimeters: 50 }); // 50 cm minimum
-        expect(errorsOf(imperialForm({ heightFeet: '1', heightInches: '7' })).height).toBe('Enter a height between 1 ft 8 in and 9 ft 0 in.');
-        expect(heightOf('9', '0')).not.toBeNull();
-        expect(errorsOf(imperialForm({ heightFeet: '9', heightInches: '1' })).height).toBe('Enter a height between 1 ft 8 in and 9 ft 0 in.');
-      });
-
-      it('an ambiguous value never reaches unit conversion', () => {
-        const form = imperialForm({ heightInches: '1,234' });
-        expect(convertBasicsForm(form, 'metric').heightCm).toBe('');
-      });
+    it('accepts ordinary and decimal inches (dot or comma); blank inches mean 0', () => {
+      expect(heightOf(imperialHeight('5', '6.5'))).toEqual(heightOf(imperialHeight('5', '6,5')));
+      expect(heightOf(imperialHeight('5', '6.5'))).toEqual({ centimeters: 168.9 });
+      expect(heightOf(imperialHeight('6', ''))).toEqual({ centimeters: 182.9 });
     });
 
-    it('other numeric fields keep their lenient parsing', () => {
-      // Metric height and weight still read a comma as a decimal point; their ranges reject the small results.
-      expect(validateBasicsForm(metricForm({ heightCm: '168,5', weight: '82,5' }), NOW)).toMatchObject({
-        ok: true,
-        value: { height: { centimeters: 168.5 }, weight: { kilograms: 82.5 } },
-      });
-      expect(errorsOf(metricForm({ heightCm: '1,234' })).height).toBe('Enter a height between 50 and 275 cm.');
-      expect(errorsOf(metricForm({ weight: '1,234' })).weight).toBe('Enter a weight between 20 and 500 kg.');
-      expect(errorsOf(imperialForm({ weight: '176,5' })).weight).toBeUndefined();
-    });
-
-    it('rejects implausible measurements with the range in the user’s units', () => {
-      expect(errorsOf(metricForm({ heightCm: '20' })).height).toBe('Enter a height between 50 and 275 cm.');
-      expect(errorsOf(imperialForm({ weight: '30' })).weight).toBe('Enter a weight between 45 and 1,102 lb.');
-    });
-
-    it('accepts unusual but legitimate people', () => {
-      for (const form of [
-        metricForm({ birthYear: '1931', heightCm: '122', weight: '38' }),
-        metricForm({ heightCm: '221', weight: '210' }),
-        imperialForm({ heightFeet: '4', heightInches: '', weight: '450' }),
-      ]) {
-        expect(validateBasicsForm(form, NOW).ok).toBe(true);
+    it('rejects ambiguous separators instead of reading them as small decimals', () => {
+      for (const inches of ['1,234', '1.234', '11.999', '1,234.5', '1.234,5']) {
+        expect(heightError(imperialHeight('5', inches))).toBe(FORMAT);
       }
     });
 
-    it('converts typed measurements when the unit system changes', () => {
-      const imperial = convertBasicsForm(metricForm({ heightCm: '178', weight: '94.2' }), 'imperial');
-      expect([imperial.heightFeet, imperial.heightInches, imperial.weight]).toEqual(['5', '10', '207.7']);
-
-      const metric = convertBasicsForm(imperial, 'metric');
-      expect([metric.heightCm, metric.weight]).toEqual(['178', '94.2']);
+    it('rejects blank, malformed and out-of-range input', () => {
+      expect(heightError(metricHeight(''))).toBe('Enter your height.');
+      expect(heightError(metricHeight('tall'))).toBe('Enter your height in centimeters.');
+      expect(heightError(imperialHeight('', '6'))).toBe('Enter your height.');
+      for (const inches of ['abc', '-1', '12', '6 in']) {
+        expect(heightError(imperialHeight('5', inches))).toBe('Enter feet, and inches from 0 to 11.');
+      }
     });
 
-    it('keeps unparseable text as-is when converting', () => {
-      expect(convertBasicsForm(metricForm({ weight: 'abc' }), 'imperial').weight).toBe('abc');
+    it('keeps the profile’s height range (50–275 cm) in either unit', () => {
+      expect(heightError(metricHeight('20'))).toBe('Enter a height between 50 and 275 cm.');
+      expect(heightError(metricHeight('1,234'))).toBe('Enter a height between 50 and 275 cm.');
+      expect(heightOf(imperialHeight('1', '7.7'))).toEqual({ centimeters: 50 });
+      expect(heightError(imperialHeight('1', '7'))).toBe('Enter a height between 1 ft 8 in and 9 ft 0 in.');
+      expect(heightOf(imperialHeight('9', '0'))).not.toBeNull();
+      expect(heightError(imperialHeight('9', '1'))).toBe('Enter a height between 1 ft 8 in and 9 ft 0 in.');
     });
 
-    it('prefills the form from saved answers in the saved unit system', () => {
-      const form = basicsFormFromDraft(completeDraft({ unitSystem: 'imperial' }));
-      expect(form).toMatchObject({
-        birthDay: '15',
-        birthMonth: '6',
-        birthYear: '1991',
-        heightFeet: '5',
-        heightInches: '6',
-        weight: '176.4',
-      });
+    it('fills the typing fields from a height, without rounding a printed decimal away', () => {
+      expect(heightText({ centimeters: 172.5 }, 'metric')).toEqual({ unitSystem: 'metric', cm: '172.5', feet: '5', inches: '8' });
+      expect(heightText(null, 'imperial')).toEqual({ unitSystem: 'imperial', cm: '', feet: '', inches: '' });
+    });
+  });
+
+  describe('weight typed in', () => {
+    it('stores canonical kilograms, from kg or lb', () => {
+      expect(validateWeightInput('80,5', 'metric')).toEqual({ ok: true, value: { kilograms: 80.5 } });
+      expect(validateWeightInput('176', 'imperial')).toEqual({ ok: true, value: { kilograms: 79.83 } });
+    });
+
+    it('rejects blank, malformed and out-of-range input with the range in the user’s unit', () => {
+      expect(weightError('')).toBe('Enter your weight.');
+      expect(weightError('-80')).toBe('Enter your weight as a number.');
+      expect(weightError('1,234')).toBe('Enter a weight between 20 and 500 kg.');
+      expect(weightError('30', 'imperial')).toBe('Enter a weight between 45 and 1,102 lb.');
+    });
+
+    it('accepts unusual but legitimate people', () => {
+      expect(weightError('38')).toBeNull();
+      expect(weightError('450', 'imperial')).toBeNull();
+    });
+
+    it('fills the typing field in the user’s unit (to 0.1)', () => {
+      expect(weightText({ kilograms: 80 }, 'imperial')).toBe('176.4');
+      expect(weightText(null, 'metric')).toBe('');
     });
   });
 

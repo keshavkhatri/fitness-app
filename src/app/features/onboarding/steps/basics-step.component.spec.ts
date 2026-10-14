@@ -2,12 +2,16 @@ import { TestBed } from '@angular/core/testing';
 
 import { KeyValueStorage } from '../../../core/storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../../../core/storage/testing/memory-key-value-storage';
+import { CLOCK } from '../../../core/time/clock';
 import { OnboardingFlow } from '../state/onboarding-flow.service';
 import { BasicsStepComponent } from './basics-step.component';
 
+/** 7 October 2026. */
+const NOW = new Date(2026, 9, 7);
+
 function setup() {
   TestBed.configureTestingModule({
-    providers: [OnboardingFlow, { provide: KeyValueStorage, useValue: new MemoryKeyValueStorage() }],
+    providers: [OnboardingFlow, { provide: KeyValueStorage, useValue: new MemoryKeyValueStorage() }, { provide: CLOCK, useValue: () => NOW }],
   });
   const fixture = TestBed.createComponent(BasicsStepComponent);
   fixture.detectChanges();
@@ -24,10 +28,7 @@ function setup() {
     fixture.detectChanges();
   };
   const choose = (text: string) => {
-    [...el.querySelectorAll('fit-choice-group label, fit-segmented-control label')]
-      .find((l) => l.textContent?.includes(text))!
-      .querySelector('input')!
-      .click();
+    [...el.querySelectorAll('fit-choice-group label')].find((l) => l.textContent?.includes(text))!.querySelector('input')!.click();
     fixture.detectChanges();
   };
   const submit = () => {
@@ -36,104 +37,83 @@ function setup() {
     return ok;
   };
 
-  return { el, field, type, choose, submit, flow: TestBed.inject(OnboardingFlow) };
+  return { fixture, el, field, type, choose, submit, flow: TestBed.inject(OnboardingFlow) };
 }
 
-describe('BasicsStepComponent', () => {
-  it('shows inline, accessible errors only after the first submit', () => {
+describe('BasicsStepComponent (about you)', () => {
+  it('asks for name, sex (as cards) and date of birth (date picker, no later than today)', () => {
+    const { el, field } = setup();
+    expect(el.querySelector('h1')?.textContent).toContain("Let's get to know you");
+    expect([...el.querySelectorAll('fit-choice-group .title')].map((t) => t.textContent?.trim())).toEqual(['Male', 'Female', 'Prefer not to say']);
+    expect(field('Date of birth').type).toBe('date');
+    expect(field('Date of birth').max).toBe('2026-10-07');
+  });
+
+  it('shows inline, accessible errors only after the first submit, and focuses the first problem', () => {
     const { el, field, submit } = setup();
-    expect(el.querySelectorAll('.error').length).toBe(0);
+    expect(el.textContent).not.toContain('Add your name');
 
     expect(submit()).toBe(false);
 
-    const day = field('Day');
-    expect(day.getAttribute('aria-invalid')).toBe('true');
-    expect(document.getElementById(day.getAttribute('aria-describedby')!)?.textContent).toContain(
-      'Enter your date of birth.',
-    );
-    expect(document.activeElement).toBe(day); // focus moves to the first problem
+    const name = field('Your name');
+    expect(name.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(name);
+    expect(el.textContent).toContain('Add your name to continue.');
     expect(el.textContent).toContain('Choose an option.');
+    expect(el.textContent).toContain('Enter your date of birth.');
   });
 
   it('clears an error as soon as the field is fixed', () => {
-    const { field, type, submit } = setup();
+    const { el, type, submit } = setup();
     submit();
-
-    type('Day', '15');
-    type('Month', '6');
-    type('Year', '1990');
-    expect(field('Day').getAttribute('aria-invalid')).toBeNull();
+    type('Your name', 'Alex');
+    expect(el.textContent).not.toContain('Add your name to continue.');
   });
 
-  it('commits valid answers to the flow in canonical units', () => {
+  it('commits valid answers, keeping height and weight answered elsewhere', () => {
     const { type, choose, submit, flow } = setup();
-    choose('Imperial');
-    type('Day', '3');
-    type('Month', '4');
-    type('Year', '1990');
+    flow.update({ basics: { ...flow.draft().basics, height: { centimeters: 180 } } });
+    type('Your name', '  Alex ');
     choose('Male');
-    type('Feet', '6');
-    type('Inches', '1');
-    type('Weight', '190');
+    type('Date of birth', '1994-01-12');
 
     expect(submit()).toBe(true);
-    expect(flow.draft().unitSystem).toBe('imperial');
-    expect(flow.draft().basics).toEqual({
-      dateOfBirth: '1990-04-03',
-      sex: 'male',
-      height: { centimeters: 185.4 },
-      weight: { kilograms: 86.18 },
-    });
+    expect(flow.draft().name).toBe('Alex');
+    expect(flow.draft().basics).toEqual({ dateOfBirth: '1994-01-12', sex: 'male', height: { centimeters: 180 }, weight: null });
   });
 
-  it('rejects an under-18 date of birth', () => {
+  it('rejects an under-18 date of birth and commits nothing', () => {
     const { el, type, choose, submit, flow } = setup();
-    const year = String(new Date().getFullYear() - 17);
-    type('Day', '1');
-    type('Month', '1');
-    type('Year', year);
-    choose('Male');
-    type('Height', '180');
-    type('Weight', '80');
+    type('Your name', 'Alex');
+    choose('Female');
+    type('Date of birth', '2010-03-01');
 
     expect(submit()).toBe(false);
     expect(el.textContent).toContain('You need to be 18 or older to use this app.');
-    expect(flow.draft().basics).toBeNull();
+    expect(flow.draft().basics.dateOfBirth).toBeNull();
   });
 
-  it('does not commit invalid input', () => {
-    const { type, choose, submit, flow } = setup();
-    type('Day', '15');
-    type('Month', '6');
-    type('Year', '1990');
+  it('keeps valid answers when the user leaves without continuing (Back)', () => {
+    const { fixture, type, choose, flow } = setup();
+    type('Your name', 'Sam');
     choose('Female');
-    type('Height', '170');
-    type('Weight', '0');
+    type('Date of birth', '2010-03-01'); // too young: not kept
 
-    expect(submit()).toBe(false);
-    expect(flow.draft().basics).toBeNull();
+    fixture.destroy();
+
+    expect(flow.draft().name).toBe('Sam');
+    expect(flow.draft().basics).toMatchObject({ sex: 'female', dateOfBirth: null });
   });
 
-  it('shows an ambiguous inches value as a height error and keeps it out of the draft', () => {
-    const { el, field, type, choose, submit, flow } = setup();
-    choose('Imperial');
-    type('Day', '3');
-    type('Month', '4');
-    type('Year', '1990');
-    choose('Male');
-    type('Feet', '5');
-    type('Inches', '1,234'); // e.g. pasted past the field's length limit
-    type('Weight', '190');
-
-    expect(submit()).toBe(false);
-    expect(el.querySelector('#height-error')?.textContent?.trim()).toBe("Check number format. Use one decimal separator. Thousands separators aren't supported.");
-    expect(field('Inches').getAttribute('aria-invalid')).toBe('true');
-    expect(field('Inches').getAttribute('aria-describedby')).toContain('height-error');
-    expect(document.activeElement).toBe(field('Feet')); // the height group's first field, as before
-    expect(flow.draft().basics).toBeNull();
-
-    type('Inches', '1.5');
-    expect(submit()).toBe(true);
-    expect(flow.draft().basics?.height).toEqual({ centimeters: 156.2 });
+  it('starts from saved answers', () => {
+    TestBed.configureTestingModule({ providers: [OnboardingFlow, { provide: KeyValueStorage, useValue: new MemoryKeyValueStorage() }] });
+    const flow = TestBed.inject(OnboardingFlow);
+    flow.update({ name: 'Kim', basics: { dateOfBirth: '1980-02-29', sex: 'prefer-not-to-say', height: null, weight: null } });
+    const fixture = TestBed.createComponent(BasicsStepComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const inputs = [...el.querySelectorAll<HTMLInputElement>('fit-text-field input')];
+    expect(inputs.map((i) => i.value)).toEqual(['Kim', '1980-02-29']);
+    expect(el.querySelector('fit-choice-group .selected')?.textContent).toContain('Prefer not to say');
   });
 });

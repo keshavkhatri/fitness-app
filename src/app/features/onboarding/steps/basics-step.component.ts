@@ -1,142 +1,152 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
-import { Sex, UnitSystem, weightUnitLabel } from '../../../domain/fitness-profile';
-import { ChoiceGroupComponent, NoticeComponent, SegmentedControlComponent, TextFieldComponent } from '../../../shared/ui';
-import { SEX_OPTIONS, UNIT_SYSTEM_OPTIONS } from '../onboarding-content';
+import { NAME_MAX_LENGTH, normalizeName } from '../../../core/identity/user-identity.service';
+import { CLOCK, localIsoDate } from '../../../core/time/clock';
+import { ChoiceGroupComponent, NoticeComponent, TextFieldComponent } from '../../../shared/ui';
+import { SEX_CARD_OPTIONS } from '../onboarding-content';
 import { OnboardingFlow } from '../state/onboarding-flow.service';
 import { ReportImport } from '../state/report-import.service';
-import { ReportNoteTone, applyReportPrefill, reportFieldNotes, reportReviewSummary } from '../state/report-review';
+import { reportReviewSummary, reportPrefillValues } from '../state/report-review';
 import {
-  BasicsErrors,
-  BasicsField,
-  BasicsFormInput,
-  basicsFormFromDraft,
-  convertBasicsForm,
-  validateBasicsForm,
+  AboutErrors,
+  AboutField,
+  AboutFormInput,
+  aboutFormFromDraft,
+  validateAboutForm,
+  validateBirthDateInput,
 } from '../validation/onboarding-validation';
 import { OnboardingStepForm, STEP_HEADING_ID } from './onboarding-step-form';
+import { reportNotesWithIcons } from './report-notes';
 
-const FIELD_ORDER: readonly BasicsField[] = ['dateOfBirth', 'sex', 'height', 'weight'];
+const FIELD_ORDER: readonly AboutField[] = ['name', 'sex', 'dateOfBirth'];
 
-const NOTE_ICONS: Readonly<Record<ReportNoteTone, string>> = {
-  read: 'checkmark-circle',
-  check: 'warning-outline',
-  missing: 'information-circle-outline',
-};
-
+/**
+ * About you: name (for Home's greeting), sex and date of birth. Height and
+ * weight follow on their own screens.
+ *
+ * When the user set up from an InBody report, this is also where its
+ * summary is shown, and sex starts from the report until confirmed here.
+ */
 @Component({
   selector: 'app-basics-step',
   templateUrl: './basics-step.component.html',
   styleUrl: './basics-step.component.scss',
-  imports: [IonIcon, NgTemplateOutlet, ChoiceGroupComponent, NoticeComponent, SegmentedControlComponent, TextFieldComponent],
+  imports: [IonIcon, ChoiceGroupComponent, NoticeComponent, TextFieldComponent],
   providers: [{ provide: OnboardingStepForm, useExisting: BasicsStepComponent }],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BasicsStepComponent implements OnboardingStepForm {
   private readonly flow = inject(OnboardingFlow);
   private readonly report = inject(ReportImport, { optional: true });
+  private readonly clock = inject(CLOCK);
 
   protected readonly headingId = STEP_HEADING_ID;
-  protected readonly sexOptions = SEX_OPTIONS;
-  protected readonly unitOptions = UNIT_SYSTEM_OPTIONS;
+  protected readonly sexOptions = SEX_CARD_OPTIONS;
+  protected readonly nameMaxLength = NAME_MAX_LENGTH;
+  /** Latest date the picker offers. */
+  protected readonly today = computed(() => localIsoDate(this.clock()));
 
-  /**
-   * The InBody report being reviewed, when the user chose to set up from one
-   * and it was read: this step is then where they check and correct it.
-   */
+  /** The InBody report being reviewed, when the user set up from one and it was read. */
   private readonly reading = computed(() =>
     this.flow.draft().setupMethod === 'report' ? (this.report?.reading() ?? null) : null,
   );
   protected readonly reportNotes = computed(() => {
     const reading = this.reading();
-    if (!reading) {
-      return null;
-    }
-    const notes = reportFieldNotes(reading);
-    const withIcon = (field: BasicsField) => ({ ...notes[field], icon: NOTE_ICONS[notes[field].tone] });
-    return { dateOfBirth: withIcon('dateOfBirth'), sex: withIcon('sex'), height: withIcon('height'), weight: withIcon('weight') };
+    return reading ? reportNotesWithIcons(reading) : null;
   });
   protected readonly reportSummary = computed(() => {
     const reading = this.reading();
     return reading ? reportReviewSummary(reading) : null;
   });
 
-  /**
-   * Raw form state; committed to the flow only once valid. A newly read
-   * report fills it in until the user confirms it with Continue.
-   */
-  protected readonly form = signal<BasicsFormInput>(this.initialForm());
+  /** Raw form state; committed to the flow once valid (or, field by field, on leaving). */
+  protected readonly form = signal<AboutFormInput>(this.initialForm());
   private readonly submitted = signal(false);
+  private dirty = false;
 
   /** Errors appear after the first Continue, then update live as the user fixes them. */
-  protected readonly errors = computed<BasicsErrors>(() => {
+  protected readonly errors = computed<AboutErrors>(() => {
     if (!this.submitted()) {
       return {};
     }
-    const result = validateBasicsForm(this.form());
+    const result = validateAboutForm(this.form(), this.clock());
     return result.ok ? {} : result.errors;
   });
 
-  protected readonly isMetric = computed(() => this.form().unitSystem === 'metric');
-  protected readonly weightUnit = computed(() => weightUnitLabel(this.form().unitSystem));
   protected readonly selectedSex = computed(() => {
     const sex = this.form().sex;
     return sex ? [sex] : [];
   });
 
-  private readonly birthDayField = viewChild.required<TextFieldComponent>('birthDayField');
+  private readonly nameField = viewChild.required<TextFieldComponent>('nameField');
   private readonly sexGroup = viewChild.required(ChoiceGroupComponent);
-  private readonly heightField = viewChild.required<TextFieldComponent>('heightField');
-  private readonly weightField = viewChild.required<TextFieldComponent>('weightField');
+  private readonly birthDateField = viewChild.required<TextFieldComponent>('birthDateField');
 
-  protected patch(change: Partial<BasicsFormInput>): void {
+  constructor() {
+    // Going back keeps what was answered here (each valid answer on its own).
+    inject(DestroyRef).onDestroy(() => this.keepValidAnswers());
+  }
+
+  protected patch(change: Partial<AboutFormInput>): void {
+    this.dirty = true;
     this.form.update((form) => ({ ...form, ...change }));
-  }
-
-  protected setSex(sex: Sex): void {
-    this.patch({ sex });
-  }
-
-  protected setUnitSystem(unitSystem: UnitSystem): void {
-    this.form.update((form) => convertBasicsForm(form, unitSystem));
-    // Saved immediately: it's a preference, and later steps display in it.
-    this.flow.update({ unitSystem });
   }
 
   submit(): boolean {
     this.submitted.set(true);
-    const result = validateBasicsForm(this.form());
-    if (result.ok) {
-      this.flow.update({ basics: result.value, unitSystem: this.form().unitSystem });
-      if (this.reading()) {
-        this.report?.markBasicsConfirmed();
-      }
-      return true;
+    const result = validateAboutForm(this.form(), this.clock());
+    if (!result.ok) {
+      this.focusField(FIELD_ORDER.find((field) => result.errors[field]) ?? 'name');
+      return false;
     }
-    this.focusField(FIELD_ORDER.find((field) => result.errors[field]) ?? 'dateOfBirth');
-    return false;
+    const { name, dateOfBirth, sex } = result.value;
+    this.flow.update({ name, basics: { ...this.flow.draft().basics, dateOfBirth, sex } });
+    this.confirmReport();
+    this.dirty = false;
+    return true;
   }
 
-  /** Ids describing a field: its report note (when reviewing a report) and `others`. */
-  protected describedBy(field: BasicsField, ...others: (string | null)[]): string | null {
-    const ids = [...others, this.reportNotes() ? `${field}-report-note` : null].filter(Boolean);
-    return ids.length ? ids.join(' ') : null;
+  /** Describes the sex group: its hint or error, and its report note. */
+  protected describedBy(field: 'sex', other: string): string {
+    return this.reportNotes() ? `${other} ${field}-report-note` : other;
   }
 
-  private initialForm(): BasicsFormInput {
-    const form = basicsFormFromDraft(this.flow.draft());
+  private keepValidAnswers(): void {
+    if (!this.dirty) {
+      return;
+    }
+    const form = this.form();
+    const name = normalizeName(form.name);
+    const dob = validateBirthDateInput(form.birthDate, this.clock());
+    const basics = this.flow.draft().basics;
+    this.flow.update({
+      ...(name ? { name } : {}),
+      basics: { ...basics, sex: form.sex ?? basics.sex, dateOfBirth: dob.ok ? dob.value : basics.dateOfBirth },
+    });
+    if (form.sex) {
+      this.confirmReport();
+    }
+  }
+
+  private confirmReport(): void {
+    if (this.reading()) {
+      this.report?.markConfirmed('sex');
+    }
+  }
+
+  private initialForm(): AboutFormInput {
+    const form = aboutFormFromDraft(this.flow.draft());
     const reading = this.reading();
-    return reading && this.report?.basicsPrefillPending() ? applyReportPrefill(form, reading.prefill) : form;
+    const reportSex = reading && this.report?.isPrefillPending('sex') ? reportPrefillValues(reading.prefill).sex : undefined;
+    return reportSex ? { ...form, sex: reportSex } : form;
   }
 
-  private focusField(field: BasicsField): void {
-    const targets: Record<BasicsField, { focus(): void }> = {
-      dateOfBirth: this.birthDayField(),
+  private focusField(field: AboutField): void {
+    const targets: Record<AboutField, { focus(): void }> = {
+      name: this.nameField(),
       sex: this.sexGroup(),
-      height: this.heightField(),
-      weight: this.weightField(),
+      dateOfBirth: this.birthDateField(),
     };
     targets[field].focus();
   }

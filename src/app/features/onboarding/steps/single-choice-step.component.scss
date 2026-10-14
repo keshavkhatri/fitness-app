@@ -19,3 +19,7 @@
 .error {
   @include step.error;
 }
+
+.note {
+  @include step.note;
+}

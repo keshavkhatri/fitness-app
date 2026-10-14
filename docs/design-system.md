@@ -333,7 +333,8 @@ Native elements stay native (`button[fit-button]`, not a `<div>` with a click).
 | `fit-skeleton` | (see component) | Loading placeholders. |
 | `fit-text-field` | (see component) | Labelled input with suffix, hint and error; 52px. |
 | `fit-segmented-control` | `variant` **(new)**: default (grey track, forms), ink (ink pill, lime selection: a light screen's main switch), compact (text options with a soft selected pill: a card's range), inverse (surface track, text-colour selection: ranges on dark screens), pills (separate pills: chart metrics on dark screens), underline (tabs of one record) | 2–4 mutually exclusive views or ranges. Native radios; every segment stays a 44px target whatever its look. |
-| `fit-choice-group` | list, grid, chips layouts; single/multiple | Choosing answers (onboarding, forms). |
+| `fit-choice-group` | list, grid, chips, circles layouts; single/multiple; optional `media` (photo or placeholder) on list cards | Choosing answers (onboarding, forms). |
+| `fit-ruler` | horizontal / vertical; any range and step | Picking a number by dragging a scale (onboarding height and weight). An ARIA slider: drag (touch, pen, mouse) with flick and snap, tap a tick, arrows / Page / Home / End, wheel. Only nearby ticks are drawn. Always offer a typed alternative next to it. |
 | `fit-bottom-sheet` | `title`, `description`, `[(open)]`, `screenTheme` **(new)** | Short focused tasks and confirmations. |
 | `fit-page` | `title`, `heading`, `kicker`, `refreshable`, `wide`, `customHeader` (projected `[fitPageHeader]` instead of toolbar + large title) · projected `[fitPageSubtitle]` and `[fitPageAside]` | Top-level tab pages (large title that collapses into the toolbar). |
 
@@ -708,3 +709,27 @@ Shared chrome lives in `src/theme/_tracking.scss` and is applied by host class:
   (confirmed for Phase 2).
 - Overriding `--color-primary` to recolor a `fit-progress` no longer works
   (it reads `--color-primary-strong`); override that token instead.
+
+## First-run onboarding
+
+`/onboarding` (`features/onboarding`): twelve screens on the warm (lime) dashboard theme, with a
+dark welcome. Progress is the slim bar and `n/total` in the header (question and review screens
+only); Continue sits in the footer above the safe area. Copy states only what the app does.
+
+- **Welcome**: dark backdrop (a placeholder until a photo ships; `onboarding-media.ts`), the brand
+  from `APP_BRAND`, four benefits, *Get started*; *Set up from an InBody report instead* when the
+  build can read reports.
+- **About you**: name, sex as three cards (generic symbols until avatar artwork ships), date of birth
+  from the platform date picker (18+).
+- **Height**: vertical `fit-ruler` (26 px per cm or inch, higher is up) beside a placeholder
+  figure; *cm / ft in* switch; *Enter manually* opens typed fields that stay in step with the ruler.
+- **Weight**: big readout over a horizontal `fit-ruler` (10 px per 0.1); *kg / lb*; *Enter manually*.
+- **Activity, goal, experience, location**: list cards; goal and location cards lead with a
+  picture (`media`; placeholders today). **Days per week**: `circles` layout, 2–6 (the domain's
+  `TRAINING_DAYS_PER_WEEK`), with a tip. **Equipment**: 3-column icon tiles (multiple).
+- **Review**: grouped rows (icon, label, value, chevron); each opens its screen and returns.
+- **Complete**: says the plan is ready only after `WorkoutPlanService` made it; continues to the
+  assessment.
+
+Not built (no data behind it): a nutrition-preference screen and the BMI "visual reference" under
+the weight ruler.

@@ -38,3 +38,31 @@
     font-size: 16px;
   }
 }
+
+/// A tip card under a step's answers.
+@mixin note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+
+  ion-icon {
+    flex-shrink: 0;
+    font-size: 22px;
+    color: var(--color-primary-text);
+  }
+
+  p {
+    @include fx.text(body-sm);
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  strong {
+    display: block;
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}

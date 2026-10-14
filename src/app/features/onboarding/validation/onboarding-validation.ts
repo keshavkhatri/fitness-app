@@ -1,5 +1,6 @@
 import {
   AGE_YEARS,
+  BodyHeight,
   BodyWeight,
   GOAL_TARGET_POLICIES,
   HEIGHT_CM,
@@ -15,21 +16,21 @@ import {
   formatWeight,
   heightFromCentimeters,
   heightFromFeetInches,
-  heightInCentimeters,
   isTargetWeightDirectionValid,
   isValidCalendarDate,
   isWithin,
   parseDecimal,
   parseDecimalInput,
-  parseIsoCalendarDate,
   parseWholeNumber,
+  roundTo,
   toFeetInches,
   toIsoCalendarDate,
   weightFromUnit,
   weightInUnit,
   weightUnitLabel,
 } from '../../../domain/fitness-profile';
-import { BasicInfo, OnboardingDraft } from '../state/onboarding-draft';
+import { normalizeName } from '../../../core/identity/user-identity.service';
+import { OnboardingDraft } from '../state/onboarding-draft';
 import { OnboardingStepId, applicableSteps } from '../state/onboarding-steps';
 
 /**
@@ -42,9 +43,10 @@ export type ValidationResult<T, E> = { readonly ok: true; readonly value: T } | 
 // --- Draft-level (can the user move past this step?) ---------------------------
 
 export const STEP_REQUIRED_MESSAGES: Partial<Record<OnboardingStepId, string>> = {
-  name: 'Add your name to continue.',
-  goal: 'Choose a goal to continue.',
   basics: 'Add your details to continue.',
+  height: 'Set your height to continue.',
+  weight: 'Set your weight to continue.',
+  goal: 'Choose a goal to continue.',
   experience: 'Choose your experience level to continue.',
   frequency: 'Choose how many days you want to train.',
   location: 'Choose where you train.',
@@ -56,12 +58,14 @@ export const STEP_REQUIRED_MESSAGES: Partial<Record<OnboardingStepId, string>> =
 export function validateStep(stepId: OnboardingStepId, draft: OnboardingDraft): string | null {
   const required = STEP_REQUIRED_MESSAGES[stepId] ?? null;
   switch (stepId) {
-    case 'name':
-      return draft.name ? null : required;
+    case 'basics':
+      return draft.name && draft.basics.dateOfBirth && draft.basics.sex ? null : required;
+    case 'height':
+      return draft.basics.height ? null : required;
+    case 'weight':
+      return draft.basics.weight ? null : required;
     case 'goal':
       return draft.primaryGoal ? null : required;
-    case 'basics':
-      return draft.basics ? null : required;
     case 'experience':
       return draft.trainingExperience ? null : required;
     case 'frequency':
@@ -74,7 +78,7 @@ export function validateStep(stepId: OnboardingStepId, draft: OnboardingDraft): 
       return draft.activityLevel ? null : required;
     case 'goal-target': {
       const target = draft.goalTarget.targetWeight;
-      if (!target || !draft.primaryGoal || !draft.basics) {
+      if (!target || !draft.primaryGoal || !draft.basics.weight) {
         return null;
       }
       return targetDirectionError(draft.primaryGoal, target, draft.basics.weight, draft.unitSystem);
@@ -90,59 +94,62 @@ export function firstIncompleteStep(draft: OnboardingDraft): OnboardingStepId | 
   return step?.id ?? null;
 }
 
-// --- Basic information form ------------------------------------------------------
+// --- About you: name, date of birth, sex -------------------------------------------
 
+/** The body details a report can speak to; one note each (see report-review). */
 export type BasicsField = 'dateOfBirth' | 'sex' | 'height' | 'weight';
-export type BasicsErrors = Partial<Record<BasicsField, string>>;
 
-/** Raw form state: numbers are kept as typed text until validated. */
-export interface BasicsFormInput {
-  readonly unitSystem: UnitSystem;
-  readonly birthDay: string;
-  readonly birthMonth: string;
-  readonly birthYear: string;
+export type AboutField = 'name' | 'dateOfBirth' | 'sex';
+export type AboutErrors = Partial<Record<AboutField, string>>;
+
+/** Raw form state: kept as entered until validated. */
+export interface AboutFormInput {
+  readonly name: string;
+  /** From the platform date picker: YYYY-MM-DD, or '' while incomplete. */
+  readonly birthDate: string;
   readonly sex: Sex | null;
-  readonly heightCm: string;
-  readonly heightFeet: string;
-  readonly heightInches: string;
-  readonly weight: string;
 }
 
-export function basicsFormFromDraft(draft: OnboardingDraft): BasicsFormInput {
-  const basics = draft.basics;
-  const unitSystem = draft.unitSystem;
-  const feetInches = basics ? toFeetInches(basics.height) : null;
-  const dob = basics ? parseIsoCalendarDate(basics.dateOfBirth) : null;
-  return {
-    unitSystem,
-    birthDay: dob ? String(dob.day) : '',
-    birthMonth: dob ? String(dob.month) : '',
-    birthYear: dob ? String(dob.year) : '',
-    sex: basics?.sex ?? null,
-    heightCm: basics ? String(heightInCentimeters(basics.height)) : '',
-    heightFeet: feetInches ? String(feetInches.feet) : '',
-    heightInches: feetInches ? String(feetInches.inches) : '',
-    weight: basics ? String(weightInUnit(basics.weight, unitSystem)) : '',
-  };
+export interface AboutAnswers {
+  readonly name: string;
+  readonly dateOfBirth: IsoCalendarDate;
+  readonly sex: Sex;
 }
 
-/** Switches unit system, converting whatever valid values have been typed so far. */
-export function convertBasicsForm(input: BasicsFormInput, unitSystem: UnitSystem): BasicsFormInput {
-  if (input.unitSystem === unitSystem) {
-    return input;
+export function aboutFormFromDraft(draft: OnboardingDraft): AboutFormInput {
+  return { name: draft.name ?? '', birthDate: draft.basics.dateOfBirth ?? '', sex: draft.basics.sex };
+}
+
+export function validateAboutForm(input: AboutFormInput, now: Date = new Date()): ValidationResult<AboutAnswers, AboutErrors> {
+  const errors: AboutErrors = {};
+  const name = normalizeName(input.name);
+  if (!name) {
+    errors.name = 'Add your name to continue.';
   }
-  const height = parseHeight(input);
-  const weightValue = parseDecimal(input.weight);
-  const feetInches = height ? toFeetInches(height) : null;
-  return {
-    ...input,
-    unitSystem,
-    heightCm: height ? String(heightInCentimeters(height)) : input.heightCm,
-    heightFeet: feetInches ? String(feetInches.feet) : input.heightFeet,
-    heightInches: feetInches ? String(feetInches.inches) : input.heightInches,
-    weight:
-      weightValue !== null ? String(weightInUnit(weightFromUnit(weightValue, input.unitSystem), unitSystem)) : input.weight,
-  };
+  const dob = validateBirthDateInput(input.birthDate, now);
+  if (!dob.ok) {
+    errors.dateOfBirth = dob.errors;
+  }
+  if (!input.sex) {
+    errors.sex = 'Choose an option.';
+  }
+  if (!name || !dob.ok || !input.sex) {
+    return { ok: false, errors };
+  }
+  return { ok: true, value: { name, dateOfBirth: dob.value, sex: input.sex } };
+}
+
+/**
+ * A date of birth from the date picker (YYYY-MM-DD). Checked like a typed
+ * one: a real date, not in the future, and an adult's.
+ */
+export function validateBirthDateInput(value: string, now: Date = new Date()): ValidationResult<IsoCalendarDate, string> {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) {
+    return { ok: false, errors: value.trim() === '' ? 'Enter your date of birth.' : 'Enter your full date of birth.' };
+  }
+  const [, year, month, day] = match;
+  return validateDateOfBirthInput(day, month, year, now);
 }
 
 /**
@@ -184,57 +191,70 @@ export function validateDateOfBirthInput(
   return { ok: true, value: toIsoCalendarDate(date) as IsoCalendarDate };
 }
 
-export function validateBasicsForm(
-  input: BasicsFormInput,
-  now: Date = new Date(),
-): ValidationResult<BasicInfo, BasicsErrors> {
-  const errors: BasicsErrors = {};
+// --- Height and weight, typed in ----------------------------------------------------
 
-  const dob = validateDateOfBirthInput(input.birthDay, input.birthMonth, input.birthYear, now);
-  if (!dob.ok) {
-    errors.dateOfBirth = dob.errors;
-  }
-
-  if (!input.sex) {
-    errors.sex = 'Choose an option.';
-  }
-
-  const height = parseHeight(input);
-  const heightBlank =
-    input.unitSystem === 'metric' ? input.heightCm.trim() === '' : input.heightFeet.trim() === '';
-  if (heightBlank) {
-    errors.height = 'Enter your height.';
-  } else if (input.unitSystem === 'imperial' && parseInches(input.heightInches).kind === 'ambiguous') {
-    errors.height = AMBIGUOUS_NUMBER;
-  } else if (!height) {
-    errors.height =
-      input.unitSystem === 'metric' ? 'Enter your height in centimeters.' : 'Enter feet, and inches from 0 to 11.';
-  } else if (!isWithin(height.centimeters, HEIGHT_CM)) {
-    errors.height = `Enter a height between ${heightRangeText(input.unitSystem)}.`;
-  }
-
-  const weight = parseWeightInput(input.weight, input.unitSystem);
-  if (input.weight.trim() === '') {
-    errors.weight = 'Enter your weight.';
-  } else if (!weight) {
-    errors.weight = 'Enter your weight as a number.';
-  } else if (!isWithin(weight.kilograms, WEIGHT_KG)) {
-    errors.weight = `Enter a weight between ${weightRangeText(input.unitSystem)}.`;
-  }
-
-  if (Object.keys(errors).length > 0 || !dob.ok || !input.sex || !height || !weight) {
-    return { ok: false, errors };
-  }
-  return { ok: true, value: { dateOfBirth: dob.value, sex: input.sex, height, weight } };
+/** Height as typed: centimeters, or feet and inches. */
+export interface HeightTextInput {
+  readonly unitSystem: UnitSystem;
+  readonly cm: string;
+  readonly feet: string;
+  readonly inches: string;
 }
 
-function parseHeight(input: BasicsFormInput) {
+/** The typing fields for a height, in the given units (to 0.1 cm, or whole inches). */
+export function heightText(height: BodyHeight | null, unitSystem: UnitSystem): HeightTextInput {
+  if (!height) {
+    return { unitSystem, cm: '', feet: '', inches: '' };
+  }
+  const { feet, inches } = toFeetInches(height);
+  return { unitSystem, cm: String(roundTo(height.centimeters, 1)), feet: String(feet), inches: String(inches) };
+}
+
+export function validateHeightInput(input: HeightTextInput): ValidationResult<BodyHeight, string> {
+  const fail = (errors: string) => ({ ok: false, errors }) as const;
+  const blank = input.unitSystem === 'metric' ? input.cm.trim() === '' : input.feet.trim() === '';
+  if (blank) {
+    return fail('Enter your height.');
+  }
+  if (input.unitSystem === 'imperial' && parseInches(input.inches).kind === 'ambiguous') {
+    return fail(AMBIGUOUS_NUMBER);
+  }
+  const height = parseHeight(input);
+  if (!height) {
+    return fail(input.unitSystem === 'metric' ? 'Enter your height in centimeters.' : 'Enter feet, and inches from 0 to 11.');
+  }
+  if (!isWithin(height.centimeters, HEIGHT_CM)) {
+    return fail(`Enter a height between ${heightRangeText(input.unitSystem)}.`);
+  }
+  return { ok: true, value: height };
+}
+
+/** The typing field for a weight, in the given unit (to 0.1). */
+export function weightText(weight: BodyWeight | null, unitSystem: UnitSystem): string {
+  return weight ? String(weightInUnit(weight, unitSystem)) : '';
+}
+
+export function validateWeightInput(text: string, unitSystem: UnitSystem): ValidationResult<BodyWeight, string> {
+  if (text.trim() === '') {
+    return { ok: false, errors: 'Enter your weight.' };
+  }
+  const weight = parseWeightInput(text, unitSystem);
+  if (!weight) {
+    return { ok: false, errors: 'Enter your weight as a number.' };
+  }
+  if (!isWithin(weight.kilograms, WEIGHT_KG)) {
+    return { ok: false, errors: `Enter a weight between ${weightRangeText(unitSystem)}.` };
+  }
+  return { ok: true, value: weight };
+}
+
+function parseHeight(input: HeightTextInput): BodyHeight | null {
   if (input.unitSystem === 'metric') {
-    const cm = parseDecimal(input.heightCm);
+    const cm = parseDecimal(input.cm);
     return cm === null ? null : heightFromCentimeters(cm);
   }
-  const feet = parseWholeNumber(input.heightFeet);
-  const inches = parseInches(input.heightInches);
+  const feet = parseWholeNumber(input.feet);
+  const inches = parseInches(input.inches);
   if (feet === null || inches.kind !== 'ok' || inches.value >= 12) {
     return null;
   }

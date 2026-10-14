@@ -14,8 +14,15 @@ export interface OnboardingProgress {
 export const INITIAL_PROGRESS: OnboardingProgress = { stepId: 'welcome', draft: EMPTY_DRAFT, editingFromSummary: false };
 
 const STORAGE_KEY = 'fitness.onboarding-progress';
-/** v2: basics store `dateOfBirth` instead of `age`; older progress restarts onboarding. */
-const SCHEMA_VERSION = 2;
+/**
+ * v2: basics store `dateOfBirth` instead of `age`; older progress restarts onboarding.
+ * v3: basics are answered one screen at a time (partial), and the name moved
+ * onto the basics screen. v2 progress reads the same way (see LEGACY_STEPS).
+ */
+const SCHEMA_VERSION = 3;
+const READABLE_VERSIONS: readonly unknown[] = [2, 3];
+/** Steps that no longer exist, and where their saved progress resumes. */
+const LEGACY_STEPS: Readonly<Record<string, OnboardingStepId>> = { name: 'basics' };
 
 /**
  * Device-local, resumable onboarding progress. Holds only completed answers
@@ -37,10 +44,12 @@ export class OnboardingProgressStore {
     }
     try {
       const stored = JSON.parse(raw) as Record<string, unknown>;
-      if (stored['version'] !== SCHEMA_VERSION) {
+      if (!READABLE_VERSIONS.includes(stored['version'])) {
         return INITIAL_PROGRESS;
       }
-      const stepId = isOnboardingStepId(stored['stepId']) ? stored['stepId'] : 'welcome';
+      const savedStep = stored['stepId'];
+      const legacyStep = typeof savedStep === 'string' && Object.hasOwn(LEGACY_STEPS, savedStep) ? LEGACY_STEPS[savedStep] : undefined;
+      const stepId = isOnboardingStepId(savedStep) ? savedStep : (legacyStep ?? 'welcome');
       return {
         // A saved "finish" would mean the profile exists; restart safely otherwise.
         stepId: stepId === 'finish' ? 'summary' : stepId,

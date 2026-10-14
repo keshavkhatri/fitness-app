@@ -2,12 +2,6 @@
 @let e = errors();
 @let notes = reportNotes();
 
-<ng-template #reportNote let-field="field" let-note="note">
-  <p class="message report-note" [attr.data-tone]="note.tone" [id]="field + '-report-note'">
-    <ion-icon [name]="note.icon" aria-hidden="true" />{{ note.text }}
-  </p>
-</ng-template>
-
 @if (reportSummary(); as summary) {
   <header class="header">
     <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>Check your details</h1>
@@ -37,165 +31,69 @@
   </fit-notice>
 } @else {
   <header class="header">
-    <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>A bit about you</h1>
-    <p class="helper">We use this to tailor your training and nutrition.</p>
+    <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>Let's get to know you</h1>
+    <p class="helper">This helps us tailor your training and nutrition.</p>
   </header>
 }
 
 <div class="fields">
-  <div class="field-group">
-    <!-- Visual label only; the control carries its own accessible legend. -->
-    <span class="group-label" aria-hidden="true">Units</span>
-    <fit-segmented-control
-      name="unit-system"
-      legend="Units"
-      [options]="unitOptions"
-      [value]="f.unitSystem"
-      (valueChange)="setUnitSystem($event)"
-    />
-  </div>
-
-  <!-- Date of birth (not age, which goes stale). Only derived age is ever displayed. -->
-  <fieldset class="field-group">
-    <legend class="group-label">Date of birth</legend>
-    <div class="date">
-      <fit-text-field
-        #birthDayField
-        label="Day"
-        inputMode="numeric"
-        autocomplete="bday-day"
-        [maxLength]="2"
-        [value]="f.birthDay"
-        (valueChange)="patch({ birthDay: $event })"
-        [invalid]="!!e.dateOfBirth"
-        [describedBy]="describedBy('dateOfBirth', 'dob-message')"
-      />
-      <fit-text-field
-        label="Month"
-        inputMode="numeric"
-        autocomplete="bday-month"
-        [maxLength]="2"
-        [value]="f.birthMonth"
-        (valueChange)="patch({ birthMonth: $event })"
-        [invalid]="!!e.dateOfBirth"
-        [describedBy]="describedBy('dateOfBirth', 'dob-message')"
-      />
-      <fit-text-field
-        label="Year"
-        inputMode="numeric"
-        autocomplete="bday-year"
-        [maxLength]="4"
-        [value]="f.birthYear"
-        (valueChange)="patch({ birthYear: $event })"
-        [invalid]="!!e.dateOfBirth"
-        [describedBy]="describedBy('dateOfBirth', 'dob-message')"
-      />
-    </div>
-    @if (e.dateOfBirth) {
-      <p class="message error" id="dob-message">
-        <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ e.dateOfBirth }}
-      </p>
-    } @else {
-      <p class="message" id="dob-message">Used to calculate your age. You must be 18 or older.</p>
-    }
-    @if (notes) {
-      <ng-container *ngTemplateOutlet="reportNote; context: { field: 'dateOfBirth', note: notes.dateOfBirth }" />
-    }
-  </fieldset>
+  <fit-text-field
+    #nameField
+    label="Your name"
+    autocomplete="given-name"
+    hint="We'll use it to greet you."
+    [maxLength]="nameMaxLength"
+    [value]="f.name"
+    (valueChange)="patch({ name: $event })"
+    [error]="e.name"
+  />
 
   <div class="field-group">
     <span class="group-label" id="sex-label">Sex</span>
     <fit-choice-group
+      class="sex"
       name="sex"
-      layout="chips"
+      layout="grid"
       labelledBy="sex-label"
+      [columns]="3"
       [describedBy]="describedBy('sex', e.sex ? 'sex-error' : 'sex-hint')"
       [invalid]="!!e.sex"
       [options]="sexOptions"
       [selected]="selectedSex()"
-      (optionToggled)="setSex($event)"
+      (optionToggled)="patch({ sex: $event })"
     />
     @if (e.sex) {
       <p class="message error" id="sex-error">
         <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ e.sex }}
       </p>
     } @else {
-      <p class="message" id="sex-hint">Used later to improve the accuracy of estimates.</p>
+      <p class="message" id="sex-hint">Used to make estimates more accurate.</p>
     }
     @if (notes) {
-      <ng-container *ngTemplateOutlet="reportNote; context: { field: 'sex', note: notes.sex }" />
+      <p class="message report-note" id="sex-report-note" [attr.data-tone]="notes.sex.tone">
+        <ion-icon [name]="notes.sex.icon" aria-hidden="true" />{{ notes.sex.text }}
+      </p>
     }
   </div>
 
-  @if (isMetric()) {
-    <div class="field-group">
-      <fit-text-field
-        #heightField
-        label="Height"
-        suffix="cm"
-        inputMode="decimal"
-        [maxLength]="5"
-        [value]="f.heightCm"
-        (valueChange)="patch({ heightCm: $event })"
-        [error]="e.height"
-        [describedBy]="describedBy('height')"
-      />
-      @if (notes) {
-        <ng-container *ngTemplateOutlet="reportNote; context: { field: 'height', note: notes.height }" />
-      }
-    </div>
-  } @else {
-    <fieldset class="field-group">
-      <legend class="group-label">Height</legend>
-      <div class="pair">
-        <fit-text-field
-          #heightField
-          label="Feet"
-          suffix="ft"
-          inputMode="numeric"
-          [maxLength]="1"
-          [value]="f.heightFeet"
-          (valueChange)="patch({ heightFeet: $event })"
-          [invalid]="!!e.height"
-          [describedBy]="describedBy('height', e.height ? 'height-error' : null)"
-        />
-        <fit-text-field
-          label="Inches"
-          suffix="in"
-          inputMode="decimal"
-          [maxLength]="4"
-          [value]="f.heightInches"
-          (valueChange)="patch({ heightInches: $event })"
-          [invalid]="!!e.height"
-          [describedBy]="describedBy('height', e.height ? 'height-error' : null)"
-        />
-      </div>
-      @if (e.height) {
-        <p class="message error" id="height-error">
-          <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ e.height }}
-        </p>
-      }
-      @if (notes) {
-        <ng-container *ngTemplateOutlet="reportNote; context: { field: 'height', note: notes.height }" />
-      }
-    </fieldset>
-  }
-
+  <!-- Date of birth (not age, which goes stale). Only derived age is ever displayed. -->
   <div class="field-group">
     <fit-text-field
-      #weightField
-      label="Weight"
-      inputMode="decimal"
-      enterKeyHint="done"
-      [suffix]="weightUnit()"
-      [maxLength]="6"
-      [value]="f.weight"
-      (valueChange)="patch({ weight: $event })"
-      [error]="e.weight"
-      [describedBy]="describedBy('weight')"
+      #birthDateField
+      label="Date of birth"
+      type="date"
+      autocomplete="bday"
+      hint="Used to work out your age. You must be 18 or older."
+      [max]="today()"
+      [value]="f.birthDate"
+      (valueChange)="patch({ birthDate: $event })"
+      [error]="e.dateOfBirth"
+      [describedBy]="notes ? 'dateOfBirth-report-note' : null"
     />
     @if (notes) {
-      <ng-container *ngTemplateOutlet="reportNote; context: { field: 'weight', note: notes.weight }" />
+      <p class="message report-note" id="dateOfBirth-report-note" [attr.data-tone]="notes.dateOfBirth.tone">
+        <ion-icon [name]="notes.dateOfBirth.icon" aria-hidden="true" />{{ notes.dateOfBirth.text }}
+      </p>
     }
   </div>
 </div>

@@ -23,6 +23,15 @@ describe('buildSummaryRows', () => {
     });
   });
 
+  it('lists answers in the order they are asked, and marks unanswered ones', () => {
+    expect(buildSummaryRows(completeDraft(), NOW).map((r) => r.id)).toEqual([
+      'name', 'age', 'sex', 'height', 'weight', 'units', 'activity', 'goal', 'target-weight', 'experience', 'training', 'location', 'equipment',
+    ]);
+    const partial = asMap(buildSummaryRows(completeDraft({ basics: { ...completeDraft().basics, weight: null } }), NOW));
+    expect(partial['weight']).toBe('Not answered');
+    expect(partial['height']).toBe('168 cm');
+  });
+
   it('displays measurements in imperial when chosen', () => {
     const rows = asMap(buildSummaryRows(completeDraft({ unitSystem: 'imperial' })));
     expect(rows['height']).toBe('5 ft 6 in');
@@ -47,7 +56,16 @@ describe('buildSummaryRows', () => {
 
   it('links each row to the step that edits it', () => {
     const rows = buildSummaryRows(completeDraft());
-    expect(rows.find((r) => r.id === 'weight')?.editStep).toBe('basics');
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.editStep]))).toMatchObject({
+      name: 'basics',
+      age: 'basics',
+      sex: 'basics',
+      height: 'height',
+      weight: 'weight',
+      units: 'height',
+      activity: 'activity',
+      goal: 'goal',
+    });
     expect(rows.find((r) => r.id === 'equipment')?.editStep).toBe('equipment');
   });
 });
@@ -55,7 +73,7 @@ describe('buildSummaryRows', () => {
 describe('groupSummaryRows', () => {
   it('puts every row in exactly one group, keeping order', () => {
     const rows = [
-      { id: 'name', label: 'Name', value: 'Alex', editStep: 'name' },
+      { id: 'name', label: 'Name', value: 'Alex', editStep: 'basics' },
       { id: 'goal', label: 'Goal', value: 'Lose Fat', editStep: 'goal' },
       { id: 'age', label: 'Age', value: '31 years', editStep: 'basics' },
       { id: 'experience', label: 'Experience', value: 'Beginner', editStep: 'experience' },

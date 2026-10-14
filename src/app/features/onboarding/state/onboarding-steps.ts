@@ -3,16 +3,17 @@ import { OnboardingDraft } from './onboarding-draft';
 
 export const ONBOARDING_STEP_IDS = [
   'welcome',
-  'name',
-  'goal',
   'report',
   'basics',
+  'height',
+  'weight',
+  'activity',
+  'goal',
+  'goal-target',
   'experience',
   'frequency',
   'location',
   'equipment',
-  'activity',
-  'goal-target',
   'summary',
   'finish',
 ] as const;
@@ -37,10 +38,7 @@ export interface OnboardingStep {
 }
 
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
-  { id: 'welcome', kind: 'intro', primaryAction: 'Get Started' },
-  // Home greets the user by this name (saved with the profile, not part of it).
-  { id: 'name', kind: 'question', primaryAction: 'Continue' },
-  { id: 'goal', kind: 'question', primaryAction: 'Continue' },
+  { id: 'welcome', kind: 'intro', primaryAction: 'Get started' },
   {
     id: 'report',
     kind: 'question',
@@ -48,12 +46,12 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
     // Only for users who chose to upload a report; manual entry never sees it.
     isApplicable: (draft) => draft.setupMethod === 'report',
   },
+  // Name (for Home's greeting, saved apart from the profile), sex and date of birth.
   { id: 'basics', kind: 'question', primaryAction: 'Continue' },
-  { id: 'experience', kind: 'question', primaryAction: 'Continue' },
-  { id: 'frequency', kind: 'question', primaryAction: 'Continue' },
-  { id: 'location', kind: 'question', primaryAction: 'Continue' },
-  { id: 'equipment', kind: 'question', primaryAction: 'Continue' },
+  { id: 'height', kind: 'question', primaryAction: 'Continue' },
+  { id: 'weight', kind: 'question', primaryAction: 'Continue' },
   { id: 'activity', kind: 'question', primaryAction: 'Continue' },
+  { id: 'goal', kind: 'question', primaryAction: 'Continue' },
   {
     id: 'goal-target',
     kind: 'question',
@@ -61,7 +59,11 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
     // Counted until a goal is chosen, so the progress total can only shrink, never grow.
     isApplicable: (draft) => draft.primaryGoal === null || hasApplicableGoalTargets(draft.primaryGoal),
   },
-  { id: 'summary', kind: 'review', primaryAction: 'Create My Profile' },
+  { id: 'experience', kind: 'question', primaryAction: 'Continue' },
+  { id: 'frequency', kind: 'question', primaryAction: 'Continue' },
+  { id: 'location', kind: 'question', primaryAction: 'Continue' },
+  { id: 'equipment', kind: 'question', primaryAction: 'Continue' },
+  { id: 'summary', kind: 'review', primaryAction: 'Create my profile' },
   { id: 'finish', kind: 'done', primaryAction: 'See my starting point' },
 ];
 

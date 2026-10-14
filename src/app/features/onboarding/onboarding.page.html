@@ -30,17 +30,26 @@
         @case ('welcome') {
           <app-welcome-step />
         }
-        @case ('name') {
-          <app-name-step />
-        }
-        @case ('goal') {
-          <app-single-choice-step [config]="choiceSteps.goal" />
-        }
         @case ('report') {
           <app-report-step />
         }
         @case ('basics') {
           <app-basics-step />
+        }
+        @case ('height') {
+          <app-height-step />
+        }
+        @case ('weight') {
+          <app-weight-step />
+        }
+        @case ('activity') {
+          <app-single-choice-step [config]="choiceSteps.activity" />
+        }
+        @case ('goal') {
+          <app-single-choice-step [config]="choiceSteps.goal" />
+        }
+        @case ('goal-target') {
+          <app-goal-target-step />
         }
         @case ('experience') {
           <app-single-choice-step [config]="choiceSteps.experience" />
@@ -53,12 +62,6 @@
         }
         @case ('equipment') {
           <app-equipment-step />
-        }
-        @case ('activity') {
-          <app-single-choice-step [config]="choiceSteps.activity" />
-        }
-        @case ('goal-target') {
-          <app-goal-target-step />
         }
         @case ('summary') {
           <app-summary-step />

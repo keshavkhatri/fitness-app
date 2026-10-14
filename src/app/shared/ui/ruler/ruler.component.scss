@@ -1,0 +1,146 @@
+@use 'mixins' as fx;
+
+// Ticks are drawn from the marker at the centre: each one sits at
+// `--offset` pixels along the ruler (set per tick).
+
+:host {
+  --ruler-tick: var(--color-border-strong);
+  --ruler-tick-major: var(--color-text-secondary);
+  --ruler-marker: var(--color-primary);
+
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  cursor: grab;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus);
+  }
+}
+
+.scale {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tick {
+  position: absolute;
+  background: var(--ruler-tick);
+  border-radius: 1px;
+}
+
+.tick.major {
+  background: var(--ruler-tick-major);
+}
+
+.label {
+  @include fx.text(caption, medium);
+  @include fx.tabular-numbers;
+  position: absolute;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.tick.current .label {
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.marker {
+  position: absolute;
+  background: var(--ruler-marker);
+  pointer-events: none;
+}
+
+// --- Horizontal: ticks hang from the top, labels underneath ------------------------------------
+:host([data-orientation='horizontal']) {
+  height: 88px;
+  touch-action: pan-y; // vertical page scroll still works over it
+  mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+
+  .tick {
+    top: 12px;
+    left: 50%;
+    width: 2px;
+    height: 16px;
+    transform: translateX(calc(var(--offset) * 1px - 50%));
+
+    &.mid {
+      height: 24px;
+    }
+
+    &.major {
+      height: 32px;
+    }
+  }
+
+  // Level whatever the tick's length.
+  .label {
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .marker {
+    top: 4px;
+    left: 50%;
+    width: 6px;
+    height: 46px;
+    border-radius: var(--radius-pill);
+    transform: translateX(-50%);
+    box-shadow: 0 0 0 2px var(--color-surface);
+  }
+}
+
+// --- Vertical: ticks from the left edge, labels beside them; higher values up -----------------
+:host([data-orientation='vertical']) {
+  min-height: 280px;
+  touch-action: none;
+  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
+
+  .tick {
+    top: 50%;
+    left: 0;
+    width: 14px;
+    height: 2px;
+    transform: translateY(calc(var(--offset) * 1px - 50%));
+
+    &.mid {
+      width: 20px;
+    }
+
+    &.major {
+      width: 28px;
+    }
+  }
+
+  .label {
+    top: 50%;
+    left: calc(28px + var(--space-3));
+    transform: translateY(-50%);
+  }
+
+  // The label at the marker gives way to the projected readout.
+  .tick.current .label {
+    visibility: hidden;
+  }
+
+  .marker {
+    top: 50%;
+    left: 0;
+    width: 40px;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    transform: translateY(-50%);
+  }
+}

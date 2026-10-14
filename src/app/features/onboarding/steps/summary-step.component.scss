@@ -9,13 +9,6 @@
   @include step.header;
 }
 
-.eyebrow {
-  @include fx.text(caption, semibold);
-  color: var(--color-primary-text);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-}
-
 .title {
   @include step.title;
 }
@@ -36,57 +29,6 @@
   ion-icon {
     flex-shrink: 0;
     font-size: 20px;
-  }
-}
-
-.rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: minmax(88px, 0.8fr) 2fr auto;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 52px;
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
-
-  + .row {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
-}
-
-.label {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.value {
-  @include fx.text(body, semibold);
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.edit {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-  @include fx.text(body-sm, semibold);
-
-  min-width: var(--tap-target-min);
-  min-height: var(--tap-target-min);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary-text);
-
-  &:active {
-    background: var(--color-primary-soft);
-  }
-
-  &:disabled {
-    opacity: 0.4;
   }
 }
 
@@ -131,7 +73,7 @@
   @include fx.pressable;
 
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: var(--space-2);
   width: 100%;
@@ -143,18 +85,26 @@
   text-align: start;
 }
 
+.field-icon {
+  grid-area: 1 / 1 / 3;
+  margin-right: var(--space-1);
+  font-size: 20px;
+  color: var(--color-primary-text);
+}
+
 .field-label {
   @include fx.text(caption);
+  grid-column: 2;
   color: var(--color-text-secondary);
 }
 
 .field-value {
   @include fx.text(body, medium);
-  grid-column: 1;
+  grid-column: 2;
   overflow-wrap: anywhere;
 }
 
 .field-chevron {
-  grid-area: 1 / 2 / 3;
+  grid-area: 1 / 3 / 3;
   color: var(--color-text-secondary);
 }

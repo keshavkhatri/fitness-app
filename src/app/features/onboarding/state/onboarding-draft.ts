@@ -30,12 +30,26 @@ import {
 } from '../../../domain/fitness-profile';
 import { normalizeName } from '../../../core/identity/user-identity.service';
 
-/** Validated answers from the Basic Information step. */
+/** The body details a profile needs, all answered. */
 export interface BasicInfo {
   readonly dateOfBirth: IsoCalendarDate;
   readonly sex: Sex;
   readonly height: BodyHeight;
   readonly weight: BodyWeight;
+}
+
+/**
+ * Body details as they are answered, one screen at a time (about you, then
+ * height, then weight): each is null until its screen accepts it.
+ */
+export type BasicsDraft = { readonly [K in keyof BasicInfo]: BasicInfo[K] | null };
+
+export const EMPTY_BASICS: BasicsDraft = { dateOfBirth: null, sex: null, height: null, weight: null };
+
+/** The answered body details, or null while any is missing. */
+export function completeBasics(basics: BasicsDraft): BasicInfo | null {
+  const { dateOfBirth, sex, height, weight } = basics;
+  return dateOfBirth && sex && height && weight ? { dateOfBirth, sex, height, weight } : null;
 }
 
 /**
@@ -54,7 +68,7 @@ export interface OnboardingDraft {
   readonly setupMethod: SetupMethod;
   readonly primaryGoal: PrimaryGoal | null;
   readonly unitSystem: UnitSystem;
-  readonly basics: BasicInfo | null;
+  readonly basics: BasicsDraft;
   readonly trainingExperience: TrainingExperience | null;
   readonly trainingDaysPerWeek: TrainingDaysPerWeek | null;
   readonly trainingLocation: TrainingLocation | null;
@@ -68,7 +82,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   setupMethod: 'manual',
   primaryGoal: null,
   unitSystem: 'metric',
-  basics: null,
+  basics: EMPTY_BASICS,
   trainingExperience: null,
   trainingDaysPerWeek: null,
   trainingLocation: null,
@@ -99,7 +113,8 @@ export function applyDraftChange(draft: OnboardingDraft, change: Partial<Onboard
 
 /** Builds the final profile, or null if any required answer is missing. */
 export function toFitnessProfile(draft: OnboardingDraft, now: Date): UserFitnessProfile | null {
-  const { primaryGoal, basics, trainingExperience, trainingDaysPerWeek, trainingLocation, activityLevel } = draft;
+  const { primaryGoal, trainingExperience, trainingDaysPerWeek, trainingLocation, activityLevel } = draft;
+  const basics = completeBasics(draft.basics);
   if (
     !primaryGoal ||
     !basics ||
@@ -149,7 +164,8 @@ export function sanitizeDraft(value: unknown): OnboardingDraft {
     setupMethod: raw['setupMethod'] === 'report' ? 'report' : 'manual',
     primaryGoal,
     unitSystem: isUnitSystem(raw['unitSystem']) ? raw['unitSystem'] : 'metric',
-    basics: dateOfBirth && height && weight && isSex(sex) ? { dateOfBirth, sex, height, weight } : null,
+    // Each answer is kept on its own: the screens accept them one at a time.
+    basics: { dateOfBirth, sex: isSex(sex) ? sex : null, height, weight },
     trainingExperience: isTrainingExperience(raw['trainingExperience']) ? raw['trainingExperience'] : null,
     trainingDaysPerWeek: isTrainingDaysPerWeek(raw['trainingDaysPerWeek']) ? raw['trainingDaysPerWeek'] : null,
     trainingLocation,
