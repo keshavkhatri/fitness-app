@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, Platform } from '@ionic/angular';
 
 import { UserIdentityService } from '../../core/identity/user-identity.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { ASSESSMENT_PATH, ONBOARDING_PATH } from '../../core/profile/onboarding.guards';
 import { OnboardingMode } from './state/onboarding-flow.service';
@@ -68,7 +69,8 @@ const REVIEW_RETURN_PATHS: readonly string[] = ['/you'];
     FinishStepComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(keydown.enter)': 'onEnter($event)' },
+  // Reviewing an existing profile is the Profile editor: an immersive (dark) form.
+  host: { '(keydown.enter)': 'onEnter($event)', '[class.fit-theme-immersive]': 'reviewing()' },
 })
 export class OnboardingPage implements OnInit {
   /** Bound from route data. */
@@ -82,6 +84,8 @@ export class OnboardingPage implements OnInit {
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly theme = inject(ThemeService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly choiceSteps = CHOICE_STEPS;
   protected readonly saving = computed(() => this.flow.saveStatus() === 'saving');
@@ -93,7 +97,7 @@ export class OnboardingPage implements OnInit {
       return this.reviewing() ? 'Saving your details…' : 'Creating your profile…';
     }
     if (this.reviewing() && this.flow.step().kind === 'review') {
-      return 'Save my details';
+      return 'Save profile';
     }
     return this.stepForm()?.primaryLabel?.() ?? this.flow.step().primaryAction;
   });
@@ -169,6 +173,8 @@ export class OnboardingPage implements OnInit {
     }
     const [profile, identity] = await Promise.all([this.profiles.load(), this.identity.load().catch(() => null)]);
     if (profile) {
+      // Light status-bar text while the dark Profile editor is open.
+      this.destroyRef.onDestroy(this.theme.holdAlwaysDark());
       this.flow.startReview(profile, identity?.name ?? null);
     } else {
       await this.router.navigateByUrl(ONBOARDING_PATH, { replaceUrl: true });

@@ -1,60 +1,101 @@
 @use 'mixins' as fx;
 
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+:host {
+  --page-gutter: var(--space-4);
 }
 
-.intro,
-.section,
-.loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.intro {
-  gap: var(--space-2);
-}
-
-.title {
-  @include fx.text(h1, bold);
-}
-
-.subtitle {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.section-title {
-  @include fx.text(h3, semibold);
-}
 
 .notice {
   @include fx.text(body-sm);
   display: flex;
-  gap: var(--space-3);
-  margin: 0;
-  color: var(--color-text-secondary);
+  gap: var(--space-2);
 
   ion-icon {
     flex: none;
-    font-size: 20px;
+    margin-top: 2px;
   }
 }
 
-.latest {
-  margin: 0;
+.note {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
 }
 
+// --- Chart ------------------------------------------------------------------------------------
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.legend-item {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(caption, semibold);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+
+  &[aria-pressed='false'] {
+    color: var(--color-text-secondary);
+    text-decoration: line-through;
+  }
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+
+  &.s0 {
+    color: var(--color-primary-strong);
+  }
+
+  &.s1 {
+    color: var(--color-warning-text);
+    border-radius: 2px;
+  }
+
+  &.s2 {
+    color: var(--color-text);
+    transform: rotate(45deg);
+    border-radius: 1px;
+  }
+
+  &.s3 {
+    color: var(--color-danger-text);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    border-radius: 0;
+  }
+
+  &.s4 {
+    color: var(--color-text-secondary);
+    border: 2px solid currentColor;
+    background: none;
+  }
+}
+
+// --- Latest (definition list styled as rows) ---------------------------------------------------
 .latest-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px var(--space-3);
+  gap: 0 var(--space-3);
+  align-items: baseline;
   padding: var(--space-3) var(--space-4);
 
   & + & {
@@ -67,11 +108,11 @@
 }
 
 .latest-site {
-  @include fx.text(body, medium);
+  @include fx.text(body, semibold);
 }
 
 .latest-value {
-  @include fx.text(body, semibold);
+  @include fx.text(body, bold);
   @include fx.tabular-numbers;
   text-align: end;
 }
@@ -79,7 +120,7 @@
 .latest-date,
 .latest-change,
 .latest-missing {
-  @include fx.text(body-sm);
+  @include fx.text(caption);
   grid-column: 1 / -1;
   color: var(--color-text-secondary);
 }
@@ -90,56 +131,27 @@
   text-align: end;
 }
 
-.rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li + li {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
-}
-
+// --- History rows -----------------------------------------------------------------------------
 .row {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 64px;
-  padding: var(--space-3) var(--space-4);
-
-  ion-icon {
-    flex: none;
-    font-size: 18px;
-    color: var(--color-text-secondary);
-  }
-
-  &:active {
-    background: var(--color-surface-muted);
-  }
-}
-
-.row-text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  text-align: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
 }
 
 .row-date {
-  @include fx.text(body, semibold);
+  @include fx.text(body-sm, bold);
 }
 
 .row-values {
-  @include fx.text(body-sm);
+  @include fx.text(caption);
   @include fx.tabular-numbers;
   display: flex;
+  grid-column: 1;
   flex-wrap: wrap;
   gap: 2px var(--space-3);
   color: var(--color-text-secondary);
+}
+
+.row-chevron {
+  grid-column: 2;
+  grid-row: 1 / span 2;
 }

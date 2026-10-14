@@ -71,3 +71,14 @@
 .error {
   color: var(--color-danger-text);
 }
+
+:host([data-size='lg']) {
+  .control {
+    min-height: 76px;
+  }
+
+  .input {
+    @include fx.text(display, bold);
+    text-align: center;
+  }
+}

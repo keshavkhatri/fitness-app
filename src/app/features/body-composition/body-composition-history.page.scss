@@ -1,60 +1,100 @@
 @use 'mixins' as fx;
 
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+:host {
+  --page-gutter: var(--space-4);
 }
 
-.intro,
-.section,
-.loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.intro {
-  gap: var(--space-2);
-}
-
-.title {
-  @include fx.text(h1, bold);
-}
-
-.subtitle {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.section-title {
-  @include fx.text(h3, semibold);
-}
 
 .notice {
   @include fx.text(body-sm);
   display: flex;
-  gap: var(--space-3);
-  margin: 0;
-  color: var(--color-text-secondary);
+  gap: var(--space-2);
 
   ion-icon {
     flex: none;
-    font-size: 20px;
+    margin-top: 2px;
   }
 }
 
+// --- Reports: one card each, placeholder sheet art ---------------------------------------------
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: start;
+}
+
+.report-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.row-heading {
+  display: flex;
+  flex-direction: column;
+}
+
+.row-date {
+  @include fx.text(body, bold);
+}
+
+.row-source,
+.row-metric,
+.row-more {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.row-values {
+  @include fx.text(body-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+}
+
+.row-number {
+  @include fx.tabular-numbers;
+  font-weight: var(--font-weight-semibold);
+}
+
+.row-chevron {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+// --- Latest values ----------------------------------------------------------------------------
 .latest {
   margin: 0;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
 .latest-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px var(--space-3);
+  gap: 0 var(--space-3);
+  align-items: baseline;
   padding: var(--space-3) var(--space-4);
 
   & + & {
@@ -67,11 +107,11 @@
 }
 
 .latest-metric {
-  @include fx.text(body, medium);
+  @include fx.text(body-sm, semibold);
 }
 
 .latest-value {
-  @include fx.text(body, semibold);
+  @include fx.text(body, bold);
   @include fx.tabular-numbers;
   text-align: end;
 }
@@ -79,7 +119,7 @@
 .latest-date,
 .latest-change,
 .latest-missing {
-  @include fx.text(body-sm);
+  @include fx.text(caption);
   grid-column: 1 / -1;
   color: var(--color-text-secondary);
 }
@@ -88,87 +128,4 @@
   grid-column: 2;
   grid-row: 1;
   text-align: end;
-}
-
-.rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li + li {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
-}
-
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-  @include fx.focus-ring;
-}
-
-.row-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 2px var(--space-3);
-  margin: 0;
-}
-
-.row-date {
-  @include fx.text(body, semibold);
-}
-
-.row-source {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.row-values {
-  display: flex;
-  flex-direction: column;
-}
-
-.row-value {
-  @include fx.text(body-sm);
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.row-metric,
-.row-more {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.row-number {
-  @include fx.text(body-sm, semibold);
-  @include fx.tabular-numbers;
-}
-
-.detail-actions,
-.sheet-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.status {
-  @include fx.text(body-sm, medium);
-  color: var(--color-danger-text);
-  text-align: center;
-
-  &:not(.shown) {
-    display: contents;
-  }
 }

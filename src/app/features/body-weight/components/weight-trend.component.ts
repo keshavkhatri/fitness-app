@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 
 import { WEIGHT_RANGES, WeightRange } from '../../../domain/body-measurements';
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, SegmentOption, SegmentedControlComponent } from '../../../shared/ui';
+import { EmptyStateComponent, FitnessButtonComponent, SegmentOption, SegmentedControlComponent } from '../../../shared/ui';
 import { WEIGHT_HISTORY_COPY } from '../weight-history-content';
 import { TrendSummaryView, WeightChartView } from '../weight-trend-view-model';
 import { WeightChartComponent } from './weight-chart.component';
@@ -17,54 +17,64 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
   selector: 'app-weight-trend',
   template: `
     <section class="trend" aria-labelledby="weight-trend-title" data-testid="weight-trend">
-      <h2 class="title" id="weight-trend-title">{{ copy.title }}</h2>
-      <fit-segmented-control name="weight-range" [legend]="copy.rangeLegend" [options]="options" [(value)]="range" />
+      <h2 class="visually-hidden" id="weight-trend-title">{{ copy.title }}</h2>
+      <fit-segmented-control variant="ink" name="weight-range" [legend]="copy.rangeLegend" [options]="options" [(value)]="range" />
 
       @if (trend(); as t) {
-        <fit-card>
-          @if (chart(); as c) {
-            <app-weight-chart [chart]="c" [label]="t.description" />
-          } @else {
-            <p class="note" data-testid="chart-unavailable">{{ copy.chartUnavailable }}</p>
-          }
-
+        <div class="card">
           <dl class="summary" data-testid="trend-summary">
-            <div class="fact">
-              <dt>{{ copy.first }}</dt>&ngsp;
-              <dd><span class="value">{{ t.first.weight }}</span>&ngsp;<span class="date">{{ t.first.dateLabel }}</span></dd>
-            </div>&ngsp;
-            <div class="fact">
+            <div class="fact latest">
               <dt>{{ copy.latest }}</dt>&ngsp;
               <dd><span class="value">{{ t.latest.weight }}</span>&ngsp;<span class="date">{{ t.latest.dateLabel }}</span></dd>
             </div>&ngsp;
-            <div class="fact change">
-              <dt>{{ copy.change }}</dt>&ngsp;
-              <dd>
-                @if (t.change; as change) {
-                  <span class="value" data-testid="trend-change">{{ change }}</span>&ngsp;
-                }
-                <span class="caption">{{ t.changeCaption }}</span>
-              </dd>
-            </div>
+            @if (t.change; as change) {
+              <div class="fact change">
+                <dt>{{ copy.change }}</dt>&ngsp;
+                <dd>
+                  <span class="change-value" data-testid="trend-change">{{ change }}</span>&ngsp;
+                  <span class="caption">{{ t.changeFrom }}</span>
+                </dd>
+              </div>&ngsp;
+            } @else {
+              <p class="caption single">{{ t.changeCaption }}</p>
+            }
+            @if (t.lowest && t.highest) {
+              <div class="fact side">
+                <dt>{{ copy.lowest }}</dt>&ngsp;
+                <dd><span class="side-value">{{ t.lowest.weight }}</span>&ngsp;<span class="date">{{ t.lowest.dateLabel }}</span></dd>
+              </div>&ngsp;
+              <div class="fact side">
+                <dt>{{ copy.highest }}</dt>&ngsp;
+                <dd><span class="side-value">{{ t.highest.weight }}</span>&ngsp;<span class="date">{{ t.highest.dateLabel }}</span></dd>
+              </div>
+            }
           </dl>
+          <p class="visually-hidden">{{ t.changeCaption }}</p>
+        </div>
 
+        <div class="card">
+          @if (chart(); as c) {
+            <app-weight-chart [chart]="c" [label]="t.description" area [callout]="callout()" />
+          } @else {
+            <p class="note" data-testid="chart-unavailable">{{ copy.chartUnavailable }}</p>
+          }
           <ol class="visually-hidden" [attr.aria-label]="copy.measurementsLabel" data-testid="trend-measurements">
             @for (m of t.measurements; track m.key) {
               <li>{{ m.weight }}, {{ m.dateLabel }}</li>
             }
           </ol>
-        </fit-card>
+        </div>
       } @else {
-        <fit-card data-testid="trend-empty">
+        <div class="card" data-testid="trend-empty">
           <fit-empty-state icon="scale-outline" [title]="emptyTitle()" [description]="copy.emptyRangeMessage">
             <button fit-button type="button" icon="add" (click)="addWeight.emit()">{{ addLabel }}</button>
           </fit-empty-state>
-        </fit-card>
+        </div>
       }
     </section>
   `,
   styleUrl: './weight-trend.component.scss',
-  imports: [EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, SegmentedControlComponent, WeightChartComponent],
+  imports: [EmptyStateComponent, FitnessButtonComponent, SegmentedControlComponent, WeightChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeightTrendComponent {
@@ -74,6 +84,8 @@ export class WeightTrendComponent {
   /** null when the chart couldn't be built (the summary and text remain). */
   readonly chart = input.required<WeightChartView | null>();
   readonly emptyTitle = input.required<string>();
+  /** The latest value beside its point ("81.9 kg" / "9 Oct"). */
+  readonly callout = input<{ readonly value: string; readonly date: string } | null>(null);
   readonly addWeight = output<void>();
 
   protected readonly copy = WEIGHT_HISTORY_COPY.trend;

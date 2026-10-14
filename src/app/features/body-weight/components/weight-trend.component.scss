@@ -10,35 +10,38 @@
   gap: var(--space-3);
 }
 
-.title {
-  @include fx.text(h3, semibold);
+.card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
-.note {
+.note,
+.date,
+.caption {
   @include fx.text(body-sm);
   color: var(--color-text-secondary);
 }
 
+// Latest and its change on the left; lowest and highest stacked on the right.
 .summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4) var(--space-3);
-  margin: var(--space-4) 0 0;
-  padding-top: var(--space-4);
-  border-top: var(--border-hairline) solid var(--color-border);
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-areas:
+    'latest lowest'
+    'change highest';
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
 }
 
 .fact {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-width: 0;
 
   dt {
     @include fx.text(caption, semibold);
     color: var(--color-text-secondary);
-    letter-spacing: var(--letter-spacing-wide);
-    text-transform: uppercase;
   }
 
   dd {
@@ -47,18 +50,53 @@
     margin: 0;
   }
 
+  &.latest {
+    grid-area: latest;
+  }
+
   &.change {
-    grid-column: 1 / -1;
+    grid-area: change;
+  }
+
+  &.side {
+    padding-left: var(--space-3);
+    border-left: var(--border-hairline) solid var(--color-border);
+  }
+
+  &.side:nth-of-type(3) {
+    grid-area: lowest;
+  }
+
+  &.side:last-child {
+    grid-area: highest;
   }
 }
 
-.value {
-  @include fx.text(h3, semibold);
-  @include fx.tabular-numbers;
+.single {
+  grid-column: 1 / -1;
 }
 
-.date,
-.caption {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
+.value {
+  @include fx.text(display, bold);
+  @include fx.tabular-numbers;
+  font-size: 32px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.change-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+  color: var(--color-primary-text);
+}
+
+.side-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+// Lines on a light card are olive (lime has too little contrast on white).
+app-weight-chart {
+  --color-primary: var(--color-primary-strong);
 }

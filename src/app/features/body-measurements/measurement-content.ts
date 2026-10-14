@@ -17,6 +17,18 @@ export const MEASUREMENT_COPY = {
     entry: { title: 'Measurements', description: 'Your recorded body measurements' },
     loading: 'Loading your measurements',
     add: 'Add measurements',
+    addShort: 'Add',
+    addHidden: 'measurements',
+    views: 'View',
+    chartView: 'Chart',
+    listView: 'List',
+    rangeLegend: 'Time range',
+    sitesLegend: 'Sites shown',
+    chartLabel: (rangeName: string) => `Measurements over ${rangeName}`,
+    readingsLabel: 'Readings in this range',
+    noneInRange: (rangeName: string) => `No measurements in ${rangeName}. Choose a longer range or add some.`,
+    allHidden: 'Choose a site to show its readings.',
+    singleNote: 'A site measured once shows as a point; a line needs two readings.',
     latest: {
       title: 'Latest',
       notMeasured: 'Not measured yet',
@@ -45,6 +57,7 @@ export const MEASUREMENT_COPY = {
 
   form: {
     addTitle: 'Add measurements',
+    close: 'Close',
     editTitle: 'Edit measurements',
     back: 'Measurements',
     intro: 'Fill in the measurements you took. Leave the rest blank.',

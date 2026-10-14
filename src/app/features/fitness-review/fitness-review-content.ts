@@ -9,6 +9,8 @@ export const FITNESS_REVIEW_COPY = {
   next: 'Next week',
   backToLastWeek: 'Back to last week',
   soFar: 'so far',
+  progress: 'View detailed progress',
+  tabs: { legend: 'Review sections', summary: 'Summary', trends: 'Trends', insights: 'Insights' },
 
   overview: {
     title: 'Overview',

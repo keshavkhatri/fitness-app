@@ -1,16 +1,9 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/you" [text]="copy.back" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
   <main class="body">
-    <h1 class="title">{{ copy.title }}</h1>
+    <div class="topbar">
+      <ion-back-button class="back" defaultHref="/you" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+      <h1 class="title">{{ copy.title }}</h1>
+    </div>
     <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
 
     @let s = screen();
@@ -40,10 +33,17 @@
         </button>
       </nav>
 
-      <fit-card data-testid="review-overview">
-        <section class="overview" aria-labelledby="review-overview-title">
-          <h2 class="card-title" id="review-overview-title">{{ copy.overview.title }}</h2>
-          <p class="summary" data-testid="review-summary">{{ s.summary }}</p>
+      <fit-segmented-control variant="inverse" name="review-tab" [legend]="copy.tabs.legend" [options]="tabOptions" [(value)]="tab" />
+
+      @switch (tab()) {
+        @case ('summary') {
+          <section class="highlight" aria-labelledby="review-overview-title" data-testid="review-overview">
+            <span class="highlight-icon" aria-hidden="true"><ion-icon name="trending-up" /></span>
+            <div class="highlight-text">
+              <h2 class="highlight-title" id="review-overview-title">{{ copy.overview.title }}</h2>
+              <p class="summary" data-testid="review-summary">{{ s.summary }}</p>
+            </div>
+          </section>
           <dl class="stats" data-testid="review-stats">
             @for (stat of s.stats; track stat.key) {
               <div class="stat" [attr.data-testid]="'stat-' + stat.key">
@@ -52,14 +52,20 @@
               </div>
             }
           </dl>
-          <p class="caption">{{ copy.intro }}</p>
-        </section>
-      </fit-card>
-
-      <app-review-actions [title]="s.actionsTitle" [actions]="s.actions" (open)="open($event)" />
-      <app-review-training [training]="s.training" (open)="open($event)" />
-      <app-review-nutrition [nutrition]="s.nutrition" (open)="open($event)" />
-      <app-review-body [body]="s.body" (open)="open($event)" />
+          <app-review-body [body]="s.body" (open)="open($event)" />
+        }
+        @case ('trends') {
+          <app-review-training [training]="s.training" (open)="open($event)" />
+          <app-review-nutrition [nutrition]="s.nutrition" (open)="open($event)" />
+        }
+        @default {
+          <app-review-actions [title]="s.actionsTitle" [actions]="s.actions" (open)="open($event)" />
+        }
+      }
+      <p class="caption">{{ copy.intro }}</p>
+      <button fit-button type="button" size="lg" block icon="stats-chart" data-testid="open-progress" (click)="openProgress()">
+        {{ copy.progress }}
+      </button>
     } @else if (s.kind === 'error') {
       <fit-card data-testid="review-error">
         <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">

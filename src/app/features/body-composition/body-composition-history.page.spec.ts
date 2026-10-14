@@ -276,8 +276,8 @@ describe('Body composition history page', () => {
     fixture.detectChanges();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid=body-composition-entry]')!;
     expect(button.getAttribute('type')).toBe('button');
-    expect(button.querySelector('.entry-icon')?.getAttribute('aria-hidden')).toBe('true');
-    expect(clean(button)).toBe('Body composition Your recorded InBody assessments');
+    expect(button.querySelector('.tile-icon')?.getAttribute('aria-hidden')).toBe('true');
+    expect(clean(button)).toBe('Body composition InBody reports');
     button.click();
     expect(forward).toHaveBeenCalledWith('/you/body-composition');
   });

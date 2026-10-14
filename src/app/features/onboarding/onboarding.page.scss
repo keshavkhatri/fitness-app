@@ -70,3 +70,10 @@ ion-footer {
   margin: 0 auto;
   padding: var(--space-3) var(--page-gutter) calc(var(--space-4) + var(--ion-safe-area-bottom, 0px));
 }
+
+// Profile editor (review mode): the immersive surface everywhere.
+:host(.fit-theme-immersive) {
+  ion-content {
+    --background: var(--color-bg);
+  }
+}

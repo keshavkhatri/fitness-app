@@ -45,6 +45,30 @@ export interface DetailGroupView {
   readonly values: readonly DetailValueView[];
 }
 
+export interface KeyTileView {
+  readonly metric: BodyCompositionMetric;
+  readonly label: string;
+  /** null when the report didn't state it (never estimated). */
+  readonly value: string | null;
+  readonly change: string | null;
+}
+
+export interface CompositionBarView {
+  readonly metric: BodyCompositionMetric;
+  readonly label: string;
+  readonly value: string;
+  /**
+   * Share of the reported weight, % (one decimal): calculated here, only when
+   * both are masses in the same unit; null otherwise (e.g. water in litres).
+   */
+  readonly share: number | null;
+}
+
+/** Headline tiles: as on the report's summary. BMI only when the report stated it. */
+const TILE_METRICS: readonly BodyCompositionMetric[] = ['weight', 'body-fat-percentage', 'skeletal-muscle-mass'];
+/** The parts of body weight an InBody sheet breaks down. */
+const COMPOSITION_METRICS: readonly BodyCompositionMetric[] = ['total-body-water', 'protein', 'minerals', 'body-fat-mass'];
+
 export type BodyCompositionDetailScreen =
   | { readonly kind: 'loading' }
   | { readonly kind: 'error' }
@@ -56,6 +80,9 @@ export type BodyCompositionDetailScreen =
       /** What changes are measured against; null for the first assessment. */
       readonly comparison: string | null;
       readonly groups: readonly DetailGroupView[];
+      readonly tiles: readonly KeyTileView[];
+      /** Reported composition values only; empty when the report has none. */
+      readonly composition: readonly CompositionBarView[];
       readonly hasWeight: boolean;
     };
 
@@ -104,8 +131,23 @@ export function toBodyCompositionDetailScreen(
       ];
     }),
   })).filter((group) => group.values.length > 0);
+  const weight = assessment.reported.weight;
+  const tiles = [...TILE_METRICS, ...(assessment.reported.bmi ? (['bmi'] as const) : [])].map((metric) => {
+    const reported = assessment.reported[metric];
+    return { metric, label: copy.metrics[metric], value: reported ? formatReportedValue(reported) : null, change: changeFrom(metric, assessment, earlier) };
+  });
+  const composition = COMPOSITION_METRICS.flatMap((metric) => {
+    const reported = assessment.reported[metric];
+    if (!reported) {
+      return [];
+    }
+    const share = weight && weight.value > 0 && reported.unit === weight.unit ? roundTo((reported.value / weight.value) * 100, 1) : null;
+    return [{ metric, label: copy.metrics[metric], value: formatReportedValue(reported), share }];
+  });
   return {
     kind: 'ready',
+    tiles,
+    composition,
     dateLabel: dateLabelOf(assessment.date, today),
     source: copy.history.sources[assessment.source.entryMethod],
     comparison: earlier[0] ? copy.detail.comparedWith(shortDateOf(earlier[0].date, today)) : null,

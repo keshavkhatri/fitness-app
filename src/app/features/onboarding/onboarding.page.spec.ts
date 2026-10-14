@@ -63,4 +63,25 @@ describe('OnboardingPage (profile review)', () => {
     await back();
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/assessment', { replaceUrl: true });
   });
+
+  it('is the Profile editor: dark, grouped rows that open their step, and Save profile', async () => {
+    const { fixture, flow } = await renderReview('/you');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.classList).toContain('fit-theme-immersive');
+    expect(el.querySelector('h1')?.textContent?.trim()).toBe('Profile');
+    expect([...el.querySelectorAll('.group-title')].map((h) => h.textContent?.trim())).toEqual(['Personal details', 'Goal', 'Training']);
+    expect(el.querySelector('ion-footer button')?.textContent?.trim()).toBe('Save profile');
+    const height = el.querySelector<HTMLButtonElement>('[data-testid=profile-row-height]')!;
+    expect(height.getAttribute('aria-label')).toMatch(/^Edit height: /);
+    height.click();
+    expect(flow.stepId()).toBe('basics');
+    expect(flow.editingFromSummary()).toBe(true);
+  });
+
+  it('first-run onboarding keeps its light summary (no Profile editor)', async () => {
+    TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([]), OnboardingFlow, { provide: KeyValueStorage, useValue: new MemoryKeyValueStorage() }] });
+    const fixture = TestBed.createComponent(OnboardingPage);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).classList).not.toContain('fit-theme-immersive');
+  });
 });

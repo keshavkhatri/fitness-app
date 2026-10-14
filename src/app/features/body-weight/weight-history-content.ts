@@ -5,6 +5,8 @@ export const WEIGHT_HISTORY_COPY = {
   intro: 'A record of your weigh-ins. Adding one here doesn’t change the weight in your profile.',
   loading: 'Loading your weight history',
   add: 'Add weight',
+  addShort: 'Add',
+  addHidden: 'weight',
   entry: { title: 'Body weight', description: 'Your recorded weigh-ins' },
 
   list: {
@@ -26,6 +28,9 @@ export const WEIGHT_HISTORY_COPY = {
     latest: 'Latest',
     change: 'Change',
     changeCaption: 'Between first and latest recorded measurements',
+    changeFrom: (weight: string, date: string) => `From ${weight}, ${date}`,
+    lowest: 'Lowest',
+    highest: 'Highest',
     singleCaption: 'Only one measurement in this range, so there’s no change to show yet.',
     noChange: 'No change',
     measurementsLabel: 'Measurements in this range',
@@ -50,6 +55,8 @@ export const WEIGHT_HISTORY_COPY = {
 
   form: {
     addTitle: 'Add weight',
+    close: 'Close',
+    adjust: 'Fine-adjust weight',
     editTitle: 'Edit weight',
     back: 'Body weight',
     weight: 'Weight',

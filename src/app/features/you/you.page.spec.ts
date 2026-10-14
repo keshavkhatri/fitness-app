@@ -13,6 +13,9 @@ import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { QuickAddLauncher } from '../../shell/quick-add/quick-add-launcher.service';
 import { IdentitySheetComponent } from './identity-sheet.component';
 import { YouPage } from './you.page';
+import { CLOCK } from '../../core/time/clock';
+import { currentAge, formatHeight } from '../../domain/fitness-profile';
+import { GOAL_OPTIONS } from '../onboarding/onboarding-content';
 
 const clean = (el: Element) => el.textContent?.replace(/\s+/g, ' ').trim();
 
@@ -23,7 +26,7 @@ describe('YouPage', () => {
     const fixture = TestBed.createComponent(YouPage);
     fixture.detectChanges();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid=profile-entry]')!;
-    expect(clean(button)).toBe('Your profile Review and edit your details and goals');
+    expect(clean(button)).toBe('Profile Personal details');
     button.click();
     expect(forward).toHaveBeenCalledExactlyOnceWith('/onboarding/review', { queryParams: { returnTo: '/you' } });
   });
@@ -41,7 +44,8 @@ describe('YouPage', () => {
     it('invites a name until one is saved, then shows it with the avatar', async () => {
       const { fixture, el, sheet } = await render();
       const entry = el.querySelector<HTMLButtonElement>('[data-testid=identity-entry]')!;
-      expect(clean(entry)).toBe('Add your name Name and photo for your greeting');
+      expect(entry.getAttribute('aria-label')).toBe('Edit name and photo');
+      expect(clean(el.querySelector('[data-testid=you-name]')!)).toBe('Add your name');
       entry.click();
       fixture.detectChanges();
       expect(sheet().open()).toBe(true);
@@ -50,7 +54,7 @@ describe('YouPage', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       expect(sheet().open()).toBe(false);
-      expect(clean(el.querySelector('[data-testid=identity-entry] .entry-title')!)).toBe('Alex Morgan');
+      expect(clean(el.querySelector('[data-testid=you-name]')!)).toBe('Alex Morgan');
       expect(clean(el.querySelector('[data-testid=identity-entry] fit-avatar')!)).toBe('AM');
       expect(TestBed.inject(UserIdentityService).identity().name).toBe('Alex Morgan');
     });
@@ -76,6 +80,47 @@ describe('YouPage', () => {
     expect(entry.getAttribute('aria-haspopup')).toBe('dialog');
     entry.click();
     expect(TestBed.inject(QuickAddLauncher).open()).toBe(true);
+  });
+
+  it('shows age, height and goal from the profile; every tile opens its screen', async () => {
+    const storage = new MemoryKeyValueStorage();
+    TestBed.configureTestingModule({
+      providers: [provideIonicAngular(), provideRouter([]), { provide: KeyValueStorage, useValue: storage }, { provide: CLOCK, useValue: () => new Date(2026, 9, 8, 12) }],
+    });
+    await TestBed.inject(FitnessProfileRepository).save(NORMAL_PROFILE);
+    const forward = vi.spyOn(TestBed.inject(NavController), 'navigateForward').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(YouPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.classList).toContain('fit-theme-dashboard');
+    const age = currentAge(NORMAL_PROFILE.dateOfBirth, new Date(2026, 9, 8, 12));
+    expect(clean(el.querySelector('[data-testid=you-details]')!)).toBe(`${age} years · ${formatHeight(NORMAL_PROFILE.height, NORMAL_PROFILE.unitSystem)}`);
+    const goal = el.querySelector<HTMLButtonElement>('[data-testid=goal-entry]')!;
+    expect(clean(goal)).toContain(GOAL_OPTIONS.find((o) => o.value === NORMAL_PROFILE.primaryGoal)!.label);
+    goal.click();
+    expect(forward).toHaveBeenLastCalledWith('/onboarding/review', { queryParams: { returnTo: '/you' } });
+    const click = (id: string) => el.querySelector<HTMLButtonElement>(`[data-testid=${id}]`)!.click();
+    click('weight-history-entry');
+    expect(forward).toHaveBeenLastCalledWith('/you/weight-history');
+    click('measurements-entry');
+    expect(forward).toHaveBeenLastCalledWith('/you/measurements');
+    click('body-composition-entry');
+    expect(forward).toHaveBeenLastCalledWith('/you/body-composition');
+    click('review-entry');
+    expect(forward).toHaveBeenLastCalledWith('/you/review');
+    el.querySelector<HTMLButtonElement>('[data-testid=progress-entry] button')!.click();
+    expect(forward).toHaveBeenLastCalledWith(['/you', 'progress']);
+  });
+
+  it('without a profile: no age, height or goal (nothing made up)', async () => {
+    TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([]), { provide: KeyValueStorage, useValue: new MemoryKeyValueStorage() }] });
+    const fixture = TestBed.createComponent(YouPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid=you-details]')).toBeNull();
+    expect(el.querySelector('[data-testid=goal-entry]')).toBeNull();
   });
 
   describe('Units', () => {

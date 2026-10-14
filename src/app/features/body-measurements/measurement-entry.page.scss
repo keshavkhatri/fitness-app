@@ -1,13 +1,6 @@
 @use 'mixins' as fx;
 
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-8);
-}
+// Immersive (always dark) form: grouped fields on one card, lime Save.
 
 .heading {
   display: flex;
@@ -15,21 +8,13 @@
   gap: var(--space-2);
 }
 
-.title {
-  @include fx.text(h1, bold);
-}
-
-.intro {
-  @include fx.text(body);
-}
-
+.intro,
 .note {
   @include fx.text(body-sm);
   color: var(--color-text-secondary);
 }
 
 .form,
-.sites,
 .loading {
   display: flex;
   flex-direction: column;
@@ -37,15 +22,28 @@
 }
 
 .sites {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--space-4);
   border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
 }
 
 .legend {
   @include fx.text(body, semibold);
+  float: left; // inside the card (a fieldset legend otherwise sits on its border)
+  width: 100%;
   padding: 0;
+}
+
+.site-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: var(--space-4) var(--space-3);
 }
 
 .group-error {
@@ -53,32 +51,8 @@
   color: var(--color-danger-text);
 }
 
-ion-footer {
-  background: var(--color-bg);
-  border-top: var(--border-hairline) solid var(--color-border);
-}
-
-// Above the tab bar, which already reserves the device's bottom safe area.
-.footer {
-  display: flex;
-  flex-direction: column;
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-3) var(--page-gutter);
-}
-
 .footer-actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.status {
-  @include fx.text(body-sm, medium);
-  color: var(--color-danger-text);
-  text-align: center;
-
-  &.shown {
-    margin-bottom: var(--space-3);
-  }
 }

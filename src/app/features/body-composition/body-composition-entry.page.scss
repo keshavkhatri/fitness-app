@@ -1,13 +1,6 @@
 @use 'mixins' as fx;
 
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-8);
-}
+// Immersive (always dark): upload first, then every value to check before saving.
 
 .heading {
   display: flex;
@@ -15,36 +8,44 @@
   gap: var(--space-2);
 }
 
-.title {
-  @include fx.text(h1, bold);
-}
-
-.intro {
-  @include fx.text(body);
-}
-
-.note {
+.intro,
+.note,
+.formats,
+.unit-hint,
+.file-meta {
   @include fx.text(body-sm);
   color: var(--color-text-secondary);
 }
 
 .form,
 .values,
-.loading {
+.loading,
+.unit,
+.upload-status,
+.more-fields {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form {
   gap: var(--space-5);
 }
 
 .values {
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--space-4);
   border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  gap: var(--space-5);
 }
 
 .legend {
   @include fx.text(body, semibold);
+  float: left;
+  width: 100%;
   padding: 0;
 }
 
@@ -53,18 +54,8 @@
   color: var(--color-danger-text);
 }
 
-ion-footer {
-  background: var(--color-bg);
-  border-top: var(--border-hairline) solid var(--color-border);
-}
-
-// Above the tab bar, which already reserves the device's bottom safe area.
-.footer {
-  display: flex;
-  flex-direction: column;
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-3) var(--page-gutter);
+.unit-label {
+  @include fx.text(body, semibold);
 }
 
 .footer-actions {
@@ -73,49 +64,74 @@ ion-footer {
   gap: var(--space-2);
 }
 
-.status {
-  @include fx.text(body-sm, medium);
-  color: var(--color-danger-text);
+// --- Upload panel -----------------------------------------------------------------------------
+.upload {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-hero);
+  background: var(--color-surface);
   text-align: center;
-
-  &.shown {
-    margin-bottom: var(--space-3);
-  }
 }
 
-.unit {
+.upload-art {
+  --thumb-size: 96px;
+  align-self: center;
+  transform: rotate(-6deg);
+}
+
+.upload-title {
+  @include fx.text(h2, bold);
+}
+
+.upload-actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.unit-label {
-  @include fx.text(body, semibold);
-}
-
-.unit-hint {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.upload,
-.upload-status,
-.file-actions,
-.more-fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .upload-status:empty {
   display: none;
 }
 
-.section-title {
-  @include fx.text(h3, semibold);
+.upload-status,
+fit-notice {
+  text-align: start;
 }
 
-// Visually hidden: the "Choose image" button opens it.
+.reading {
+  @include fx.text(body-sm, semibold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-pill);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+// Visually hidden: the buttons open them.
 .file-input {
   position: absolute;
   width: 1px;
@@ -128,35 +144,24 @@ ion-footer {
 .file {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  text-align: start;
 }
 
 .file-icon {
-  flex-shrink: 0;
-  font-size: 32px;
-  color: var(--color-text-secondary);
-
-  &.done {
-    color: var(--color-success-text);
-  }
-}
-
-.file-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
+  flex: none;
+  font-size: 22px;
+  color: var(--color-primary-text);
 }
 
 .file-name {
-  @include fx.text(body, medium);
+  @include fx.text(body-sm, semibold);
+  flex: 1;
+  min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.file-meta {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
 }
 
 .issues {
@@ -164,6 +169,7 @@ ion-footer {
   padding-inline-start: var(--space-5);
 }
 
+// --- More values ------------------------------------------------------------------------------
 .more {
   display: flex;
   flex-direction: column;
@@ -173,15 +179,12 @@ ion-footer {
 .more-summary {
   @include fx.text(body, semibold);
   @include fx.focus-ring;
+  min-height: var(--tap-target-min);
   padding: var(--space-2) 0;
   cursor: pointer;
 }
 
-.more[open] .more-summary {
-  margin-bottom: var(--space-3);
-}
-
 .more-fields {
   gap: var(--space-5);
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
 }

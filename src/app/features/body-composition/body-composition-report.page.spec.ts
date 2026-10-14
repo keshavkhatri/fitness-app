@@ -134,6 +134,17 @@ describe('Body composition: add an assessment from a report', () => {
     detail.componentRef.setInput('assessmentId', 'new-1');
     await settle(detail);
     const d = detail.nativeElement as HTMLElement;
+    expect(d.classList).toContain('fit-theme-immersive');
+    // Overview: the report's headline values and its composition, as printed.
+    expect(clean(byTestId(d, 'tile-weight'))).toBe('Weight 68.4 kg Change: −0.7 kg');
+    expect(clean(byTestId(d, 'tile-skeletal-muscle-mass'))).toBe('Skeletal muscle mass 26.2 kg Change: +0.7 kg');
+    const composition = [...d.querySelectorAll('[data-testid^=composition-]')].map((r) => clean(r));
+    expect(composition.length).toBeGreaterThan(0);
+    // A mass in the weight's unit shows its calculated share; water (litres) never does.
+    expect(composition.find((c) => c.startsWith('Body fat mass'))).toMatch(/% of weight$/);
+    expect(composition.find((c) => c.startsWith('Total body water')) ?? '').not.toContain('% of weight');
+    d.querySelector<HTMLInputElement>('input[name=detail-tab][value=all]')!.click();
+    detail.detectChanges();
     const values = [...d.querySelectorAll('[data-testid=detail-value]')].map((v) => clean(v));
     expect(values).toContain('Weight 68.4 kg Change: −0.7 kg');
     expect(values).toContain('Skeletal muscle mass 26.2 kg Change: +0.7 kg');
@@ -142,6 +153,32 @@ describe('Body composition: add an assessment from a report', () => {
     expect(values.some((v) => v.startsWith('Lean body mass'))).toBe(false);
     expect(clean(byTestId(d, 'detail-comparison'))).toContain('not a trend');
     expect(byTestId(d, 'log-weight')).not.toBeNull();
+  });
+
+  it('offers Take photo and Choose from files for the same image upload, with the formats it really accepts', async () => {
+    const { el, fixture } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+    expect(el.classList).toContain('fit-theme-immersive');
+    expect(clean(byTestId(el, 'take-photo'))).toBe('Take photo');
+    expect(clean(byTestId(el, 'choose-report'))).toBe('Choose from files');
+    const inputs = [...el.querySelectorAll<HTMLInputElement>('input[type=file]')];
+    expect(inputs.map((i) => [i.accept, i.getAttribute('capture')])).toEqual([
+      ['image/png,image/jpeg,image/webp', null],
+      ['image/png,image/jpeg,image/webp', 'environment'],
+    ]);
+    expect(el.textContent).toContain('Supported formats: JPG, PNG or WebP image, up to 8 MB');
+    expect(el.textContent).not.toMatch(/PDF/);
+    const camera = vi.spyOn(inputs[1], 'click').mockImplementation(() => undefined);
+    (byTestId(el, 'take-photo') as HTMLButtonElement).click();
+    expect(camera).toHaveBeenCalledOnce();
+    fixture.detectChanges();
+  });
+
+  it('a second Save after a successful one (a double click) saves nothing more', async () => {
+    const { upload, submit, storage } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+    await upload();
+    await submit();
+    await submit();
+    expect(storedAssessments(storage)).toHaveLength(2); // the earlier one and this one
   });
 
   it('a corrected reading is saved as the user’s own entry, not as read from the report', async () => {

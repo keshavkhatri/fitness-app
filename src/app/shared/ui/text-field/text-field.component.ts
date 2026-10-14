@@ -9,6 +9,8 @@ let nextId = 0;
  *
  * The suffix is part of the accessible name ("Weight kg"), and the error or
  * hint is linked via aria-describedby.
+ *
+ * `size="lg"`: one prominent value (e.g. a weight), centred in large type.
  */
 @Component({
   selector: 'fit-text-field',
@@ -45,6 +47,7 @@ let nextId = 0;
   `,
   styleUrl: './text-field.component.scss',
   imports: [IonIcon],
+  host: { '[attr.data-size]': 'size()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TextFieldComponent {
@@ -66,6 +69,7 @@ export class TextFieldComponent {
   readonly invalid = input(false);
   /** Id of an external element describing this field (e.g. that shared message). */
   readonly describedBy = input<string | null>(null);
+  readonly size = input<'md' | 'lg'>('md');
 
   protected readonly ids = (() => {
     const id = `fit-field-${nextId++}`;

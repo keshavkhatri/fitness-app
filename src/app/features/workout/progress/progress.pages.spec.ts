@@ -95,7 +95,7 @@ describe('Progress', () => {
   describe('You entry', () => {
     it('opens Progress from You (no new tab)', async () => {
       const { el, forward, settle } = await render(YouPage, []);
-      const entry = el.querySelector<HTMLButtonElement>('[data-testid="progress-entry"]')!;
+      const entry = el.querySelector<HTMLButtonElement>('[data-testid="progress-entry"] button')!;
       expect(clean(entry)).toBe('Progress Training activity and performance');
       entry.click();
       await settle();
