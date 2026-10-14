@@ -49,3 +49,134 @@ input {
   opacity: 0;
   cursor: pointer;
 }
+
+// --- Variants (every segment stays a 44px target; only the visible shape changes) -------------
+
+// Ink pill, lime selection.
+:host([data-variant='ink']) {
+  fieldset {
+    padding: 3px;
+    border-radius: var(--radius-pill);
+    background: var(--color-ink);
+  }
+
+  .segment {
+    border-radius: var(--radius-pill);
+    color: var(--color-on-ink);
+    font-weight: var(--font-weight-semibold);
+
+    &.selected {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      box-shadow: none;
+    }
+
+    &:has(input:focus-visible) {
+      outline-color: var(--color-ink-accent);
+    }
+  }
+}
+
+// No track: small text options; the selection on a soft pill drawn inside the target.
+:host([data-variant='compact']) {
+  fieldset {
+    gap: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .segment {
+    @include fx.text(caption, medium);
+    flex: none;
+    min-width: var(--tap-target-min);
+    padding: 0 2px;
+    background: none;
+    color: var(--color-text-secondary);
+
+    span {
+      display: grid;
+      place-items: center;
+      min-width: 36px;
+      height: 28px;
+      padding: 0 var(--space-2);
+      border-radius: var(--radius-pill);
+    }
+
+    &.selected {
+      background: none;
+      box-shadow: none;
+      color: var(--color-text);
+      font-weight: var(--font-weight-bold);
+
+      span {
+        background: var(--color-surface-muted);
+      }
+    }
+  }
+}
+
+// Surface track, selection in the text colour (white on dark screens).
+:host([data-variant='inverse']) {
+  fieldset {
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+  }
+
+  .segment {
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+
+    &.selected {
+      background: var(--color-text);
+      color: var(--color-bg);
+      box-shadow: none;
+    }
+  }
+}
+
+// Separate pills, the selection inverted; each as wide as its label (never wrapped).
+:host([data-variant='pills']) {
+  fieldset {
+    gap: var(--space-2);
+    padding: 0;
+    background: none;
+  }
+
+  .segment {
+    flex: 1 1 auto;
+    padding: 0 var(--space-3);
+    white-space: nowrap;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-text);
+
+    &.selected {
+      background: var(--color-text);
+      color: var(--color-bg);
+      box-shadow: none;
+    }
+  }
+}
+
+// Tabs with a line under the selection.
+:host([data-variant='underline']) {
+  fieldset {
+    gap: 0;
+    padding: 0;
+    border-bottom: var(--border-hairline) solid var(--color-border);
+    border-radius: 0;
+    background: none;
+  }
+
+  .segment {
+    border-radius: 0;
+    color: var(--color-text-secondary);
+
+    &.selected {
+      background: none;
+      box-shadow: inset 0 -3px 0 var(--color-primary-strong);
+      color: var(--color-text);
+    }
+  }
+}

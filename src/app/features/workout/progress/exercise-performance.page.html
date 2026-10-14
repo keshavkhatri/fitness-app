@@ -10,9 +10,7 @@
       @let v = view()!;
       <h1 class="title">{{ v.name }}</h1>
 
-      @if (v.ranges.length > 1) {
-        <fit-segmented-control class="ranges" name="performance-range" [legend]="detail.rangeLegend" [options]="rangeOptions()" [(value)]="range" />
-      }
+      <fit-segmented-control class="ranges" variant="inverse" name="performance-range" [legend]="detail.rangeLegend" [options]="rangeOptions()" [(value)]="range" />
 
       <section class="headline" aria-labelledby="performance-best" data-testid="performance-best">
         <h2 class="headline-label" id="performance-best">{{ detail.best }}</h2>
@@ -31,7 +29,7 @@
       </section>
 
       @if (v.metrics.length > 1) {
-        <fit-segmented-control class="metric-switch" name="performance-metric" [legend]="detail.metricLegend" [options]="metricOptions()" [(value)]="metric" />
+        <fit-segmented-control class="metric-switch" variant="pills" name="performance-metric" [legend]="detail.metricLegend" [options]="metricOptions()" [(value)]="metric" />
       }
 
       <section class="chart-card" aria-labelledby="performance-chart-title">
@@ -40,10 +38,15 @@
       </section>
 
       <section class="sessions" aria-labelledby="performance-sessions">
-        <h2 class="section-title" id="performance-sessions">{{ detail.sessionsTitle }}</h2>
-        <app-performance-session-list class="fit-theme-dashboard" [rows]="visibleSessions()" (openWorkout)="openWorkout($event)" />
+        <div class="section-head">
+          <h2 class="section-title" id="performance-sessions">{{ detail.sessionsTitle }}</h2>
+          @if (hiddenCount() > 0) {
+            <button type="button" class="view-all" [attr.aria-label]="detail.showAll(v.sessions.length)" (click)="showAll.set(true)">{{ detail.viewAll }}</button>
+          }
+        </div>
+        <app-performance-session-list [rows]="visibleSessions()" (openWorkout)="openWorkout($event)" />
         @if (hiddenCount() > 0) {
-          <button fit-button type="button" size="lg" block class="show-all" (click)="showAll.set(true)">{{ detail.showAll(v.sessions.length) }}</button>
+          <button fit-button type="button" size="lg" block class="show-all" (click)="showAll.set(true)">{{ detail.exerciseHistory }}</button>
         }
       </section>
     } @else if (s?.kind === 'not-found') {

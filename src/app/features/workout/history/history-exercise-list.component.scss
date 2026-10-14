@@ -23,11 +23,29 @@
   box-shadow: var(--shadow-raised);
 }
 
+.heading {
+  margin: 0;
+}
+
 .head {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  text-align: start;
+}
+
+.chevron {
+  font-size: var(--icon-size-md);
+  color: var(--color-text-secondary);
 }
 
 .thumb {
@@ -39,6 +57,8 @@
 }
 
 .identity {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
@@ -90,16 +110,9 @@
 }
 
 .set-number {
-  @include fx.text(caption, semibold);
+  @include fx.text(body-sm);
   @include fx.tabular-numbers;
-
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-muted);
-  font-size: 11px;
+  color: var(--color-text);
 }
 
 .set-value {
@@ -156,8 +169,4 @@
 
 .tabular .set-value.wide {
   grid-column: 2 / 4;
-}
-
-.set-number {
-  justify-self: start;
 }

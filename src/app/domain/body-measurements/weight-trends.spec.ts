@@ -13,9 +13,11 @@ const ids = (list: readonly WeightEntry[]) => list.map((e) => e.id);
 
 describe('weight trends', () => {
   describe('rolling windows ending today (inclusive)', () => {
-    it('30 days is today and the 29 days before; 90 days likewise; all time has no start', () => {
+    it('30 days is today and the 29 days before; 90, 180 and 365 days likewise; all time has no start', () => {
       expect(rangeStart('30d', TODAY)).toBe('2026-09-10');
       expect(rangeStart('90d', TODAY)).toBe('2026-07-12');
+      expect(rangeStart('180d', TODAY)).toBe('2026-04-13');
+      expect(rangeStart('365d', TODAY)).toBe('2025-10-10');
       expect(rangeStart('all', TODAY)).toBeNull();
       // Across a year boundary and a leap day.
       expect(rangeStart('30d', '2027-01-15')).toBe('2026-12-17');

@@ -4,19 +4,14 @@
   display: block;
 }
 
+// Dark rows on the dark page (as the reference), one per workout.
 .session-list {
   display: flex;
   flex-direction: column;
+  gap: 6px;
   margin: 0;
-  padding: var(--space-1) 0;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  padding: 0;
   list-style: none;
-
-  li + li {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
 }
 
 .session {
@@ -31,6 +26,8 @@
   width: 100%;
   min-height: 60px;
   padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
   color: var(--color-text);
   text-align: start;
 }

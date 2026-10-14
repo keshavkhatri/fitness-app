@@ -3,7 +3,7 @@ import { WeightEntry, createWeightEntry } from '../../../domain/body-measurement
 import { WorkoutLog, completedWorkouts, exercisePerformance, performedExercises } from '../../../domain/workout-session';
 import { BODYWEIGHT_PROFILE, finishedLog, planFor } from '../../../domain/workout-session/testing/workout-log-fixtures';
 import { ALL_AREAS, areaFilters, queryExercises, toExerciseRow } from './exercise-list-view-model';
-import { availableRanges, metricValue, performanceAxis, performanceRangeStart, toExercisePerformanceView } from './exercise-performance-view-model';
+import { metricValue, performanceAxis, performanceRangeStart, toExercisePerformanceView } from './exercise-performance-view-model';
 import { formatPerformedSet, performedOnLabel, toBodyMetrics, toConsistency, toKeyMetrics, toProgressWorkouts } from './progress-view-model';
 
 const local = (month: number, d: number, hour = 9) => new Date(2026, month - 1, d, hour, 0);
@@ -44,16 +44,16 @@ describe('progress overview view model', () => {
       const weights = { status: 'ready' as const, unitSystem: 'metric' as const, entries: [weigh('w1', '2026-10-01', 79), weigh('w2', '2026-10-07', 78.4)] };
       const composition = { status: 'ready' as const, assessments: [assess('a1', '2026-09-01', 21.7, 33.2), assess('a2', '2026-10-01', 18.5, 35)] };
       const [weight, fat, muscle] = toBodyMetrics(weights, composition, TODAY);
-      expect(weight).toMatchObject({ value: '78.4', unit: 'kg', change: { text: '−0.6 kg', direction: 'down' }, caption: 'vs Oct 1' });
-      expect(fat).toMatchObject({ value: '18.5', unit: '%', change: { text: '−3.2 pts', spoken: '−3.2 percentage points', direction: 'down' }, caption: 'vs Sep 1' });
+      expect(weight).toMatchObject({ value: '78.4', unit: 'kg', change: { text: '−0.6 kg', direction: 'down' }, caption: 'vs 1 Oct' });
+      expect(fat).toMatchObject({ value: '18.5', unit: '%', change: { text: '−3.2 pts', spoken: '−3.2 percentage points', direction: 'down' }, caption: 'vs 1 Sep' });
       expect(muscle).toMatchObject({ value: '35', unit: 'kg', change: { text: '+1.8 kg', direction: 'up' } });
     });
 
     it('one recording: its date, no change; none: "Not recorded" (never a zero)', () => {
       const weights = { status: 'ready' as const, unitSystem: 'metric' as const, entries: [weigh('w1', '2026-10-07', 78.4)] };
       const [weight, fat, muscle] = toBodyMetrics(weights, { status: 'ready', assessments: [assess('a1', '2026-10-01', 18.5)] }, TODAY);
-      expect(weight).toMatchObject({ value: '78.4', change: null, caption: 'Oct 7' });
-      expect(fat).toMatchObject({ value: '18.5', change: null, caption: 'Oct 1' });
+      expect(weight).toMatchObject({ value: '78.4', change: null, caption: '7 Oct' });
+      expect(fat).toMatchObject({ value: '18.5', change: null, caption: '1 Oct' });
       expect(muscle).toMatchObject({ value: null, change: null, caption: 'Not recorded' });
       expect(toBodyMetrics({ status: 'error' }, { status: 'loading' }, TODAY).map((m) => m.value)).toEqual([null, null, null]);
     });
@@ -67,8 +67,8 @@ describe('progress overview view model', () => {
       expect(c.weeksCounted).toBe(4);
       expect(c.weeks.map((w) => w.workouts)).toEqual([1, 0, 2, 1]);
       expect(c).toMatchObject({ activeWeeks: 3, percent: 75, summary: '3 of 4 weeks with a workout' });
-      expect(c.weeks[3]).toMatchObject({ isCurrent: true, spoken: 'Week of Oct 5 (this week, so far): 1 workout' });
-      expect(c.weeks[1].spoken).toBe('Week of Sep 21: no workouts');
+      expect(c.weeks[3]).toMatchObject({ isCurrent: true, spoken: 'Week of 5 Oct (this week, so far): 1 workout' });
+      expect(c.weeks[1].spoken).toBe('Week of 21 Sep: no workouts');
       expect(c.planned).toEqual({ perWeek: 4, height: 1, label: 'Plan: 4 a week' });
       expect(c.weeks[2].height).toBe(0.5);
     });
@@ -118,8 +118,8 @@ describe('exercise list view model', () => {
   it('a row: name, body area, latest top set, and a trend of the top set across recent sessions', () => {
     const benchRow = rows.find((r) => r.name === 'Bench Press')!;
     expect(benchRow).toMatchObject({ area: 'Chest', latest: '62.5 kg × 7', lastLabel: 'Today' });
-    expect(benchRow.trend).toEqual({ bars: [57.5 / 62.5, 60 / 62.5, 1], change: '+5 kg', direction: 'up', since: 'since Sep 30' });
-    expect(benchRow.accessibleLabel).toBe('Bench Press. Chest. Latest top set 62.5 kg × 7, Today. +5 kg since Sep 30');
+    expect(benchRow.trend).toEqual({ bars: [57.5 / 62.5, 60 / 62.5, 1], change: '+5 kg', direction: 'up', since: 'since 30 Sep' });
+    expect(benchRow.accessibleLabel).toBe('Bench Press. Chest. Latest top set 62.5 kg × 7, Today. +5 kg since 30 Sep');
   });
 
   it('one session: no trend (never from one point)', () => {
@@ -157,19 +157,25 @@ describe('exercise performance view model', () => {
     expect(performanceRangeStart('all', day(2026, 10, 8))).toBeNull();
   });
 
-  it('offers only ranges that show different sessions, then All', () => {
-    // 1M: 3 sessions; 3M: 4 (adds Jul 10); 6M: 4 again (skipped); 1Y: 5 = all (skipped).
-    expect(availableRanges(performance, day(2026, 10, 8))).toEqual(['1m', '3m', 'all']);
+  it('a range without sessions says so; nothing is drawn (never an empty axis)', () => {
+    const old = exercisePerformance([bench(local(3, 2, 7), 80, 8)], 'barbell-bench-press')!;
+    const view = toExercisePerformanceView(old, { range: '3m', metric: 'weight' }, NOW);
+    expect(view.ranges).toEqual(['1m', '3m', '6m', '1y', 'all']);
+    expect(view.chart).toBeNull();
+    expect(view.best).toBeNull();
+    expect(view.sessions).toEqual([]);
+    expect(view.chartLabel).toBe('No sessions in this range.');
+    expect(toExercisePerformanceView(old, { range: '1y', metric: 'weight' }, NOW).chart?.points).toHaveLength(1);
   });
 
   it('charts one recorded value per session, oldest first; the change is first to last in the range', () => {
     const view = toExercisePerformanceView(performance, { range: '1m', metric: 'weight' }, NOW);
     expect(view.metrics).toEqual(['weight', 'volume', 'reps']);
     expect(view.chart?.points).toHaveLength(3);
-    expect(view.chart?.latest).toMatchObject({ value: '100 kg', date: 'Oct 8' });
-    expect(view.change).toEqual({ text: '+7.5 kg', since: 'since Sep 24', direction: 'up' });
+    expect(view.chart?.latest).toMatchObject({ value: '100 kg', date: '8 Oct' });
+    expect(view.change).toEqual({ text: '+7.5 kg', since: 'since 24 Sep', direction: 'up' });
     expect(view.best).toEqual({ value: '100 kg × 6', date: '8 Oct 2026' });
-    expect(view.chartLabel).toBe('Max weight, last month: 3 sessions, from 92.5 kg on Sep 24 to 100 kg on Oct 8.');
+    expect(view.chartLabel).toBe('Max weight, last month: 3 sessions, from 92.5 kg on 24 Sep to 100 kg on 8 Oct.');
     expect(view.sessions.map((s) => [s.dateLabel, s.value])).toEqual([
       ['8 Oct 2026', '100 kg'],
       ['1 Oct 2026', '95 kg'],
@@ -178,13 +184,14 @@ describe('exercise performance view model', () => {
     expect(view.sessions[0].detail).toBe('4 sets · 6 reps');
   });
 
-  it('switching the range or metric changes the chart; an unavailable range falls back to All', () => {
+  it('switching the range or metric changes the chart', () => {
     const all = toExercisePerformanceView(performance, { range: 'all', metric: 'weight' }, NOW);
     expect(all.chart?.points).toHaveLength(5);
     const volume = toExercisePerformanceView(performance, { range: 'all', metric: 'volume' }, NOW);
     expect(volume.chart?.unit).toBe('kg');
     expect(volume.sessions[0].value).toBe(`${metricValue(performance.sessions[0], 'volume')!.toLocaleString('en-US')} kg`);
-    expect(toExercisePerformanceView(performance, { range: '6m', metric: 'weight' }, NOW).range).toBe('all');
+    // 6M (from 8 Apr) holds the four sessions since July; All adds February.
+    expect(toExercisePerformanceView(performance, { range: '6m', metric: 'weight' }, NOW).chart?.points).toHaveLength(4);
   });
 
   it('a single session: a point, no change; never a trend from one value', () => {
@@ -228,8 +235,8 @@ describe('shared formatting', () => {
   it.each([
     [{ year: 2026, month: 10, day: 8 }, 'Today'],
     [{ year: 2026, month: 10, day: 7 }, 'Yesterday'],
-    [{ year: 2026, month: 10, day: 1 }, 'Oct 1'],
-    [{ year: 2025, month: 12, day: 30 }, 'Dec 30, 2025'],
+    [{ year: 2026, month: 10, day: 1 }, '1 Oct'],
+    [{ year: 2025, month: 12, day: 30 }, '30 Dec 2025'],
   ])('performed-on label for %j is %s', (date, label) => {
     expect(performedOnLabel(date, { year: 2026, month: 10, day: 8 })).toBe(label);
   });

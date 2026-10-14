@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
@@ -16,19 +16,24 @@ import { HistoryExerciseView } from './history-view-model';
     <ol class="exercise-list">
       @for (exercise of exercises(); track exercise.key) {
         <li class="exercise" data-testid="history-exercise">
-          <div class="head">
-            <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" /></span>
-            <div class="identity">
-              <h3 class="name">{{ exercise.name }}</h3>
-              <p class="count">{{ exercise.setsLabel }}<span class="visually-hidden">, {{ exercise.progress }}</span></p>
-            </div>
-            @if (exercise.best; as best) {
-              <p class="best" data-testid="history-best">
-                <span class="best-label">{{ copy.detail.max }}<span class="visually-hidden">:</span></span>&ngsp;
-                <span class="best-value">{{ best }}</span>
-              </p>
-            }
-          </div>
+          <h3 class="heading">
+            <!-- The whole head row opens the exercise's performance over time. -->
+            <button type="button" class="head" data-testid="history-exercise-open" (click)="openExercise.emit(exercise.exerciseId)">
+              <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" /></span>
+              <span class="identity">
+                <span class="name">{{ exercise.name }}</span>&ngsp;
+                <span class="count">{{ exercise.setsLabel }}<span class="visually-hidden">, {{ exercise.progress }}</span></span>
+              </span>&ngsp;
+              @if (exercise.best; as best) {
+                <span class="best" data-testid="history-best">
+                  <span class="best-label">{{ copy.detail.max }}<span class="visually-hidden">:</span></span>&ngsp;
+                  <span class="best-value">{{ best }}</span>
+                </span>
+              }
+              <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+              <span class="visually-hidden">. {{ copy.detail.openPerformance }}</span>
+            </button>
+          </h3>
           @if (exercise.columns; as columns) {
             <!-- Visual column headings; each row also reads as one sentence ("Set 1: 20 kg × 12"). -->
             <div class="set columns" aria-hidden="true">
@@ -73,6 +78,8 @@ import { HistoryExerciseView } from './history-view-model';
 })
 export class HistoryExerciseListComponent {
   readonly exercises = input.required<readonly HistoryExerciseView[]>();
+  /** An exercise id: its performance over time (Progress). */
+  readonly openExercise = output<string>();
 
   protected readonly copy = WORKOUT_COPY.history;
 }

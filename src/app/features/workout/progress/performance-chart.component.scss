@@ -46,23 +46,32 @@
 }
 
 // The latest session: larger and filled (not colour alone).
-.point.latest {
-  fill: var(--color-primary);
+.point.guide {
+  stroke: var(--color-primary);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
 }
 
-.latest {
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-end;
-  gap: var(--space-2);
+// The latest value, in a raised bubble beside its point.
+.callout rect {
+  fill: var(--color-surface-elevated);
+  stroke: var(--color-border);
 }
 
-.latest-value {
-  @include fx.text(body, bold);
-  @include fx.tabular-numbers;
+.callout-value {
+  fill: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.latest-date,
+.callout-date {
+  fill: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 10px;
+}
+
 .note {
   @include fx.text(caption);
   color: var(--color-text-secondary);

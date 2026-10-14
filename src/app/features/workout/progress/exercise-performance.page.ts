@@ -22,6 +22,8 @@ import { progressBaseOf } from './progress-paths';
 
 type Screen = { readonly kind: 'ready'; readonly performance: ExercisePerformance } | { readonly kind: 'not-found' } | { readonly kind: 'error' };
 
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 /** Sessions listed before "Show all". */
 export const SESSION_PREVIEW = 5;
 
@@ -93,7 +95,7 @@ export class ExercisePerformancePage {
     return s?.kind === 'ready' ? toExercisePerformanceView(s.performance, { range: this.range(), metric: this.metric() }, this.clock()) : null;
   });
   protected readonly rangeOptions = computed<readonly SegmentOption<PerformanceRange>[]>(() =>
-    (this.view()?.ranges ?? []).map((value) => ({ value, label: this.detail.ranges[value] })),
+    (this.view()?.ranges ?? []).map((value) => ({ value, label: this.detail.ranges[value], spoken: capitalize(this.detail.rangeNames[value]) })),
   );
   protected readonly metricOptions = computed<readonly SegmentOption<PerformanceMetric>[]>(() =>
     (this.view()?.metrics ?? []).map((value) => ({ value, label: this.detail.metrics[value] })),

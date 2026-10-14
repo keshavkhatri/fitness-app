@@ -3,7 +3,7 @@ import { WeightHistoryState } from '../../../core/body-measurements/weight-histo
 import { WorkoutHistoryResult } from '../../../core/workout/workout-history.service';
 import { BodyCompositionMetric, latestReportedValues, metricChange } from '../../../domain/body-composition';
 import { weightHistory } from '../../../domain/body-measurements';
-import { CalendarDate, IsoCalendarDate, calendarDateOf, compareCalendarDates } from '../../../domain/fitness-profile';
+import { CalendarDate, IsoCalendarDate, calendarDateOf, compareCalendarDates, parseIsoCalendarDate } from '../../../domain/fitness-profile';
 import {
   LoggingMode,
   PerformedSet,
@@ -16,7 +16,7 @@ import {
   trainingOverview,
   weeklyWorkoutCounts,
 } from '../../../domain/workout-session';
-import { formatReportedValue, shortDateOf } from '../../body-composition/body-composition-history-view-model';
+import { formatReportedValue } from '../../body-composition/body-composition-history-view-model';
 import { formatChange, formatDisplayWeight } from '../../body-weight/weight-history-view-model';
 import { formatDuration } from '../summary/workout-summary-view-model';
 import { WORKOUT_COPY } from '../workout-content';
@@ -30,10 +30,21 @@ import { WORKOUT_COPY } from '../workout-content';
 
 const copy = WORKOUT_COPY.progress;
 const localDateOf = (instant: string) => calendarDateOf(new Date(instant));
-const monthDay = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-const monthDayYear = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
-/** "Today", "Yesterday", "Oct 8" (with the year when it isn't this year). */
+/** "8 Oct", or "30 Dec 2025" outside the current year (the mockup's day-month form). */
+export function dayMonth(date: CalendarDate, today: CalendarDate): string {
+  return `${date.day} ${MONTHS[date.month - 1]}${date.year === today.year ? '' : ` ${date.year}`}`;
+}
+
+/** The same from an ISO calendar date ("2026-10-01" → "1 Oct"). */
+const isoDayMonth = (iso: IsoCalendarDate, today: IsoCalendarDate): string => {
+  const d = parseIsoCalendarDate(iso);
+  const t = parseIsoCalendarDate(today);
+  return d && t ? dayMonth(d, t) : iso;
+};
+
+/** "Today", "Yesterday", "8 Oct" (with the year when it isn't this year). */
 export function performedOnLabel(date: CalendarDate, today: CalendarDate): string {
   if (compareCalendarDates(date, today) === 0) {
     return WORKOUT_COPY.history.today;
@@ -41,8 +52,7 @@ export function performedOnLabel(date: CalendarDate, today: CalendarDate): strin
   if (compareCalendarDates(date, addDays(today, -1)) === 0) {
     return WORKOUT_COPY.history.yesterday;
   }
-  const value = new Date(date.year, date.month - 1, date.day);
-  return (date.year === today.year ? monthDay : monthDayYear).format(value);
+  return dayMonth(date, today);
 }
 
 /** What was actually done: "62.5 kg × 7", "15 reps", "45 sec". Never a weight that wasn't logged. */
@@ -86,7 +96,7 @@ function weightMetric(state: WeightHistoryState, today: IsoCalendarDate): BodyMe
   const [latest, previous] = weightHistory(state.entries, state.unitSystem);
   const shown = splitValue(formatDisplayWeight(latest.displayWeight, state.unitSystem));
   if (!previous || latest.changeSincePrevious === null) {
-    return { ...base, ...shown, change: null, caption: shortDateOf(latest.entry.date, today) };
+    return { ...base, ...shown, change: null, caption: isoDayMonth(latest.entry.date, today) };
   }
   const change = latest.changeSincePrevious + 0;
   const text = change === 0 ? copy.body.noChange : formatChange(change, state.unitSystem);
@@ -94,7 +104,7 @@ function weightMetric(state: WeightHistoryState, today: IsoCalendarDate): BodyMe
     ...base,
     ...shown,
     change: { text, spoken: text, direction: direction(change) },
-    caption: copy.body.vs(shortDateOf(previous.entry.date, today)),
+    caption: copy.body.vs(isoDayMonth(previous.entry.date, today)),
   };
 }
 
@@ -113,7 +123,7 @@ function compositionMetric(
   const shown = splitValue(formatReportedValue(latest.value));
   const difference = metricChange(state.assessments, metric);
   if (!difference || difference.kind !== 'change') {
-    return { ...base, ...shown, change: null, caption: shortDateOf(latest.assessment.date, today) };
+    return { ...base, ...shown, change: null, caption: isoDayMonth(latest.assessment.date, today) };
   }
   const points = difference.unit === '%';
   const magnitude = `${Math.abs(difference.change)}`;
@@ -124,7 +134,7 @@ function compositionMetric(
     ...base,
     ...shown,
     change: { text, spoken, direction: direction(difference.change) },
-    caption: copy.body.vs(shortDateOf(difference.previous.date, today)),
+    caption: copy.body.vs(isoDayMonth(difference.previous.date, today)),
   };
 }
 
@@ -166,8 +176,7 @@ export interface ConsistencyView {
   readonly axis: { readonly start: string; readonly end: string };
 }
 
-const monthDayShort = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-const weekLabel = (date: CalendarDate) => monthDayShort.format(new Date(date.year, date.month - 1, date.day));
+const weekLabel = (date: CalendarDate) => `${date.day} ${MONTHS[date.month - 1]}`;
 
 /**
  * Finished training workouts per Monday–Sunday week over the last

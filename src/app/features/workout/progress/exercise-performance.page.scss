@@ -92,6 +92,28 @@ ion-content {
   }
 }
 
+// Small phones: the change goes under the best set, so the value stays on one line.
+@media (max-width: 359px) {
+  .headline {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'label' 'value' 'date' 'change';
+  }
+
+  .headline-value {
+    @include fx.text(h1, bold);
+  }
+
+  .change {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 var(--space-1);
+    max-width: none;
+    margin-top: var(--space-2);
+    text-align: start;
+  }
+}
+
 .since {
   @include fx.text(caption);
   font-weight: var(--font-weight-regular);
@@ -113,6 +135,23 @@ ion-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.view-all {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
 }
 
 .section-title {

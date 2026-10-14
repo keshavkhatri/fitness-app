@@ -12,10 +12,10 @@ import { sortWeightEntries } from './weight-history';
  * days before it.
  */
 
-export const WEIGHT_RANGES = ['30d', '90d', 'all'] as const;
+export const WEIGHT_RANGES = ['30d', '90d', '180d', '365d', 'all'] as const;
 export type WeightRange = (typeof WEIGHT_RANGES)[number];
 
-const RANGE_DAYS: Readonly<Record<Exclude<WeightRange, 'all'>, number>> = { '30d': 30, '90d': 90 };
+const RANGE_DAYS: Readonly<Record<Exclude<WeightRange, 'all'>, number>> = { '30d': 30, '90d': 90, '180d': 180, '365d': 365 };
 
 /** First date inside the window (inclusive); null for all time or an invalid `today`. */
 export function rangeStart(range: WeightRange, today: IsoCalendarDate): IsoCalendarDate | null {

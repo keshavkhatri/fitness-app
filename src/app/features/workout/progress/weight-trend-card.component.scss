@@ -26,24 +26,8 @@
 }
 
 .ranges {
-  flex: 0 1 180px;
-}
-
-// The latest recorded measurement, called out (also the chart's filled point).
-.latest {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.latest-value {
-  @include fx.text(h2, bold);
-  @include fx.tabular-numbers;
-}
-
-.latest-date {
-  @include fx.text(caption);
-  color: var(--color-text-secondary);
+  flex: none;
+  margin-right: calc(-1 * var(--space-2));
 }
 
 .note {

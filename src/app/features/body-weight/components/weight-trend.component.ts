@@ -11,6 +11,8 @@ import { WeightChartComponent } from './weight-chart.component';
  * summary and the same measurements as text. Presentational; the page owns
  * the range and computes everything.
  */
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 @Component({
   selector: 'app-weight-trend',
   template: `
@@ -76,5 +78,9 @@ export class WeightTrendComponent {
 
   protected readonly copy = WEIGHT_HISTORY_COPY.trend;
   protected readonly addLabel = WEIGHT_HISTORY_COPY.add;
-  protected readonly options: readonly SegmentOption<WeightRange>[] = WEIGHT_RANGES.map((value) => ({ value, label: this.copy.ranges[value] }));
+  protected readonly options: readonly SegmentOption<WeightRange>[] = WEIGHT_RANGES.map((value) => ({
+    value,
+    label: this.copy.ranges[value],
+    spoken: capitalize(this.copy.rangeNames[value]),
+  }));
 }
