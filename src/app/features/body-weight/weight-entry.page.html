@@ -1,34 +1,54 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="historyPath" [text]="copy.back" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ title() }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
   <main class="body">
+    <div class="topbar">
+      <button type="button" class="round" [attr.aria-label]="copy.close" [disabled]="busy()" data-testid="close" (click)="backToHistory()">
+        <ion-icon name="close" aria-hidden="true" />
+      </button>
+      <span class="bar-title" aria-hidden="true">{{ title() }}</span>
+      <span class="round-spacer" aria-hidden="true"></span>
+    </div>
     @let l = loaded();
     @if (l && (l.kind === 'new' || l.kind === 'edit')) {
       @let f = form();
       @let e = errors();
-      <h1 class="title">{{ title() }}</h1>
+      <h1 class="visually-hidden">{{ title() }}</h1>
 
       <form id="weight-form" class="form" novalidate data-testid="weight-form" (submit)="$event.preventDefault(); save()">
-        <fit-text-field
-          #weightField
-          [label]="copy.weight"
-          [suffix]="unit()"
-          inputMode="decimal"
-          [maxLength]="6"
-          [value]="f.weight"
-          [hint]="copy.weightHint"
-          [error]="e.weight ?? null"
-          data-testid="field-weight"
-          (valueChange)="update('weight', $event)"
-        />
+        <div class="weight-card">
+          <fit-text-field
+            #weightField
+            size="lg"
+            [label]="copy.weight"
+            [suffix]="unit()"
+            inputMode="decimal"
+            [maxLength]="6"
+            [value]="f.weight"
+            [hint]="copy.weightHint"
+            [error]="e.weight ?? null"
+            data-testid="field-weight"
+            (valueChange)="update('weight', $event)"
+          />
+          @if (slider(); as sl) {
+            <div class="slider" data-testid="weight-slider">
+              <input
+                type="range"
+                [min]="sl.min"
+                [max]="sl.max"
+                step="0.1"
+                [value]="sl.value"
+                [attr.aria-label]="copy.adjust"
+                [attr.aria-valuetext]="sl.value.toFixed(1) + ' ' + unit()"
+                [disabled]="busy()"
+                (input)="slide($any($event.target).value)"
+              />
+              <div class="ticks" aria-hidden="true">
+                @for (t of sl.ticks; track $index) {
+                  <span>{{ t }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
         <fit-text-field
           #dateField
           type="date"
@@ -105,14 +125,14 @@
   </ion-footer>
 }
 
-<fit-bottom-sheet [title]="copy.deleteConfirm.title" [description]="copy.deleteConfirm.message(entrySummary())" [(open)]="confirmOpen">
+<fit-bottom-sheet screenTheme="immersive" [title]="copy.deleteConfirm.title" [description]="copy.deleteConfirm.message(entrySummary())" [(open)]="confirmOpen">
   <div class="sheet-actions" data-testid="delete-confirm">
     <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
     <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
   </div>
 </fit-bottom-sheet>
 
-<fit-bottom-sheet #profileWeightSheet [title]="profileSheetTitle()" [(open)]="profileSheetOpen">
+<fit-bottom-sheet #profileWeightSheet screenTheme="immersive" [title]="profileSheetTitle()" [(open)]="profileSheetOpen">
   @let p = profileSheet();
   <div class="profile-sheet" data-testid="profile-weight-sheet">
     @switch (p.kind) {

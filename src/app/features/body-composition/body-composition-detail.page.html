@@ -1,27 +1,68 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="returnPath" [text]="copy.back" />
-    </ion-buttons>
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
   <main class="body">
+    <div class="topbar">
+      <ion-back-button class="back" [defaultHref]="returnPath" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+    </div>
     @let s = screen();
     @switch (s.kind) {
       @case ('ready') {
-        <header class="intro">
-          <h1 class="title" data-testid="detail-date">{{ s.dateLabel }}</h1>
-          <p class="subtitle" data-testid="detail-source">{{ s.source }}</p>
-          <p class="subtitle" data-testid="detail-comparison">{{ s.comparison ?? copy.noComparison }}</p>
+        <header class="report-header">
+          <app-report-thumb class="thumb" />
+          <div class="report-meta">
+            <p class="report-kind">{{ copy.reportTitle }}</p>
+            <h1 class="title" data-testid="detail-date">{{ s.dateLabel }}</h1>
+            <p class="subtitle" data-testid="detail-source">{{ s.source }}</p>
+          </div>
         </header>
-        @for (group of s.groups; track group.title; let i = $index) {
-          <section class="section" [attr.aria-labelledby]="'detail-group-' + i" data-testid="detail-group">
-            <h2 class="section-title" [id]="'detail-group-' + i">{{ group.title }}</h2>
-            <fit-card padding="none">
-              <dl class="latest">
+        <p class="caption" data-testid="detail-comparison">{{ s.comparison ?? copy.noComparison }}</p>
+
+        <fit-segmented-control variant="inverse" name="detail-tab" [legend]="copy.tabs" [options]="tabOptions" [(value)]="tab" />
+
+        @if (tab() === 'overview') {
+          <section aria-labelledby="detail-key" data-testid="detail-overview">
+            <h2 class="visually-hidden" id="detail-key">{{ copy.key }}</h2>
+            <dl class="tiles">
+              @for (t of s.tiles; track t.metric) {
+                <div class="tile" [attr.data-testid]="'tile-' + t.metric">
+                  <dt class="tile-label">{{ t.label }}</dt>&ngsp;
+                  @if (t.value) {
+                    <dd class="tile-value">{{ t.value }}</dd>
+                    @if (t.change) {
+                      &ngsp;<dd class="tile-change"><span class="visually-hidden">{{ copy.change }}: </span>{{ t.change }}</dd>
+                    }
+                  } @else {
+                    <dd class="tile-missing">{{ copy.notRecorded }}</dd>
+                  }
+                </div>
+              }
+            </dl>
+          </section>
+
+          <section class="card" aria-labelledby="detail-composition" data-testid="detail-composition">
+            <h2 class="card-title" id="detail-composition">{{ copy.compositionTitle }}</h2>
+            @if (s.composition.length) {
+              <ul class="bars">
+                @for (c of s.composition; track c.metric) {
+                  <li class="bar-row" [attr.data-testid]="'composition-' + c.metric">
+                    <span class="bar-label">{{ c.label }}</span>&ngsp;
+                    <span class="bar-value">{{ c.value }}</span>
+                    @if (c.share !== null) {
+                      &ngsp;<span class="bar-share">{{ copy.shareOfWeight(c.share.toFixed(1)) }}</span>
+                      <span class="bar-track" aria-hidden="true"><span [attr.class]="'bar-fill ' + c.metric" [style.width.%]="c.share"></span></span>
+                    }
+                  </li>
+                }
+              </ul>
+              <p class="caption">{{ copy.shareNote }}</p>
+            } @else {
+              <p class="caption" data-testid="no-composition">{{ copy.noComposition }}</p>
+            }
+          </section>
+        } @else {
+          @for (group of s.groups; track group.title; let i = $index) {
+            <section class="section" [attr.aria-labelledby]="'detail-group-' + i" data-testid="detail-group">
+              <h2 class="section-title" [id]="'detail-group-' + i">{{ group.title }}</h2>
+              <dl class="latest card">
                 @for (v of group.values; track v.metric) {
                   <div class="latest-row" data-testid="detail-value">
                     <dt class="latest-metric">{{ v.metric }}</dt>&ngsp;
@@ -36,23 +77,20 @@
                   </div>
                 }
               </dl>
-            </fit-card>
-          </section>
+            </section>
+          }
         }
+
+        <p class="caption">{{ copy.imageNote }}</p>
         @if (s.hasWeight) {
-          <fit-card data-testid="profile-weight-note">
-            <p class="notice">
-              <ion-icon name="information-circle-outline" aria-hidden="true" />
-              <span>{{ copy.profileWeight }}</span>
-            </p>
-          </fit-card>
-          <button fit-button type="button" variant="outline" block icon="scale-outline" data-testid="log-weight" (click)="logWeight()">
+          <p class="caption" data-testid="profile-weight-note">{{ copy.profileWeight }}</p>
+          <button fit-button type="button" variant="secondary" block icon="scale-outline" data-testid="log-weight" (click)="logWeight()">
             {{ copy.logWeight }}
           </button>
         }
         <div class="detail-actions">
           <p class="status" role="status" data-testid="detail-status" [class.shown]="status() !== ''">{{ status() }}</p>
-          <button fit-button type="button" variant="outline" block icon="create-outline" [disabled]="deleting()" data-testid="edit" (click)="edit()">
+          <button fit-button type="button" variant="secondary" block icon="create-outline" [disabled]="deleting()" data-testid="edit" (click)="edit()">
             {{ copy.edit }}
           </button>
           <button
@@ -98,7 +136,7 @@
   </main>
 </ion-content>
 
-<fit-bottom-sheet [title]="copy.deleteConfirm.title" [description]="deleteMessage()" [(open)]="confirmOpen">
+<fit-bottom-sheet screenTheme="immersive" [title]="copy.deleteConfirm.title" [description]="deleteMessage()" [(open)]="confirmOpen">
   <div class="sheet-actions" data-testid="delete-confirm">
     <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
     <button fit-button type="button" size="lg" block variant="ghost" data-testid="cancel-delete" (click)="cancelDelete()">

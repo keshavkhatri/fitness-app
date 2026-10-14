@@ -1,31 +1,39 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="returnPath" [text]="copy.back" [disabled]="busy()" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ title() }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
   <main class="body">
+    <div class="topbar">
+      <button type="button" class="round" [attr.aria-label]="copy.close" [disabled]="busy()" data-testid="close" (click)="cancel()">
+        <ion-icon name="close" aria-hidden="true" />
+      </button>
+      <span class="bar-title" aria-hidden="true">{{ title() }}</span>
+      <span class="round-spacer" aria-hidden="true"></span>
+    </div>
     @let l = loaded();
     @if (l && (l.kind === 'new' || l.kind === 'edit')) {
       @let f = form();
       @let e = errors();
       <div class="heading">
-        <h1 class="title">{{ title() }}</h1>
+        <h1 class="visually-hidden">{{ title() }}</h1>
         <p class="intro">{{ copy.intro }}</p>
-        <p class="note">{{ copy.separateNote }}</p>
       </div>
 
       <form id="measurement-form" class="form" novalidate data-testid="measurement-form" (submit)="$event.preventDefault(); save()">
+        <fit-text-field
+          type="date"
+          [label]="copy.date"
+          [max]="today"
+          [value]="f.date"
+          [hint]="copy.dateHint"
+          [error]="e.date ?? null"
+          data-testid="field-date"
+          (valueChange)="update('date', $event)"
+        />
+
         <fieldset class="sites" data-testid="measurement-sites">
           <legend class="legend">{{ copy.legend }}</legend>
           @if (e.values; as groupError) {
             <p class="group-error" [id]="groupErrorId" data-testid="values-error">{{ groupError }}</p>
           }
+          <div class="site-grid">
           @for (site of sites; track site) {
             <fit-text-field
               [label]="siteLabels[site]"
@@ -41,18 +49,9 @@
               (valueChange)="update(site, $event)"
             />
           }
+          </div>
         </fieldset>
-        <fit-text-field
-          type="date"
-          [label]="copy.date"
-          [max]="today"
-          enterKeyHint="done"
-          [value]="f.date"
-          [hint]="copy.dateHint"
-          [error]="e.date ?? null"
-          data-testid="field-date"
-          (valueChange)="update('date', $event)"
-        />
+        <p class="note">{{ copy.separateNote }}</p>
       </form>
     } @else if (l?.kind === 'not-found') {
       <h1 class="visually-hidden">{{ title() }}</h1>

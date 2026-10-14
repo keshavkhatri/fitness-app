@@ -1,16 +1,77 @@
 @use 'mixins' as fx;
 
+// Immersive (always dark): a highlight, compact tiles and the review's sections.
+
+ion-content {
+  --background: var(--color-bg);
+}
+
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-10);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  flex: none;
+  width: 44px;
+  height: 44px;
 }
 
 .title {
   @include fx.text(h1, bold);
+}
+
+.highlight {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+}
+
+.highlight-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 22px;
+}
+
+.highlight-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.highlight-title {
+  @include fx.text(body, bold);
+  color: var(--color-primary-text);
 }
 
 .week-nav {
@@ -69,24 +130,13 @@
   color: var(--color-primary-text);
 }
 
-.overview {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.card-title {
-  @include fx.text(body-sm, semibold);
-  color: var(--color-text-secondary);
-}
-
 .summary {
   @include fx.text(body, medium);
 }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 92px), 1fr));
   gap: var(--space-2);
   margin: 0;
 }
@@ -96,9 +146,9 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 
 .stat-label {
@@ -107,7 +157,7 @@
 }
 
 .stat-value {
-  @include fx.text(body, semibold);
+  @include fx.text(h3, bold);
   @include fx.tabular-numbers;
   margin: 0;
   overflow-wrap: anywhere;

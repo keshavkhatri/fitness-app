@@ -1,0 +1,185 @@
+// Shared layout for the You body-tracking screens (weight, measurements, InBody):
+// a header with back, title and Add; and compact tappable rows on a white card.
+// Mixins only: nothing is emitted unless a screen includes them.
+@use 'mixins' as fx;
+
+@mixin header {
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-2);
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .heading {
+    @include fx.text(h1, bold);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .back {
+    --background: var(--color-surface);
+    --border-radius: var(--radius-pill);
+    --color: var(--color-text);
+    --icon-font-size: 22px;
+    --padding-start: 0;
+    --padding-end: 0;
+    --icon-margin-start: 0;
+    --icon-margin-end: 0;
+
+    display: block;
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+
+  .add {
+    @include fx.button-reset;
+    @include fx.focus-ring;
+    @include fx.pressable;
+    @include fx.text(body-sm, semibold);
+
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--tap-target-min);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+
+  .subtitle {
+    @include fx.text(body-sm);
+    color: var(--color-text-secondary);
+  }
+}
+
+@mixin section {
+  .section,
+  .loading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .section-title {
+    @include fx.text(h3, bold);
+  }
+}
+
+// A white card list; each row a full-width button.
+@mixin rows {
+  .rows {
+    margin: 0;
+    padding: var(--space-1) 0;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    list-style: none;
+
+    li + li {
+      border-top: var(--border-hairline) solid var(--color-border);
+    }
+  }
+
+  .row {
+    @include fx.button-reset;
+    @include fx.focus-ring;
+    @include fx.pressable;
+
+    display: grid;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    padding: var(--space-2) var(--space-4);
+    text-align: start;
+  }
+
+  .row-chevron {
+    color: var(--color-text-secondary);
+  }
+}
+
+// Dark (immersive) entry forms: content background, a top bar with a round
+// close button and centred title, and a footer for the main action.
+@mixin form-chrome {
+  ion-content {
+    --background: var(--color-bg);
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-8);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .bar-title {
+    @include fx.text(body, bold);
+    flex: 1;
+    text-align: center;
+  }
+
+  .round,
+  .round-spacer {
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+
+  .round {
+    @include fx.button-reset;
+    @include fx.focus-ring;
+    @include fx.pressable;
+
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    font-size: 22px;
+
+    &[disabled] {
+      opacity: 0.5;
+    }
+  }
+
+  ion-footer {
+    background: var(--color-bg);
+  }
+
+  .footer {
+    display: flex;
+    flex-direction: column;
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .status {
+    @include fx.text(body-sm, medium);
+    color: var(--color-danger-text);
+    text-align: center;
+
+    &.shown {
+      margin-bottom: var(--space-3);
+    }
+  }
+}

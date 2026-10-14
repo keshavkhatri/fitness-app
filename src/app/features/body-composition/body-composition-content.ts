@@ -34,6 +34,8 @@ export const BODY_COMPOSITION_COPY = {
     entry: { title: 'Body composition', description: 'Your recorded InBody assessments' },
     loading: 'Loading your body composition',
     add: 'Add assessment',
+    addShort: 'Add',
+    addHidden: 'assessment',
     latest: {
       title: 'Latest',
       notRecorded: 'Not recorded yet',
@@ -43,7 +45,7 @@ export const BODY_COMPOSITION_COPY = {
       /** Reported values are never converted, so readings in different units aren't compared. */
       differentUnits: (previousDate: string) => `Not compared with ${previousDate} (different units)`,
     },
-    list: { title: 'Assessments', open: (date: string) => `Open assessment from ${date}` },
+    list: { title: 'InBody reports', open: (date: string) => `Open assessment from ${date}` },
     /** Shown while there is only one assessment: one report sets no trend. */
     singleAssessment: 'Changes appear here once you add a second assessment.',
     sources: {
@@ -68,6 +70,15 @@ export const BODY_COMPOSITION_COPY = {
   detail: {
     back: 'Body composition',
     title: 'Assessment',
+    reportTitle: 'InBody report',
+    tabs: 'Report sections',
+    overview: 'Overview',
+    allValues: 'All values',
+    compositionTitle: 'Body composition',
+    shareOfWeight: (share: string) => `${share}% of weight`,
+    shareNote: 'Shares of weight are calculated from the report’s values; everything else is as printed on the report.',
+    noComposition: 'This report has no body-composition breakdown (water, protein, minerals or body fat mass).',
+    imageNote: 'The report image isn’t stored, so only its values are shown.',
     key: 'Key results',
     composition: 'Body composition analysis',
     water: 'Body water',
@@ -95,19 +106,20 @@ export const BODY_COMPOSITION_COPY = {
   },
 
   upload: {
-    title: 'Upload your report',
+    title: 'Upload your InBody report',
     intro: 'We’ll read the values from a photo of your InBody results sheet. You’ll check every value before anything is saved.',
     notice: {
       title: 'Your image is sent to an AI service',
       message: 'To read your report, the image is sent to our server and processed by OpenAI, an external AI service. The app doesn’t save the image. Only upload your own report.',
     },
-    choose: 'Choose image',
+    takePhoto: 'Take photo',
+    choose: 'Choose from files',
     chooseAnother: 'Choose a different image',
     read: 'Read report',
     retry: 'Try again',
     reading: 'Reading your report… This can take up to a minute.',
     noImage: 'No image chosen',
-    fileHint: (megabytes: number) => `PNG, JPEG or WEBP, up to ${megabytes} MB`,
+    fileHint: (megabytes: number) => `Supported formats: JPG, PNG or WebP image, up to ${megabytes} MB`,
     manualInstead: 'Or type the values in below.',
     review: {
       title: 'Check the values from your report',
@@ -120,6 +132,7 @@ export const BODY_COMPOSITION_COPY = {
 
   form: {
     title: 'Add body composition',
+    close: 'Close',
     editTitle: 'Edit assessment',
     editIntro: 'Correct any value so it matches your InBody report. Clear a field your report doesn’t show.',
     saveChanges: 'Save changes',

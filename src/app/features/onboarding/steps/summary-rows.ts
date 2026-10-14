@@ -83,3 +83,33 @@ export function buildSummaryRows(draft: OnboardingDraft, now: Date = new Date())
 
   return rows;
 }
+
+export interface SummaryGroup {
+  readonly id: 'personal' | 'goal' | 'training';
+  readonly title: string;
+  readonly rows: readonly SummaryRow[];
+}
+
+const GROUP_OF: Readonly<Record<string, SummaryGroup['id']>> = {
+  name: 'personal',
+  age: 'personal',
+  sex: 'personal',
+  height: 'personal',
+  weight: 'personal',
+  units: 'personal',
+  activity: 'personal',
+  goal: 'goal',
+  'target-weight': 'goal',
+  experience: 'training',
+  training: 'training',
+  location: 'training',
+  equipment: 'training',
+};
+const GROUP_TITLES: Readonly<Record<SummaryGroup['id'], string>> = { personal: 'Personal details', goal: 'Goal', training: 'Training' };
+
+/** The same rows, grouped for the Profile editor (every row lands in exactly one group, order kept). */
+export function groupSummaryRows(rows: readonly SummaryRow[]): SummaryGroup[] {
+  return (['personal', 'goal', 'training'] as const)
+    .map((id) => ({ id, title: GROUP_TITLES[id], rows: rows.filter((r) => (GROUP_OF[r.id] ?? 'personal') === id) }))
+    .filter((g) => g.rows.length > 0);
+}

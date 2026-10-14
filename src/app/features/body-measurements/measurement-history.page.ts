@@ -1,15 +1,31 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { IonBackButton, IonIcon, NavController } from '@ionic/angular';
 
 import { MeasurementHistoryService } from '../../core/body-measurements/measurement-history.service';
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
+import { MEASUREMENT_SITES as MEASUREMENT_SITE_ORDER, MeasurementSite, WEIGHT_RANGES, WeightRange } from '../../domain/body-measurements';
+import {
+  EmptyStateComponent,
+  FitnessButtonComponent,
+  FitnessCardComponent,
+  LoadingSkeletonComponent,
+  PageLayoutComponent,
+  SegmentOption,
+  SegmentedControlComponent,
+} from '../../shared/ui';
+import { WEIGHT_HISTORY_COPY } from '../body-weight/weight-history-content';
+import { MeasurementChartComponent } from './components/measurement-chart.component';
+import { measurementChart, sitesInRange } from './measurement-chart';
 import { MEASUREMENT_COPY } from './measurement-content';
 import { toMeasurementHistoryScreen } from './measurement-history-view-model';
 import { NEW_MEASUREMENT_PATH, measurementEntryPath } from './measurement-paths';
 
+type MeasurementView = 'chart' | 'list';
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 /**
- * Recorded body measurements: the latest value of each site, and every
- * readable entry, newest first. Only reads; nothing here changes the
+ * Recorded body measurements: a chart of the sites over a range (Chart), or
+ * every readable entry, newest first (List); the latest value of each site
+ * in both. Only reads; nothing here changes the
  * profile or weight history. Stored entries this version can't read are
  * counted (never changed) so the user knows they exist.
  */
@@ -17,14 +33,13 @@ import { NEW_MEASUREMENT_PATH, measurementEntryPath } from './measurement-paths'
   selector: 'app-measurement-history',
   templateUrl: './measurement-history.page.html',
   styleUrl: './measurement-history.page.scss',
+  host: { class: 'fit-theme-dashboard fit-tracking-page' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
-    IonContent,
     IonIcon,
+    PageLayoutComponent,
+    SegmentedControlComponent,
+    MeasurementChartComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -38,6 +53,46 @@ export class MeasurementHistoryPage {
 
   protected readonly copy = MEASUREMENT_COPY.history;
   protected readonly screen = computed(() => toMeasurementHistoryScreen(this.history.state(), this.history.today()));
+  // UI state only (kept while the page is open).
+  protected readonly view = signal<MeasurementView>('chart');
+  protected readonly range = signal<WeightRange>('90d');
+  private readonly hidden = signal<ReadonlySet<MeasurementSite>>(new Set());
+  protected readonly viewOptions: readonly SegmentOption<MeasurementView>[] = [
+    { value: 'chart', label: this.copy.chartView },
+    { value: 'list', label: this.copy.listView },
+  ];
+  private readonly rangeCopy = WEIGHT_HISTORY_COPY.trend;
+  protected readonly rangeOptions: readonly SegmentOption<WeightRange>[] = WEIGHT_RANGES.map((value) => ({
+    value,
+    label: this.rangeCopy.ranges[value],
+    spoken: capitalize(this.rangeCopy.rangeNames[value]),
+  }));
+  private readonly entries = computed(() => {
+    const s = this.history.state();
+    return s.status === 'ready' ? s : null;
+  });
+  /** Sites read in the range, each shown unless switched off. */
+  protected readonly sites = computed(() => {
+    const s = this.entries();
+    return s
+      ? sitesInRange(s.entries, this.range(), this.history.today()).map((site) => ({
+          site,
+          index: (MEASUREMENT_SITE_ORDER as readonly string[]).indexOf(site),
+          label: this.siteLabels[site],
+          shown: !this.hidden().has(site),
+        }))
+      : [];
+  });
+  protected readonly chart = computed(() => {
+    const s = this.entries();
+    const shown = this.sites().filter((x) => x.shown).map((x) => x.site);
+    return s && shown.length ? measurementChart(s.entries, shown, this.range(), this.history.today(), s.unitSystem) : null;
+  });
+  protected readonly hasSingle = computed(() => this.chart()?.series.some((x) => x.points.length === 1) ?? false);
+  protected readonly chartLabel = computed(() => this.copy.chartLabel(this.rangeCopy.rangeNames[this.range()]));
+  protected readonly noneInRange = computed(() => this.copy.noneInRange(this.rangeCopy.rangeNames[this.range()]));
+  private readonly siteLabels = MEASUREMENT_COPY.sites;
+
   /** Stored entries that can't be shown (e.g. sites from a newer app version). */
   protected readonly unsupportedCount = signal(0);
   protected readonly unsupportedMessage = computed(() => this.copy.unsupported(this.unsupportedCount()));
@@ -66,6 +121,16 @@ export class MeasurementHistoryPage {
       void this.refresh();
     }
     this.entered = true;
+  }
+
+  protected toggleSite(site: MeasurementSite): void {
+    this.hidden.update((h) => {
+      const next = new Set(h);
+      if (!next.delete(site)) {
+        next.add(site);
+      }
+      return next;
+    });
   }
 
   protected add(): void {

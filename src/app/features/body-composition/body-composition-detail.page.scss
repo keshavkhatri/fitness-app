@@ -1,0 +1,190 @@
+@use 'mixins' as fx;
+
+// Immersive (always dark): measured values in tiles and bars; calculated shares labelled.
+
+.topbar {
+  margin: 0 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-1));
+}
+
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.report-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.thumb {
+  --thumb-size: 72px;
+}
+
+.report-kind,
+.subtitle,
+.caption {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.title {
+  @include fx.text(h2, bold);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.card-title {
+  @include fx.text(h3, bold);
+}
+
+// --- Key tiles ------------------------------------------------------------------------------------
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 96px), 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+
+  dd {
+    margin: 0;
+  }
+}
+
+.tile-label,
+.tile-change,
+.tile-missing {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.tile-value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+// --- Composition bars -----------------------------------------------------------------------------
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: baseline;
+}
+
+.bar-label {
+  @include fx.text(body-sm, semibold);
+}
+
+.bar-value,
+.bar-share {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  text-align: end;
+  white-space: nowrap;
+}
+
+.bar-share {
+  color: var(--color-text-secondary);
+}
+
+.bar-track {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+// --- All values ---------------------------------------------------------------------------------
+.latest {
+  gap: 0;
+  padding: var(--space-1) 0;
+}
+
+.latest-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) var(--space-4);
+
+  & + & {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.latest-metric {
+  @include fx.text(body-sm, semibold);
+}
+
+.latest-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+  text-align: end;
+}
+
+.latest-change,
+.latest-missing {
+  @include fx.text(caption);
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+}
+
+.latest-missing {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: end;
+}
+
+.detail-actions,
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

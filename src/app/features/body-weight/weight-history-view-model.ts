@@ -1,5 +1,5 @@
 import { WeightHistoryState } from '../../core/body-measurements/weight-history.service';
-import { WeightEntry, WeightEntryErrors, WeightEntryInput, weightHistory } from '../../domain/body-measurements';
+import { WEIGHT_ENTRY_RANGE_KG, WeightEntry, WeightEntryErrors, WeightEntryInput, weightHistory } from '../../domain/body-measurements';
 import {
   BodyWeight,
   IsoCalendarDate,
@@ -177,4 +177,38 @@ const twoDecimals = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, m
 function formatPreciseWeight(weight: BodyWeight, unitSystem: UnitSystem): string {
   const value = unitSystem === 'metric' ? weight.kilograms : weight.kilograms * POUNDS_PER_KILOGRAM;
   return `${twoDecimals.format(value)} ${weightUnitLabel(unitSystem)}`;
+}
+
+// --- Fine-adjust slider -----------------------------------------------------------------------
+
+export interface WeightSliderView {
+  readonly min: number;
+  readonly max: number;
+  /** The typed weight when it's a number in the window, else the reference weight. */
+  readonly value: number;
+  /** Axis labels under the slider (whole numbers). */
+  readonly ticks: readonly number[];
+}
+
+const SLIDER_HALF_WINDOW = 10;
+
+/**
+ * A ±10 (kg or lb) slider around a reference weight (the entry being edited,
+ * or the latest recorded one), for nudging the typed value by 0.1. Null
+ * without a reference: nothing is guessed. Bounds stay within the weights
+ * the app accepts.
+ */
+export function weightSlider(reference: number | null, typed: string, unitSystem: UnitSystem): WeightSliderView | null {
+  if (reference === null || !Number.isFinite(reference)) {
+    return null;
+  }
+  const factor = unitSystem === 'imperial' ? POUNDS_PER_KILOGRAM : 1;
+  const lowest = Math.ceil(WEIGHT_ENTRY_RANGE_KG.min * factor);
+  const highest = Math.floor(WEIGHT_ENTRY_RANGE_KG.max * factor);
+  const min = Math.max(lowest, Math.floor(reference) - SLIDER_HALF_WINDOW);
+  const max = Math.min(highest, Math.ceil(reference) + SLIDER_HALF_WINDOW);
+  const parsed = parseDecimalInput(typed);
+  const value = parsed.kind === 'number' && parsed.value >= min && parsed.value <= max ? parsed.value : Math.min(max, Math.max(min, reference));
+  const ticks = Array.from({ length: 6 }, (_, i) => Math.round(min + ((max - min) * i) / 5));
+  return { min, max, value, ticks };
 }

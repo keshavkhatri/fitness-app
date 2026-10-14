@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { IonIcon, NavController } from '@ionic/angular';
 
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
@@ -9,16 +9,18 @@ import { UnitSystem } from '../../domain/fitness-profile';
 import { BODY_COMPOSITION_HISTORY_PATH } from '../body-composition/body-composition-paths';
 import { MEASUREMENT_HISTORY_PATH } from '../body-measurements/measurement-paths';
 import { WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
+import { FITNESS_REVIEW_PATH } from '../fitness-review/fitness-review-paths';
+import { LinkCardComponent } from '../nutrition/components/link-card.component';
 import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
+import { CLOCK } from '../../core/time/clock';
 import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { QuickAddLauncher } from '../../shell/quick-add/quick-add-launcher.service';
 import { IdentitySheetComponent } from './identity-sheet.component';
+import { YouHeaderComponent } from './you-header.component';
+import { YOU_TILES, YouDestination, toGoal, toYouHeader } from './you-view-model';
 import {
-  FitnessAvatarComponent,
-  FitnessCardComponent,
   FitnessChipComponent,
   PageLayoutComponent,
-  SectionHeaderComponent,
   SegmentOption,
   SegmentedControlComponent,
 } from '../../shared/ui';
@@ -32,19 +34,42 @@ const THEME_OPTIONS: readonly SegmentOption<ThemePreference>[] = [
 /** Settings that exist in the product plan but are not built yet. */
 const UPCOMING_SETTINGS: readonly string[] = ['Notifications', 'Connected health apps', 'Subscription'];
 
-/** Profile and settings shell. */
+const COPY = {
+  goal: 'Your goal',
+  sections: 'Your data',
+  progress: { title: 'Progress', detail: 'Training activity and performance' },
+  settings: 'Settings',
+  appearance: 'Appearance',
+  units: 'Units',
+  upcoming: 'Coming soon',
+} as const;
+
+const TEST_IDS: Readonly<Record<YouDestination, string>> = {
+  profile: 'profile-entry',
+  weight: 'weight-history-entry',
+  measurements: 'measurements-entry',
+  'body-composition': 'body-composition-entry',
+  review: 'review-entry',
+  'quick-add': 'quick-add-entry',
+};
+
+/**
+ * The personal hub (dashboard theme): who you are (name, photo, age and
+ * height from the profile), your goal, entry points to every body-tracking
+ * screen, and the app's settings (appearance, units).
+ */
 @Component({
   selector: 'app-you',
   templateUrl: './you.page.html',
   styleUrl: './you.page.scss',
+  host: { class: 'fit-theme-dashboard' },
   imports: [
     IonIcon,
     IdentitySheetComponent,
-    FitnessAvatarComponent,
-    FitnessCardComponent,
+    LinkCardComponent,
+    YouHeaderComponent,
     FitnessChipComponent,
     PageLayoutComponent,
-    SectionHeaderComponent,
     SegmentedControlComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,6 +78,10 @@ export class YouPage {
   protected readonly theme = inject(ThemeService);
   protected readonly themeOptions = THEME_OPTIONS;
   protected readonly upcomingSettings = UPCOMING_SETTINGS;
+  protected readonly copy = COPY;
+  protected readonly tiles = YOU_TILES;
+  protected readonly testIds = TEST_IDS;
+  private readonly clock = inject(CLOCK);
 
   private readonly nav = inject(NavController);
   private readonly profiles = inject(FitnessProfileService);
@@ -69,6 +98,9 @@ export class YouPage {
   protected readonly identitySaving = signal(false);
   protected readonly identityError = signal<string | null>(null);
   private readonly quickAdd = inject(QuickAddLauncher);
+
+  protected readonly header = computed(() => toYouHeader(this.identity.identity().name, this.profiles.profile(), this.clock()));
+  protected readonly goal = computed(() => toGoal(this.profiles.profile()));
 
   constructor() {
     void this.profiles.load();
@@ -116,6 +148,24 @@ export class YouPage {
   /** The profile review (saving re-runs the assessment; backing out returns here). */
   protected openProfile(): void {
     void this.nav.navigateForward(ONBOARDING_REVIEW_PATH, { queryParams: { returnTo: '/you' } });
+  }
+
+  protected openTile(id: YouDestination): void {
+    switch (id) {
+      case 'profile':
+        return this.openProfile();
+      case 'weight':
+        return this.openWeightHistory();
+      case 'measurements':
+        return this.openMeasurements();
+      case 'body-composition':
+        return this.openBodyComposition();
+      case 'review':
+        void this.nav.navigateForward(FITNESS_REVIEW_PATH);
+        return;
+      case 'quick-add':
+        return this.openQuickAdd();
+    }
   }
 
   protected openProgress(): void {

@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, resource, signal, viewChild } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonFooter, IonHeader, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, linkedSignal, resource, signal, viewChild } from '@angular/core';
+import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
 
 import { ProfileWeightPreview, ProfileWeightService, ProfileWeightUnavailable } from '../../core/body-measurements/profile-weight.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { ASSESSMENT_PATH } from '../../core/profile/onboarding.guards';
-import { WeightEntry, validateWeightEntryInput } from '../../domain/body-measurements';
-import { UnitSystem, weightUnitLabel } from '../../domain/fitness-profile';
+import { WeightEntry, sortWeightEntries, validateWeightEntryInput } from '../../domain/body-measurements';
+import { UnitSystem, weightInUnit, weightUnitLabel } from '../../domain/fitness-profile';
 import {
   BottomSheetComponent,
   EmptyStateComponent,
@@ -27,6 +28,7 @@ import {
   toProfileWeightView,
   weightFormErrorsOf,
   weightFormOf,
+  weightSlider,
 } from './weight-history-view-model';
 
 type Loaded =
@@ -53,14 +55,11 @@ type ProfileWeightSheet =
   selector: 'app-weight-entry',
   templateUrl: './weight-entry.page.html',
   styleUrl: './weight-entry.page.scss',
+  host: { class: 'fit-theme-immersive' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
-    IonBackButton,
-    IonTitle,
     IonContent,
     IonFooter,
+    IonIcon,
     BottomSheetComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
@@ -80,6 +79,8 @@ export class WeightEntryPage {
   private readonly profileWeight = inject(ProfileWeightService);
 
   protected readonly copy = WEIGHT_HISTORY_COPY.form;
+  // Light status-bar text while this always-dark form is open.
+  private readonly statusBar = inject(DestroyRef).onDestroy(inject(ThemeService).holdAlwaysDark());
   protected readonly historyPath = WEIGHT_HISTORY_PATH;
   protected readonly today = this.history.today();
 
@@ -113,12 +114,25 @@ export class WeightEntryPage {
     const l = this.loaded();
     return l?.kind === 'edit' ? weightFormOf(l.entry, l.unitSystem) : emptyWeightForm(this.today);
   });
+  /** Fine adjustment around the entry being edited, or the latest recorded weight; none without either. */
+  protected readonly slider = computed(() => {
+    const l = this.loaded();
+    if (l?.kind !== 'new' && l?.kind !== 'edit') {
+      return null;
+    }
+    const s = this.history.state();
+    const latest = s.status === 'ready' ? sortWeightEntries(s.entries).at(-1) : undefined;
+    const reference = l.kind === 'edit' ? l.entry : latest;
+    return weightSlider(reference ? weightInUnit(reference.weight, l.unitSystem) : null, this.form().weight, l.unitSystem);
+  });
   protected readonly errors = signal<WeightFormErrors>({});
   protected readonly saving = signal(false);
   /** The profile weight is being updated. */
   protected readonly profileSaving = signal(false);
   /** Any write in progress: every action waits for it. */
-  protected readonly busy = computed(() => this.saving() || this.profileSaving());
+  /** Saved and leaving: a second tap (e.g. a double click) can't save again. */
+  private readonly saved = signal(false);
+  protected readonly busy = computed(() => this.saving() || this.profileSaving() || this.saved());
   /** Announced above Save: validation summary or a failed save/delete. */
   protected readonly status = signal('');
   protected readonly confirmOpen = signal(false);
@@ -167,6 +181,13 @@ export class WeightEntryPage {
     }
   }
 
+  protected slide(value: string): void {
+    const n = Number(value);
+    if (Number.isFinite(n)) {
+      this.update('weight', n.toFixed(1));
+    }
+  }
+
   protected async save(): Promise<void> {
     const l = this.loaded();
     if (this.busy() || !l || (l.kind !== 'new' && l.kind !== 'edit')) {
@@ -184,6 +205,7 @@ export class WeightEntryPage {
     try {
       const result = original ? await this.history.update(original, input) : await this.history.add(input);
       if (result.ok) {
+        this.saved.set(true);
         this.errors.set({});
         void this.nav.navigateBack(WEIGHT_HISTORY_PATH);
       } else if (result.kind === 'invalid') {

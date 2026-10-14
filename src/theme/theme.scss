@@ -4,6 +4,7 @@
 
 @use 'tokens';
 @use 'mixins' as fx;
+@use 'tracking';
 
 html {
   font-family: var(--font-family-base);
@@ -137,4 +138,18 @@ ion-modal.bottom-sheet {
     --min-width: var(--tap-target-min);
     text-transform: none;
   }
+}
+
+// --- Body-tracking screens (You) ----------------------------------------------
+// Shared chrome, scoped by a host class so it never leaks: `fit-tracking-page`
+// (light history screens: header with back and Add, sections, card rows) and
+// `fit-tracking-form` (dark entry/detail screens: close bar, footer).
+.fit-tracking-page {
+  @include tracking.header;
+  @include tracking.section;
+  @include tracking.rows;
+}
+
+.fit-tracking-form {
+  @include tracking.form-chrome;
 }

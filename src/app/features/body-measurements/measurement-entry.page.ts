@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, resource, signal, viewChildren } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonFooter, IonHeader, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, linkedSignal, resource, signal, viewChildren } from '@angular/core';
+import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
+
+import { ThemeService } from '../../core/theme/theme.service';
 
 import { MeasurementHistoryService } from '../../core/body-measurements/measurement-history.service';
 import { MEASUREMENT_SITES, MeasurementEntry, MeasurementSite, lengthUnitLabel, validateMeasurementEntryInput } from '../../domain/body-measurements';
@@ -36,14 +38,11 @@ type Loaded =
   selector: 'app-measurement-entry',
   templateUrl: './measurement-entry.page.html',
   styleUrl: './measurement-entry.page.scss',
+  host: { class: 'fit-theme-immersive fit-tracking-form' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
-    IonBackButton,
-    IonTitle,
     IonContent,
     IonFooter,
+    IonIcon,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -60,6 +59,8 @@ export class MeasurementEntryPage {
   private readonly nav = inject(NavController);
 
   protected readonly copy = MEASUREMENT_COPY.form;
+  // Light status-bar text while this always-dark form is open.
+  private readonly statusBar = inject(DestroyRef).onDestroy(inject(ThemeService).holdAlwaysDark());
   protected readonly siteLabels = MEASUREMENT_COPY.sites;
   protected readonly sites = MEASUREMENT_SITES;
   protected readonly returnPath = MEASUREMENT_RETURN_PATH;
@@ -104,7 +105,9 @@ export class MeasurementEntryPage {
   protected readonly errors = signal<MeasurementFormErrors>({});
   protected readonly saving = signal(false);
   /** A write is in progress: every action waits for it. */
-  protected readonly busy = this.saving.asReadonly();
+  /** Saved and leaving: a second tap (e.g. a double click) can't save again. */
+  private readonly saved = signal(false);
+  protected readonly busy = computed(() => this.saving() || this.saved());
   /** Announced above Save: validation summary or a failed save. */
   protected readonly status = signal('');
 
@@ -141,6 +144,7 @@ export class MeasurementEntryPage {
     try {
       const result = original ? await this.history.update(original, input) : await this.history.add(input);
       if (result.ok) {
+        this.saved.set(true);
         this.errors.set({});
         void this.nav.navigateBack(MEASUREMENT_RETURN_PATH);
       } else if (result.kind === 'invalid') {
@@ -170,9 +174,9 @@ export class MeasurementEntryPage {
   private showErrors(errors: MeasurementFormErrors): void {
     this.errors.set(errors);
     this.status.set(this.copy.fixErrors);
-    // Fields are rendered in site order, then date.
-    const order: (MeasurementSite | 'date')[] = [...MEASUREMENT_SITES, 'date'];
-    const first = errors.values ? 0 : order.findIndex((field) => errors[field]);
+    // Fields are rendered date first, then in site order; a missing-values error focuses the first site.
+    const order: (MeasurementSite | 'date')[] = ['date', ...MEASUREMENT_SITES];
+    const first = errors.values ? 1 : order.findIndex((field) => errors[field]);
     if (first >= 0) {
       this.fields()[first]?.focus();
     }

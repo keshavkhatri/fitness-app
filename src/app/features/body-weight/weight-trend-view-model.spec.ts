@@ -21,6 +21,8 @@ describe('weight trend view model', () => {
       expect(view.latest).toEqual({ key: 'b', weight: '80.7 kg', dateLabel: 'Today' });
       expect(view.change).toBe('−1.3 kg');
       expect(view.changeCaption).toBe('Between first and latest recorded measurements');
+      expect(view.changeFrom).toBe('From 82.0 kg, Sunday, Sep 20');
+      expect([view.lowest?.key, view.highest?.key]).toEqual(['b', 'a']);
       expect(view.description).toBe(
         'Weight chart for the last 30 days: 2 measurements, from 82.0 kg (Sunday, Sep 20) to 80.7 kg (Today). Change between first and latest recorded measurements: −1.3 kg.',
       );
@@ -32,6 +34,7 @@ describe('weight trend view model', () => {
       expect(view.first.weight).toBe('176.4 lb');
       expect(view.change).toBeNull();
       expect(view.changeCaption).toContain('Only one measurement');
+      expect([view.changeFrom, view.lowest, view.highest]).toEqual([null, null, null]);
       expect(view.description).toBe('Weight chart for the last 90 days: one measurement, 176.4 lb (Today).');
     });
 
@@ -46,6 +49,9 @@ describe('weight trend view model', () => {
       expect(view.measurements.map((m) => m.key)).toEqual(['x', 'am', 'pm']);
       const flat = toTrendSummary(summaryOf([entry('a', '2026-10-01', 80), entry('b', TODAY, 80)]), '30d', 'metric', TODAY);
       expect(flat.change).toBe('No change');
+      // Equal extremes: the latest of them.
+      expect([flat.lowest?.key, flat.highest?.key]).toEqual(['b', 'b']);
+      expect([view.lowest?.key, view.highest?.key]).toEqual(['am', 'pm']);
     });
 
     it('axis date labels', () => {

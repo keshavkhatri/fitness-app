@@ -1,8 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
+import { IonBackButton, IonContent, NavController } from '@ionic/angular';
 
 import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
-import { BottomSheetComponent, EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
+import { ThemeService } from '../../core/theme/theme.service';
+import {
+  BottomSheetComponent,
+  EmptyStateComponent,
+  FitnessButtonComponent,
+  FitnessCardComponent,
+  LoadingSkeletonComponent,
+  SegmentOption,
+  SegmentedControlComponent,
+} from '../../shared/ui';
+import { ReportThumbComponent } from './components/report-thumb.component';
 import { NEW_WEIGHT_PATH } from '../body-weight/weight-history-paths';
 import { BODY_COMPOSITION_COPY } from './body-composition-content';
 import { toBodyCompositionDetailScreen } from './body-composition-detail-view-model';
@@ -18,15 +28,13 @@ import { BODY_COMPOSITION_HISTORY_PATH, editBodyCompositionPath } from './body-c
 @Component({
   selector: 'app-body-composition-detail',
   templateUrl: './body-composition-detail.page.html',
-  styleUrl: './body-composition-history.page.scss',
+  styleUrl: './body-composition-detail.page.scss',
+  host: { class: 'fit-theme-immersive fit-tracking-form' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
     IonContent,
-    IonIcon,
+    SegmentedControlComponent,
+    ReportThumbComponent,
     BottomSheetComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
@@ -52,6 +60,14 @@ export class BodyCompositionDetailPage {
     const state = this.history.state();
     return state.status === 'ready' ? (state.assessments.find((a) => a.id === this.assessmentId()) ?? null) : null;
   });
+  /** UI state only. */
+  protected readonly tab = signal<'overview' | 'all'>('overview');
+  protected readonly tabOptions: readonly SegmentOption<'overview' | 'all'>[] = [
+    { value: 'overview', label: this.copy.overview },
+    { value: 'all', label: this.copy.allValues },
+  ];
+  // Light status-bar text while this always-dark screen is open.
+  private readonly statusBar = inject(DestroyRef).onDestroy(inject(ThemeService).holdAlwaysDark());
   protected readonly confirmOpen = signal(false);
   protected readonly deleting = signal(false);
   /** A failed delete. */

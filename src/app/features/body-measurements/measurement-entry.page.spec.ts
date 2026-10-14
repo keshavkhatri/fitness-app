@@ -199,7 +199,8 @@ describe('Measurement entry page', () => {
     expect(metric.input('chest').getAttribute('aria-invalid')).toBe('true');
     const messageId = byTestId(metric.el, 'field-chest')!.querySelector('.message.error')!.id;
     expect(metric.input('chest').getAttribute('aria-describedby')).toContain(messageId);
-    expect(document.activeElement).toBe(metric.input('chest'));
+    // The first invalid field on screen: the date sits above the measurements.
+    expect(document.activeElement).toBe(metric.input('date'));
     expect(byTestId(metric.el, 'values-error')).toBeNull();
     expect(metric.storage.values.has(KEY)).toBe(false);
 
@@ -284,6 +285,15 @@ describe('Measurement entry page', () => {
     expect(clean(byTestId(el, 'form-status'))).toContain("couldn't be saved");
     expect(stored(storage)).toEqual([]);
     expect(back).not.toHaveBeenCalled();
+  });
+
+  it('a second Save after a successful one (a double click) saves nothing more', async () => {
+    const { el, type, submit, storage } = await renderForm(null);
+    type('waist', '80.4');
+    await submit();
+    await submit();
+    expect(JSON.parse(storage.values.get(KEY)!).entries).toHaveLength(1);
+    expect((byTestId(el, 'save') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('disables Save and Cancel while a write is in progress and prevents double submission', async () => {

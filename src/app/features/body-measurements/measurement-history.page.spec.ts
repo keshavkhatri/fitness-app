@@ -86,12 +86,16 @@ const byTestId = (root: Element, id: string) => root.querySelector(`[data-testid
 const rows = (el: HTMLElement) => [...el.querySelectorAll('[data-testid=measurement-row]')];
 const latest = (el: HTMLElement) => [...el.querySelectorAll('[data-testid=latest-site]')].map((r) => clean(r));
 
-async function renderHistory(raw: string | null, profile?: UserFitnessProfile | null, before?: () => void) {
+async function renderHistory(raw: string | null, profile?: UserFitnessProfile | null, before?: () => void, view: 'chart' | 'list' = 'list') {
   const spies = configure(raw, profile);
   before?.();
   const fixture = TestBed.createComponent(MeasurementHistoryPage);
   await settle(fixture);
-  return { ...spies, fixture, el: fixture.nativeElement as HTMLElement };
+  const el = fixture.nativeElement as HTMLElement;
+  // The page opens on Chart; most tests read the List.
+  el.querySelector<HTMLInputElement>(`input[name=measurement-view][value=${view}]`)?.click();
+  fixture.detectChanges();
+  return { ...spies, fixture, el };
 }
 
 describe('Measurement history page', () => {
@@ -218,6 +222,9 @@ describe('Measurement history page', () => {
     });
     [...byTestId(el, 'measurement-error')!.querySelectorAll('button')].find((b) => clean(b) === 'Try again')!.click();
     await settle(fixture);
+    expect(byTestId(el, 'latest')).not.toBeNull();
+    el.querySelector<HTMLInputElement>('input[name=measurement-view][value=list]')!.click();
+    fixture.detectChanges();
     expect(rows(el)).toHaveLength(1);
   });
 
@@ -267,8 +274,46 @@ describe('Measurement history page', () => {
     const fixture = TestBed.createComponent(YouPage);
     fixture.detectChanges();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid=measurements-entry]')!;
-    expect(clean(button)).toBe('Measurements Your recorded body measurements');
+    expect(clean(button)).toBe('Body measurements Waist, chest, arms…');
     button.click();
     expect(forward).toHaveBeenCalledWith('/you/measurements');
+  });
+
+  describe('chart view', () => {
+    const SEP = entry('sep', '2026-09-05', { waist: { centimeters: 84 }, hips: { centimeters: 100 } });
+    it('opens on Chart: a line per site read twice or more, a point for a single reading, sites toggle', async () => {
+      const { el, fixture } = await renderHistory(envelope([SEP, OLDER, PM]), undefined, undefined, 'chart');
+      expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-dashboard');
+      expect(el.querySelector<HTMLInputElement>('input[name=measurement-view]:checked')?.value).toBe('chart');
+      expect(rows(el)).toHaveLength(0);
+      const svg = byTestId(el, 'measurement-chart')!;
+      expect(svg.getAttribute('aria-label')).toBe('Measurements over the last 90 days');
+      const series = (site: string) => svg.querySelector(`[data-site=${site}]`);
+      expect(series('waist')?.querySelector('polyline')).not.toBeNull();
+      expect(series('waist')?.querySelectorAll('.mark')).toHaveLength(3);
+      expect(series('arm')?.querySelector('polyline')).toBeNull();
+      expect(series('arm')?.querySelectorAll('.mark')).toHaveLength(1);
+      expect(clean(byTestId(el, 'single-reading'))).toContain('a line needs two readings');
+      expect([...el.querySelectorAll('ul.visually-hidden li')].map((li) => clean(li))).toEqual([
+        'Waist: 84.0 cm on 5 Sep, 82.0 cm on 1 Oct, 80.3 cm on 8 Oct',
+        'Hips: 100.0 cm on 5 Sep, 99.0 cm on 8 Oct',
+        'Arm: 33.4 cm on 1 Oct',
+      ]);
+
+      const waist = byTestId(el, 'site-waist') as HTMLButtonElement;
+      expect(waist.getAttribute('aria-pressed')).toBe('true');
+      waist.click();
+      fixture.detectChanges();
+      expect(waist.getAttribute('aria-pressed')).toBe('false');
+      expect(svg.querySelector('[data-site=waist]')).toBeNull();
+    });
+
+    it('a range without readings says so (nothing is drawn or invented)', async () => {
+      const { el, fixture } = await renderHistory(envelope([SEP]), undefined, undefined, 'chart');
+      el.querySelector<HTMLInputElement>('input[name=measurement-range][value="30d"]')!.click();
+      fixture.detectChanges();
+      expect(byTestId(el, 'measurement-chart')).toBeNull();
+      expect(clean(byTestId(el, 'none-in-range'))).toBe('No measurements in the last 30 days. Choose a longer range or add some.');
+    });
   });
 });

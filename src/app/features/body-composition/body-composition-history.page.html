@@ -1,106 +1,100 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/you" [text]="copy.back" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content>
-  <main class="body">
-    <header class="intro">
-      <h1 class="title">{{ copy.title }}</h1>
-      <p class="subtitle">{{ copy.intro }}</p>
-    </header>
-    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
-
-    @let s = screen();
-    @if ((s.kind === 'ready' || s.kind === 'empty') && unsupportedCount() > 0) {
-      <fit-card data-testid="unsupported-notice">
-        <p class="notice">
-          <ion-icon name="information-circle-outline" aria-hidden="true" />
-          <span>{{ unsupportedMessage() }}</span>
-        </p>
+<fit-page [title]="copy.title" customHeader>
+  <header class="header" fitPageHeader>
+    <div class="title-row">
+      <ion-back-button class="back" defaultHref="/you" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+      <h1 class="heading">{{ copy.title }}</h1>
+      @if (screen().kind === 'ready') {
+        <button type="button" class="add" data-testid="add-assessment" (click)="add()">
+          <ion-icon name="add" aria-hidden="true" />{{ copy.addShort }}<span class="visually-hidden">&ngsp;{{ copy.addHidden }}</span>
+        </button>
+      }
+    </div>
+    <p class="subtitle">{{ copy.intro }}</p>
+  </header>
+  <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
+  @let s = screen();
+  @if ((s.kind === 'ready' || s.kind === 'empty') && unsupportedCount() > 0) {
+    <fit-card data-testid="unsupported-notice">
+      <p class="notice">
+        <ion-icon name="information-circle-outline" aria-hidden="true" />
+        <span>{{ unsupportedMessage() }}</span>
+      </p>
+    </fit-card>
+  }
+  @switch (s.kind) {
+    @case ('ready') {
+      <section class="section" aria-labelledby="body-composition-history-list">
+        <h2 class="section-title" id="body-composition-history-list">{{ copy.list.title }}</h2>
+        <ul class="reports">
+          @for (row of s.rows; track row.id) {
+            <li data-testid="assessment-row">
+              <button type="button" class="report" [attr.aria-label]="copy.list.open(row.dateLabel)" (click)="open(row.id)">
+                <app-report-thumb />
+                <span class="report-text">
+                  <span class="row-heading">
+                    <span class="row-date">{{ row.dateLabel }}</span>&ngsp;
+                    <span class="row-source" data-testid="assessment-source">{{ row.source }}</span>
+                  </span>&ngsp;
+                  <span class="row-values">
+                    @for (v of row.values; track v.metric) {
+                      <span class="row-value">
+                        <span class="row-metric">{{ v.metric }}</span>&ngsp;
+                        <span class="row-number">{{ v.value }}</span>
+                      </span>&ngsp;
+                    }
+                    @if (row.moreCount > 0) {
+                      <span class="row-more">+{{ row.moreCount }} more</span>
+                    }
+                  </span>
+                </span>
+                <ion-icon class="row-chevron" name="chevron-forward" aria-hidden="true" />
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+      <section class="section" aria-labelledby="body-composition-latest">
+        <h2 class="section-title" id="body-composition-latest">{{ copy.latest.title }}</h2>
+        <dl class="latest" data-testid="latest">
+            @for (item of s.latest; track item.metric) {
+              <div class="latest-row" data-testid="latest-metric">
+                <dt class="latest-metric">{{ item.metric }}</dt>&ngsp;
+                @if (item.value) {
+                  <dd class="latest-value">{{ item.value }}</dd>&ngsp;
+                  <dd class="latest-date">{{ item.dateLabel }}</dd>
+                  @if (item.change) {
+                    &ngsp;<dd class="latest-change" data-testid="latest-change">{{ item.change }}</dd>
+                  }
+                } @else {
+                  <dd class="latest-missing">{{ copy.latest.notRecorded }}</dd>
+                }
+              </div>
+            }
+          </dl>
+        @if (s.single) {
+          <p class="subtitle" data-testid="single-note">{{ copy.singleAssessment }}</p>
+        }
+      </section>
+    }
+    @case ('empty') {
+      <fit-card data-testid="assessment-empty">
+        <fit-empty-state icon="pulse-outline" [title]="copy.empty.title" [description]="copy.empty.message">
+          <button fit-button type="button" icon="add" (click)="add()">{{ copy.add }}</button>
+        </fit-empty-state>
       </fit-card>
     }
-    @switch (s.kind) {
-      @case ('ready') {
-        <button fit-button type="button" block icon="add" data-testid="add-assessment" (click)="add()">{{ copy.add }}</button>
-        <section class="section" aria-labelledby="body-composition-latest">
-          <h2 class="section-title" id="body-composition-latest">{{ copy.latest.title }}</h2>
-          <fit-card padding="none">
-            <dl class="latest" data-testid="latest">
-              @for (item of s.latest; track item.metric) {
-                <div class="latest-row" data-testid="latest-metric">
-                  <dt class="latest-metric">{{ item.metric }}</dt>&ngsp;
-                  @if (item.value) {
-                    <dd class="latest-value">{{ item.value }}</dd>&ngsp;
-                    <dd class="latest-date">{{ item.dateLabel }}</dd>
-                    @if (item.change) {
-                      &ngsp;<dd class="latest-change" data-testid="latest-change">{{ item.change }}</dd>
-                    }
-                  } @else {
-                    <dd class="latest-missing">{{ copy.latest.notRecorded }}</dd>
-                  }
-                </div>
-              }
-            </dl>
-          </fit-card>
-          @if (s.single) {
-            <p class="subtitle" data-testid="single-note">{{ copy.singleAssessment }}</p>
-          }
-        </section>
-        <section class="section" aria-labelledby="body-composition-history-list">
-          <h2 class="section-title" id="body-composition-history-list">{{ copy.list.title }}</h2>
-          <fit-card padding="none">
-            <ul class="rows">
-              @for (row of s.rows; track row.id) {
-                <li data-testid="assessment-row">
-                  <button type="button" class="row" [attr.aria-label]="copy.list.open(row.dateLabel)" (click)="open(row.id)">
-                    <span class="row-heading">
-                      <span class="row-date">{{ row.dateLabel }}</span>&ngsp;
-                      <span class="row-source" data-testid="assessment-source">{{ row.source }}</span>
-                    </span>&ngsp;
-                    <span class="row-values">
-                      @for (v of row.values; track v.metric) {
-                        <span class="row-value">
-                          <span class="row-metric">{{ v.metric }}</span>&ngsp;
-                          <span class="row-number">{{ v.value }}</span>
-                        </span>&ngsp;
-                      }
-                      @if (row.moreCount > 0) {
-                        <span class="row-more">+{{ row.moreCount }} more</span>
-                      }
-                    </span>
-                  </button>
-                </li>
-              }
-            </ul>
-          </fit-card>
-        </section>
-      }
-      @case ('empty') {
-        <fit-card data-testid="assessment-empty">
-          <fit-empty-state icon="pulse-outline" [title]="copy.empty.title" [description]="copy.empty.message">
-            <button fit-button type="button" icon="add" (click)="add()">{{ copy.add }}</button>
-          </fit-empty-state>
-        </fit-card>
-      }
-      @case ('error') {
-        <fit-card data-testid="assessment-error">
-          <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
-            <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
-          </fit-empty-state>
-        </fit-card>
-      }
-      @default {
-        <div class="loading" aria-busy="true" data-testid="loading">
-          <fit-skeleton height="52px" radius="md" />
-          <fit-skeleton height="240px" radius="card" />
-        </div>
-      }
+    @case ('error') {
+      <fit-card data-testid="assessment-error">
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+          <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+        </fit-empty-state>
+      </fit-card>
     }
-  </main>
-</ion-content>
+    @default {
+      <div class="loading" aria-busy="true" data-testid="loading">
+        <fit-skeleton height="52px" radius="md" />
+        <fit-skeleton height="240px" radius="card" />
+      </div>
+    }
+  }
+</fit-page>

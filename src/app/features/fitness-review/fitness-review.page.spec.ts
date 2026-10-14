@@ -106,6 +106,11 @@ async function settle(fixture: ComponentFixture<unknown>) {
 const clean = (node: Element | null | undefined) => node?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 const byTestId = (el: Element, id: string) => el.querySelector(`[data-testid="${id}"]`);
 const click = (el: Element, id: string) => (byTestId(el, id) as HTMLButtonElement).click();
+/** Summary (overview, body), Trends (training, nutrition), Insights (actions). */
+const showTab = async (fixture: ComponentFixture<unknown>, tab: 'summary' | 'trends' | 'insights') => {
+  (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(`input[name=review-tab][value=${tab}]`)!.click();
+  await settle(fixture);
+};
 const buttonIn = (el: Element | null, label: string) => [...(el?.querySelectorAll('button') ?? [])].find((b) => clean(b) === label) as HTMLButtonElement | undefined;
 
 async function render(options: { profile?: UserFitnessProfile | null; seed?: boolean; date?: string; before?: () => void } = {}) {
@@ -123,24 +128,27 @@ describe('Weekly Fitness Review page', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('opens on last week with an overview, explained actions and every section', async () => {
-    const { el } = await render();
+    const { el, fixture } = await render();
+    expect(el.classList).toContain('fit-theme-immersive');
     expect(el.querySelector('h1')?.textContent?.trim()).toBe('Weekly review');
     expect(clean(byTestId(el, 'week-title'))).toBe('Last week');
     expect(clean(byTestId(el, 'week-range'))).toBe('Oct 5 – 11, 2026');
     expect(byTestId(el, 'last-week')).toBeNull();
     expect(clean(byTestId(el, 'review-summary'))).toMatch(/^You finished 2 of \d+ planned workouts, logged food on 3 of 7 days and your weight was 0\.8 kg lower over 4 weeks\.$/);
     expect(clean(byTestId(el, 'stat-weight'))).toBe('Weight, 4 weeks −0.8 kg');
-
-    const actions = [...el.querySelectorAll('[data-testid=review-actions] li')];
-    expect(actions.map((a) => a.getAttribute('data-testid'))).toEqual(['action-complete-workouts', 'action-protein', 'action-log-food']);
-    expect(clean(actions[1])).toContain('On the 3 days you logged, protein averaged 60 g, below your 150 g daily target.');
-
-    expect(clean(byTestId(el, 'improving'))).toMatch(/62\.5 kg × 8, up from 60 kg × 8/);
-    expect(clean(byTestId(el, 'nutrition-calories'))).toBe('Calories 600 kcal a day target 2,400 kcal');
     expect(clean(byTestId(el, 'body-weight'))).toBe('−0.8 kg over 4 weeks 81.4 kg on Sep 20 → 80.6 kg on Oct 10, 2 weigh-ins');
     expect(clean(byTestId(el, 'body-measurements'))).toBe('Waist Sep 20 → Oct 9 −1.0 cm');
     expect(clean(byTestId(el, 'body-composition'))).toBe('Body fat percentage Sep 1 → Oct 7 −0.8%');
     expect(clean(byTestId(el, 'review-body'))).toContain('they don’t show fat or muscle change on their own');
+
+    await showTab(fixture, 'insights');
+    const actions = [...el.querySelectorAll('[data-testid=review-actions] li')];
+    expect(actions.map((a) => a.getAttribute('data-testid'))).toEqual(['action-complete-workouts', 'action-protein', 'action-log-food']);
+    expect(clean(actions[1])).toContain('On the 3 days you logged, protein averaged 60 g, below your 150 g daily target.');
+
+    await showTab(fixture, 'trends');
+    expect(clean(byTestId(el, 'improving'))).toMatch(/62\.5 kg × 8, up from 60 kg × 8/);
+    expect(clean(byTestId(el, 'nutrition-calories'))).toBe('Calories 600 kcal a day target 2,400 kcal');
     expect(clean(byTestId(el, 'announcement'))).toMatch(/^Weekly review, Oct 5 – 11, 2026\. You finished/);
   });
 
@@ -149,7 +157,9 @@ describe('Weekly Fitness Review page', () => {
     click(el, 'previous-week');
     await settle(fixture);
     expect(clean(byTestId(el, 'week-title'))).toBe('Sep 28 – Oct 4, 2026');
+    await showTab(fixture, 'trends');
     expect(clean(byTestId(el, 'review-training'))).toContain('1 of');
+    await showTab(fixture, 'summary');
     click(el, 'last-week');
     await settle(fixture);
     expect(clean(byTestId(el, 'week-title'))).toBe('Last week');
@@ -157,6 +167,7 @@ describe('Weekly Fitness Review page', () => {
     await settle(fixture);
     expect(clean(byTestId(el, 'week-title'))).toBe('This week');
     expect(clean(byTestId(el, 'review-summary'))).toMatch(/^So far this week, you finished 1 of \d+ planned workouts/);
+    await showTab(fixture, 'insights');
     expect(clean(byTestId(el, 'review-actions'))).toContain('Focus for the rest of this week');
     expect((byTestId(el, 'next-week') as HTMLButtonElement).disabled).toBe(true);
     click(el, 'next-week');
@@ -176,16 +187,19 @@ describe('Weekly Fitness Review page', () => {
       button!.click();
       await fixture.whenStable();
     };
+    await showTab(fixture, 'insights');
     await go(buttonIn(byTestId(el, 'action-complete-workouts'), 'Open Workout'));
     expect(url).toHaveBeenLastCalledWith('/workout');
     await go(buttonIn(byTestId(el, 'action-protein'), 'Open Nutrition'));
     expect(url).toHaveBeenLastCalledWith('/nutrition');
+    await showTab(fixture, 'trends');
     await go(buttonIn(byTestId(el, 'review-nutrition'), 'Open weekly nutrition'));
     expect(forward).toHaveBeenLastCalledWith(['/nutrition', 'week'], { queryParams: { date: '2026-10-05' } });
     await go(buttonIn(byTestId(el, 'review-nutrition'), 'Calorie check-in'));
     expect(forward).toHaveBeenLastCalledWith(['/nutrition', 'check-in']);
     await go(byTestId(el, 'improving')?.querySelector('button') as HTMLButtonElement);
     expect(forward).toHaveBeenLastCalledWith(['/you', 'progress', 'exercise', expect.any(String)]);
+    await showTab(fixture, 'summary');
     await go(buttonIn(byTestId(el, 'review-body'), 'Weight history'));
     expect(forward).toHaveBeenLastCalledWith('/you/weight-history');
     await go(buttonIn(byTestId(el, 'review-body'), 'Measurements'));
@@ -195,13 +209,15 @@ describe('Weekly Fitness Review page', () => {
   });
 
   it('no records and no profile: explains what is missing and suggests only data-free actions', async () => {
-    const { el } = await render({ profile: null, seed: false });
+    const { el, fixture } = await render({ profile: null, seed: false });
     expect(clean(byTestId(el, 'review-summary'))).toBe('Not much was recorded in this week, so there’s little to review yet.');
-    expect(clean(byTestId(el, 'training-summary'))).toBe('No workouts finished in this week.');
-    expect(clean(byTestId(el, 'review-nutrition'))).toContain('No food logged in this week.');
     expect(clean(byTestId(el, 'review-body'))).toContain('No weigh-ins in the last 4 weeks.');
     expect(byTestId(el, 'body-measurements-none')).not.toBeNull();
     expect(byTestId(el, 'body-composition-none')).not.toBeNull();
+    await showTab(fixture, 'trends');
+    expect(clean(byTestId(el, 'training-summary'))).toBe('No workouts finished in this week.');
+    expect(clean(byTestId(el, 'review-nutrition'))).toContain('No food logged in this week.');
+    await showTab(fixture, 'insights');
     const ids = [...el.querySelectorAll('[data-testid=review-actions] li')].map((a) => a.getAttribute('data-testid'));
     expect(ids).toEqual(['action-log-food', 'action-weigh-in', 'action-measure']);
     expect(el.textContent).not.toMatch(/target 2,400|NaN|undefined/);
@@ -254,6 +270,13 @@ describe('Weekly Fitness Review page', () => {
     }
     expect(byTestId(el, 'week-nav')?.getAttribute('aria-label')).toBe('Week');
     expect(byTestId(el, 'announcement')?.getAttribute('role')).toBe('status');
+  });
+
+  it('View detailed progress opens the Progress screens', async () => {
+    const { el, forward } = await render();
+    expect(clean(byTestId(el, 'open-progress'))).toBe('View detailed progress');
+    click(el, 'open-progress');
+    expect(forward).toHaveBeenLastCalledWith(['/you', 'progress']);
   });
 
   it('is read-only: opening and browsing weeks writes nothing', async () => {

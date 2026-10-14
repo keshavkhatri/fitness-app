@@ -1,113 +1,66 @@
-<fit-page title="You">
-  <fit-card padding="none">
-    @let me = identity.identity();
-    <button type="button" class="entry" data-testid="identity-entry" (click)="openIdentity()">
-      <fit-avatar [name]="me.name" [photo]="me.photo" [size]="48" />
-      <span class="entry-text">
-        <span class="entry-title">{{ me.name ?? 'Add your name' }}</span>&ngsp;
-        <span class="entry-description">Name and photo for your greeting</span>
+<fit-page title="You" customHeader>
+  <header class="header" fitPageHeader>
+    <h1 class="heading">You</h1>
+    <app-you-header [name]="identity.identity().name" [photo]="identity.identity().photo" [header]="header()" (edit)="openIdentity()" />
+  </header>
+
+  @if (goal(); as g) {
+    <button type="button" class="goal" data-testid="goal-entry" (click)="openProfile()">
+      <span class="goal-icon" aria-hidden="true"><ion-icon [name]="g.icon" /></span>
+      <span class="goal-text">
+        <span class="goal-label">{{ copy.goal }}</span>&ngsp;
+        <span class="goal-title">{{ g.label }}</span>&ngsp;
+        <span class="goal-description">{{ g.description }}</span>
       </span>
-      <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
+      <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
     </button>
-    <button type="button" class="entry" data-testid="profile-entry" (click)="openProfile()">
-      <span class="entry-icon" aria-hidden="true"><ion-icon name="person-circle-outline" /></span>
-      <span class="entry-text">
-        <span class="entry-title">Your profile</span>&ngsp;
-        <span class="entry-description">Review and edit your details and goals</span>
-      </span>
-      <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
-    </button>
-  </fit-card>
-
-  <section aria-labelledby="you-activity">
-    <fit-section-header title="Activity" headingId="you-activity" />
-    <fit-card padding="none">
-      <button type="button" class="entry" data-testid="quick-add-entry" aria-haspopup="dialog" (click)="openQuickAdd()">
-        <span class="entry-icon quick-add" aria-hidden="true"><ion-icon name="add" /></span>
-        <span class="entry-text">
-          <span class="entry-title">Quick add</span>&ngsp;
-          <span class="entry-description">Start a workout, log food, weight or measurements</span>
-        </span>
-        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
-      </button>
-      <button type="button" class="entry" data-testid="progress-entry" (click)="openProgress()">
-        <span class="entry-icon" aria-hidden="true"><ion-icon name="trending-up" /></span>
-        <span class="entry-text">
-          <span class="entry-title">Progress</span>&ngsp;
-          <span class="entry-description">Training activity and performance</span>
-        </span>
-        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
-      </button>
-    </fit-card>
-  </section>
-
-  <section aria-labelledby="you-body">
-    <fit-section-header title="Body" headingId="you-body" />
-    <fit-card padding="none">
-      <button type="button" class="entry" data-testid="weight-history-entry" (click)="openWeightHistory()">
-        <span class="entry-icon" aria-hidden="true"><ion-icon name="scale-outline" /></span>
-        <span class="entry-text">
-          <span class="entry-title">Body weight</span>&ngsp;
-          <span class="entry-description">Your recorded weigh-ins</span>
-        </span>
-        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
-      </button>
-      <button type="button" class="entry" data-testid="measurements-entry" (click)="openMeasurements()">
-        <span class="entry-icon" aria-hidden="true"><ion-icon name="resize-outline" /></span>
-        <span class="entry-text">
-          <span class="entry-title">Measurements</span>&ngsp;
-          <span class="entry-description">Your recorded body measurements</span>
-        </span>
-        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
-      </button>
-      <button type="button" class="entry" data-testid="body-composition-entry" (click)="openBodyComposition()">
-        <span class="entry-icon" aria-hidden="true"><ion-icon name="pulse-outline" /></span>
-        <span class="entry-text">
-          <span class="entry-title">Body composition</span>&ngsp;
-          <span class="entry-description">Your recorded InBody assessments</span>
-        </span>
-        <ion-icon class="entry-chevron" name="chevron-forward" aria-hidden="true" />
-      </button>
-    </fit-card>
-  </section>
-
-  <section aria-labelledby="you-appearance">
-    <fit-section-header title="Appearance" headingId="you-appearance" />
-    <fit-card>
-      <fit-segmented-control
-        name="theme-preference"
-        legend="Theme"
-        [options]="themeOptions"
-        [value]="theme.preference()"
-        (valueChange)="theme.setPreference($event)"
-      />
-      <p class="hint">System follows your device's light or dark setting.</p>
-    </fit-card>
-  </section>
-
-  @if (unitSystem(); as units) {
-    <section aria-labelledby="you-units">
-      <fit-section-header title="Units" headingId="you-units" />
-      <fit-card>
-        <fit-segmented-control
-          name="unit-system"
-          legend="Units"
-          [options]="unitOptions"
-          [value]="units"
-          (valueChange)="setUnits($event)"
-        />
-        <p class="hint">Weights and measurements are shown in kg and cm, or lb and in. Your recorded values stay the same.</p>
-        @if (unitsError()) {
-          <p class="error" role="alert" data-testid="units-error">Couldn't change your units. Try again.</p>
-        }
-      </fit-card>
-    </section>
   }
 
-  <section aria-labelledby="you-settings">
-    <fit-section-header title="Settings" headingId="you-settings" />
-    <fit-card padding="none">
-      <ul class="settings-list">
+  <nav class="tiles" [attr.aria-label]="copy.sections">
+    @for (tile of tiles; track tile.id) {
+      <button
+        type="button"
+        class="tile"
+        [attr.data-testid]="testIds[tile.id]"
+        [attr.aria-haspopup]="tile.dialog ? 'dialog' : null"
+        (click)="openTile(tile.id)"
+      >
+        <span class="tile-icon" aria-hidden="true"><ion-icon [name]="tile.icon" /></span>
+        <span class="tile-title">{{ tile.title }}</span>&ngsp;
+        <span class="tile-description">{{ tile.description }}</span>
+      </button>
+    }
+  </nav>
+
+  <app-link-card icon="trending-up" [title]="copy.progress.title" [detail]="copy.progress.detail" data-testid="progress-entry" (open)="openProgress()" />
+
+  <section class="settings" aria-labelledby="you-settings">
+    <h2 class="section-title" id="you-settings">{{ copy.settings }}</h2>
+    <div class="settings-card">
+      <section aria-labelledby="you-appearance">
+        <h3 class="setting-title" id="you-appearance">{{ copy.appearance }}</h3>
+        <fit-segmented-control
+          name="theme-preference"
+          legend="Theme"
+          [options]="themeOptions"
+          [value]="theme.preference()"
+          (valueChange)="theme.setPreference($event)"
+        />
+        <p class="hint">System follows your device's light or dark setting.</p>
+      </section>
+
+      @if (unitSystem(); as units) {
+        <section aria-labelledby="you-units">
+          <h3 class="setting-title" id="you-units">{{ copy.units }}</h3>
+          <fit-segmented-control name="unit-system" legend="Units" [options]="unitOptions" [value]="units" (valueChange)="setUnits($event)" />
+          <p class="hint">Weights and measurements are shown in kg and cm, or lb and in. Your recorded values stay the same.</p>
+          @if (unitsError()) {
+            <p class="error" role="alert" data-testid="units-error">Couldn't change your units. Try again.</p>
+          }
+        </section>
+      }
+
+      <ul class="settings-list" [attr.aria-label]="copy.upcoming">
         @for (setting of upcomingSettings; track setting) {
           <li>
             <span>{{ setting }}</span>
@@ -115,7 +68,7 @@
           </li>
         }
       </ul>
-    </fit-card>
+    </div>
   </section>
 
   <app-identity-sheet

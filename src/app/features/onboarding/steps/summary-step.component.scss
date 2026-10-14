@@ -89,3 +89,72 @@
     opacity: 0.4;
   }
 }
+
+// --- Profile editor (review mode) -------------------------------------------------------------
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.profile-title {
+  @include fx.text(h1, bold);
+  align-self: flex-start;
+  outline: none;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.group-title {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-text-secondary);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.field {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: start;
+}
+
+.field-label {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.field-value {
+  @include fx.text(body, medium);
+  grid-column: 1;
+  overflow-wrap: anywhere;
+}
+
+.field-chevron {
+  grid-area: 1 / 2 / 3;
+  color: var(--color-text-secondary);
+}

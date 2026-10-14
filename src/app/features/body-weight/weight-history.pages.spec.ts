@@ -176,7 +176,7 @@ describe('Body weight history page', () => {
     const fixture = TestBed.createComponent(YouPage);
     fixture.detectChanges();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid=weight-history-entry]')!;
-    expect(clean(button)).toBe('Body weight Your recorded weigh-ins');
+    expect(clean(button)).toBe('Weight Track your weight');
     button.click();
     expect(forward).toHaveBeenCalledWith('/you/weight-history');
   });
@@ -212,7 +212,7 @@ describe('Body weight trend (history page)', () => {
   it('switching ranges filters the chart and summary; the full list stays', async () => {
     const { el, fixture } = await renderHistory(SPREAD);
     expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(2);
-    expect(summaryText(el)).toBe('First 82.2 kg Thursday, Oct 1 Latest 81.9 kg Today Change −0.3 kg Between first and latest recorded measurements');
+    expect(summaryText(el)).toBe('Latest 81.9 kg Today Change −0.3 kg From 82.2 kg, Thursday, Oct 1 Lowest 81.9 kg Today Highest 82.2 kg Thursday, Oct 1');
 
     chooseRange(fixture, '90d');
     expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(3);
@@ -220,7 +220,8 @@ describe('Body weight trend (history page)', () => {
 
     chooseRange(fixture, 'all');
     expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(4);
-    expect(summaryText(el)).toContain('First 86.0 kg Sunday, Mar 1');
+    expect(summaryText(el)).toContain('From 86.0 kg, Sunday, Mar 1');
+    expect(summaryText(el)).toContain('Highest 86.0 kg Sunday, Mar 1');
     expect(clean(byTestId(el, 'trend-change'))).toBe('−4.1 kg');
 
     expect(el.querySelectorAll('[data-testid=weight-row]')).toHaveLength(4);
@@ -269,7 +270,7 @@ describe('Body weight trend (history page)', () => {
 
   it('uses the profile’s unit everywhere in the trend', async () => {
     const { el } = await renderHistory([entry('a', '2026-10-01', 80), entry('b', '2026-10-09', 79.5)], { ...PROFILE, unitSystem: 'imperial' });
-    expect(summaryText(el)).toBe('First 176.4 lb Thursday, Oct 1 Latest 175.3 lb Today Change −1.1 lb Between first and latest recorded measurements');
+    expect(summaryText(el)).toBe('Latest 175.3 lb Today Change −1.1 lb From 176.4 lb, Thursday, Oct 1 Lowest 175.3 lb Today Highest 176.4 lb Thursday, Oct 1');
     expect(clean(el.querySelector('app-weight-chart .axis-unit'))).toBe('Weight (lb)');
   });
 
@@ -307,6 +308,13 @@ describe('Body weight trend (history page)', () => {
     fixture.detectChanges();
     expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(1);
     expect(el.querySelector<HTMLInputElement>('fit-segmented-control input:checked')?.value).toBe('90d');
+  });
+
+  it('calls out the latest measurement on the chart; the page uses the dashboard theme', async () => {
+    const { el, fixture } = await renderHistory(SPREAD);
+    expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-dashboard');
+    expect(clean(el.querySelector('[data-testid=weight-chart-callout] .callout-value'))).toBe('81.9 kg');
+    expect(clean(el.querySelector('[data-testid=weight-chart-callout] .callout-date'))).toBe('9 Oct');
   });
 
   it('no history at all keeps the original empty state (no range controls)', async () => {
@@ -357,6 +365,24 @@ describe('Weight entry page', () => {
       { id: 'new-1', date: '2026-10-08', weight: { kilograms: 80.4 }, createdAt: NOW.toISOString(), updatedAt: NOW.toISOString() },
     ]);
     expect(back).toHaveBeenCalledWith('/you/weight-history');
+  });
+
+  it('is a dark form; the slider nudges the typed weight around the latest entry; no slider without one', async () => {
+    const first = await renderForm([]);
+    expect((first.fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-immersive');
+    expect(byTestId(first.el, 'weight-slider')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const { el, fixture, input, submit, storage } = await renderForm([entry('a', '2026-10-01', 80.4)]);
+    const range = byTestId(el, 'weight-slider')!.querySelector<HTMLInputElement>('input[type=range]')!;
+    expect(range.getAttribute('aria-label')).toBe('Fine-adjust weight');
+    expect([range.min, range.max, range.step, range.value]).toEqual(['70', '91', '0.1', '80.4']);
+    range.value = '81.3';
+    range.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(input('weight').value).toBe('81.3');
+    await submit();
+    expect(stored(storage).map((e) => e.weight.kilograms)).toEqual([80.4, 81.3]);
   });
 
   it('pounds are converted to kilograms for storage', async () => {
@@ -438,6 +464,16 @@ describe('Weight entry page', () => {
     await settle(fixture);
     expect(add).toHaveBeenCalledTimes(1);
     expect(stored(storage)).toHaveLength(1);
+  });
+
+  it('a second Save after a successful one (a double click) saves nothing more', async () => {
+    const { el, type, submit, storage, fixture } = await renderForm([]);
+    type('weight', '80.4');
+    await submit();
+    await submit();
+    expect(stored(storage)).toHaveLength(1);
+    expect((byTestId(el, 'save') as HTMLButtonElement).disabled).toBe(true);
+    fixture.detectChanges();
   });
 
   it('deletes only after confirmation, and only that entry', async () => {

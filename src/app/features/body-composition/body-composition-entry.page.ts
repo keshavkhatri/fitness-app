@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
@@ -13,11 +14,12 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
 
 import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
 import { MAX_REPORT_BYTES } from '../../core/inbody/inbody-extraction.client';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import {
   BODY_COMPOSITION_METRICS,
   BodyCompositionAssessment,
@@ -38,6 +40,7 @@ import {
   SegmentedControlComponent,
   TextFieldComponent,
 } from '../../shared/ui';
+import { ReportThumbComponent } from './components/report-thumb.component';
 import { ReportImport } from '../onboarding/state/report-import.service';
 import { REPORT_FAILURE_COPY, reportIssueText, reportReviewSummary } from '../onboarding/state/report-review';
 import { BODY_COMPOSITION_COPY } from './body-composition-content';
@@ -96,13 +99,10 @@ type Loaded =
   selector: 'app-body-composition-entry',
   templateUrl: './body-composition-entry.page.html',
   styleUrl: './body-composition-entry.page.scss',
+  host: { class: 'fit-theme-immersive fit-tracking-form' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
-    IonBackButton,
-    IonTitle,
     IonContent,
+    ReportThumbComponent,
     IonFooter,
     IonIcon,
     EmptyStateComponent,
@@ -193,6 +193,8 @@ export class BodyCompositionEntryPage {
   });
   protected readonly errors = signal<BodyCompositionFormErrors>({});
   protected readonly saving = signal(false);
+  /** Saved and leaving: a second tap (e.g. a double click) can't save again. */
+  protected readonly saved = signal(false);
   /** Announced above Save: validation summary or a failed save. */
   protected readonly status = signal('');
 
@@ -224,6 +226,9 @@ export class BodyCompositionEntryPage {
 
   private readonly fields = viewChildren(TextFieldComponent);
   private readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
+  private readonly cameraInput = viewChild<ElementRef<HTMLInputElement>>('cameraInput');
+  // Light status-bar text while this always-dark form is open.
+  private readonly statusBar = inject(DestroyRef).onDestroy(inject(ThemeService).holdAlwaysDark());
 
   constructor() {
     // A successful read fills in the form for review (once per reading).
@@ -254,6 +259,11 @@ export class BodyCompositionEntryPage {
 
   protected chooseImage(): void {
     this.fileInput()?.nativeElement.click();
+  }
+
+  /** The device camera where supported (the same image upload; otherwise the browser offers files). */
+  protected takePhoto(): void {
+    this.cameraInput()?.nativeElement.click();
   }
 
   protected onImageChosen(event: Event): void {
@@ -294,8 +304,8 @@ export class BodyCompositionEntryPage {
 
   protected async save(): Promise<void> {
     const l = this.loaded();
-    if (this.saving() || !l || (l.kind !== 'new' && l.kind !== 'edit')) {
-      return; // no double submit
+    if (this.saving() || this.saved() || !l || (l.kind !== 'new' && l.kind !== 'edit')) {
+      return; // no double submit, while saving or after
     }
     const form = this.form();
     const saved = this.savedForm();
@@ -311,6 +321,7 @@ export class BodyCompositionEntryPage {
     try {
       const result = l.kind === 'edit' ? await this.history.update(l.assessment, input) : await this.history.add(input);
       if (result.ok) {
+        this.saved.set(true);
         this.errors.set({});
         this.report.reset();
         void this.nav.navigateBack(l.kind === 'edit' ? bodyCompositionDetailPath(l.assessment.id) : BODY_COMPOSITION_RETURN_PATH);

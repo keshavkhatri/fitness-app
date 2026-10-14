@@ -48,6 +48,11 @@ export interface TrendSummaryView {
   /** "−1.3 kg", or null with a single measurement (no difference to show). */
   readonly change: string | null;
   readonly changeCaption: string;
+  /** "From 82.2 kg, Thursday, Oct 1": what the change is measured from (null with one measurement). */
+  readonly changeFrom: string | null;
+  /** The lowest and highest recorded weights in the range (the latest of equal ones); null with one measurement. */
+  readonly lowest: TrendMeasurementView | null;
+  readonly highest: TrendMeasurementView | null;
   /** Every measurement in the range, oldest first (for screen readers and the chart). */
   readonly measurements: readonly TrendMeasurementView[];
   /** One sentence describing the range, for the chart's accessible name. */
@@ -68,14 +73,28 @@ export function toTrendSummary(summary: WeightRangeSummary, range: WeightRange, 
   const description = single
     ? copy.describeOne(rangeName, first.weight, first.dateLabel)
     : copy.describeMany(rangeName, measurements.length, first.weight, first.dateLabel, latest.weight, latest.dateLabel, change ?? '');
+  // Recorded values only: the latest point among equal extremes.
+  const extreme = (better: (a: number, b: number) => boolean) =>
+    summary.points.reduce((best, p, i) => (better(p.value, summary.points[best].value) || p.value === summary.points[best].value ? i : best), 0);
   return {
     first,
     latest,
     change,
     changeCaption: single ? copy.singleCaption : copy.changeCaption,
+    changeFrom: single ? null : copy.changeFrom(first.weight, first.dateLabel),
+    lowest: single ? null : measurements[extreme((a, b) => a < b)],
+    highest: single ? null : measurements[extreme((a, b) => a > b)],
     measurements,
     description,
   };
+}
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+/** The latest measurement beside its point: "81.9 kg" / "9 Oct". */
+export function latestCallout(summary: WeightRangeSummary, unitSystem: UnitSystem): { readonly value: string; readonly date: string } {
+  const d = parseIsoCalendarDate(summary.latest.entry.date);
+  return { value: formatDisplayWeight(summary.latest.value, unitSystem), date: d ? `${d.day} ${SHORT_MONTHS[d.month - 1]}` : summary.latest.entry.date };
 }
 
 // --- Chart geometry ----------------------------------------------------------------------

@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { IonBackButton, IonIcon, NavController } from '@ionic/angular';
 
 import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
 import { WeightRange, rangeStart, weightRangeSummary } from '../../domain/body-measurements';
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
+import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent, PageLayoutComponent } from '../../shared/ui';
 import { WeightTrendComponent } from './components/weight-trend.component';
 import { WEIGHT_HISTORY_COPY } from './weight-history-content';
 import { NEW_WEIGHT_PATH, weightEntryPath } from './weight-history-paths';
 import { toWeightHistoryScreen } from './weight-history-view-model';
-import { WeightChartView, axisDateLabel, toTrendSummary, weightChart } from './weight-trend-view-model';
+import { WeightChartView, axisDateLabel, latestCallout, toTrendSummary, weightChart } from './weight-trend-view-model';
 
 /**
  * Recorded body weights: a chart and first/latest summary for a chosen range
@@ -19,14 +19,11 @@ import { WeightChartView, axisDateLabel, toTrendSummary, weightChart } from './w
   selector: 'app-weight-history',
   templateUrl: './weight-history.page.html',
   styleUrl: './weight-history.page.scss',
+  host: { class: 'fit-theme-dashboard fit-tracking-page' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
-    IonContent,
     IonIcon,
+    PageLayoutComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -67,6 +64,11 @@ export class WeightHistoryPage {
     } catch {
       return null;
     }
+  });
+  protected readonly callout = computed(() => {
+    const s = this.history.state();
+    const summary = this.rangeSummary();
+    return summary && s.status === 'ready' ? latestCallout(summary, s.unitSystem) : null;
   });
   protected readonly emptyRangeTitle = computed(() => this.copy.trend.emptyRange(this.copy.trend.rangeNames[this.range()]));
 

@@ -1,14 +1,135 @@
 @use 'mixins' as fx;
 
-section {
+:host {
+  --page-gutter: var(--space-4);
+}
+
+// --- Header: name, photo, age and height ------------------------------------------------------
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.heading {
+  @include fx.text(h1, bold);
+}
+
+// --- Goal -----------------------------------------------------------------------------------
+.goal,
+.tile {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: start;
+}
+
+.goal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.goal-icon,
+.tile-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+.goal-icon {
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+}
+
+.goal-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.goal-label,
+.goal-description,
+.tile-description {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.goal-title {
+  @include fx.text(body, bold);
+}
+
+.chevron {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+// --- Tiles ------------------------------------------------------------------------------------
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 112px;
+  padding: var(--space-3);
+}
+
+.tile-icon {
+  width: 36px;
+  height: 36px;
+  margin-bottom: var(--space-2);
+  font-size: 19px;
+}
+
+.tile-title {
+  @include fx.text(body-sm, bold);
+}
+
+// --- Settings ---------------------------------------------------------------------------------
+.settings {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
+.section-title {
+  @include fx.text(h3, bold);
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.setting-title {
+  @include fx.text(body-sm, semibold);
+  margin-bottom: var(--space-2);
+}
+
 .hint {
   @include fx.text(body-sm);
-  margin-top: var(--space-3);
+  margin-top: var(--space-2);
   color: var(--color-text-secondary);
 }
 
@@ -19,82 +140,16 @@ section {
 }
 
 .settings-list {
+  @include fx.text(body-sm);
   margin: 0;
   padding: 0;
   list-style: none;
 
   li {
-    @include fx.text(body, medium);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-3);
-    min-height: 52px;
-    padding: 0 var(--space-5);
-
-    + li {
-      border-top: var(--border-hairline) solid var(--color-border);
-    }
-  }
-}
-
-.entry {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  width: 100%;
-  min-height: 64px;
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--radius-card);
-
-  &:active {
-    background: var(--color-surface-muted);
-  }
-
-  & + & {
+    min-height: var(--tap-target-min);
     border-top: var(--border-hairline) solid var(--color-border);
   }
-}
-
-.entry-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
-  font-size: 22px;
-}
-
-.entry-text {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.entry-title {
-  @include fx.text(body, semibold);
-}
-
-.entry-description {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.entry-chevron {
-  flex-shrink: 0;
-  font-size: 18px;
-  color: var(--color-text-tertiary);
-}
-
-// Quick Add keeps its brand-filled icon (it used to be the tab bar's center action).
-.entry-icon.quick-add {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
 }

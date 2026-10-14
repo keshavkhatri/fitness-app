@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { IonBackButton, IonIcon, NavController } from '@ionic/angular';
 
 import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
+import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent, PageLayoutComponent } from '../../shared/ui';
+import { ReportThumbComponent } from './components/report-thumb.component';
 import { BODY_COMPOSITION_COPY } from './body-composition-content';
 import { toBodyCompositionHistoryScreen } from './body-composition-history-view-model';
 import { NEW_BODY_COMPOSITION_PATH, bodyCompositionDetailPath } from './body-composition-paths';
@@ -19,14 +20,12 @@ import { NEW_BODY_COMPOSITION_PATH, bodyCompositionDetailPath } from './body-com
   selector: 'app-body-composition-history',
   templateUrl: './body-composition-history.page.html',
   styleUrl: './body-composition-history.page.scss',
+  host: { class: 'fit-theme-dashboard fit-tracking-page' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
-    IonContent,
     IonIcon,
+    PageLayoutComponent,
+    ReportThumbComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,

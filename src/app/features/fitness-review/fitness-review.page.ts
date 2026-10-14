@@ -1,11 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, resource } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, linkedSignal, resource, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { IonBackButton, IonContent, IonIcon, NavController } from '@ionic/angular';
 
 import { FitnessReviewService } from '../../core/fitness-review/fitness-review.service';
 import { IsoCalendarDate } from '../../domain/fitness-profile';
 import { shiftWeek, weekStartOf } from '../../domain/nutrition';
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
+import { ThemeService } from '../../core/theme/theme.service';
+import {
+  EmptyStateComponent,
+  FitnessButtonComponent,
+  FitnessCardComponent,
+  LoadingSkeletonComponent,
+  SegmentOption,
+  SegmentedControlComponent,
+} from '../../shared/ui';
 import { BODY_COMPOSITION_HISTORY_PATH } from '../body-composition/body-composition-paths';
 import { MEASUREMENT_HISTORY_PATH, NEW_MEASUREMENT_PATH } from '../body-measurements/measurement-paths';
 import { NEW_WEIGHT_PATH, WEIGHT_HISTORY_PATH } from '../body-weight/weight-history-paths';
@@ -22,18 +30,18 @@ type PageState = { readonly kind: 'loading' } | { readonly kind: 'error' } | ({ 
  * body records with a few prioritised, explained actions. Deterministic and
  * read-only; every insight links to the screen where it can be acted on.
  */
+type ReviewTab = 'summary' | 'trends' | 'insights';
+
 @Component({
   selector: 'app-fitness-review',
   templateUrl: './fitness-review.page.html',
   styleUrl: './fitness-review.page.scss',
+  host: { class: 'fit-theme-immersive' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
     IonContent,
     IonIcon,
+    SegmentedControlComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -52,6 +60,15 @@ export class FitnessReviewPage {
   private readonly reviews = inject(FitnessReviewService);
   private readonly nav = inject(NavController);
   private readonly router = inject(Router);
+
+  /** UI state only: Summary (overview and body), Trends (training and nutrition), Insights (what to focus on). */
+  protected readonly tab = signal<ReviewTab>('summary');
+  protected readonly tabOptions: readonly SegmentOption<ReviewTab>[] = (['summary', 'trends', 'insights'] as const).map((value) => ({
+    value,
+    label: FITNESS_REVIEW_COPY.tabs[value],
+  }));
+  // Light status-bar text while this always-dark screen is open.
+  private readonly statusBar = inject(DestroyRef).onDestroy(inject(ThemeService).holdAlwaysDark());
 
   protected readonly copy = FITNESS_REVIEW_COPY;
 
@@ -121,6 +138,11 @@ export class FitnessReviewPage {
 
   protected retry(): void {
     this.state.reload();
+  }
+
+  /** The Progress screens (charts and history), in the You stack. */
+  protected openProgress(): void {
+    void this.nav.navigateForward(['/you', 'progress']);
   }
 
   protected open(link: ReviewLink): void {

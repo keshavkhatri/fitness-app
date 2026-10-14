@@ -646,6 +646,57 @@ photos or substitute targets. Food artwork is a neutral placeholder (`app-food-t
   weight trend → estimated maintenance → a proposed target saved only after
   confirmation), not a rating scale.
 
+## Reference implementation: You and body tracking
+
+`features/you`, the Profile editor (`features/onboarding`, review mode), `features/body-weight`,
+`features/body-measurements`, `features/body-composition` and `features/fitness-review`.
+Every value comes from the stored profile, identity and histories; nothing is made up.
+Shared chrome lives in `src/theme/_tracking.scss` and is applied by host class:
+`fit-tracking-page` (light history screens: header with back, title and Add; card rows) and
+`fit-tracking-form` (dark entry and detail screens: close bar, footer).
+
+- **You (dashboard).** Photo or initials (`app-you-header`; the photo edits name and photo),
+  name, then age and height from the profile, shown only when known. A goal card from the
+  profile's primary goal (onboarding wording) opens the Profile editor. A six-tile grid
+  (Profile, Weight, Body measurements, Body composition, Fitness review, Quick add) where each
+  tile opens an existing screen or the Quick Add sheet. Progress has a link card. Settings
+  keeps Appearance, Units and the coming-soon list.
+- **Profile editor (immersive).** `/onboarding/review` (unchanged route and flow): a dark
+  "Profile" view of the review summary, with the avatar and grouped field-like rows
+  (Personal details, Goal, Training). Each row opens the existing step for that value, with
+  that step's validation. **Save profile** saves through `OnboardingFlow` and re-runs the
+  assessment as before. First-run onboarding keeps its light summary.
+- **Weight history (dashboard).** Ranges 1M–All (`ink`). The latest value is large, beside
+  its change from the first point in the range ("From 82.2 kg, Thursday, Oct 1") and the
+  range's lowest and highest records; with a single point, no change is claimed. The area
+  chart calls out the latest point. Entries are listed as date and change on the left, the
+  weight on the right.
+- **Weight entry (immersive).** A large weight field (`fit-text-field size="lg"`) and a
+  ±10 fine-adjust slider around the entry or the latest record (none without one; it only
+  writes the field), then the date. The model has no notes field, so none is shown.
+  Profile-weight and delete actions are unchanged.
+- **Measurements (dashboard).** A Chart/List switch. Chart: ranges and one line per site
+  (`measurementChart`), each site with its own colour **and marker shape**. A site read once
+  is a point; legend buttons (`aria-pressed`) show or hide sites. The readings are also
+  listed as text. Latest values appear in both views; List adds every entry.
+- **Measurement entry (immersive).** The date first, then the five sites on one card.
+- **InBody history (dashboard).** Report cards with placeholder sheet art (`app-report-thumb`):
+  report images aren't stored, so no real thumbnail exists. Latest values follow.
+- **InBody detail (immersive).** Placeholder art, date and source; Overview / All values tabs.
+  Overview has key tiles (weight, body fat %, SMM, plus BMI when the report states it, each with
+  its change) and composition bars. A share of weight is **calculated** only for masses in the
+  weight's unit, and is labelled as calculated; water in litres never gets one. The report
+  has no segmental fields, so no segmental view exists.
+- **InBody entry (immersive).** Take photo (`capture="environment"`) and Choose from files feed
+  the same image upload. Supported formats: JPG, PNG and WebP up to 8 MB (no PDF). The
+  extraction runs through the existing server endpoint (OpenAI key server-side) and is
+  re-validated against the strict schema. Its result fills the form for review, with
+  warnings, and nothing is saved until Save. Failures explain themselves; manual entry
+  stays available.
+- **Fitness Review (immersive).** Week navigation, then Summary (a highlight, stat tiles,
+  body changes) / Trends (training, nutrition) / Insights (focus actions) over the existing
+  review view model, plus **View detailed progress** (Progress).
+
 ## Open design decisions
 
 - Domain hues (ember for training, teal for body) stay alongside lime

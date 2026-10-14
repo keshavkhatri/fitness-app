@@ -1,5 +1,5 @@
 import { completeDraft } from '../testing/draft-fixtures';
-import { buildSummaryRows } from './summary-rows';
+import { buildSummaryRows, groupSummaryRows } from './summary-rows';
 
 const asMap = (rows: ReturnType<typeof buildSummaryRows>) => Object.fromEntries(rows.map((r) => [r.id, r.value]));
 const NOW = new Date(2026, 9, 7);
@@ -49,5 +49,25 @@ describe('buildSummaryRows', () => {
     const rows = buildSummaryRows(completeDraft());
     expect(rows.find((r) => r.id === 'weight')?.editStep).toBe('basics');
     expect(rows.find((r) => r.id === 'equipment')?.editStep).toBe('equipment');
+  });
+});
+
+describe('groupSummaryRows', () => {
+  it('puts every row in exactly one group, keeping order', () => {
+    const rows = [
+      { id: 'name', label: 'Name', value: 'Alex', editStep: 'name' },
+      { id: 'goal', label: 'Goal', value: 'Lose Fat', editStep: 'goal' },
+      { id: 'age', label: 'Age', value: '31 years', editStep: 'basics' },
+      { id: 'experience', label: 'Experience', value: 'Beginner', editStep: 'experience' },
+      { id: 'target-weight', label: 'Target weight', value: 'Not set', editStep: 'goal-target' },
+      { id: 'activity', label: 'Activity', value: 'Sedentary', editStep: 'activity' },
+    ] as const;
+    const groups = groupSummaryRows(rows);
+    expect(groups.map((g) => [g.title, g.rows.map((r) => r.id)])).toEqual([
+      ['Personal details', ['name', 'age', 'activity']],
+      ['Goal', ['goal', 'target-weight']],
+      ['Training', ['experience']],
+    ]);
+    expect(groups.flatMap((g) => g.rows)).toHaveLength(rows.length);
   });
 });
