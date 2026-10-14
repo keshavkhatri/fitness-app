@@ -83,18 +83,22 @@ const THIS_WEEK = [
 describe('Weekly nutrition summary', () => {
   it('opens on this Monday–Sunday week with the average, total and day-by-day breakdown', async () => {
     const { el } = await render([...THIS_WEEK, food('2026-10-04', { calories: 999 })]);
-    expect(el.querySelector('h1')?.textContent?.trim()).toBe('Weekly summary');
+    expect(el.querySelector('h1')?.textContent?.trim()).toBe('Nutrition');
     expect(clean(byTestId(el, 'week-title'))).toBe('This week');
-    expect(clean(byTestId(el, 'week-range'))).toBe('Oct 5 – 11, 2026');
+    expect(clean(byTestId(el, 'week-range'))).toBe('5 – 11 Oct 2026');
     expect(clean(byTestId(el, 'logged-days'))).toBe('Food logged on 2 of 4 days so far');
-    expect(clean(byTestId(el, 'average-calories'))).toBe('2,050 / 2,000 kcal');
+    const tile = (key: string) => byTestId(el, `average-${key}`)!;
+    expect(clean(tile('calories').querySelector('.visually-hidden'))).toBe('Calories: 2,050 kcal a day, 3% over your 2,000 kcal target');
+    expect(clean(tile('calories').querySelector('.comparison'))).toBe('+3%');
     expect(clean(byTestId(el, 'average-comparison'))).toBe('50 kcal over your daily target');
-    expect(clean(byTestId(el, 'average-protein'))).toBe('Protein 135 g / 140 g');
+    expect(clean(tile('protein').querySelector('.visually-hidden'))).toBe('Protein: 135 g a day, 96% of your 140 g target');
+    expect(clean(tile('protein').querySelector('.value'))).toBe('135 g');
+    expect(clean(tile('protein').querySelector('.comparison'))).toBe('96%');
     expect(clean(byTestId(el, 'total-calories'))).toBe('4,100 kcal'); // last week's 999 is excluded
     expect(dayRows(el).map((r) => r.getAttribute('data-status'))).toEqual(['logged', 'not-logged', 'logged', 'not-logged', 'upcoming', 'upcoming', 'upcoming']);
-    expect(clean(dayRows(el)[0])).toBe('Monday Oct 5 1,800 kcal P 120 g · C 200 g · F 60 g 200 kcal below target');
-    expect(clean(dayRows(el)[1])).toBe('Tuesday Oct 6 Nothing logged');
-    expect(clean(dayRows(el)[4])).toBe('Friday Oct 9 Upcoming');
+    expect(clean(dayRows(el)[0])).toBe('Monday 5 Oct 1,800 kcal P 120 g · C 200 g · F 60 g 200 kcal below target');
+    expect(clean(dayRows(el)[1])).toBe('Tuesday 6 Oct Nothing logged');
+    expect(clean(dayRows(el)[4])).toBe('Friday 9 Oct Upcoming');
   });
 
   it('days are accessible: past days and today are named buttons, upcoming days aren’t interactive', async () => {
@@ -102,12 +106,12 @@ describe('Weekly nutrition summary', () => {
     const buttons = dayRows(el).map((r) => r.querySelector('button'));
     expect(buttons.filter(Boolean)).toHaveLength(4);
     expect(buttons[0]?.getAttribute('aria-label')).toBe(
-      'Open Monday, Oct 5 in your food log. 1,800 kcal, protein 120 g, carbs 200 g, fat 60 g. 200 kcal below target',
+      'Open Monday, 5 Oct in your food log. 1,800 kcal, protein 120 g, carbs 200 g, fat 60 g. 200 kcal below target',
     );
-    expect(buttons[3]?.getAttribute('aria-label')).toBe('Open Today, Oct 8 in your food log. Nothing logged');
+    expect(buttons[3]?.getAttribute('aria-label')).toBe('Open Today, 8 Oct in your food log. Nothing logged');
     expect(buttons[6]).toBeNull();
     expect(byTestId(el, 'previous-week')?.getAttribute('aria-label')).toBe('Previous week');
-    expect(byTestId(el, 'week-average')?.querySelector('fit-progress')?.getAttribute('aria-label')).toBe('Daily average calories');
+    expect(byTestId(el, 'week-average')?.querySelector('fit-progress')?.getAttribute('aria-label')).toBe('Protein daily average');
   });
 
   it('moves between weeks, never past this one, and back to this week', async () => {
@@ -118,16 +122,16 @@ describe('Weekly nutrition summary', () => {
     click(el, 'previous-week');
     await settle(fixture);
     expect(clean(byTestId(el, 'week-title'))).toBe('Last week');
-    expect(clean(byTestId(el, 'week-range'))).toBe('Sep 28 – Oct 4, 2026');
+    expect(clean(byTestId(el, 'week-range'))).toBe('28 Sep – 4 Oct 2026');
     expect(clean(byTestId(el, 'logged-days'))).toBe('Food logged on 1 of 7 days');
     expect(clean(byTestId(el, 'total-calories'))).toBe('1,500 kcal');
     expect(dayRows(el).every((r) => r.getAttribute('data-status') !== 'upcoming')).toBe(true);
-    expect(clean(byTestId(el, 'announcement'))).toBe('Last week, Sep 28 – Oct 4, 2026. Food logged on 1 of 7 days.');
+    expect(clean(byTestId(el, 'announcement'))).toBe('Last week, 28 Sep – 4 Oct 2026. Food logged on 1 of 7 days.');
 
     click(el, 'previous-week');
     await settle(fixture);
-    expect(clean(byTestId(el, 'week-title'))).toBe('Sep 21 – 27, 2026');
-    expect(byTestId(el, 'week-range')).toBeNull(); // the title already is the range
+    expect(clean(byTestId(el, 'week-range'))).toBe('21 – 27 Sep 2026');
+    expect(byTestId(el, 'week-title')).toBeNull(); // the range alone names an older week
 
     click(el, 'next-week');
     await settle(fixture);
@@ -140,7 +144,7 @@ describe('Weekly nutrition summary', () => {
 
   it('opens the week of a given day; a future date opens this week', async () => {
     const past = await render(THIS_WEEK, { date: '2026-09-16' });
-    expect(clean(byTestId(past.el, 'week-title'))).toBe('Sep 14 – 20, 2026');
+    expect(clean(byTestId(past.el, 'week-range'))).toBe('14 – 20 Sep 2026');
     TestBed.resetTestingModule();
     const future = await render(THIS_WEEK, { date: '2026-12-01' });
     expect(clean(byTestId(future.el, 'week-title'))).toBe('This week');
@@ -163,12 +167,52 @@ describe('Weekly nutrition summary', () => {
 
   it('without valid targets: intake only, a short reason, no comparisons', async () => {
     const { el } = await render(THIS_WEEK, { targets: assessment({ finalKcal: 1100, status: 'review-required' }, { status: 'feasible', proteinGrams: 1, carbohydrateGrams: 1, fatGrams: 1 }) });
-    expect(clean(byTestId(el, 'average-calories'))).toBe('2,050 kcal per day');
+    expect(clean(byTestId(el, 'average-calories')?.querySelector('.visually-hidden'))).toBe('Calories: 2,050 kcal a day');
+    expect(byTestId(el, 'average-calories')?.querySelector('.comparison')).toBeNull();
     expect(byTestId(el, 'average-comparison')).toBeNull();
+    expect(byTestId(el, 'calorie-chart')?.querySelector('.target')).toBeNull();
     expect(clean(byTestId(el, 'target-note'))).toBe('Your targets need review.');
     expect(byTestId(el, 'week-average')?.querySelectorAll('fit-progress')).toHaveLength(0);
     expect(el.textContent).not.toContain('1,100');
-    expect(clean(dayRows(el)[0])).toBe('Monday Oct 5 1,800 kcal P 120 g · C 200 g · F 60 g');
+    expect(clean(dayRows(el)[0])).toBe('Monday 5 Oct 1,800 kcal P 120 g · C 200 g · F 60 g');
+  });
+
+  it('charts calories by day against the target; days without food have no bar (never zero)', async () => {
+    const { el, fixture } = await render(THIS_WEEK);
+    const chart = byTestId(el, 'calorie-chart')!;
+    const columns = [...chart.querySelectorAll('.column')];
+    expect(columns.map((c) => c.getAttribute('data-status'))).toEqual(['logged', 'not-logged', 'logged', 'not-logged', 'upcoming', 'upcoming', 'upcoming']);
+    expect(columns.map((c) => (c.querySelector('.bar') as HTMLElement | null)?.style.height ?? null)).toEqual(['75%', null, '95.83%', null, null, null, null]);
+    expect(columns[1].querySelector('.missing')).not.toBeNull();
+    expect(columns.filter((c) => c.querySelector('.target')).map((c) => (c.querySelector('.target') as HTMLElement).style.height)).toEqual(['83.33%', '83.33%', '83.33%', '83.33%']);
+    expect([...chart.querySelectorAll('.tick')].map((t) => clean(t))).toEqual(['2.4k', '1.8k', '1.2k', '600', '0']);
+    const spoken = [...chart.querySelectorAll('ul.visually-hidden li')].map((li) => clean(li));
+    expect(spoken).toEqual([
+      'Monday 5 Oct: 1,800 kcal',
+      'Tuesday 6 Oct: nothing logged',
+      'Wednesday 7 Oct: 2,300 kcal',
+      'Thursday 8 Oct: nothing logged',
+      'Friday 9 Oct: upcoming',
+      'Saturday 10 Oct: upcoming',
+      'Sunday 11 Oct: upcoming',
+      'Daily target 2,000 kcal',
+    ]);
+    expect([...chart.querySelectorAll('.legend li')].map((li) => clean(li))).toEqual(['Food', 'Daily target', '– Not logged']);
+
+    const macros = byTestId(el, 'macro-chart')!;
+    expect(macros.querySelector('ul.visually-hidden')?.getAttribute('aria-label')).toBe('Protein by day');
+    expect(clean(macros.querySelector('ul.visually-hidden li'))).toBe('Monday 5 Oct: 120 g');
+    macros.querySelector<HTMLInputElement>('input[value="fat"]')!.click();
+    fixture.detectChanges();
+    expect(macros.querySelector('ul.visually-hidden')?.getAttribute('aria-label')).toBe('Fat by day');
+    expect(clean(macros.querySelector('ul.visually-hidden li:last-child'))).toBe('Daily target 65 g');
+  });
+
+  it('Day returns to the daily log', async () => {
+    const { el, back } = await render(THIS_WEEK);
+    expect(byTestId(el, 'views')?.querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('Week');
+    click(el, 'day-view');
+    expect(back).toHaveBeenCalledWith('/nutrition');
   });
 
   it('opening a day shows it in the food log, without changing any entry', async () => {
@@ -217,7 +261,7 @@ describe('Nutrition dashboard → weekly summary', () => {
     await settle(fixture);
     const el = fixture.nativeElement as HTMLElement;
     const button = byTestId(el, 'open-week') as HTMLButtonElement;
-    expect(clean(button)).toBe('Weekly summary');
+    expect(button.getAttribute('aria-label')).toBe('Weekly summary');
     button.click();
     expect(forward).toHaveBeenCalledWith(['/nutrition', 'week'], { queryParams: { date: '2026-10-08' } });
   });

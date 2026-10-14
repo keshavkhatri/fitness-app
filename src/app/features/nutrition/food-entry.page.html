@@ -1,212 +1,118 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="nutritionPath" [text]="copy.back" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ title() }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
   <main class="body">
+    <div class="topbar">
+      <button type="button" class="round" [attr.aria-label]="copy.close" data-testid="close" (click)="close()">
+        <ion-icon name="close" aria-hidden="true" />
+      </button>
+      <h1 class="bar-title">{{ copy.editTitle }}</h1>
+      @if (editing()) {
+        <button type="button" class="round danger" [attr.aria-label]="copy.delete" [disabled]="saving()" aria-haspopup="dialog" data-testid="delete" (click)="askDelete()">
+          <ion-icon name="trash-outline" aria-hidden="true" />
+        </button>
+      } @else {
+        <span class="round-spacer" aria-hidden="true"></span>
+      }
+    </div>
+
     @let l = loaded();
-    @if (l && (l.kind === 'new' || l.kind === 'edit')) {
-      @let f = form();
-      @let e = errors();
-      <header class="intro">
-        <h1 class="title">{{ title() }}</h1>
-        <p class="day" data-testid="form-day">{{ dayLabel() }}</p>
+    @if (l?.kind === 'edit' && editing(); as entry) {
+      <header class="identity">
+        <app-food-thumb class="art" icon="nutrition" />
+        <h2 class="name" data-testid="food-name">{{ entry.name }}</h2>
+        <p class="context" data-testid="form-day">{{ dayLabel() }} · {{ mealLabel() }}</p>
       </header>
 
-      @if (l.kind === 'new' && recentFoods().length > 0) {
-        <section class="recent" aria-labelledby="recent-foods-title" data-testid="recent-foods">
-          <h2 class="recent-title" id="recent-foods-title">{{ copy.recent.title }}</h2>
-          <p class="values-hint">{{ copy.recent.hint }}</p>
-          <fit-card padding="none">
-            <ul class="recent-list">
-              @for (food of recentFoods(); track food.id) {
-                <li>
-                  <button
-                    type="button"
-                    class="recent-food"
-                    [attr.aria-label]="copy.recent.choose(food.name, food.detail + ', ' + food.calories)"
-                    [disabled]="saving()"
-                    data-testid="recent-food"
-                    (click)="useRecent(food.entry)"
-                  >
-                    <span class="recent-text">
-                      <span class="recent-name">{{ food.name }}</span>&ngsp;
-                      <span class="recent-detail">{{ food.detail }}</span>
-                    </span>&ngsp;
-                    <span class="recent-kcal">{{ food.calories }}</span>
-                  </button>
-                </li>
-              }
-            </ul>
-          </fit-card>
-          <p class="recent-status" role="status" data-testid="recent-status">{{ filledFrom() }}</p>
+      @if (mode() === 'portion') {
+        @let p = portion()!;
+        <section class="card" aria-labelledby="serving-title" data-testid="serving">
+          <h3 class="visually-hidden" id="serving-title">{{ copy.servingSize }}</h3>
+          <fit-text-field
+            #servingField
+            [label]="copy.servingSize"
+            [suffix]="unit()!.many"
+            [hint]="copy.servingHint(unit()!.many)"
+            inputMode="decimal"
+            enterKeyHint="done"
+            [value]="servingText()"
+            [error]="showServingError() || servingText().trim() !== '' ? p.servingError : null"
+            data-testid="field-serving"
+            (valueChange)="setServingText($event)"
+          />
+          @if (p.perServing; as values) {
+            <p class="caption">{{ copy.perServing }}</p>
+            <app-nutrient-row [nutrients]="values" data-testid="per-serving" />
+          }
         </section>
-      }
 
-      <form id="food-form" class="form" novalidate data-testid="food-form" (submit)="$event.preventDefault(); save()">
-        <fit-text-field
-          #nameField
-          [label]="copy.name"
-          [hint]="copy.namePlaceholderHint"
-          [value]="f.name"
-          [error]="e.name ?? null"
-          [maxLength]="80"
-          autocomplete="off"
-          data-testid="field-name"
-          (valueChange)="update('name', $event)"
-        />
-
-        <fit-text-field
-          #quantityField
-          [label]="copy.quantity"
-          inputMode="decimal"
-          [value]="f.quantity"
-          [error]="e.quantity ?? null"
-          data-testid="field-quantity"
-          (valueChange)="update('quantity', $event)"
-        />
-
-        <div class="choice">
-          <p class="choice-label" id="food-unit-label">{{ copy.unit }}</p>
-          <fit-choice-group
-            name="food-unit"
-            labelledBy="food-unit-label"
-            layout="chips"
-            [options]="unitOptions"
-            [selected]="[f.unit]"
-            data-testid="field-unit"
-            (optionToggled)="update('unit', $event)"
-          />
-        </div>
-
-        <div class="choice">
-          <p class="choice-label" id="food-meal-label">{{ copy.meal }}</p>
-          <fit-choice-group
-            name="food-meal"
-            labelledBy="food-meal-label"
-            layout="chips"
-            [options]="mealOptions"
-            [selected]="[f.meal]"
-            data-testid="field-meal"
-            (optionToggled)="update('meal', $event)"
-          />
-        </div>
-
-        <fieldset class="values">
-          <legend class="values-title">{{ copy.nutritionTitle }}</legend>
-          <p class="values-hint">{{ copy.nutritionHint }}</p>
-          <div class="grid">
-            <fit-text-field
-              #caloriesField
-              [label]="copy.calories"
-              suffix="kcal"
-              inputMode="decimal"
-              [value]="f.calories"
-              [error]="e.calories ?? null"
-              data-testid="field-calories"
-              (valueChange)="update('calories', $event)"
-            />
-            <fit-text-field
-              #proteinField
-              [label]="copy.protein"
-              suffix="g"
-              inputMode="decimal"
-              [value]="f.proteinGrams"
-              [error]="e.proteinGrams ?? null"
-              data-testid="field-protein"
-              (valueChange)="update('proteinGrams', $event)"
-            />
-            <fit-text-field
-              #carbsField
-              [label]="copy.carbs"
-              suffix="g"
-              inputMode="decimal"
-              [value]="f.carbohydrateGrams"
-              [error]="e.carbohydrateGrams ?? null"
-              data-testid="field-carbs"
-              (valueChange)="update('carbohydrateGrams', $event)"
-            />
-            <fit-text-field
-              #fatField
-              [label]="copy.fat"
-              suffix="g"
-              inputMode="decimal"
-              enterKeyHint="done"
-              [value]="f.fatGrams"
-              [error]="e.fatGrams ?? null"
-              data-testid="field-fat"
-              (valueChange)="update('fatGrams', $event)"
-            />
+        <section class="card servings" aria-labelledby="servings-title">
+          <h3 class="card-title" id="servings-title">{{ copy.servings }}</h3>
+          <div class="stepper">
+            <button type="button" class="step" [attr.aria-label]="copy.fewer" [disabled]="servings() <= servingsMin" data-testid="fewer" (click)="step(-1)">
+              <ion-icon name="remove" aria-hidden="true" />
+            </button>
+            <output class="count" aria-live="polite" data-testid="servings">{{ p.servings }}</output>
+            <button type="button" class="step" [attr.aria-label]="copy.more" [disabled]="servings() >= servingsMax" data-testid="more" (click)="step(1)">
+              <ion-icon name="add" aria-hidden="true" />
+            </button>
           </div>
-        </fieldset>
-      </form>
+        </section>
 
-      @if (l.kind === 'edit') {
-        <button fit-button type="button" variant="ghost" icon="trash-outline" block [disabled]="saving()" data-testid="delete" (click)="askDelete()">
-          {{ copy.delete }}
+        <section class="card" aria-labelledby="total-title" data-testid="total">
+          <h3 class="card-title" id="total-title">{{ copy.total }}</h3>
+          <p class="visually-hidden" aria-live="polite">{{ totalSpoken() }}</p>
+          @if (p.total; as values) {
+            <app-nutrient-row class="nutrients" [nutrients]="values" aria-hidden="true" />
+          } @else {
+            <p class="unavailable" aria-hidden="true">{{ copy.totalUnavailable }}</p>
+          }
+        </section>
+
+        <fit-segmented-control class="meals" variant="pills" name="edit-food-meal" [legend]="copy.mealLegend" [options]="mealOptions" [(value)]="meal" />
+
+        <button type="button" class="link" data-testid="edit-details" (click)="editDetails()">
+          <ion-icon name="create-outline" aria-hidden="true" />{{ copy.editDetails }}
         </button>
+      } @else if (form(); as f) {
+        <app-food-form [values]="f" [errors]="errors()" (changed)="updateForm($event)" (submitted)="save()" />
       }
     } @else if (l?.kind === 'not-found') {
-      <h1 class="visually-hidden">{{ title() }}</h1>
       <fit-card data-testid="not-found">
         <fit-empty-state icon="restaurant-outline" [title]="copy.notFound.title" [description]="copy.notFound.message">
-          <button fit-button type="button" (click)="backToNutrition()">{{ copy.backToNutrition }}</button>
+          <button fit-button type="button" (click)="close()">{{ copy.backToNutrition }}</button>
         </fit-empty-state>
       </fit-card>
     } @else if (l?.kind === 'error') {
-      <h1 class="visually-hidden">{{ title() }}</h1>
       <fit-card data-testid="load-error">
         <fit-empty-state icon="alert-circle-outline" [title]="copy.loadFailed.title" [description]="copy.loadFailed.message">
           <button fit-button type="button" (click)="retry()">{{ copy.loadFailed.retry }}</button>
-          <button fit-button type="button" variant="ghost" (click)="backToNutrition()">{{ copy.backToNutrition }}</button>
+          <button fit-button type="button" variant="ghost" (click)="close()">{{ copy.backToNutrition }}</button>
         </fit-empty-state>
       </fit-card>
     } @else {
-      <h1 class="visually-hidden">{{ title() }}</h1>
       <p class="visually-hidden" role="status">{{ copy.loadingEntry }}</p>
       <div class="loading" aria-busy="true" data-testid="loading">
-        <fit-skeleton width="50%" height="34px" />
-        <fit-skeleton height="72px" radius="card" />
-        <fit-skeleton height="72px" radius="card" />
-        <fit-skeleton height="160px" radius="card" />
+        <fit-skeleton width="140px" height="140px" radius="pill" />
+        <fit-skeleton width="60%" height="28px" />
+        <fit-skeleton height="140px" radius="card" />
+        <fit-skeleton height="96px" radius="card" />
       </div>
     }
   </main>
 </ion-content>
 
-@let ready = loaded();
-@if (ready && (ready.kind === 'new' || ready.kind === 'edit')) {
+@if (editing()) {
   <ion-footer class="ion-no-border">
     <div class="footer">
       <!-- Always rendered with Save so its message is announced when it appears. -->
       <p class="status" role="status" data-testid="form-status" [class.shown]="status() !== ''">{{ status() }}</p>
-      <button
-        fit-button
-        type="submit"
-        form="food-form"
-        size="lg"
-        block
-        [disabled]="saving()"
-        [loading]="saving()"
-        data-testid="save"
-      >
-        {{ ready.kind === 'edit' ? copy.saveChanges : copy.save }}
+      <button fit-button type="button" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="save" (click)="save()">
+        {{ copy.saveChanges }}
       </button>
     </div>
   </ion-footer>
 }
 
-<fit-bottom-sheet
-  [title]="copy.deleteConfirm.title"
-  [description]="copy.deleteConfirm.message(editing()?.name ?? '')"
-  [(open)]="confirmOpen"
->
+<fit-bottom-sheet [title]="copy.deleteConfirm.title" [description]="copy.deleteConfirm.message(editing()?.name ?? '')" [(open)]="confirmOpen">
   <div class="sheet-actions" data-testid="delete-confirm">
     <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
     <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>

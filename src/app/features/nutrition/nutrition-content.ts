@@ -24,7 +24,12 @@ export const NUTRITION_COPY = {
   title: 'Nutrition',
   loading: 'Loading nutrition',
 
+  logFood: 'Log food',
+  checkInHint: 'Compare your intake with your weight trend',
+
   date: {
+    nav: 'Day',
+    strip: 'Days this week',
     previous: 'Previous day',
     next: 'Next day',
     today: 'Today',
@@ -35,6 +40,8 @@ export const NUTRITION_COPY = {
     title: 'Calories',
     progressLabel: 'Calories eaten',
     eatenOnly: (eaten: string) => `${eaten} kcal eaten`,
+    of: (target: string) => `of ${target} kcal`,
+    eaten: 'kcal eaten',
     noTarget: 'No calorie target yet',
   },
 
@@ -46,6 +53,7 @@ export const NUTRITION_COPY = {
   },
 
   meals: {
+    title: 'Meals',
     add: 'Add Food',
     addTo: (meal: string) => `Add food to ${meal}`,
     empty: 'Nothing logged',
@@ -100,6 +108,21 @@ export const NUTRITION_COPY = {
 
   week: {
     title: 'Weekly summary',
+    heading: 'Nutrition',
+    views: 'Nutrition view',
+    dayView: 'Day',
+    weekView: 'Week',
+    caloriesTitle: 'Calories',
+    caloriesByDay: 'Calories by day',
+    legendFood: 'Food',
+    legendTarget: 'Daily target',
+    legendNotLogged: '– Not logged',
+    averageThisWeek: 'Average this week',
+    vsTarget: 'vs target',
+    ofTarget: 'of target',
+    macrosTitle: 'Macros',
+    macroLegend: 'Macro',
+    macroByDay: (name: string) => `${name} by day`,
     entry: 'Weekly summary',
     back: 'Nutrition',
     loading: 'Loading your week',
@@ -143,6 +166,36 @@ export const NUTRITION_COPY = {
     retry: 'Try again',
   },
 
+  add: {
+    title: 'Add food',
+    back: 'Back to Nutrition',
+    backToSearch: 'Back to search',
+    mealLegend: 'Meal',
+    search: 'Search your recent foods',
+    clear: 'Clear search',
+    recentTitle: 'Recent foods',
+    recentHint: 'Foods you logged in the last 30 days. Tap + to add one as it was, or tap the food to change it first.',
+    loading: 'Loading recent foods',
+    none: {
+      title: 'No recent foods yet',
+      message: 'Foods you log appear here, ready to add again in one tap.',
+    },
+    noMatch: (query: string) => `No recent foods match “${query}”.`,
+    error: {
+      title: "We couldn't load your recent foods",
+      message: 'You can still enter a food manually.',
+      retry: 'Try again',
+    },
+    results: (count: number) => `${count} recent ${count === 1 ? 'food' : 'foods'}`,
+    addLabel: (name: string, detail: string, meal: string) => `Add ${name}, ${detail}, to ${meal}`,
+    reviewLabel: (name: string, detail: string) => `Change ${name}, ${detail}, before adding`,
+    added: (name: string, meal: string, day: string) => `Added ${name} to ${meal}, ${day}.`,
+    addFailed: (name: string) => `${name} couldn't be added. Please try again.`,
+    manual: 'Enter food manually',
+    manualTitle: 'Enter food',
+    saveTo: (day: string) => `Save to ${day}`,
+  },
+
   form: {
     addTitle: 'Add food',
     recent: {
@@ -152,6 +205,24 @@ export const NUTRITION_COPY = {
       filled: (name: string) => `Filled in ${name}. Check the values, then save.`,
     },
     editTitle: 'Edit food',
+    close: 'Close',
+    servingSize: 'Serving size',
+    servingHint: (unit: string) => `In ${unit}, as recorded. Nutrition scales with the amount.`,
+    perServing: 'Nutrition per serving',
+    servings: 'Number of servings',
+    fewer: 'Fewer servings',
+    more: 'More servings',
+    total: 'Total',
+    mealLegend: 'Meal',
+    editDetails: 'Edit name and nutrition values',
+    portionErrors: {
+      'serving-required': 'Enter a serving size.',
+      'serving-not-a-number': 'Enter a number, like 100 or 1.5.',
+      'serving-not-positive': 'Enter a serving size above 0.',
+      'servings-out-of-range': 'Choose between 0.5 and 20 servings.',
+      'too-large': 'That’s more than one entry can hold. Use a smaller amount.',
+    },
+    totalUnavailable: 'Enter a serving size to see the total.',
     back: 'Nutrition',
     name: 'Food name',
     namePlaceholderHint: 'For example: Greek yogurt',

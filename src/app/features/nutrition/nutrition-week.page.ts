@@ -1,39 +1,53 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, resource } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, resource, signal } from '@angular/core';
+import { IonBackButton, IonIcon, NavController } from '@ionic/angular';
 
 import { NutritionService } from '../../core/nutrition/nutrition.service';
 import { IsoCalendarDate } from '../../domain/fitness-profile';
 import { shiftWeek, weekStartOf } from '../../domain/nutrition';
-import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, FitnessProgressComponent, LoadingSkeletonComponent } from '../../shared/ui';
+import {
+  EmptyStateComponent,
+  FitnessButtonComponent,
+  FitnessCardComponent,
+  LoadingSkeletonComponent,
+  PageLayoutComponent,
+  SegmentOption,
+  SegmentedControlComponent,
+} from '../../shared/ui';
+import { WeekAveragesComponent } from './components/week-averages.component';
+import { WeekBarChartComponent } from './components/week-bar-chart.component';
 import { WeekDayListComponent } from './components/week-day-list.component';
+import { WeekMetric, toWeekChart } from './nutrition-week-chart';
 import { NUTRITION_COPY } from './nutrition-content';
 import { NEW_FOOD_PATH, NUTRITION_PATH } from './nutrition-paths';
 import { NutritionWeekScreen, toNutritionWeekScreen } from './nutrition-week-view-model';
 import { suggestedMeal } from './nutrition-view-model';
 import { CLOCK } from '../../core/time/clock';
 
+type MacroMetric = Exclude<WeekMetric, 'calories'>;
+
 /**
- * One Monday–Sunday week of logged food: totals, the daily average over
- * logged days and a day-by-day breakdown, against the current daily targets
- * when they're available. Read-only; a day opens in the food log.
+ * One Monday–Sunday week of logged food: calories by day against the daily
+ * target, the daily average over logged days (with % of target where a
+ * target exists), a chosen macro by day, the total and a day-by-day list.
+ * Days without entries are never counted as zero. Read-only; a day opens in
+ * the food log, and "Day" returns to it.
  */
 @Component({
   selector: 'app-nutrition-week',
   templateUrl: './nutrition-week.page.html',
   styleUrl: './nutrition-week.page.scss',
+  host: { class: 'fit-theme-dashboard' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
-    IonContent,
     IonIcon,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
-    FitnessProgressComponent,
     LoadingSkeletonComponent,
+    PageLayoutComponent,
+    SegmentedControlComponent,
+    WeekAveragesComponent,
+    WeekBarChartComponent,
     WeekDayListComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,15 +73,31 @@ export class NutritionWeekPage {
 
   private readonly state = resource({
     params: () => ({ start: this.weekStart() }),
-    loader: async ({ params }) => toNutritionWeekScreen(await this.nutrition.week(params.start)),
+    loader: ({ params }) => this.nutrition.week(params.start),
   });
 
   /** Keeps the shown week while reloading (no flash back to the skeleton). */
   protected readonly screen = computed<NutritionWeekScreen>(() => {
     if (this.state.hasValue()) {
-      return this.state.value();
+      return toNutritionWeekScreen(this.state.value());
     }
     return this.state.error() ? { kind: 'error' } : { kind: 'loading' };
+  });
+
+  // UI state only.
+  protected readonly macro = signal<MacroMetric>('protein');
+  protected readonly macroOptions: readonly SegmentOption<MacroMetric>[] = [
+    { value: 'protein', label: 'Protein' },
+    { value: 'carbs', label: 'Carbs' },
+    { value: 'fat', label: 'Fat' },
+  ];
+  protected readonly calorieChart = computed(() => {
+    const s = this.state.hasValue() ? this.state.value() : null;
+    return s ? toWeekChart(s.week, s.targets, 'calories', s.today) : null;
+  });
+  protected readonly macroChart = computed(() => {
+    const s = this.state.hasValue() ? this.state.value() : null;
+    return s ? toWeekChart(s.week, s.targets, this.macro(), s.today) : null;
   });
 
   /** One persistent live region: loading, errors and the week after moving between weeks. */
@@ -119,6 +149,11 @@ export class NutritionWeekPage {
   /** Opens the day in the Nutrition food log (the dashboard shows the selected day). */
   protected async openDay(date: IsoCalendarDate): Promise<void> {
     await this.nutrition.load(date);
+    void this.nav.navigateBack(NUTRITION_PATH);
+  }
+
+  /** The day view, showing the day selected there (kept while the week is browsed). */
+  protected openDayView(): void {
     void this.nav.navigateBack(NUTRITION_PATH);
   }
 

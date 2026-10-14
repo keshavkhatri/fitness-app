@@ -1,0 +1,55 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.link-card {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: start;
+}
+
+.link-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 20px;
+}
+
+.link-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.link-title {
+  @include fx.text(body, semibold);
+}
+
+.link-detail {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.link-chevron {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+

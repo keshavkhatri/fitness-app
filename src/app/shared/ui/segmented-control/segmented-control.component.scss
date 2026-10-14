@@ -138,6 +138,7 @@ input {
 // Separate pills, the selection inverted; each as wide as its label (never wrapped).
 :host([data-variant='pills']) {
   fieldset {
+    flex-wrap: wrap;
     gap: var(--space-2);
     padding: 0;
     background: none;
@@ -151,9 +152,10 @@ input {
     background: var(--color-surface);
     color: var(--color-text);
 
+    // A screen can recolour the selection (e.g. lime on a dark screen).
     &.selected {
-      background: var(--color-text);
-      color: var(--color-bg);
+      background: var(--segment-selected-bg, var(--color-text));
+      color: var(--segment-selected-fg, var(--color-bg));
       box-shadow: none;
     }
   }

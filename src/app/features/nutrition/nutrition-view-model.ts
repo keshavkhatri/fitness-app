@@ -1,6 +1,6 @@
 import { NutritionState, TargetState } from '../../core/nutrition/nutrition.service';
 import { IsoCalendarDate, parseIsoCalendarDate, roundTo } from '../../domain/fitness-profile';
-import { FoodEntry, MealCategory, MealGroup, NutritionDay, NutritionValues, balance } from '../../domain/nutrition';
+import { FoodEntry, MealCategory, MealGroup, NutritionDay, NutritionValues, balance, weekDates, weekStartOf } from '../../domain/nutrition';
 import { dayLabel } from '../workout/history/history-view-model';
 import { MEAL_LABELS, NUTRITION_COPY, UNIT_LABELS } from './nutrition-content';
 
@@ -30,10 +30,26 @@ export function formatQuantity(quantity: number, unit: FoodEntry['unit']): strin
 // --- Date --------------------------------------------------------------------------------
 
 export interface DateHeaderView {
+  /** "Today", "Yesterday", "Monday, Oct 5" (announced when the day changes). */
   readonly label: string;
+  /** "Thu, 8 Oct" ("Thu, 8 Oct 2025" in another year): the date line above the day strip. */
+  readonly date: string;
   readonly isToday: boolean;
   /** Days after today aren't loggable. */
   readonly canGoNext: boolean;
+}
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
+const weekdayOf = (d: { year: number; month: number; day: number }) => WEEKDAYS[new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()];
+
+/** "Thu, 8 Oct", with the year when it isn't `year`. */
+export function shortDate(date: IsoCalendarDate, year?: number): string {
+  const d = parseIsoCalendarDate(date);
+  if (!d) {
+    return date;
+  }
+  return `${weekdayOf(d).slice(0, 3)}, ${d.day} ${MONTHS[d.month - 1].slice(0, 3)}${year === undefined || d.year === year ? '' : ` ${d.year}`}`;
 }
 
 export function toDateHeader(date: IsoCalendarDate, today: IsoCalendarDate): DateHeaderView {
@@ -41,9 +57,43 @@ export function toDateHeader(date: IsoCalendarDate, today: IsoCalendarDate): Dat
   const now = parseIsoCalendarDate(today);
   return {
     label: day && now ? dayLabel(day, now) : date,
+    date: shortDate(date, now?.year),
     isToday: date === today,
     canGoNext: date < today,
   };
+}
+
+export interface StripDayView {
+  readonly date: IsoCalendarDate;
+  /** "Mon" */
+  readonly weekday: string;
+  /** "8" */
+  readonly day: string;
+  readonly selected: boolean;
+  readonly isToday: boolean;
+  /** After today: nothing can be logged yet. */
+  readonly disabled: boolean;
+  /** "Thursday 8 October, today" */
+  readonly ariaLabel: string;
+}
+
+/** Monday–Sunday of the selected day's week, for choosing a day to show. */
+export function toDayStrip(selected: IsoCalendarDate, today: IsoCalendarDate): StripDayView[] {
+  const monday = weekStartOf(selected);
+  return (monday ? weekDates(monday) : []).map((date) => {
+    const d = parseIsoCalendarDate(date)!;
+    const weekday = weekdayOf(d);
+    const isToday = date === today;
+    return {
+      date,
+      weekday: weekday.slice(0, 3),
+      day: String(d.day),
+      selected: date === selected,
+      isToday,
+      disabled: date > today,
+      ariaLabel: `${weekday} ${d.day} ${MONTHS[d.month - 1]}${isToday ? `, ${copy.date.today.toLowerCase()}` : ''}`,
+    };
+  });
 }
 
 // --- Summaries ---------------------------------------------------------------------------
@@ -171,6 +221,8 @@ export interface MealView {
   readonly title: string;
   /** "330 kcal" */
   readonly subtotal: string;
+  /** What was logged ("Oats, Blueberries"), or "Nothing logged". */
+  readonly summary: string;
   readonly entries: readonly FoodRowView[];
   readonly addLabel: string;
 }
@@ -192,6 +244,7 @@ const toMeal = (group: MealGroup): MealView => ({
   meal: group.meal,
   title: MEAL_LABELS[group.meal],
   subtotal: `${formatKcal(group.totals.calories)} kcal`,
+  summary: group.entries.length ? group.entries.map((e) => e.name).join(', ') : copy.meals.empty,
   entries: group.entries.map(toFoodRow),
   addLabel: copy.meals.addTo(MEAL_LABELS[group.meal]),
 });

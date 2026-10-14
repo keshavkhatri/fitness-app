@@ -1,0 +1,38 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.nutrients {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.nutrient {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+
+  & + & {
+    border-inline-start: var(--border-hairline) solid var(--color-border);
+  }
+
+  dt {
+    @include fx.text(caption);
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    @include fx.text(body, bold);
+    @include fx.tabular-numbers;
+    margin: 0;
+    white-space: nowrap;
+  }
+}
+

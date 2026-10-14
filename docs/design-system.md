@@ -601,6 +601,51 @@ The Workout tab and the screens it opens (`features/workout`).
   switching tabs. Weighted exercises show a Set / Weight / Reps table; "Best set" uses
   the same rule.
 
+## Reference implementation: Nutrition
+
+`features/nutrition` (the Fuel tab, `/nutrition`) and `features/calorie-check-in`.
+Food comes only from the user's own log; targets only from the calculation engine
+(`NutritionService` → `TargetState`). Nothing is invented: no food database, barcode,
+photos or substitute targets. Food artwork is a neutral placeholder (`app-food-thumb`).
+
+- **Daily log (dashboard).** Custom header (h1, a calendar button to the week); the
+  selected date with previous / next day, and a Monday–Sunday strip of that week
+  (`toDayStrip`; days after today disabled). Every day control loads the one selected
+  date in `NutritionService`, which Add, Edit and Week also read. `app-day-summary`:
+  calories eaten in a gradient ring ("1,450 of 2,000 kcal", remaining or over, never a
+  negative remainder); without a target a plain ring with intake only and the notices'
+  actions (set up / review profile). Macro columns with bars where targets exist.
+  A lime **Log food** (suggested meal for the time of day). Meals as rows (what was
+  logged, subtotal): a meal with food expands to its entries (tap to edit) and Add Food;
+  an empty meal's row adds food. Calorie check-in as a link card.
+- **Add food (immersive, always dark).** `/nutrition/food/new?meal&date`; the day and meal
+  are shown and kept. Meal pills (`pills` with `--segment-selected-bg` lime). Search over
+  Recent foods only (the last 30 days, de-duplicated; case- and accent-insensitive, every
+  word must match) with clear, loading, none, no-match and error states. Rows: the food
+  (opens it in the form to change first) and a lime + that logs it again as it was —
+  disabled while saving and for 1.5 s after (a check), so a double tap never logs twice;
+  the result is announced. "Enter food manually" opens the shared `app-food-form`. No
+  Meals / Recipes / My foods categories or barcode exist, so none are shown.
+- **Edit food (dashboard).** Close, title, Delete (confirmation sheet). The food's name
+  and day · meal; serving size in the entry's own unit, nutrition per serving, a number
+  of servings stepper (0.5 steps) and live totals, all from the domain (`foodPortion`:
+  recorded values scaled by amount; a missing or unreadable size shows no total, never
+  zero). Meal pills. Save updates the same entry (`NutritionService.update`, same id).
+  "Edit name and nutrition values" switches to the full form for anything else.
+- **Week (dashboard).** Back, h1, a Day / Week switch (Day returns to the daily log),
+  the week range with previous / next. Calories by day (`toWeekChart`): food as a lime
+  bar, the daily target as a dashed outline (legend "Food / Daily target / – Not logged");
+  a day without entries has no bar and a dash, never a zero. Average this week over
+  logged days only: calories with the difference from the target (arrow, %), macros with
+  % of target and a bar — only where a target exists. Macros by day (Protein / Carbs /
+  Fat pills), the total, and the day list (opens a day). Charts are `aria-hidden` with an
+  equivalent spoken list.
+- **Calorie check-in (dashboard).** Restyled only: back button, a lime badge, white
+  cards, the estimate on soft lime, the outcome on lime. Content, order, the confirm
+  sheets and what is saved are unchanged. It is an evidence review (logged intake vs
+  weight trend → estimated maintenance → a proposed target saved only after
+  confirmation), not a rating scale.
+
 ## Open design decisions
 
 - Domain hues (ember for training, teal for body) stay alongside lime

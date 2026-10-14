@@ -1,0 +1,82 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.foods {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.food {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: var(--border-hairline) solid var(--color-border);
+}
+
+.food-main {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 64px;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-md);
+  text-align: start;
+
+  app-food-thumb {
+    --thumb-size: 52px;
+    --thumb-radius: var(--radius-pill);
+  }
+}
+
+.food-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.food-name {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.food-detail {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+}
+
+.food-add {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  width: 44px;
+  height: 44px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 22px;
+
+  &[disabled] {
+    opacity: 0.6;
+  }
+
+  &.done {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-text);
+    opacity: 1;
+  }
+}
+

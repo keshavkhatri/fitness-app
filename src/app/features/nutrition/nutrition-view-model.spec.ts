@@ -1,7 +1,7 @@
 import { NutritionState, TargetState } from '../../core/nutrition/nutrition.service';
 import { FoodEntry, FoodEntryInput, createFoodEntry, nutritionDay, validateFoodEntryInput } from '../../domain/nutrition';
 import { emptyFoodForm, foodFormOf, formErrorsOf, parseNumberField, readFoodForm } from './food-form';
-import { formatQuantity, suggestedMeal, toDateHeader, toDaySummary, toFoodRow, toNutritionScreen } from './nutrition-view-model';
+import { formatQuantity, suggestedMeal, toDateHeader, toDayStrip, toDaySummary, toFoodRow, toNutritionScreen } from './nutrition-view-model';
 
 const INPUT: FoodEntryInput = { name: 'Oats', quantity: 60, unit: 'g', meal: 'breakfast', calories: 230, proteinGrams: 8, carbohydrateGrams: 40, fatGrams: 4 };
 const food = (id: string, overrides: Partial<FoodEntryInput> = {}): FoodEntry => {
@@ -75,6 +75,7 @@ describe('nutrition view model', () => {
       ariaLabel: 'Edit Chicken, 1.5 servings, 330 kcal, 62.1 g protein',
     });
     expect(s.meals[1].addLabel).toBe('Add food to Lunch');
+    expect(s.meals.map((m) => m.summary)).toEqual(['Oats', 'Nothing logged', 'Chicken', 'Nothing logged']);
     expect(s.isEmpty).toBe(false);
   });
 
@@ -128,10 +129,21 @@ describe('nutrition view model', () => {
   });
 
   it('date header: today, yesterday, older; never past today', () => {
-    expect(toDateHeader('2026-10-08', '2026-10-08')).toEqual({ label: 'Today', isToday: true, canGoNext: false });
-    expect(toDateHeader('2026-10-07', '2026-10-08')).toEqual({ label: 'Yesterday', isToday: false, canGoNext: true });
+    expect(toDateHeader('2026-10-08', '2026-10-08')).toEqual({ label: 'Today', date: 'Thu, 8 Oct', isToday: true, canGoNext: false });
+    expect(toDateHeader('2026-10-07', '2026-10-08')).toEqual({ label: 'Yesterday', date: 'Wed, 7 Oct', isToday: false, canGoNext: true });
     expect(toDateHeader('2026-10-05', '2026-10-08').label).toBe('Monday, Oct 5');
-    expect(toDateHeader('2025-12-31', '2026-01-01').label).toBe('Yesterday');
+    expect(toDateHeader('2025-12-31', '2026-01-01')).toMatchObject({ label: 'Yesterday', date: 'Wed, 31 Dec 2025' });
+  });
+
+  it('day strip: Monday–Sunday of the selected day’s week; days after today disabled', () => {
+    const strip = toDayStrip('2026-10-06', '2026-10-08');
+    expect(strip.map((d) => `${d.weekday} ${d.day}`)).toEqual(['Mon 5', 'Tue 6', 'Wed 7', 'Thu 8', 'Fri 9', 'Sat 10', 'Sun 11']);
+    expect(strip.filter((d) => d.selected).map((d) => d.date)).toEqual(['2026-10-06']);
+    expect(strip.filter((d) => d.isToday).map((d) => d.ariaLabel)).toEqual(['Thursday 8 October, today']);
+    expect(strip.map((d) => d.disabled)).toEqual([false, false, false, false, true, true, true]);
+    // A week across a month and year boundary.
+    expect(toDayStrip('2026-12-31', '2027-01-10').map((d) => d.day)).toEqual(['28', '29', '30', '31', '1', '2', '3']);
+    expect(toDayStrip('not-a-date', '2026-10-08')).toEqual([]);
   });
 
   it('formats quantities and suggests a meal by local time', () => {

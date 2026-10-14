@@ -20,9 +20,10 @@ export default [
   },
   {
     // Query parameters: `meal` (breakfast|lunch|dinner|snacks), `date` (YYYY-MM-DD).
+    // Search of recent foods with one-tap add, or a food entered manually.
     path: 'food/new',
     title: 'Add food',
-    loadComponent: () => import('./food-entry.page').then((m) => m.FoodEntryPage),
+    loadComponent: () => import('./add-food.page').then((m) => m.AddFoodPage),
   },
   {
     // `entryId` is the food entry's stable id; query parameter `date` (YYYY-MM-DD).

@@ -1,11 +1,23 @@
 @let m = meal();
 <section class="meal" [attr.aria-labelledby]="'meal-' + m.meal" [attr.data-testid]="'meal-' + m.meal">
-  <header class="meal-header">
-    <h2 class="meal-title" [id]="'meal-' + m.meal">{{ m.title }}</h2>
-    <span class="meal-subtotal" data-testid="meal-subtotal">{{ m.subtotal }}</span>
-  </header>
   @if (m.entries.length > 0) {
-    <fit-card padding="none">
+    <button
+      type="button"
+      class="row"
+      [attr.aria-expanded]="open()"
+      [attr.aria-controls]="'meal-foods-' + m.meal"
+      data-testid="meal-toggle"
+      (click)="open.set(!open())"
+    >
+      <app-food-thumb class="thumb" />
+      <span class="text">
+        <span class="title" [id]="'meal-' + m.meal">{{ m.title }}</span>&ngsp;
+        <span class="summary">{{ m.summary }}</span>
+      </span>&ngsp;
+      <span class="kcal" data-testid="meal-subtotal">{{ m.subtotal }}</span>
+      <ion-icon class="chevron" [class.open]="open()" name="chevron-forward" aria-hidden="true" />
+    </button>
+    <div class="panel" [id]="'meal-foods-' + m.meal" [hidden]="!open()">
       <ul class="foods">
         @for (food of m.entries; track food.id) {
           <li>
@@ -19,13 +31,18 @@
           </li>
         }
       </ul>
-      <button type="button" class="add-food" [attr.aria-label]="m.addLabel" data-testid="add-food" (click)="addFood.emit()">
+      <button type="button" class="add" [attr.aria-label]="m.addLabel" data-testid="add-food" (click)="addFood.emit()">
         <ion-icon name="add" aria-hidden="true" />{{ addText() }}
       </button>
-    </fit-card>
+    </div>
   } @else {
-    <button type="button" class="add-food compact" [attr.aria-label]="m.addLabel" data-testid="add-food" (click)="addFood.emit()">
-      <ion-icon name="add" aria-hidden="true" />{{ addText() }}
+    <button type="button" class="row" [attr.aria-label]="m.addLabel" data-testid="add-food" (click)="addFood.emit()">
+      <app-food-thumb class="thumb" />
+      <span class="text">
+        <span class="title" [id]="'meal-' + m.meal">{{ m.title }}</span>&ngsp;
+        <span class="summary">{{ m.summary }}</span>
+      </span>
+      <span class="quick-add" aria-hidden="true"><ion-icon name="add" /></span>
     </button>
   }
 </section>
