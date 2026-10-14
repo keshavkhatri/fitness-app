@@ -1,4 +1,4 @@
-import { ConfidenceLevel } from '../../domain/fitness-calculations';
+import { BmrSexBasis, ConfidenceLevel } from '../../domain/fitness-calculations';
 import { PrimaryGoal } from '../../domain/fitness-profile';
 
 /**
@@ -16,8 +16,8 @@ export const GOAL_LABELS: Readonly<Record<PrimaryGoal, string>> = {
 };
 
 export const ASSESSMENT_COPY = {
-  title: 'Your starting point',
-  intro: "Based on the information you shared, here's your initial fitness profile.",
+  title: 'Your assessment results',
+  intro: 'Based on your profile, goal and activity level, here are your starting targets.',
 
   energy: {
     targetLabel: 'Starting calorie target',
@@ -70,7 +70,18 @@ export const ASSESSMENT_COPY = {
     },
   },
 
+  views: {
+    macros: { title: 'Your macro targets', intro: 'How your daily calories are divided between protein, carbohydrates and fat.' },
+    why: { title: 'Why these numbers?', intro: 'Your targets are calculated step by step from your profile, activity level and goal.' },
+    next: { title: 'Your next steps', intro: "You're all set. Here's how to get started." },
+  },
+
   actions: {
+    viewMacros: 'View macro breakdown',
+    viewWhy: 'Why these numbers?',
+    viewNext: 'See your next steps',
+    goHome: 'Go to Home',
+    viewAgain: 'View assessment again',
     continue: 'Continue',
     review: 'Review my details',
     continueAnyway: 'Continue for now',
@@ -92,4 +103,46 @@ export const CONFIDENCE_COPY: Readonly<Record<Exclude<ConfidenceLevel, 'high'>, 
     description:
       "Some details weren't provided, so these estimates are less precise and your real needs may differ more than usual. They'll improve as we learn from your progress.",
   },
+};
+
+/** Plain-language labels for each step of the calculation (Why these numbers?). */
+export const WHY_COPY = {
+  bmr: { label: 'Resting energy (BMR)', caption: 'Calories your body uses at rest' },
+  activity: {
+    label: 'Activity factor',
+    caption: (level: string) => `For your activity level (${level}): how much more energy a typical day uses than rest`,
+  },
+  maintenance: {
+    label: 'Maintenance',
+    formulaLabel: 'Estimated maintenance',
+    caption: 'Resting energy × activity factor: about what you use in a day',
+  },
+  checkIn: { label: 'Maintenance from your check-in' },
+  goal: {
+    label: 'Goal adjustment',
+    deficit: (percent: string, goal: string) => `A ${percent} deficit below maintenance, for your goal to ${goal}`,
+    surplus: (percent: string, goal: string) => `A ${percent} surplus above maintenance, for your goal to ${goal}`,
+    none: (goal: string) => `None: your goal to ${goal} starts at maintenance`,
+  },
+  target: {
+    label: 'Target daily intake',
+    caption: 'Maintenance + goal adjustment',
+    floorCaption: 'Raised to a steadier starting point (see below)',
+  },
+  sexBasis: {
+    male: 'Male',
+    female: 'Female',
+    'sex-neutral-midpoint': 'Not specified (a midpoint is used)',
+  } satisfies Readonly<Record<BmrSexBasis, string>>,
+  factorsTitle: 'Factors we consider',
+  confidenceTitle: 'Estimate confidence',
+} as const;
+
+/** How the macro split serves each goal (Macro breakdown). */
+export const GOAL_FOCUS_COPY: Readonly<Record<PrimaryGoal, string>> = {
+  'lose-fat': 'Protein is set to help keep your muscle while you lose fat. Fat covers a steady share, and carbohydrates fill the rest.',
+  'build-muscle': 'Protein is set to support muscle growth. Fat covers a steady share, and carbohydrates fill the rest to fuel training.',
+  recomposition: 'Protein is set to support building muscle while losing fat. Fat covers a steady share, and carbohydrates fill the rest.',
+  'get-stronger': 'Protein is set to support strength training. Fat covers a steady share, and carbohydrates fill the rest to fuel your sessions.',
+  'improve-fitness': 'Protein is set to support your training. Fat covers a steady share, and carbohydrates fill the rest for everyday energy.',
 };

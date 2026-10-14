@@ -1,0 +1,68 @@
+@use 'mixins' as fx;
+@use 'view';
+
+// Why view, second sheet (kept apart for the style budget): the collapsible inputs.
+
+// --- Factors ----------------------------------------------------------------------------------
+.factors {
+  @include view.card;
+}
+
+.factors-heading {
+  margin: 0;
+}
+
+.factors-toggle {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body, semibold);
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target-min);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+
+  span {
+    flex: 1;
+  }
+
+  ion-icon {
+    font-size: 20px;
+    color: var(--color-text-secondary);
+  }
+
+  .chevron {
+    transition: transform var(--motion-duration-fast) var(--motion-ease);
+  }
+
+  &[aria-expanded='true'] .chevron {
+    transform: rotate(180deg);
+  }
+}
+
+.factor-list {
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+.factor {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: var(--border-hairline) solid var(--color-border);
+
+  dt {
+    @include fx.text(body-sm);
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    @include fx.text(body-sm, semibold);
+    margin: 0;
+    text-align: end;
+  }
+}

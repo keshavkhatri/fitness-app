@@ -1,0 +1,161 @@
+@use 'mixins' as fx;
+@use 'view';
+
+:host {
+  @include view.host;
+  @include view.macro-colors;
+}
+
+.header {
+  @include view.header;
+}
+
+.title {
+  @include view.title;
+}
+
+.lead {
+  @include view.lead;
+}
+
+// --- Donut ------------------------------------------------------------------------------------
+.chart {
+  position: relative;
+  align-self: center;
+  width: min(220px, 62vw);
+  margin: var(--space-2) 0;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform: rotate(-90deg); // slices start at 12 o'clock
+  }
+}
+
+.track,
+.slice {
+  fill: none;
+  stroke-width: 18;
+}
+
+.track {
+  stroke: var(--color-track);
+}
+
+.slice {
+  &[data-macro='protein'] {
+    stroke: var(--macro-protein);
+  }
+
+  &[data-macro='carbohydrate'] {
+    stroke: var(--macro-carbohydrate);
+  }
+
+  &[data-macro='fat'] {
+    stroke: var(--macro-fat);
+  }
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.total {
+  @include fx.text(h1, bold);
+  @include fx.tabular-numbers;
+}
+
+.total-unit {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+// --- Rows -------------------------------------------------------------------------------------
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  @include view.card;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.icon {
+  @include view.icon-badge;
+}
+
+.row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row-label {
+  @include fx.text(body-sm, semibold);
+}
+
+.row-grams {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+}
+
+.row-detail {
+  @include fx.text(caption);
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+}
+
+// Ties the row to its slice (shape and position, not colour alone: the row also names it).
+.swatch {
+  flex-shrink: 0;
+  width: 12px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+
+  [data-macro='protein'] & {
+    background: var(--macro-protein);
+  }
+
+  [data-macro='carbohydrate'] & {
+    background: var(--macro-carbohydrate);
+  }
+
+  [data-macro='fat'] & {
+    background: var(--macro-fat);
+  }
+}
+
+.focus {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+
+  ion-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+    color: var(--color-primary-text);
+  }
+
+  p {
+    @include fx.text(body-sm);
+    margin: 0;
+  }
+}

@@ -86,6 +86,13 @@ import {
   ellipsisHorizontalOutline,
   chevronForwardCircle,
   bulbOutline,
+  arrowForward,
+  fishOutline,
+  waterOutline,
+  locateOutline,
+  calculatorOutline,
+  checkmarkDoneOutline,
+  optionsOutline,
 } from 'ionicons/icons';
 
 /**
@@ -181,5 +188,12 @@ export function registerAppIcons(): void {
     ellipsisHorizontalOutline,
     chevronForwardCircle,
     bulbOutline,
+    arrowForward,
+    fishOutline,
+    waterOutline,
+    locateOutline,
+    calculatorOutline,
+    checkmarkDoneOutline,
+    optionsOutline,
 });
 }

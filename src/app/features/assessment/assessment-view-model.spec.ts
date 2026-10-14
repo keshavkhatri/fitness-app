@@ -50,21 +50,38 @@ describe('toAssessmentViewModel', () => {
       expect(calibrated.energy.calorieTarget).toMatchObject({ kind: 'target', kcal: '2,125' });
     });
 
-    it('shows gram targets with approximate calorie shares', () => {
-      expect(view.macros).toEqual({
+    it('shows gram targets with their calorie shares and kcal, protein first, from the engine’s grams', () => {
+      expect(view.macros).toMatchObject({
         kind: 'grams',
         notice: null,
+        totalKcal: '2,306',
         rows: [
-          { key: 'protein', label: 'Protein', grams: '144 g', share: 'About 25% of calories' },
-          { key: 'fat', label: 'Fat', grams: '77 g', share: 'About 30% of calories' },
-          { key: 'carbohydrate', label: 'Carbohydrates', grams: '259 g', share: 'About 45% of calories' },
+          { key: 'protein', label: 'Protein', grams: '144 g', share: 'About 25% of calories', percent: '25%', kcal: '576 kcal' },
+          { key: 'carbohydrate', label: 'Carbohydrates', grams: '259 g', share: 'About 45% of calories', percent: '45%', kcal: '1,036 kcal' },
+          { key: 'fat', label: 'Fat', grams: '77 g', share: 'About 30% of calories', percent: '30%', kcal: '693 kcal' },
         ],
       });
+    });
+
+    it('gives chart fractions of the macros’ own calories, so the ring closes', () => {
+      const rows = view.macros.kind === 'grams' ? view.macros.rows : [];
+      expect(rows.reduce((sum, row) => sum + row.fraction, 0)).toBeCloseTo(1, 10);
+      expect(rows[0].fraction).toBeCloseTo(576 / (576 + 1036 + 693), 10);
+    });
+
+    it('relates the split to the goal', () => {
+      expect(view.macros.kind === 'grams' && view.macros.focus).toContain('keep your muscle while you lose fat');
+    });
+
+    it('shows weight, height and activity from the profile', () => {
+      expect(view.profile).toEqual({ weight: '80 kg', height: '180 cm', activity: 'Moderately active', activityDetail: 'Active job or regular movement' });
+      expect(viewFor({ ...NORMAL_PROFILE, unitSystem: 'imperial' }).profile).toMatchObject({ weight: '176.4 lb', height: '5 ft 11 in' });
     });
 
     it('does not require review and uses moderate confidence copy', () => {
       expect(view.requiresReview).toBe(false);
       expect(view.confidence).toEqual({
+        level: 'moderate',
         label: 'Moderate',
         description: 'These are formula-based estimates using the information you provided.',
       });
@@ -75,6 +92,62 @@ describe('toAssessmentViewModel', () => {
       for (const term of ['Mifflin', 'multiplier', 'BMI', 'threshold', 'adjusted', 'TDEE', 'safeguard']) {
         expect(allText(view)).not.toContain(term);
       }
+    });
+  });
+
+  describe('calculation (Why these numbers?)', () => {
+    const steps = (v: ReturnType<typeof viewFor>) => Object.fromEntries(v.calculation.steps.map((step) => [step.key, step.value]));
+
+    it('shows each step with the engine’s own values, ending at the target', () => {
+      const view = viewFor(NORMAL_PROFILE);
+      expect(view.calculation.steps.map((step) => step.key)).toEqual(['bmr', 'activity', 'maintenance', 'goal', 'target']);
+      expect(steps(view)).toEqual({ bmr: '1,750 kcal', activity: '1.55×', maintenance: '2,713 kcal', goal: '−407 kcal', target: '2,306 kcal' });
+      // The adjustment is the difference between two engine values: maintenance + adjustment = target.
+      expect(2713 - 407).toBe(2306);
+      expect(view.calculation.steps.find((step) => step.key === 'goal')?.caption).toBe('A 15% deficit below maintenance, for your goal to lose fat');
+      expect(view.calculation.notice).toBeNull();
+    });
+
+    it('describes a surplus, and no adjustment, in words', () => {
+      const muscle = viewFor(profileWith({ primaryGoal: 'build-muscle', goalTarget: { targetWeight: null } }));
+      expect(muscle.calculation.steps.find((step) => step.key === 'goal')?.caption).toBe('A 7.5% surplus above maintenance, for your goal to build muscle');
+      expect(steps(muscle)['goal']).toMatch(/^\+\d/);
+      const strength = viewFor(profileWith({ primaryGoal: 'get-stronger', goalTarget: { targetWeight: null } }));
+      expect(steps(strength)['goal']).toBe('0 kcal');
+      expect(steps(strength)['target']).toBe(steps(strength)['maintenance']);
+    });
+
+    it('with a Calorie Check-in, shows the formula estimate and the check-in maintenance the target is built on', () => {
+      const view = viewFor({
+        ...NORMAL_PROFILE,
+        energyCalibration: { maintenanceKcal: 2500, observedFrom: '2026-09-01', observedTo: '2026-09-28', acceptedAt: '2026-09-29T12:00:00.000Z' },
+      });
+      expect(view.calculation.steps.map((step) => step.key)).toEqual(['bmr', 'activity', 'maintenance', 'check-in', 'goal', 'target']);
+      expect(steps(view)).toMatchObject({ maintenance: '2,713 kcal', 'check-in': '2,500 kcal', goal: '−375 kcal', target: '2,125 kcal' });
+    });
+
+    it('floor-applied: explains why the target is above the plain adjustment', () => {
+      const view = viewFor(FLOOR_APPLIED_PROFILE);
+      expect(steps(view)['target']).toBe('1,200 kcal');
+      expect(view.calculation.notice?.title).toBe('A steadier starting target');
+    });
+
+    it('review-required: no target step, the review notice instead', () => {
+      const view = viewFor(REVIEW_REQUIRED_PROFILE);
+      expect(view.calculation.steps.map((step) => step.key)).not.toContain('target');
+      expect(view.calculation.notice?.title).toBe('Your numbers need a second look');
+    });
+
+    it('lists the inputs it used, including the sex basis', () => {
+      expect(viewFor(NORMAL_PROFILE).calculation.factors).toEqual([
+        { label: 'Age', value: '36 years' },
+        { label: 'Sex used for the estimate', value: 'Male' },
+        { label: 'Height', value: '180 cm' },
+        { label: 'Weight', value: '80 kg' },
+        { label: 'Activity level', value: 'Moderately active' },
+        { label: 'Goal', value: 'Lose fat' },
+      ]);
+      expect(viewFor(profileWith({ sex: 'prefer-not-to-say' })).calculation.factors[1].value).toBe('Not specified (a midpoint is used)');
     });
   });
 

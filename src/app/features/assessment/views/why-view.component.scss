@@ -1,0 +1,124 @@
+@use 'mixins' as fx;
+@use 'view';
+
+:host {
+  @include view.host;
+}
+
+.header {
+  @include view.header;
+}
+
+.title {
+  @include view.title;
+}
+
+.lead {
+  @include view.lead;
+}
+
+// --- Steps ------------------------------------------------------------------------------------
+.steps {
+  @include view.card;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+
+  & + & {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+
+  &.target {
+    background: rgba(var(--color-ink-accent-rgb), 0.12);
+    box-shadow: inset 0 0 0 1px rgba(var(--color-ink-accent-rgb), 0.35);
+
+    .step-label,
+    .step-value {
+      color: var(--color-ink-accent);
+    }
+
+    .step-value {
+      @include fx.text(h3, bold);
+    }
+  }
+}
+
+.icon {
+  @include view.icon-badge;
+  background: var(--color-surface-muted);
+  color: var(--color-ink-accent);
+
+  .target & {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
+
+.step-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.step-label {
+  @include fx.text(body, semibold);
+}
+
+.step-caption {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.step-value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+// --- Confidence -------------------------------------------------------------------------------
+.confidence {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 0 var(--space-1);
+
+  > ion-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 22px;
+    color: var(--color-ink-accent);
+  }
+}
+
+.confidence-title {
+  @include fx.text(body, semibold);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.pill {
+  @include fx.text(caption, semibold);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.confidence-text {
+  @include fx.text(body-sm);
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+}
