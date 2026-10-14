@@ -1,78 +1,89 @@
 @use 'mixins' as fx;
+@use 'views' as view;
+
+:host {
+  // Lime selection on the filter chips.
+  --segment-selected-bg: var(--color-primary);
+  --segment-selected-fg: var(--color-on-primary);
+  // One row of chips; on narrow screens it scrolls sideways rather than wrapping.
+  --segment-wrap: nowrap;
+  --segment-flex: 0 0 auto;
+}
 
 ion-toolbar {
   --background: var(--color-bg);
+  --min-height: var(--tap-target-min);
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
 }
 
 ion-content {
   --background: var(--color-bg);
 }
 
-.list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li + li {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
-}
-
-.item {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
+.toolbar {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: var(--tap-target-lg);
-  padding: var(--space-4);
+  justify-content: space-between;
+  min-height: var(--tap-target-min);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) 0 var(--space-2);
 }
 
-.icon {
+.icon-button,
+.mark-all {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  min-height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
+.icon-button {
   display: grid;
-  flex: none;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
-  font-size: var(--icon-size-md);
+  width: var(--tap-target-min);
+  font-size: 24px;
+}
 
-  &[data-tone='train'] {
-    background: var(--color-train-soft);
-    color: var(--color-train-text);
+.mark-all {
+  @include fx.text(body-sm, semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+
+  ion-icon {
+    font-size: 18px;
   }
 
-  &[data-tone='body'] {
-    background: var(--color-body-soft);
-    color: var(--color-body-text);
+  &:disabled {
+    opacity: 0.5;
   }
 }
 
-.text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
+.body {
+  @include view.host;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) calc(var(--space-8) + var(--ion-safe-area-bottom, 0px));
 }
 
 .title {
-  @include fx.text(body, semibold);
+  @include view.title;
 }
 
-.message {
-  @include fx.text(body-sm);
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.group {
+  @include fx.text(body-sm, semibold);
+  margin: 0 0 var(--space-2);
   color: var(--color-text-secondary);
-}
-
-.new {
-  @include fx.text(caption, semibold);
-  flex: none;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
 }

@@ -44,6 +44,21 @@ export class NotificationInboxService {
     return this.read().has(id);
   }
 
+  /** One of the current items, by id (null when it isn't today's any more). */
+  find(id: string): AppNotification | null {
+    return this.current().find((n) => n.id === id) ?? null;
+  }
+
+  /** Marks one item read (its detail was opened). A failed write keeps it unread. */
+  async markRead(id: string): Promise<void> {
+    if (this.read().has(id)) {
+      return;
+    }
+    const ids = [...this.read(), id].slice(-READ_LIMIT);
+    await this.storage.set(READ_KEY, JSON.stringify({ version: SCHEMA_VERSION, ids }));
+    this.read.set(new Set(ids));
+  }
+
   async refresh(): Promise<readonly AppNotification[]> {
     const now = this.clock();
     const today = localIsoDate(now);
@@ -76,7 +91,7 @@ export class NotificationInboxService {
     return items;
   }
 
-  /** Marks every current item read (the inbox was opened). A failed write keeps them unread. */
+  /** Marks every current item read ("Mark all read"). A failed write keeps them unread. */
   async markAllRead(): Promise<void> {
     const ids = [...new Set([...this.read(), ...this.current().map((n) => n.id)])].slice(-READ_LIMIT);
     await this.storage.set(READ_KEY, JSON.stringify({ version: SCHEMA_VERSION, ids }));

@@ -138,14 +138,17 @@ input {
 // Separate pills, the selection inverted; each as wide as its label (never wrapped).
 :host([data-variant='pills']) {
   fieldset {
-    flex-wrap: wrap;
+    // A screen can keep the pills on one row that scrolls sideways (--segment-wrap: nowrap).
+    flex-wrap: var(--segment-wrap, wrap);
     gap: var(--space-2);
     padding: 0;
+    overflow-x: auto;
     background: none;
+    scrollbar-width: none;
   }
 
   .segment {
-    flex: 1 1 auto;
+    flex: var(--segment-flex, 1 1 auto);
     padding: 0 var(--space-3);
     white-space: nowrap;
     border-radius: var(--radius-pill);

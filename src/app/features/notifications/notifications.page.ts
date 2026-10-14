@@ -1,105 +1,200 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { IonContent, IonHeader, IonIcon, IonToolbar, NavController } from '@ionic/angular';
 
-import { CLOCK, localIsoDate } from '../../core/time/clock';
-import { EmptyStateComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../shared/ui';
-import { NEW_WEIGHT_PATH } from '../body-weight/weight-history-paths';
-import { NEW_FOOD_PATH } from '../nutrition/nutrition-paths';
-import { activeWorkoutPath, workoutSessionPath } from '../workout/workout-paths';
+import { ThemeService } from '../../core/theme/theme.service';
+import { LoadingSkeletonComponent, SegmentOption, SegmentedControlComponent } from '../../shared/ui';
+import { notificationPath } from './notification-actions';
 import { NotificationInboxService } from './notification-inbox.service';
-import { AppNotification } from './notifications';
+import { AppNotification, CATEGORY_LABELS, NotificationFilter, filterNotifications, isNotificationFilter } from './notifications';
 
-export const NOTIFICATIONS_PATH = '/home/notifications';
-/** Home opens its recovery check-in when navigated to with this query param. */
-export const CHECK_IN_QUERY = { checkIn: 'recovery' } as const;
+export { CHECK_IN_QUERY, NOTIFICATIONS_PATH } from './notification-actions';
+
+const FILTER_OPTIONS: readonly SegmentOption<NotificationFilter>[] = [
+  { value: 'all', label: 'All' },
+  { value: 'unread', label: 'Unread' },
+  { value: 'workout', label: 'Workouts' },
+  { value: 'nutrition', label: 'Nutrition' },
+];
+
+/** What each filter says when it has nothing to show. */
+const EMPTY: Readonly<Record<NotificationFilter | 'none', { readonly title: string; readonly text: string }>> = {
+  none: { title: 'No notifications yet', text: "Reminders about today's training, food, recovery and weigh-ins appear here when there's something to do." },
+  all: { title: 'No notifications yet', text: "Reminders about today's training, food, recovery and weigh-ins appear here when there's something to do." },
+  unread: { title: 'All caught up!', text: "You've seen all your notifications." },
+  workout: { title: 'No workout notifications', text: 'Reminders about planned and in-progress workouts appear here.' },
+  nutrition: { title: 'No nutrition notifications', text: 'A reminder appears here on days nothing has been logged yet.' },
+};
 
 /**
- * The notification inbox (Home's bell). Opening it marks every reminder read;
- * the ones that were new keep a "New" marker while the page is open.
+ * The notification inbox (Home's bell): today's reminders, built from the
+ * user's own data (see NotificationInboxService), filtered by All, Unread,
+ * Workouts or Nutrition. A reminder is marked read when its detail is opened,
+ * or with "Mark all read"; filtering never changes read state.
+ *
+ * The filter is the `filter` query parameter, so it survives opening a
+ * detail and coming back. Dark when it lists everything or the unread ones;
+ * the category filters and the empty inbox use the warm light theme.
  */
 @Component({
   selector: 'app-notifications',
   template: `
-    <ion-header class="ion-no-border subpage-header">
+    <ion-header class="ion-no-border">
       <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-back-button defaultHref="/home" text="Home" />
-        </ion-buttons>
-        <ion-title>Notifications</ion-title>
+        <div class="toolbar">
+          <button type="button" class="icon-button" aria-label="Back to Home" (click)="backHome()">
+            <ion-icon name="chevron-back" aria-hidden="true" />
+          </button>
+          @if (inbox.unreadCount() > 0) {
+            <button type="button" class="mark-all" data-testid="mark-all-read" [disabled]="markingAll()" (click)="markAllRead()">
+              <ion-icon name="checkmark-done-outline" aria-hidden="true" />
+              Mark all read
+            </button>
+          }
+        </div>
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <div class="page-body">
+      <main class="body">
+        <h1 class="title">Notifications</h1>
+        <fit-segmented-control
+          class="filters"
+          name="notification-filter"
+          legend="Show notifications"
+          variant="pills"
+          [options]="filterOptions"
+          [value]="activeFilter()"
+          (valueChange)="setFilter($event)"
+        />
+
         @if (loading()) {
-          <div aria-busy="true"><span class="visually-hidden">Loading notifications</span><fit-skeleton height="72px" radius="card" /></div>
-        } @else if (inbox.items().length === 0) {
-          <fit-empty-state icon="notifications-outline" title="You're all caught up" description="Reminders about today's training, food and check-ins appear here." />
-        } @else {
-          <fit-card padding="none">
-            <ul class="list">
-              @for (item of inbox.items(); track item.id) {
+          <div class="loading" aria-busy="true">
+            <span class="visually-hidden" role="status">Loading notifications</span>
+            <fit-skeleton height="84px" radius="card" />
+            <fit-skeleton height="84px" radius="card" />
+          </div>
+        } @else if (visible().length) {
+          <section aria-labelledby="notifications-today">
+            <h2 class="group" id="notifications-today">Today</h2>
+            <ul class="list" data-testid="notification-list">
+              @for (item of visible(); track item.id) {
+                @let unread = !inbox.isRead(item.id);
                 <li>
-                  <button type="button" class="item" [attr.data-testid]="'notification-' + item.id.split(':')[0]" (click)="open(item)">
-                    <span class="icon" [attr.data-tone]="item.tone" aria-hidden="true"><ion-icon [name]="item.icon" /></span>
+                  <button
+                    type="button"
+                    class="item"
+                    [class.unread]="unread"
+                    [attr.data-testid]="'notification-' + item.id.split(':')[0]"
+                    (click)="open(item)"
+                  >
+                    <span class="icon" [attr.data-category]="item.category" aria-hidden="true"><ion-icon [name]="item.icon" /></span>
                     <span class="text">
-                      <span class="title">{{ item.title }}</span>
+                      <span class="title-row">
+                        <span class="item-title">{{ item.title }}</span>
+                        @if (unread) {
+                          <span class="dot" aria-hidden="true"></span>
+                        }
+                      </span>&ngsp;
                       <span class="message">{{ item.message }}</span>
+                      <span class="visually-hidden">. {{ categoryLabels[item.category] }}, today{{ unread ? ', unread' : '' }}.</span>
                     </span>
-                    @if (wasNew().has(item.id)) {
-                      <span class="new">New</span>
-                    }
+                    <span class="meta" aria-hidden="true">
+                      <span class="time">Today</span>
+                      <ion-icon name="chevron-forward" />
+                    </span>
                   </button>
                 </li>
               }
             </ul>
-          </fit-card>
+          </section>
+        } @else {
+          @let empty = emptyCopy();
+          <div class="empty" data-testid="notifications-empty">
+            <span class="bell" aria-hidden="true"><ion-icon [name]="activeFilter() === 'unread' && hasAny() ? 'checkmark-done-outline' : 'notifications-outline'" /></span>
+            <h2 class="empty-title">{{ empty.title }}</h2>
+            <p class="empty-text">{{ empty.text }}</p>
+          </div>
         }
-      </div>
+      </main>
     </ion-content>
   `,
-  styleUrl: './notifications.page.scss',
-  imports: [IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonIcon, EmptyStateComponent, FitnessCardComponent, LoadingSkeletonComponent],
+  styleUrls: ['./notifications.page.scss', './notifications-list.scss'],
+  imports: [IonHeader, IonToolbar, IonContent, IonIcon, LoadingSkeletonComponent, SegmentedControlComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'fit-theme-dashboard' },
+  host: {
+    '[class.fit-theme-immersive]': 'dark()',
+    '[class.fit-theme-dashboard]': '!dark()',
+  },
 })
 export class NotificationsPage {
+  /** Query parameter (`?filter=unread`); anything unknown is All. */
+  readonly filter = input<string>();
+
   protected readonly inbox = inject(NotificationInboxService);
   private readonly nav = inject(NavController);
-  private readonly clock = inject(CLOCK);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly theme = inject(ThemeService);
 
+  protected readonly filterOptions = FILTER_OPTIONS;
+  protected readonly categoryLabels = CATEGORY_LABELS;
   protected readonly loading = signal(true);
-  /** Ids that were unread when the page opened. */
-  protected readonly wasNew = signal<ReadonlySet<string>>(new Set());
+  protected readonly markingAll = signal(false);
+
+  protected readonly activeFilter = computed<NotificationFilter>(() => {
+    const value = this.filter();
+    return isNotificationFilter(value) ? value : 'all';
+  });
+  protected readonly hasAny = computed(() => this.inbox.items().length > 0);
+  protected readonly visible = computed(() => filterNotifications(this.inbox.items(), this.activeFilter(), (id) => this.inbox.isRead(id)));
+  protected readonly emptyCopy = computed(() => EMPTY[this.hasAny() ? this.activeFilter() : 'none']);
+  protected readonly dark = computed(() => this.hasAny() && (this.activeFilter() === 'all' || this.activeFilter() === 'unread'));
 
   constructor() {
+    // Light status-bar text while the dark inbox shows.
+    let release: (() => void) | null = null;
+    effect(() => {
+      if (this.dark() && !release) {
+        release = this.theme.holdAlwaysDark();
+      } else if (!this.dark() && release) {
+        release();
+        release = null;
+      }
+    });
+    inject(DestroyRef).onDestroy(() => release?.());
     void this.load();
   }
 
   private async load(): Promise<void> {
-    const items = await this.inbox.refresh();
-    this.wasNew.set(new Set(items.filter((n) => !this.inbox.isRead(n.id)).map((n) => n.id)));
+    // Rebuilt from today's data on every visit; ids are stable, so nothing is duplicated.
+    await this.inbox.refresh().catch(() => undefined);
     this.loading.set(false);
-    await this.inbox.markAllRead().catch(() => undefined);
+  }
+
+  protected setFilter(filter: NotificationFilter): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { filter: filter === 'all' ? null : filter },
+      replaceUrl: true,
+    });
+  }
+
+  protected async markAllRead(): Promise<void> {
+    this.markingAll.set(true);
+    try {
+      await this.inbox.markAllRead();
+    } catch {
+      // Stays unread; the button remains.
+    } finally {
+      this.markingAll.set(false);
+    }
   }
 
   protected open(item: AppNotification): void {
-    const a = item.action;
-    switch (a.kind) {
-      case 'resume':
-        void this.nav.navigateForward(activeWorkoutPath(a.sessionId));
-        break;
-      case 'open-session':
-        void this.nav.navigateForward(workoutSessionPath(a.sessionId));
-        break;
-      case 'recovery-check-in':
-        void this.nav.navigateBack('/home', { queryParams: CHECK_IN_QUERY });
-        break;
-      case 'log-weight':
-        void this.nav.navigateForward(NEW_WEIGHT_PATH);
-        break;
-      case 'log-food':
-        void this.nav.navigateForward(NEW_FOOD_PATH, { queryParams: { date: localIsoDate(this.clock()) } });
-        break;
-    }
+    void this.nav.navigateForward(notificationPath(item.id));
+  }
+
+  protected backHome(): void {
+    void this.nav.navigateBack('/home');
   }
 }

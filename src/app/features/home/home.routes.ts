@@ -11,4 +11,9 @@ export default [
     title: 'Notifications',
     loadComponent: () => import('../notifications/notifications.page').then((m) => m.NotificationsPage),
   },
+  {
+    path: 'notifications/:notificationId',
+    title: 'Notification',
+    loadComponent: () => import('../notifications/notification-detail.page').then((m) => m.NotificationDetailPage),
+  },
 ] satisfies Routes;

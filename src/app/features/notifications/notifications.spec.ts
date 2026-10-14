@@ -1,5 +1,5 @@
 import { HomeWorkoutView } from '../home/home-training';
-import { NotificationFacts, buildNotifications } from './notifications';
+import { NotificationFacts, buildNotifications, filterNotifications, notificationDayLabel } from './notifications';
 
 const planned: HomeWorkoutView = {
   kind: 'resistance',
@@ -49,5 +49,34 @@ describe('notification inbox (builder)', () => {
     const today = buildNotifications(facts()).map((n) => n.id);
     expect(buildNotifications(facts()).map((n) => n.id)).toEqual(today);
     expect(buildNotifications(facts({ today: '2026-10-09' })).map((n) => n.id).some((id) => today.includes(id))).toBe(false);
+  });
+
+  it('gives each reminder a category, its day and the facts it was built from', () => {
+    const items = buildNotifications(facts({ daysSinceWeighIn: 9 }));
+    expect(items.map((n) => n.category)).toEqual(['workout', 'recovery', 'nutrition', 'progress']);
+    expect(items.every((n) => n.date === '2026-10-08')).toBe(true);
+    expect(items[0].details.map((d) => [d.label, d.value])).toEqual([
+      ['Workout', 'Upper Body A'],
+      ['Exercises', '7 exercises'],
+      ['Estimated time', 'About 45 min'],
+    ]);
+    expect(items[3].details).toEqual([{ icon: 'calendar-outline', label: 'Last weigh-in', value: '9 days ago' }]);
+  });
+
+  it('filters by unread and by category without touching read state', () => {
+    const items = buildNotifications(facts());
+    const read = new Set([items[0].id]);
+    const isRead = vi.fn((id: string) => read.has(id));
+    expect(filterNotifications(items, 'all', isRead)).toEqual(items);
+    expect(filterNotifications(items, 'unread', isRead).map((n) => n.category)).toEqual(['recovery', 'nutrition', 'progress']);
+    expect(filterNotifications(items, 'workout', isRead).map((n) => n.id)).toEqual([items[0].id]);
+    expect(filterNotifications(items, 'nutrition', isRead).map((n) => n.action.kind)).toEqual(['log-food']);
+    expect(filterNotifications([], 'unread', isRead)).toEqual([]);
+    expect(read.size).toBe(1);
+  });
+
+  it('labels the day without inventing a time', () => {
+    expect(notificationDayLabel('2026-10-08', '2026-10-08')).toBe('Today · Thursday, October 8');
+    expect(notificationDayLabel('2026-10-07', '2026-10-08')).toBe('Wednesday, October 7');
   });
 });

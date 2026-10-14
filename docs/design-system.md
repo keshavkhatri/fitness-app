@@ -768,3 +768,23 @@ Assessment. Shared view mixins: `src/theme/_views.scss` (`@use 'views' as view;`
 | What's next | dashboard | The plan's next training day (its weekly layout), Nutrition, Progress, and recovery advice (not a link: there is no recovery feature). **Go to Home**, *View workout plan*. |
 
 No calories are shown: the app has no supported estimate.
+
+## Notifications
+
+`/home/notifications` (Home's bell) and `/home/notifications/:notificationId`. In-app reminders
+only: `NotificationInboxService` builds today's reminders from the user's own data each time
+(planned or in-progress workout, recovery check-in, food not logged, weigh-in due); nothing is
+pushed, scheduled or delivered by the system, and there are no notification settings yet.
+
+- **Inbox**: chips All / Unread / Workouts / Nutrition (`fit-segmented-control`, `pills`, lime
+  selection); the filter is the `filter` query parameter, so it survives a detail visit. Cards:
+  category icon, title, message, "Today", chevron. Unread items have a dot, a bolder title and
+  "unread" for screen readers. **Mark all read** when anything is unread. Dark for All and
+  Unread; the category filters and the empty inbox are warm light.
+- **Detail** (light): category icon and label, title, the day ("Today · Thursday, October 8" — a
+  reminder is for a day, so no time is shown), message, the facts it was built from, and one
+  action opening the existing screen (workout session, active workout, Home's recovery check-in,
+  log food, log weight). Opening it marks it read (stored). A reminder that is no longer current
+  says so, with no action.
+- **Empty states**: "No notifications yet", "All caught up!" (Unread), "No workout / nutrition
+  notifications".
