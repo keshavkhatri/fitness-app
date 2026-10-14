@@ -163,10 +163,13 @@ export class NutritionService {
     }
   }
 
-  /** Distinct foods logged in the last 30 days, newest first, to log again. Rejects when food logs can't be read. */
-  async recentFoods(): Promise<FoodEntry[]> {
+  /**
+   * Distinct foods logged in the last 30 days, newest first, to log again
+   * (at most `limit`; the domain default when omitted). Rejects when food logs can't be read.
+   */
+  async recentFoods(limit?: number): Promise<FoodEntry[]> {
     const today = this.today();
-    return recentFoods(await this.repository.loadRange(shift(today, -(RECENT_FOOD_DAYS - 1)), today));
+    return recentFoods(await this.repository.loadRange(shift(today, -(RECENT_FOOD_DAYS - 1)), today), limit);
   }
 
   add(input: FoodEntryInput, date: IsoCalendarDate): Promise<SaveResult> {

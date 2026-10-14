@@ -1,0 +1,81 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.averages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.title {
+  @include fx.text(h3, bold);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  // Two by two on the narrowest phones: values like "1,642" stay readable.
+  @media (max-width: 359px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.value {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+.label {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.comparison {
+  @include fx.text(caption, semibold);
+  @include fx.tabular-numbers;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--space-2);
+  white-space: nowrap;
+
+  &[data-direction='down'],
+  &[data-direction='same'] {
+    color: var(--color-primary-text);
+  }
+
+  &[data-direction='up'] {
+    color: var(--color-warning-text);
+  }
+}
+
+.bar {
+  margin-top: var(--space-2);
+}
+
+.caption {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.comparison-line {
+  @include fx.text(body-sm, semibold);
+}

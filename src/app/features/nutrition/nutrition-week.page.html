@@ -1,121 +1,83 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="nutritionPath" [text]="copy.back" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
-  </ion-toolbar>
-</ion-header>
+<fit-page [title]="copy.title" customHeader>
+  <header class="header" fitPageHeader>
+    <div class="title-row">
+      <ion-back-button class="back" [defaultHref]="nutritionPath" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+      <h1 class="heading">{{ copy.heading }}</h1>
+    </div>
+    <nav class="views" [attr.aria-label]="copy.views" data-testid="views">
+      <button type="button" class="view" data-testid="day-view" (click)="openDayView()">{{ copy.dayView }}</button>
+      <span class="view current" aria-current="page">{{ copy.weekView }}</span>
+    </nav>
+  </header>
+  <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
 
-<ion-content>
-  <main class="body">
-    <h1 class="title">{{ copy.title }}</h1>
-    <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
-
-    @let s = screen();
-    @if (s.kind === 'ready') {
-      <nav class="week-nav" aria-label="Week" data-testid="week-nav">
-        <button type="button" class="step" [attr.aria-label]="copy.previous" data-testid="previous-week" (click)="previousWeek()">
-          <ion-icon name="chevron-back" aria-hidden="true" />
-        </button>
-        <div class="week-label">
+  @let s = screen();
+  @if (s.kind === 'ready') {
+    <nav class="week-nav" aria-label="Week" data-testid="week-nav">
+      <button type="button" class="step" [attr.aria-label]="copy.previous" data-testid="previous-week" (click)="previousWeek()">
+        <ion-icon name="chevron-back" aria-hidden="true" />
+      </button>
+      <div class="week-label">
+        <h2 class="week-range" data-testid="week-range">{{ s.header.range }}</h2>
+        @if (s.header.title !== s.header.range) {
           <p class="week-title" data-testid="week-title">{{ s.header.title }}</p>
-          @if (s.header.title !== s.header.range) {
-            <p class="week-range" data-testid="week-range">{{ s.header.range }}</p>
-          }
-          @if (!s.header.isCurrent) {
-            <button type="button" class="this-week" data-testid="this-week" (click)="thisWeek()">{{ copy.backToThisWeek }}</button>
-          }
-        </div>
-        <button
-          type="button"
-          class="step"
-          [attr.aria-label]="copy.next"
-          [disabled]="!s.header.canGoNext"
-          data-testid="next-week"
-          (click)="nextWeek()"
-        >
-          <ion-icon name="chevron-forward" aria-hidden="true" />
-        </button>
-      </nav>
+        }
+        @if (!s.header.isCurrent) {
+          <button type="button" class="this-week" data-testid="this-week" (click)="thisWeek()">{{ copy.backToThisWeek }}</button>
+        }
+      </div>
+      <button type="button" class="step" [attr.aria-label]="copy.next" [disabled]="!s.header.canGoNext" data-testid="next-week" (click)="nextWeek()">
+        <ion-icon name="chevron-forward" aria-hidden="true" />
+      </button>
+    </nav>
 
-      <p class="logged" data-testid="logged-days">{{ s.loggedLabel }}</p>
+    <p class="logged" data-testid="logged-days">{{ s.loggedLabel }}</p>
 
-      @if (s.total && s.average; as a) {
-        <fit-card data-testid="week-average">
-          <section class="summary" aria-labelledby="week-average-title">
-            <h2 class="card-title" id="week-average-title">{{ copy.averageTitle }}</h2>
-            <p class="kcal" data-testid="average-calories">
-              <span class="kcal-value">{{ a.calories.eaten }}</span>&ngsp;<span class="kcal-unit">
-                @if (a.calories.target) {
-                  / {{ a.calories.target }} kcal
-                } @else {
-                  kcal per day
-                }
-              </span>
-            </p>
-            @if (a.comparison; as comparison) {
-              <p class="comparison" data-testid="average-comparison">{{ comparison }}</p>
-            }
-            @if (a.calories.progress; as p) {
-              <fit-progress [value]="p.value" [max]="p.max" label="Daily average calories" [valueText]="p.valueText" />
-            }
-            <ul class="macros" data-testid="average-macros">
-              @for (m of a.macros; track m.key) {
-                <li class="macro" [attr.data-testid]="'average-' + m.key">
-                  <span class="macro-label">{{ m.label }}</span>&ngsp;
-                  <span class="macro-amount">
-                    {{ m.eaten }}
-                    @if (m.target) {
-                      <span class="macro-target">/ {{ m.target }}</span>
-                    }
-                  </span>
-                  @if (m.progress; as p) {
-                    <fit-progress class="macro-bar" [value]="p.value" [max]="p.max" [label]="m.label + ' daily average'" [valueText]="p.valueText" />
-                  }
-                </li>
-              }
-            </ul>
-            <p class="caption">{{ a.caption }}</p>
-            @if (a.targetNote; as note) {
-              <p class="caption" data-testid="target-note">{{ note }}</p>
-            } @else {
-              <p class="caption">{{ copy.targetsNote }}</p>
-            }
-          </section>
-        </fit-card>
+    @if (calorieChart(); as chart) {
+      <section class="card" aria-labelledby="week-calories-title" data-testid="calorie-chart">
+        <h2 class="card-title" id="week-calories-title">{{ copy.caloriesTitle }}</h2>
+        <app-week-bar-chart [chart]="chart" [label]="copy.caloriesByDay" legend />
+      </section>
+    }
 
-        <fit-card data-testid="week-total">
-          <section aria-labelledby="week-total-title">
-            <h2 class="card-title" id="week-total-title">{{ copy.totalTitle }}</h2>
-            <p class="total-kcal" data-testid="total-calories">{{ s.total.calories }}</p>
-            <p class="caption" data-testid="total-macros">{{ s.total.macros }}</p>
-          </section>
-        </fit-card>
-      } @else {
-        <fit-card data-testid="week-empty">
-          <fit-empty-state icon="restaurant-outline" [title]="copy.empty.title" [description]="copy.empty.message">
-            @if (s.header.isCurrent) {
-              <button fit-button type="button" icon="add" (click)="logFood()">{{ copy.empty.action }}</button>
-            }
-          </fit-empty-state>
-        </fit-card>
+    @if (s.total && s.average; as a) {
+      <app-week-averages [title]="copy.averageThisWeek" [tiles]="a.tiles" [caption]="a.caption" [comparison]="a.comparison" [note]="a.targetNote" data-testid="week-average" />
+
+      @if (macroChart(); as chart) {
+        <section class="card" aria-labelledby="week-macros-title" data-testid="macro-chart">
+          <h2 class="card-title" id="week-macros-title">{{ copy.macrosTitle }}</h2>
+          <fit-segmented-control variant="pills" class="metrics" name="week-macro" [legend]="copy.macroLegend" [options]="macroOptions" [(value)]="macro" />
+          <app-week-bar-chart [chart]="chart" [label]="copy.macroByDay(chart.name)" />
+        </section>
       }
 
-      <app-week-day-list [days]="s.days" (openDay)="openDay($event)" />
-    } @else if (s.kind === 'error') {
-      <fit-card data-testid="week-error">
-        <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
-          <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+      <section class="card total" aria-labelledby="week-total-title" data-testid="week-total">
+        <h2 class="card-title" id="week-total-title">{{ copy.totalTitle }}</h2>
+        <p class="total-kcal" data-testid="total-calories">{{ s.total.calories }}</p>
+        <p class="caption" data-testid="total-macros">{{ s.total.macros }}</p>
+      </section>
+    } @else {
+      <fit-card data-testid="week-empty">
+        <fit-empty-state icon="restaurant-outline" [title]="copy.empty.title" [description]="copy.empty.message">
+          @if (s.header.isCurrent) {
+            <button fit-button type="button" icon="add" (click)="logFood()">{{ copy.empty.action }}</button>
+          }
         </fit-empty-state>
       </fit-card>
-    } @else {
-      <div class="loading" aria-busy="true" data-testid="week-loading">
-        <fit-skeleton height="56px" radius="md" />
-        <fit-skeleton height="200px" radius="card" />
-        <fit-skeleton height="360px" radius="card" />
-      </div>
     }
-  </main>
-</ion-content>
+
+    <app-week-day-list [days]="s.days" (openDay)="openDay($event)" />
+  } @else if (s.kind === 'error') {
+    <fit-card data-testid="week-error">
+      <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message">
+        <button fit-button type="button" (click)="retry()">{{ copy.error.retry }}</button>
+      </fit-empty-state>
+    </fit-card>
+  } @else {
+    <div class="loading" aria-busy="true" data-testid="week-loading">
+      <fit-skeleton height="56px" radius="md" />
+      <fit-skeleton height="220px" radius="card" />
+      <fit-skeleton height="120px" radius="card" />
+    </div>
+  }
+</fit-page>

@@ -1,0 +1,191 @@
+@use 'mixins' as fx;
+
+// Immersive (always dark): lime marks the selected meal and the add actions.
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-8);
+}
+
+.topbar {
+  margin: 0 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-1));
+}
+
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.back-button,
+.clear {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-pill);
+}
+
+.back-button {
+  width: 44px;
+  height: 44px;
+  background: var(--color-surface);
+  font-size: 22px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.context {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-text-secondary);
+}
+
+.meals {
+  --segment-selected-bg: var(--color-primary);
+  --segment-selected-fg: var(--color-on-primary);
+}
+
+// --- Search ----------------------------------------------------------------------------------
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-1) 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+
+  &:focus-within {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: 1px;
+  }
+
+  > ion-icon {
+    flex: none;
+    font-size: var(--icon-size-md);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--font-size-body-sm);
+    outline: none;
+
+    &::placeholder {
+      color: var(--color-text-secondary);
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.clear {
+  width: 44px;
+  height: 44px;
+  color: var(--color-text);
+  font-size: 20px;
+}
+
+// --- Recent foods ----------------------------------------------------------------------------
+.recent,
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.recent-title {
+  @include fx.text(h3, bold);
+}
+
+.hint,
+.no-match {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.no-match {
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+.feedback {
+  @include fx.text(body-sm, semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary-text);
+
+  &:empty {
+    display: none;
+  }
+
+  &.failed {
+    color: var(--color-danger-text);
+  }
+
+  ion-icon {
+    flex: none;
+    font-size: 20px;
+  }
+}
+
+// --- Form footer -----------------------------------------------------------------------------
+ion-footer {
+  background: var(--color-bg);
+  border-top: var(--border-hairline) solid var(--color-border);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4);
+}
+
+.status {
+  @include fx.text(body-sm, medium);
+  color: var(--color-danger-text);
+  text-align: center;
+
+  &.shown {
+    margin-bottom: var(--space-3);
+  }
+}

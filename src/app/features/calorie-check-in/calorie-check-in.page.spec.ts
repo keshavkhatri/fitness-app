@@ -107,6 +107,7 @@ describe('Calorie Check-in page', () => {
   it('separates what was recorded, the estimated maintenance and the proposed target', async () => {
     const { el } = await render();
     expect(el.querySelector('h1')?.textContent?.trim()).toBe('Calorie check-in');
+    expect(el.classList).toContain('fit-theme-dashboard');
     expect(clean(byTestId(el, 'period'))).toBe('Oct 1 – 28, 2026 · last 4 weeks');
     expect(clean(byTestId(el, 'observed-intake'))).toBe(`Average logged intake ${fmt(INTAKE)} kcal a day Food logged on 28 of 28 days; days without entries aren’t counted`);
     expect(clean(byTestId(el, 'observed-weight'))).toBe('Weight trend −0.5 kg a week 14 weigh-ins: 84.0 kg on Oct 1 → 82.1 kg on Oct 27');
@@ -275,8 +276,8 @@ describe('Nutrition dashboard → Calorie check-in', () => {
     const { forward } = configure();
     const fixture = TestBed.createComponent(NutritionPage);
     await settle(fixture);
-    const button = byTestId(fixture.nativeElement, 'open-check-in') as HTMLButtonElement;
-    expect(clean(button)).toBe('Calorie check-in');
+    const button = byTestId(fixture.nativeElement, 'open-check-in')!.querySelector('button')!;
+    expect(clean(button.querySelector('.link-title'))).toBe('Calorie check-in');
     button.click();
     expect(forward).toHaveBeenCalledWith(['/nutrition', 'check-in']);
   });

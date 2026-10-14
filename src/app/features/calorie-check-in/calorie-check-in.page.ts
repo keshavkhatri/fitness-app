@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource, signal } from '@angular/core';
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonIcon, IonTitle, IonToolbar, NavController } from '@ionic/angular';
+import { IonBackButton, IonContent, IonIcon, NavController } from '@ionic/angular';
 
 import { CalorieCheckInService, CheckInChangeResult } from '../../core/calorie-check-in/calorie-check-in.service';
 import { CLOCK, localIsoDate } from '../../core/time/clock';
@@ -23,12 +23,9 @@ type Sheet = 'none' | 'accept' | 'formula';
   selector: 'app-calorie-check-in',
   templateUrl: './calorie-check-in.page.html',
   styleUrl: './calorie-check-in.page.scss',
+  host: { class: 'fit-theme-dashboard' },
   imports: [
-    IonHeader,
-    IonToolbar,
-    IonButtons,
     IonBackButton,
-    IonTitle,
     IonContent,
     IonIcon,
     BottomSheetComponent,

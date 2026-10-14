@@ -1,86 +1,163 @@
 @use 'mixins' as fx;
 
+ion-content {
+  --background: var(--color-bg);
+}
+
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-8);
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-8);
 }
 
-.intro,
-.loading {
+.topbar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-2);
 }
 
-.title {
-  @include fx.text(h1, bold);
+.bar-title {
+  @include fx.text(body, bold);
+  flex: 1;
+  text-align: center;
 }
 
-.day {
-  @include fx.text(body-sm, semibold);
-  color: var(--color-primary-text);
+.round,
+.round-spacer {
+  flex: none;
+  width: 44px;
+  height: 44px;
 }
 
-.form,
-.choice,
-.values {
+.round,
+.step,
+.link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+}
+
+.round {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 22px;
+
+  &.danger {
+    background: var(--color-danger-soft);
+    color: var(--color-danger-text);
+  }
+}
+
+// --- Identity ---------------------------------------------------------------------------------
+.identity {
   display: flex;
   flex-direction: column;
+  gap: var(--space-1);
 }
 
-.form {
-  gap: var(--space-5);
+.art {
+  --thumb-size: 132px;
+  --thumb-radius: var(--radius-pill);
+  align-self: center;
+  margin-bottom: var(--space-3);
 }
 
-.choice {
-  gap: var(--space-2);
+.name {
+  @include fx.text(h2, bold);
+  overflow-wrap: anywhere;
 }
 
-.choice-label {
-  @include fx.text(body-sm, semibold);
-}
-
-.values {
-  gap: var(--space-3);
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.values-title {
-  @include fx.text(h3, semibold);
-  margin-bottom: var(--space-1);
-  padding: 0;
-}
-
-.values-hint {
+.context,
+.caption,
+.unavailable {
   @include fx.text(body-sm);
   color: var(--color-text-secondary);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4) var(--space-3);
+// --- Portion cards ----------------------------------------------------------------------------
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
+.card-title {
+  @include fx.text(body, semibold);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-size: 22px;
+
+  &[disabled] {
+    color: var(--color-text-tertiary);
+    cursor: default;
+  }
+}
+
+.count {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+  min-width: 3ch;
+  text-align: center;
+}
+
+.link {
+  @include fx.text(body-sm, semibold);
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  color: var(--color-primary-text);
+
+  ion-icon {
+    font-size: 18px;
+  }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+
+  fit-skeleton:nth-child(n + 3) {
+    align-self: stretch;
+  }
+}
+
+// --- Footer -----------------------------------------------------------------------------------
 ion-footer {
   background: var(--color-bg);
-  border-top: var(--border-hairline) solid var(--color-border);
 }
 
-// Above the tab bar, which already reserves the device's bottom safe area.
 .footer {
   display: flex;
   flex-direction: column;
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-3) var(--page-gutter);
+  padding: var(--space-3) var(--space-4);
 }
 
 .status {
@@ -97,69 +174,4 @@ ion-footer {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.recent {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.recent-title {
-  @include fx.text(h3, semibold);
-}
-
-.recent-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li + li {
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
-}
-
-.recent-food {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 56px;
-  padding: var(--space-3) var(--space-4);
-  text-align: start;
-}
-
-.recent-text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.recent-name {
-  @include fx.text(body, medium);
-  overflow-wrap: anywhere;
-}
-
-.recent-detail {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-}
-
-.recent-kcal {
-  @include fx.text(body-sm, semibold);
-  @include fx.tabular-numbers;
-  flex: none;
-}
-
-.recent-status {
-  @include fx.text(body-sm, medium);
-  color: var(--color-primary-text);
-
-  &:empty {
-    display: none;
-  }
 }

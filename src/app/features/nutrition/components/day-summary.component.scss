@@ -1,0 +1,97 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+// --- Today: ring, macros, Log food ------------------------------------------------------------
+.today {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  border-radius: var(--radius-hero);
+  background: var(--color-surface);
+}
+
+.ring {
+  max-width: 100%;
+}
+
+.ring.plain {
+  display: grid;
+  place-items: center;
+  width: 176px;
+  height: 176px;
+  border: 5px solid var(--color-surface-muted);
+  border-radius: var(--radius-pill);
+}
+
+.kcal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.kcal-eaten {
+  @include fx.text(display, bold);
+  @include fx.tabular-numbers;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.kcal-target {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.kcal-status {
+  @include fx.text(body-sm, semibold);
+  margin-top: calc(-1 * var(--space-2));
+  color: var(--color-text-secondary);
+
+  &.over {
+    color: var(--color-warning-text);
+  }
+}
+
+.macros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.macro {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.macro-label {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}
+
+.macro-eaten {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+.macro-target {
+  @include fx.text(caption);
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.macro-bar {
+  margin-top: var(--space-2);
+}
+

@@ -1,12 +1,33 @@
 @use 'mixins' as fx;
 
+// Dashboard (warm light): white cards, lime for the main action and the estimate.
+
+ion-content {
+  --background: var(--color-bg);
+}
+
 .body {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-10);
+}
+
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
 }
 
 .intro,
@@ -23,8 +44,31 @@
   gap: var(--space-1);
 }
 
+.badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 22px;
+}
+
 .title {
   @include fx.text(h1, bold);
+}
+
+fit-card {
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+// The estimate leads: the soft lime the Daily log uses for its ring.
+fit-card.estimate {
+  background: var(--color-primary-soft);
 }
 
 .card-title,
@@ -34,10 +78,17 @@
 }
 
 .caption,
-.period,
 .row-detail {
   @include fx.text(body-sm);
   color: var(--color-text-secondary);
+}
+
+.period {
+  @include fx.text(caption, semibold);
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
 }
 
 .text {
@@ -50,15 +101,28 @@
 }
 
 .outcome {
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+
+  ion-icon {
+    flex: none;
+    margin-top: 2px;
+    font-size: 20px;
+  }
 }
 
 .headline {
   @include fx.text(h2, bold);
   @include fx.tabular-numbers;
+}
+
+.estimate .headline {
+  @include fx.text(display, bold);
 }
 
 .rows {
@@ -93,18 +157,18 @@
 
 .how-list,
 .missing {
+  @include fx.text(body-sm);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin: var(--space-2) 0 0;
   padding-inline-start: var(--space-5);
-  @include fx.text(body-sm);
 }
 
 .missing {
+  gap: var(--space-3);
   padding: 0;
   list-style: none;
-  gap: var(--space-3);
 }
 
 .missing-item {

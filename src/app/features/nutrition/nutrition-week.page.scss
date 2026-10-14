@@ -1,18 +1,69 @@
 @use 'mixins' as fx;
 
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-2) var(--page-gutter) var(--space-10);
+:host {
+  --page-gutter: var(--space-4);
 }
 
-.title {
+// --- Header ----------------------------------------------------------------------------------
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.heading {
   @include fx.text(h1, bold);
 }
 
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+// Day / Week: the current view is a filled pill (a link pair, not a radio group).
+.views {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.view {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  display: grid;
+  place-items: center;
+  min-height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+
+  &.current {
+    background: var(--color-text);
+    color: var(--color-bg);
+  }
+}
+
+// --- Week navigation --------------------------------------------------------------------------
 .week-nav {
   display: flex;
   align-items: center;
@@ -24,14 +75,12 @@
   @include fx.focus-ring;
   @include fx.pressable;
 
-  display: inline-grid;
+  display: grid;
   flex: none;
   place-items: center;
   width: var(--tap-target-min);
   height: var(--tap-target-min);
   border-radius: var(--radius-pill);
-  background: var(--color-surface-muted);
-  color: var(--color-text);
   font-size: 20px;
 
   &[disabled] {
@@ -49,98 +98,52 @@
   text-align: center;
 }
 
-.week-title {
-  @include fx.text(body, semibold);
+.week-range {
+  @include fx.text(body, bold);
 }
 
-.week-range,
+.week-title,
 .logged,
-.caption,
-.comparison {
+.caption {
   @include fx.text(body-sm);
   color: var(--color-text-secondary);
+}
+
+.logged {
+  margin-top: calc(-1 * var(--space-2));
+  text-align: center;
 }
 
 .this-week {
   @include fx.button-reset;
   @include fx.focus-ring;
-  @include fx.text(body-sm, semibold);
+  @include fx.text(caption, semibold);
 
   min-height: var(--tap-target-min);
-  padding: 0 var(--space-3);
   color: var(--color-primary-text);
 }
 
-.logged {
-  text-align: center;
-}
-
-.summary {
+// --- Cards ------------------------------------------------------------------------------------
+.card {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-hero);
+  background: var(--color-surface);
 }
 
 .card-title {
-  @include fx.text(body-sm, semibold);
-  color: var(--color-text-secondary);
-}
-
-.kcal {
-  @include fx.tabular-numbers;
-}
-
-.kcal-value {
-  @include fx.text(h1, bold);
-}
-
-.kcal-unit {
-  @include fx.text(body, medium);
-  color: var(--color-text-secondary);
-}
-
-.macros {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.macro {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-1) var(--space-3);
-}
-
-.macro-label {
-  @include fx.text(body-sm, semibold);
-}
-
-.macro-amount {
-  @include fx.text(body-sm, semibold);
-  @include fx.tabular-numbers;
-  text-align: end;
-}
-
-.macro-target {
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.macro-bar {
-  grid-column: 1 / -1;
+  @include fx.text(h3, bold);
 }
 
 .total-kcal {
   @include fx.text(h2, bold);
   @include fx.tabular-numbers;
-  margin-top: var(--space-1);
 }
 
 .loading {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }

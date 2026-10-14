@@ -1,0 +1,94 @@
+<ion-content>
+  <main class="body">
+    <div class="topbar">
+      @if (mode() === 'search') {
+        <ion-back-button class="back" [defaultHref]="nutritionPath" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+      } @else {
+        <button type="button" class="back-button" [attr.aria-label]="copy.backToSearch" [disabled]="saving()" data-testid="back-to-search" (click)="backToSearch()">
+          <ion-icon name="chevron-back" aria-hidden="true" />
+        </button>
+      }
+    </div>
+
+    <header class="intro">
+      <h1 class="title">{{ mode() === 'search' ? copy.title : copy.manualTitle }}</h1>
+      <p class="context" data-testid="form-day">{{ dayLabel() }} · {{ mealLabel() }}</p>
+    </header>
+
+    @if (mode() === 'search') {
+      <fit-segmented-control class="meals" variant="pills" name="add-food-meal" [legend]="copy.mealLegend" [options]="mealOptions" [(value)]="selectedMeal" />
+
+      <div class="search" role="search">
+        <ion-icon name="search-outline" aria-hidden="true" />
+        <label class="visually-hidden" for="food-search">{{ copy.search }}</label>
+        <input
+          #searchInput
+          id="food-search"
+          type="search"
+          autocomplete="off"
+          enterkeyhint="search"
+          [placeholder]="copy.search"
+          [value]="query()"
+          data-testid="food-search"
+          (input)="setQuery($any($event.target).value)"
+        />
+        @if (query()) {
+          <button type="button" class="clear" [attr.aria-label]="copy.clear" data-testid="clear-search" (click)="clearQuery(searchInput)">
+            <ion-icon name="close" aria-hidden="true" />
+          </button>
+        }
+      </div>
+
+      <section class="recent" aria-labelledby="recent-foods-title" data-testid="recent-foods">
+        <h2 class="recent-title" id="recent-foods-title">{{ copy.recentTitle }}</h2>
+        @let r = recentState();
+        @if (r === null) {
+          <p class="visually-hidden" role="status">{{ copy.loading }}</p>
+          <div class="loading" aria-busy="true" data-testid="recent-loading">
+            <fit-skeleton height="56px" radius="md" />
+            <fit-skeleton height="56px" radius="md" />
+            <fit-skeleton height="56px" radius="md" />
+          </div>
+        } @else if (!r.ok) {
+          <fit-empty-state icon="alert-circle-outline" [title]="copy.error.title" [description]="copy.error.message" data-testid="recent-error">
+            <button fit-button type="button" variant="secondary" (click)="retryRecent()">{{ copy.error.retry }}</button>
+          </fit-empty-state>
+        } @else if (r.foods.length === 0) {
+          <fit-empty-state icon="nutrition-outline" [title]="copy.none.title" [description]="copy.none.message" data-testid="recent-none" />
+        } @else {
+          <p class="hint">{{ copy.recentHint }}</p>
+          <p class="visually-hidden" role="status" data-testid="result-count">{{ query() ? copy.results(rows().length) : '' }}</p>
+          @if (rows().length === 0) {
+            <p class="no-match" data-testid="no-match">{{ copy.noMatch(query().trim()) }}</p>
+          } @else {
+            <app-recent-food-list [rows]="rows()" [pending]="pending()" [added]="added()" (add)="quickAdd($event)" (review)="review($event)" />
+          }
+        }
+      </section>
+
+      <p class="feedback" role="status" data-testid="add-feedback" [class.failed]="feedback()?.ok === false">
+        @if (feedback(); as f) {
+          <ion-icon [name]="f.ok ? 'checkmark-circle' : 'alert-circle-outline'" aria-hidden="true" />{{ f.text }}
+        }
+      </p>
+
+      <button fit-button type="button" variant="secondary" block icon="create-outline" data-testid="manual-entry" (click)="enterManually()">
+        {{ copy.manual }}
+      </button>
+    } @else {
+      <app-food-form [values]="form()" [errors]="errors()" (changed)="update($event)" (submitted)="save()" />
+    }
+  </main>
+</ion-content>
+
+@if (mode() === 'form') {
+  <ion-footer class="ion-no-border">
+    <div class="footer">
+      <!-- Always rendered with Save so its message is announced when it appears. -->
+      <p class="status" role="status" data-testid="form-status" [class.shown]="status() !== ''">{{ status() }}</p>
+      <button fit-button type="submit" form="food-form" size="lg" block [disabled]="saving()" [loading]="saving()" data-testid="save">
+        {{ copy.saveTo(dayPhrase()) }}
+      </button>
+    </div>
+  </ion-footer>
+}

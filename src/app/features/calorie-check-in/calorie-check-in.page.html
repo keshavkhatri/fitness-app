@@ -1,16 +1,10 @@
-<ion-header class="ion-no-border subpage-header">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="nutritionPath" [text]="copy.back" />
-    </ion-buttons>
-    <!-- Navigation label only; the page heading (h1) is below. -->
-    <ion-title aria-hidden="true">{{ copy.title }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
   <main class="body">
+    <div class="topbar">
+      <ion-back-button class="back" [defaultHref]="nutritionPath" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+    </div>
     <header class="intro">
+      <span class="badge" aria-hidden="true"><ion-icon name="flame-outline" /></span>
       <h1 class="title">{{ copy.title }}</h1>
       <p class="caption">{{ copy.intro }}</p>
     </header>
@@ -21,7 +15,7 @@
       <p class="period" data-testid="period">{{ s.period }}</p>
 
       @if (outcome(); as message) {
-        <p class="outcome" data-testid="outcome">{{ message }}</p>
+        <p class="outcome" data-testid="outcome"><ion-icon name="checkmark-circle" aria-hidden="true" />{{ message }}</p>
       }
 
       <fit-card data-testid="observed">
@@ -44,7 +38,7 @@
         </section>
       </fit-card>
 
-      <fit-card data-testid="estimate">
+      <fit-card class="estimate" data-testid="estimate">
         <section class="stack" aria-labelledby="check-in-estimate">
           <h2 class="card-title" id="check-in-estimate">{{ copy.estimate.title }}</h2>
           @let e = s.estimate;
@@ -85,7 +79,7 @@
         </section>
       </fit-card>
 
-      <fit-card data-testid="recommendation">
+      <fit-card class="recommendation" data-testid="recommendation">
         <section class="stack" aria-labelledby="check-in-recommendation">
           <h2 class="card-title" id="check-in-recommendation">{{ copy.recommendation.title }}</h2>
           @let r = s.recommendation;

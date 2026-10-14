@@ -5,7 +5,8 @@ import { ChangeDetectionStrategy, Component, input, model } from '@angular/core'
  * - ink: an ink pill with the selection in lime (a screen's main switch on light screens).
  * - compact: no track; small text options, the selection on a soft pill (a card's range).
  * - inverse: a surface track with the selection in the text colour (ranges on dark screens).
- * - pills: separate pills, the selection inverted (chart metrics on dark screens).
+ * - pills: separate pills, the selection inverted (chart metrics on dark screens);
+ *   `--segment-selected-bg` / `--segment-selected-fg` recolour the selection.
  * - underline: tabs with a line under the selection (views of one record).
  */
 export type SegmentedVariant = 'default' | 'ink' | 'compact' | 'inverse' | 'pills' | 'underline';
