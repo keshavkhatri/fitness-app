@@ -1,0 +1,167 @@
+@use 'mixins' as fx;
+@use 'views' as view;
+
+:host {
+  @include view.host;
+}
+
+// --- Hero -------------------------------------------------------------------------------------
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  text-align: center;
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  width: 10px;
+  height: 4px;
+  border-radius: 2px;
+
+  &.tone-0 {
+    background: var(--color-ink-accent);
+  }
+
+  &.tone-1 {
+    background: var(--color-warning);
+  }
+
+  &.tone-2 {
+    background: var(--color-primary-strong);
+  }
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 40px;
+
+  &.partial {
+    background: var(--color-surface-elevated);
+    color: var(--color-ink-accent);
+    font-size: 32px;
+  }
+}
+
+.title {
+  @include view.title;
+  @include fx.text(display, bold);
+}
+
+.message {
+  @include view.lead;
+  max-width: 30ch;
+}
+
+// --- Workout ----------------------------------------------------------------------------------
+.workout {
+  @include view.card;
+  padding: var(--space-4);
+  box-shadow: var(--shadow-hero);
+}
+
+.workout-name {
+  @include fx.text(h2, bold);
+  margin: 0;
+}
+
+.workout-when {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+}
+
+// --- Stats ------------------------------------------------------------------------------------
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.stat {
+  @include view.card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: var(--space-3) var(--space-1);
+  text-align: center;
+
+  ion-icon {
+    margin-bottom: var(--space-1);
+    font-size: 22px;
+    color: var(--color-ink-accent);
+  }
+}
+
+.value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.unit {
+  @include fx.text(caption, semibold);
+  color: var(--color-text-secondary);
+}
+
+.label {
+  @include fx.text(caption);
+  order: 1; // under the value (the value reads after its label)
+  color: var(--color-text-secondary);
+}
+
+// --- Highlight --------------------------------------------------------------------------------
+.highlight {
+  @include view.card;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+
+  p {
+    @include fx.text(body-sm);
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  strong {
+    display: block;
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.highlight-icon {
+  @include view.icon-badge(36px);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 18px;
+
+  [data-tone='info'] & {
+    background: var(--color-surface-elevated);
+    color: var(--color-ink-accent);
+  }
+}

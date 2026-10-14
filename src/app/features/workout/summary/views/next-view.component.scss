@@ -1,0 +1,89 @@
+@use 'mixins' as fx;
+@use 'views' as view;
+
+:host {
+  @include view.host;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.mark {
+  @include view.icon-badge(72px);
+  margin-bottom: var(--space-2);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 34px;
+}
+
+.title {
+  @include view.title;
+}
+
+.lead {
+  @include view.lead;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  @include view.card;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--color-border);
+  text-align: start;
+}
+
+button.card {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+  @include view.card;
+  border: var(--border-hairline) solid var(--color-border);
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+.icon {
+  @include view.icon-badge(44px);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.card-title {
+  @include fx.text(body, semibold);
+}
+
+.card-text {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
