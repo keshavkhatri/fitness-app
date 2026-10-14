@@ -1,0 +1,81 @@
+@use 'mixins' as fx;
+@use 'view';
+
+// Results view, second sheet (kept apart for the style budget): goal focus and profile facts.
+
+// --- Goal and profile -------------------------------------------------------------------------
+.goal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: rgba(var(--color-ink-accent-rgb), 0.12);
+  box-shadow: var(--shadow-hero);
+}
+
+.goal-icon {
+  @include view.icon-badge(44px);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.goal-text {
+  min-width: 0;
+}
+
+.goal-value {
+  @include fx.text(h3, bold);
+  margin: 0;
+  color: var(--color-ink-accent);
+  overflow-wrap: anywhere;
+}
+
+.goal-target {
+  @include fx.text(body-sm);
+  margin: 2px 0 0;
+  color: var(--color-text-secondary);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.fact {
+  @include view.card;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+
+  &.wide {
+    grid-column: 1 / -1;
+  }
+
+  ion-icon {
+    grid-row: 1 / span 3;
+    font-size: 22px;
+    color: var(--color-text-secondary);
+  }
+
+  dt,
+  dd {
+    grid-column: 2;
+    margin: 0;
+  }
+}
+
+.fact-value {
+  @include fx.text(body, semibold);
+  @include fx.tabular-numbers;
+  overflow-wrap: anywhere;
+}
+
+.fact-detail {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}

@@ -6,7 +6,7 @@ import { AssessmentService } from './assessment.service';
 export default [
   {
     path: '',
-    title: 'Your starting point',
+    title: 'Your assessment results',
     canActivate: [requireProfile],
     providers: [AssessmentService],
     loadComponent: () => import('./assessment.page').then((m) => m.AssessmentPage),

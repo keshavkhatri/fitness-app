@@ -1,0 +1,139 @@
+@use 'mixins' as fx;
+@use 'view';
+
+:host {
+  @include view.host;
+  @include view.macro-colors;
+}
+
+.header {
+  @include view.header;
+}
+
+.title {
+  @include view.title;
+}
+
+.lead {
+  @include view.lead;
+}
+
+.confidence {
+  @include fx.text(caption, semibold);
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-elevated);
+
+  ion-icon {
+    font-size: 16px;
+    color: var(--color-ink-accent);
+  }
+}
+
+.small-label {
+  @include fx.text(caption);
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+// --- Calorie target ---------------------------------------------------------------------------
+.calories {
+  @include view.card;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-hero);
+}
+
+.flame {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 26px;
+  color: var(--color-warning);
+}
+
+.calories-label {
+  @include fx.text(body, semibold);
+  margin: 0;
+}
+
+.calories-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin: var(--space-1) 0;
+
+  .number {
+    @include fx.text(display-xl, bold);
+    @include fx.tabular-numbers;
+  }
+
+  .unit {
+    @include fx.text(h3, semibold);
+    color: var(--color-text-secondary);
+  }
+}
+
+.calories-caption {
+  @include fx.text(body-sm);
+  @include fx.tabular-numbers;
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+// --- Macros -----------------------------------------------------------------------------------
+.macros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.macro {
+  @include view.card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: var(--space-3) var(--space-1);
+  text-align: center;
+
+  ion-icon {
+    margin-bottom: var(--space-1);
+    font-size: 22px;
+  }
+
+  &[data-macro='protein'] ion-icon {
+    color: var(--macro-protein);
+  }
+
+  &[data-macro='carbohydrate'] ion-icon {
+    color: var(--macro-carbohydrate);
+  }
+
+  &[data-macro='fat'] ion-icon {
+    color: var(--macro-fat);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.macro-label,
+.macro-share {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.macro-grams {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}

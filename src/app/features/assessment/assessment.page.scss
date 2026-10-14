@@ -2,45 +2,59 @@
 
 ion-toolbar {
   --background: var(--color-bg);
-  --min-height: 0;
+  --min-height: var(--tap-target-min);
+  --padding-start: 0;
+  --padding-end: 0;
   --padding-top: 0;
   --padding-bottom: 0;
 }
 
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--space-6) var(--page-gutter) var(--space-8);
+ion-content {
+  --background: var(--color-bg);
 }
 
-.intro,
-.section,
-.loading {
+.toolbar {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  align-items: center;
+  min-height: var(--tap-target-min);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) 0 var(--space-2);
+}
+
+.back {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: grid;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-size: 24px;
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+.body {
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) var(--space-8);
 }
 
 .title {
   @include fx.text(h1, bold);
+  margin: 0 0 var(--space-4);
+  outline: none;
 }
 
-.lead,
-.prose {
-  @include fx.text(body);
-  color: var(--color-text-secondary);
-}
-
-.section-title {
-  @include fx.text(h3, semibold);
-}
-
-.confidence-label {
-  @include fx.text(h3, semibold);
-  margin-bottom: var(--space-1);
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 ion-footer {
@@ -54,4 +68,10 @@ ion-footer {
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: var(--space-3) var(--page-gutter) calc(var(--space-4) + var(--ion-safe-area-bottom, 0px));
+}
+
+.arrow {
+  margin-inline-start: var(--space-2);
+  font-size: 20px;
+  vertical-align: -4px;
 }

@@ -23,12 +23,13 @@ import {
 } from './testing/assessment-fixtures';
 
 interface SetupOptions {
+  view?: string;
   profile?: UserFitnessProfile | null;
   config?: FitnessCalculationConfig;
   profileServiceFails?: boolean;
 }
 
-async function render({ profile = NORMAL_PROFILE, config = DEFAULT_CALCULATION_CONFIG, profileServiceFails }: SetupOptions = {}) {
+async function render({ view, profile = NORMAL_PROFILE, config = DEFAULT_CALCULATION_CONFIG, profileServiceFails }: SetupOptions = {}) {
   const storage = new MemoryKeyValueStorage();
   if (profile) {
     storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile }));
@@ -49,6 +50,9 @@ async function render({ profile = NORMAL_PROFILE, config = DEFAULT_CALCULATION_C
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
 
   const fixture = TestBed.createComponent(AssessmentPage);
+  if (view) {
+    fixture.componentRef.setInput('view', view);
+  }
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
@@ -62,42 +66,34 @@ async function render({ profile = NORMAL_PROFILE, config = DEFAULT_CALCULATION_C
     fixture.detectChanges();
   };
 
-  return { fixture, el, text, buttons, button, click, navigate, storage };
+  const show = async (next: string) => {
+    fixture.componentRef.setInput('view', next);
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+
+  return { fixture, el, text, buttons, button, click, navigate, storage, show };
 }
 
 describe('AssessmentPage', () => {
-  describe('normal result', () => {
-    it('shows the heading, goal, estimates, starting target and macros', async () => {
+  describe('results view', () => {
+    it('shows confidence, the calorie target, macros, goal and the profile it is based on', async () => {
       const { el, text } = await render();
 
-      expect(el.querySelector('h1')?.textContent).toBe('Your starting point');
+      expect(el.querySelector('h1')?.textContent).toBe('Your assessment results');
+      expect(text('confidence-chip')).toBe('Estimate confidence: Moderate confidence');
+      expect(text('calorie-target')).toContain('2,306');
+      expect(text('maintenance-caption')).toBe('Maintenance 2,713 kcal');
+      expect(text('macro-grams')).toBe('Protein 144 g of calories: 25% Carbohydrates 259 g of calories: 45% Fat 77 g of calories: 30%');
       expect(text('goal-label')).toBe('Lose fat');
       expect(text('goal-target')).toContain('Lose 6 kg');
-      expect(text('calorie-target')).toContain('2,306');
-      expect(text('bmr')).toBe('1,750 kcal');
-      expect(text('maintenance')).toBe('2,713 kcal');
-      expect(text('macro-grams')).toContain('144 g');
-      expect(text('macro-grams')).toContain('77 g');
-      expect(text('macro-grams')).toContain('259 g');
-      expect(el.textContent).toContain('Estimated BMR');
-      expect(el.textContent).toContain('Estimated maintenance');
+      expect([text('fact-weight'), text('fact-height'), text('fact-activity')]).toEqual(['80 kg', '180 cm', 'Moderately active']);
     });
 
-    it('uses a meaningful heading outline', async () => {
-      const { el } = await render();
-      expect(el.querySelectorAll('h1').length).toBe(1);
-      const h2s = [...el.querySelectorAll('h2')].map((h) => h.textContent?.trim());
-      expect(h2s).toEqual(['Your goal', 'Daily energy', 'Daily macro targets', 'Why these numbers?', 'Estimate confidence']);
-    });
-
-    it('Continue marks the assessment reviewed and goes Home', async () => {
-      const { buttons, click, navigate } = await render();
-      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Continue']);
-
-      await click('Continue');
-
-      expect(navigate).toHaveBeenCalledWith('/home', { replaceUrl: true });
-      expect(await TestBed.inject(OnboardingStatusService).status()).toBe('complete');
+    it('is dark (immersive), with no Back (it is where the assessment starts)', async () => {
+      const { fixture, el } = await render();
+      expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-immersive');
+      expect(el.querySelector('button.back')).toBeNull();
     });
 
     it('hides target information when none applies', async () => {
@@ -105,17 +101,115 @@ describe('AssessmentPage', () => {
       expect(text('goal-label')).toBe('Build strength');
       expect(text('goal-target')).toBeUndefined();
     });
+
+    it('the starting target has a spoken unit', async () => {
+      const { el } = await render();
+      expect(el.querySelector('[data-testid="calorie-target"] .visually-hidden')?.textContent).toBe('kilocalories per day');
+    });
+  });
+
+  describe('moving through the views', () => {
+    it('Results → Macro breakdown → Why these numbers? → Next steps, each as a ?view= link', async () => {
+      const { buttons, click, navigate, show } = await render();
+      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['View macro breakdown']);
+      await click('View macro breakdown');
+      expect(navigate).toHaveBeenLastCalledWith('/assessment?view=macros');
+
+      await show('macros');
+      await click('Why these numbers?');
+      expect(navigate).toHaveBeenLastCalledWith('/assessment?view=why');
+
+      await show('why');
+      await click('See your next steps');
+      expect(navigate).toHaveBeenLastCalledWith('/assessment?view=next');
+    });
+
+    it('macro breakdown (light): a donut from the real grams, described in words, with every value listed', async () => {
+      const { fixture, el, text } = await render({ view: 'macros' });
+      expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-dashboard');
+      expect(el.querySelector('h1')?.textContent).toBe('Your macro targets');
+      expect(el.querySelector('[data-testid="macro-chart"] svg')?.getAttribute('aria-label')).toBe(
+        '2,306 kilocalories a day: Protein 25% (144 g), Carbohydrates 45% (259 g), Fat 30% (77 g)',
+      );
+      expect(el.querySelectorAll('.slice')).toHaveLength(3);
+      expect(text('macro-rows')).toContain('Protein 144 g 25% of calories (576 kcal)');
+      expect(text('macro-rows')).toContain('Fat 77 g 30% of calories (693 kcal)');
+    });
+
+    it('why these numbers (dark): the engine’s steps, the target emphasised, confidence and collapsible factors', async () => {
+      const { fixture, el, text } = await render({ view: 'why' });
+      expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-immersive');
+      expect(text('calculation-steps')).toContain('Resting energy (BMR)');
+      expect(text('calculation-steps')).toContain('1.55×');
+      expect(el.querySelector('[data-step="target"]')?.textContent).toContain('2,306 kcal');
+      expect(text('confidence-label')).toBe('Moderate');
+
+      const toggle = el.querySelector<HTMLButtonElement>('.factors-toggle')!;
+      const factors = el.querySelector<HTMLElement>('[data-testid="factors"]')!;
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(factors.hidden).toBe(true);
+      toggle.click();
+      fixture.detectChanges();
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(factors.hidden).toBe(false);
+      expect(factors.textContent).toContain('Moderately active');
+    });
+
+    it('Back goes to the previous view (straight to it when opened directly)', async () => {
+      const { el, navigate, fixture } = await render({ view: 'why' });
+      el.querySelector<HTMLButtonElement>('button.back')!.click();
+      await fixture.whenStable();
+      expect(navigate).toHaveBeenCalledWith('/assessment?view=macros', { replaceUrl: true });
+    });
+
+    it('an unknown view shows the results', async () => {
+      const { el } = await render({ view: 'nope' });
+      expect(el.querySelector('h1')?.textContent).toBe('Your assessment results');
+    });
+  });
+
+  describe('next steps', () => {
+    it('Go to Home marks the assessment reviewed and goes Home; View again returns to the results', async () => {
+      const { buttons, click, navigate } = await render({ view: 'next' });
+      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Go to Home', 'View assessment again']);
+
+      await click('View assessment again');
+      expect(navigate).toHaveBeenLastCalledWith('/assessment', { replaceUrl: true });
+
+      await click('Go to Home');
+      expect(navigate).toHaveBeenLastCalledWith('/home', { replaceUrl: true });
+      expect(await TestBed.inject(OnboardingStatusService).status()).toBe('complete');
+    });
+
+    it.each([
+      ['workout', '/workout'],
+      ['nutrition', '/nutrition'],
+      ['progress', '/progress'],
+    ])('the %s card opens %s (and counts the assessment as reviewed)', async (id, path) => {
+      const { el, navigate, fixture } = await render({ view: 'next' });
+      el.querySelector<HTMLButtonElement>(`[data-testid="next-${id}"]`)!.click();
+      await fixture.whenStable();
+      expect(navigate).toHaveBeenLastCalledWith(path, { replaceUrl: true });
+      expect(await TestBed.inject(OnboardingStatusService).status()).toBe('complete');
+    });
+
+    it('Adjust anytime opens the Profile editor', async () => {
+      const { el, navigate, fixture } = await render({ view: 'next' });
+      el.querySelector<HTMLButtonElement>('[data-testid="next-adjust"]')!.click();
+      await fixture.whenStable();
+      expect(navigate).toHaveBeenLastCalledWith('/onboarding/review');
+    });
   });
 
   describe('confidence', () => {
     it('moderate', async () => {
-      const { text, el } = await render();
+      const { text, el } = await render({ view: 'why' });
       expect(text('confidence-label')).toBe('Moderate');
       expect(el.textContent).toContain('formula-based estimates');
     });
 
-    it('low, with stronger uncertainty copy', async () => {
-      const { text, el } = await render({ profile: profileWith({ sex: 'prefer-not-to-say' }) });
+    it('low, with stronger uncertainty copy, never "high"', async () => {
+      const { text, el } = await render({ view: 'why', profile: profileWith({ sex: 'prefer-not-to-say' }) });
       expect(text('confidence-label')).toBe('Low');
       expect(el.textContent).toContain('less precise');
       expect(el.textContent).not.toMatch(/high confidence/i);
@@ -147,7 +241,7 @@ describe('AssessmentPage', () => {
       const { text, buttons } = await render({ config: CONSTRAINED_MACROS_CONFIG });
       expect(text('macro-notice')).toContain('Macro balance needs review');
       expect(text('macro-grams')).toMatch(/\d+ g/);
-      expect(buttons()[0].textContent?.trim()).toBe('Continue');
+      expect(buttons()[0].textContent?.trim()).toBe('View macro breakdown');
     });
 
     it('infeasible: no gram targets rendered, review first', async () => {
@@ -202,9 +296,5 @@ describe('AssessmentPage', () => {
       expect(notice?.querySelector('ion-icon')?.getAttribute('aria-hidden')).toBe('true');
     });
 
-    it('the starting target has a spoken unit', async () => {
-      const { el } = await render();
-      expect(el.querySelector('[data-testid="calorie-target"] .visually-hidden')?.textContent).toBe('kilocalories per day');
-    });
   });
 });

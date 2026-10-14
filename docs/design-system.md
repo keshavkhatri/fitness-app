@@ -733,3 +733,22 @@ only); Continue sits in the footer above the safe area. Copy states only what th
 
 Not built (no data behind it): a nutrition-preference screen and the BMI "visual reference" under
 the weight ruler.
+
+## Assessment
+
+`/assessment` (`features/assessment`): one result, four views, chosen by the `view` query
+parameter on the same route (`?view=macros|why|next`; none is Results). The page and its loaded
+result stay put while browser Back, the in-page Back and Android back move between views.
+
+| View | Theme | Content |
+|---|---|---|
+| Results | immersive (dark) | Confidence chip, calorie target (maintenance underneath), three macro tiles, goal focus, weight / height / activity. |
+| Macro breakdown | dashboard (warm light) | SVG donut of each macro's calories (labelled in words for screen readers; slices separated by gaps), rows with grams, % of calories and kcal, and how the split serves the goal. |
+| Why these numbers? | immersive (dark) | The engine's steps (`explanation`): resting energy, activity factor, maintenance (and a Calorie Check-in figure when one is in use), goal adjustment, then the target, emphasised. Estimate confidence and a collapsible *Factors we consider*. |
+| Next steps | dashboard | Workout plan, Nutrition, Progress (each marks the assessment reviewed, which the tab shell requires) and Adjust anytime (Profile editor); **Go to Home**, *View assessment again*. |
+
+Macro colours reuse theme fills: protein `--color-primary-strong`, carbohydrates `--color-primary`,
+fat `--color-warning`; a macro is always named and valued next to its colour. Values come only from
+`FitnessAssessment` through `toAssessmentViewModel`; the only arithmetic in the view model is the
+goal adjustment in kcal (target minus maintenance, both engine values) and each macro's calories
+(grams × the engine's energy per gram).
