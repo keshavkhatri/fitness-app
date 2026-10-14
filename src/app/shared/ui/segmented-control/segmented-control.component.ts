@@ -13,6 +13,8 @@ export type SegmentedVariant = 'default' | 'ink' | 'compact' | 'inverse' | 'pill
 export interface SegmentOption<T extends string> {
   value: T;
   label: string;
+  /** Read instead of a short visible label ("1M" → "Last month"). */
+  spoken?: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export interface SegmentOption<T extends string> {
             [name]="name()"
             [value]="option.value"
             [checked]="option.value === value()"
+            [attr.aria-label]="option.spoken ?? null"
             (change)="value.set(option.value)"
           />
           <span>{{ option.label }}</span>

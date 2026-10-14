@@ -4,6 +4,7 @@ import { WEIGHT_RANGES, WeightRange } from '../../../domain/body-measurements';
 import { FitnessButtonComponent, SegmentOption, SegmentedControlComponent } from '../../../shared/ui';
 import { WeightChartComponent } from '../../body-weight/components/weight-chart.component';
 import { TrendSummaryView, WeightChartView } from '../../body-weight/weight-trend-view-model';
+import { WEIGHT_HISTORY_COPY } from '../../body-weight/weight-history-content';
 import { WORKOUT_COPY } from '../workout-content';
 
 export type WeightTrendState = 'loading' | 'error' | 'none' | 'ready';
@@ -14,6 +15,8 @@ export type WeightTrendState = 'loading' | 'error' | 'none' | 'ready';
  * weigh-ins, an empty range and a single point (no trend from one point).
  * Presentational; the page owns the range.
  */
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 @Component({
   selector: 'app-weight-trend-card',
   template: `
@@ -68,5 +71,9 @@ export class WeightTrendCardComponent {
   readonly callout = input<{ readonly value: string; readonly date: string } | null>(null);
 
   protected readonly copy = WORKOUT_COPY.progress.weight;
-  protected readonly options: readonly SegmentOption<WeightRange>[] = WEIGHT_RANGES.map((value) => ({ value, label: this.copy.ranges[value] }));
+  protected readonly options: readonly SegmentOption<WeightRange>[] = WEIGHT_RANGES.map((value) => ({
+    value,
+    label: this.copy.ranges[value],
+    spoken: capitalize(WEIGHT_HISTORY_COPY.trend.rangeNames[value]),
+  }));
 }

@@ -573,9 +573,10 @@ The Workout tab and the screens it opens (`features/workout`).
     previous recording and its date ("vs Oct 1"; body fat in percentage points), its
     date alone with one recording, "Not recorded" without one. Arrow and sign, never
     judged good or bad.
-  - Weight trend: the weight history's own ranges (30 days / 90 days / all as 1M / 3M /
-    All), summary and chart (`weightRangeSummary`, `weightChart`), the latest value
-    called out; the line is olive on the white card.
+  - Weight trend: the weight history's own rolling ranges (30, 90, 180 and 365 days and
+    all, labelled 1M / 3M / 6M / 1Y / All, with full spoken names), summary and chart
+    (`weightRangeSummary`, `weightChart` with its opt-in area and callout), the latest
+    value called out; the line is olive on the white card.
   - Consistency: finished training workouts per Monday–Sunday week
     (`weeklyWorkoutCounts`) over the last 12 weeks, never before the week of the first
     workout (unknown, not inactive). Ring = share of counted weeks with a workout; bars =
@@ -589,8 +590,8 @@ The Workout tab and the screens it opens (`features/workout`).
   filters" resets. Rows: catalog area, the latest top set, and a mini trend of the top
   set over the last six comparable sessions with the change in text ("+5 kg since Sep
   30"); no trend from one session.
-- **Exercise Performance (immersive, always dark).** Ranges 1M / 3M / 6M / 1Y / All, each
-  shown only if it holds sessions none of the shorter ones does and fewer than all time.
+- **Exercise Performance (immersive, always dark).** Ranges 1M / 3M / 6M / 1Y / All (calendar
+  months back from today), always all five; a range without sessions says so.
   Best set in the range (`isBetterSet`), the change of the charted metric first to last,
   a chart of one recorded value per session (top weight, volume, most reps or longest
   time; only sessions comparable with the latest, so kg and lb never share an axis). No

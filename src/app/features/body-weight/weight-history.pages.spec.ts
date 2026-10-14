@@ -193,15 +193,19 @@ describe('Body weight trend (history page)', () => {
   const measurements = (el: HTMLElement) => [...(byTestId(el, 'trend-measurements')?.querySelectorAll('li') ?? [])].map((li) => clean(li));
   const SPREAD = [entry('old', '2026-03-01', 86), entry('mid', '2026-08-01', 83.5), entry('recent', '2026-10-01', 82.2), entry('now', '2026-10-09', 81.9)];
 
-  it('offers three keyboard-operable ranges, 30 days by default', async () => {
+  it('offers five keyboard-operable ranges, 30 days by default', async () => {
     const { el } = await renderHistory(SPREAD);
     const radios = [...el.querySelectorAll<HTMLInputElement>('fit-segmented-control input[type=radio]')];
     expect(radios.map((r) => [r.value, clean(r.closest('label'))])).toEqual([
-      ['30d', '30 days'],
-      ['90d', '90 days'],
-      ['all', 'All time'],
+      ['30d', '1M'],
+      ['90d', '3M'],
+      ['180d', '6M'],
+      ['365d', '1Y'],
+      ['all', 'All'],
     ]);
     expect(radios.find((r) => r.checked)?.value).toBe('30d');
+    // Short labels, full names for screen readers.
+    expect(radios.map((r) => r.getAttribute('aria-label'))).toEqual(['The last 30 days', 'The last 90 days', 'The last 180 days', 'The last year', 'All time']);
     expect(clean(el.querySelector('fit-segmented-control legend'))).toBe('Time range');
   });
 

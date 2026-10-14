@@ -10,9 +10,7 @@
       @let v = view()!;
       <h1 class="title">{{ v.name }}</h1>
 
-      @if (v.ranges.length > 1) {
-        <fit-segmented-control class="ranges" variant="inverse" name="performance-range" [legend]="detail.rangeLegend" [options]="rangeOptions()" [(value)]="range" />
-      }
+      <fit-segmented-control class="ranges" variant="inverse" name="performance-range" [legend]="detail.rangeLegend" [options]="rangeOptions()" [(value)]="range" />
 
       <section class="headline" aria-labelledby="performance-best" data-testid="performance-best">
         <h2 class="headline-label" id="performance-best">{{ detail.best }}</h2>

@@ -21,6 +21,7 @@ const localDateOf = (instant: string) => calendarDateOf(new Date(instant));
 
 // --- Ranges -------------------------------------------------------------------------------------
 
+/** All offered on every exercise, so the control keeps its shape; an empty range says so. */
 export const PERFORMANCE_RANGES = ['1m', '3m', '6m', '1y', 'all'] as const;
 export type PerformanceRange = (typeof PERFORMANCE_RANGES)[number];
 const RANGE_MONTHS: Readonly<Record<Exclude<PerformanceRange, 'all'>, number>> = { '1m': 1, '3m': 3, '6m': 6, '1y': 12 };
@@ -40,25 +41,6 @@ export function performanceRangeStart(range: PerformanceRange, today: CalendarDa
 
 const inRange = (session: ExercisePerformanceSession, start: CalendarDate | null) =>
   start === null || compareCalendarDates(localDateOf(session.completedAt), start) >= 0;
-
-/**
- * The ranges worth offering: each shorter range that holds at least one
- * session and fewer than the next shorter one doesn't (no two ranges showing
- * the same sessions), and never one equal to all time; then All.
- */
-export function availableRanges(performance: ExercisePerformance, today: CalendarDate): PerformanceRange[] {
-  const total = performance.sessions.length;
-  const ranges: PerformanceRange[] = [];
-  let previous = 0;
-  for (const range of PERFORMANCE_RANGES.slice(0, -1) as PerformanceRange[]) {
-    const count = performance.sessions.filter((s) => inRange(s, performanceRangeStart(range, today))).length;
-    if (count > 0 && count > previous && count < total) {
-      ranges.push(range);
-      previous = count;
-    }
-  }
-  return [...ranges, 'all'];
-}
 
 // --- Metrics --------------------------------------------------------------------------------------
 
@@ -230,8 +212,7 @@ export function toExercisePerformanceView(
   now: Date,
 ): ExercisePerformanceView {
   const today = calendarDateOf(now);
-  const ranges = availableRanges(performance, today);
-  const range = ranges.includes(requested.range) ? requested.range : 'all';
+  const range = requested.range;
   const latest = performance.sessions[0];
   const metrics = metricsFor(latest.logging);
   const metric = requested.metric && metrics.includes(requested.metric) ? requested.metric : metrics[0];
@@ -265,7 +246,7 @@ export function toExercisePerformanceView(
 
   return {
     name: performance.exerciseName,
-    ranges,
+    ranges: PERFORMANCE_RANGES,
     range,
     metrics,
     metric,

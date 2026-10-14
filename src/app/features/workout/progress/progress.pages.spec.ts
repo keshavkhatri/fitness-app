@@ -128,8 +128,8 @@ describe('Progress', () => {
     it('the weight range changes the chart (domain ranges only)', async () => {
       const { el, fixture } = await render(ProgressPage, LOGS, {}, undefined, BODY);
       const all = [...el.querySelectorAll<HTMLInputElement>('input[name="progress-weight-range"]')];
-      expect(all.map((i) => i.value)).toEqual(['30d', '90d', 'all']);
-      all[2].click();
+      expect(all.map((i) => i.value)).toEqual(['30d', '90d', '180d', '365d', 'all']);
+      all[4].click();
       fixture.detectChanges();
       expect(el.querySelectorAll('[data-testid="weight-chart-point"]')).toHaveLength(3);
       all[0].click();
@@ -269,7 +269,7 @@ describe('Progress', () => {
     it('the range and metric change the chart; a session opens its workout record (the one history detail)', async () => {
       const { el, fixture, forward, settle } = await render(ExercisePerformancePage, HISTORY, { exerciseId: 'barbell-bench-press' });
       const ranges = [...el.querySelectorAll<HTMLInputElement>('input[name="performance-range"]')].map((i) => i.value);
-      expect(ranges).toEqual(['1m', 'all']);
+      expect(ranges).toEqual(['1m', '3m', '6m', '1y', 'all']);
       el.querySelector<HTMLInputElement>('input[name="performance-range"][value="1m"]')!.click();
       fixture.detectChanges();
       expect(el.querySelectorAll('[data-testid="performance-point"]')).toHaveLength(3);

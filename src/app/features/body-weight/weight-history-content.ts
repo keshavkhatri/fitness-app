@@ -19,8 +19,8 @@ export const WEIGHT_HISTORY_COPY = {
   trend: {
     title: 'Over time',
     rangeLegend: 'Time range',
-    ranges: { '30d': '30 days', '90d': '90 days', all: 'All time' },
-    rangeNames: { '30d': 'the last 30 days', '90d': 'the last 90 days', all: 'all time' },
+    ranges: { '30d': '1M', '90d': '3M', '180d': '6M', '365d': '1Y', all: 'All' },
+    rangeNames: { '30d': 'the last 30 days', '90d': 'the last 90 days', '180d': 'the last 180 days', '365d': 'the last year', all: 'all time' },
     today: 'Today',
     first: 'First',
     latest: 'Latest',

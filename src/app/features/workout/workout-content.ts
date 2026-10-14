@@ -437,7 +437,7 @@ export const WORKOUT_COPY = {
     },
     weight: {
       title: 'Weight trend',
-      ranges: { '30d': '1M', '90d': '3M', all: 'All' },
+      ranges: { '30d': '1M', '90d': '3M', '180d': '6M', '365d': '1Y', all: 'All' },
       rangeLegend: 'Weight range',
       seeAll: 'Weight history',
       single: 'One weigh-in in this range: add more to see a trend.',

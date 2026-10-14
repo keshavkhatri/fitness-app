@@ -3,7 +3,7 @@ import { WeightEntry, createWeightEntry } from '../../../domain/body-measurement
 import { WorkoutLog, completedWorkouts, exercisePerformance, performedExercises } from '../../../domain/workout-session';
 import { BODYWEIGHT_PROFILE, finishedLog, planFor } from '../../../domain/workout-session/testing/workout-log-fixtures';
 import { ALL_AREAS, areaFilters, queryExercises, toExerciseRow } from './exercise-list-view-model';
-import { availableRanges, metricValue, performanceAxis, performanceRangeStart, toExercisePerformanceView } from './exercise-performance-view-model';
+import { metricValue, performanceAxis, performanceRangeStart, toExercisePerformanceView } from './exercise-performance-view-model';
 import { formatPerformedSet, performedOnLabel, toBodyMetrics, toConsistency, toKeyMetrics, toProgressWorkouts } from './progress-view-model';
 
 const local = (month: number, d: number, hour = 9) => new Date(2026, month - 1, d, hour, 0);
@@ -157,9 +157,15 @@ describe('exercise performance view model', () => {
     expect(performanceRangeStart('all', day(2026, 10, 8))).toBeNull();
   });
 
-  it('offers only ranges that show different sessions, then All', () => {
-    // 1M: 3 sessions; 3M: 4 (adds Jul 10); 6M: 4 again (skipped); 1Y: 5 = all (skipped).
-    expect(availableRanges(performance, day(2026, 10, 8))).toEqual(['1m', '3m', 'all']);
+  it('a range without sessions says so; nothing is drawn (never an empty axis)', () => {
+    const old = exercisePerformance([bench(local(3, 2, 7), 80, 8)], 'barbell-bench-press')!;
+    const view = toExercisePerformanceView(old, { range: '3m', metric: 'weight' }, NOW);
+    expect(view.ranges).toEqual(['1m', '3m', '6m', '1y', 'all']);
+    expect(view.chart).toBeNull();
+    expect(view.best).toBeNull();
+    expect(view.sessions).toEqual([]);
+    expect(view.chartLabel).toBe('No sessions in this range.');
+    expect(toExercisePerformanceView(old, { range: '1y', metric: 'weight' }, NOW).chart?.points).toHaveLength(1);
   });
 
   it('charts one recorded value per session, oldest first; the change is first to last in the range', () => {
@@ -178,13 +184,14 @@ describe('exercise performance view model', () => {
     expect(view.sessions[0].detail).toBe('4 sets · 6 reps');
   });
 
-  it('switching the range or metric changes the chart; an unavailable range falls back to All', () => {
+  it('switching the range or metric changes the chart', () => {
     const all = toExercisePerformanceView(performance, { range: 'all', metric: 'weight' }, NOW);
     expect(all.chart?.points).toHaveLength(5);
     const volume = toExercisePerformanceView(performance, { range: 'all', metric: 'volume' }, NOW);
     expect(volume.chart?.unit).toBe('kg');
     expect(volume.sessions[0].value).toBe(`${metricValue(performance.sessions[0], 'volume')!.toLocaleString('en-US')} kg`);
-    expect(toExercisePerformanceView(performance, { range: '6m', metric: 'weight' }, NOW).range).toBe('all');
+    // 6M (from 8 Apr) holds the four sessions since July; All adds February.
+    expect(toExercisePerformanceView(performance, { range: '6m', metric: 'weight' }, NOW).chart?.points).toHaveLength(4);
   });
 
   it('a single session: a point, no change; never a trend from one value', () => {
