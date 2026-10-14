@@ -1,4 +1,4 @@
-// Shared layout for the four assessment views. `@use 'view';` (resolved from this folder).
+// Shared layout for multi-view result screens (Assessment, Workout Summary). `@use 'views' as view;`
 @use 'mixins' as fx;
 
 @mixin host {

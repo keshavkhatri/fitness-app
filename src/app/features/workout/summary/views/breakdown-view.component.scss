@@ -1,0 +1,127 @@
+@use 'mixins' as fx;
+@use 'views' as view;
+
+:host {
+  @include view.host;
+}
+
+.header {
+  @include view.header;
+}
+
+.title {
+  @include view.title;
+}
+
+.lead {
+  @include view.lead;
+}
+
+.exercises {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exercise {
+  @include view.card;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 76px;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  text-align: start;
+}
+
+button.exercise {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+  @include view.card;
+}
+
+.thumb {
+  position: relative; // contains the generated art
+  flex-shrink: 0;
+  pointer-events: none; // decorative: taps go to the row
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  @include fx.text(body, semibold);
+}
+
+.detail {
+  @include fx.text(caption);
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+}
+
+.status {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  font-size: 16px;
+
+  &[data-status='complete'] {
+    background: var(--color-primary-strong);
+    color: var(--color-surface);
+  }
+
+  &[data-status='partial'] {
+    box-shadow: inset 0 0 0 2px var(--color-primary-strong);
+    color: var(--color-primary-text);
+  }
+
+  &[data-status='skipped'] {
+    box-shadow: inset 0 0 0 2px var(--color-border-strong);
+    color: var(--color-text-secondary);
+  }
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.done {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+
+  p {
+    @include fx.text(body-sm, semibold);
+    margin: 0;
+  }
+}
+
+.done-icon {
+  @include view.icon-badge(36px);
+  background: var(--color-surface);
+  font-size: 18px;
+}
+
+.empty {
+  @include view.lead;
+}

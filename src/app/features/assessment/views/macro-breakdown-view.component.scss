@@ -1,5 +1,5 @@
 @use 'mixins' as fx;
-@use 'view';
+@use 'views' as view;
 
 :host {
   @include view.host;

@@ -93,6 +93,8 @@ import {
   calculatorOutline,
   checkmarkDoneOutline,
   optionsOutline,
+  rocketOutline,
+  layersOutline,
 } from 'ionicons/icons';
 
 /**
@@ -195,5 +197,7 @@ export function registerAppIcons(): void {
     calculatorOutline,
     checkmarkDoneOutline,
     optionsOutline,
+    rocketOutline,
+    layersOutline,
 });
 }

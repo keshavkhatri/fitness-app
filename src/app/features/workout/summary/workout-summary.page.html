@@ -1,0 +1,70 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <div class="toolbar">
+      @if (current() !== 'overview') {
+        <button type="button" class="back" aria-label="Back" (click)="back()">
+          <ion-icon name="chevron-back" aria-hidden="true" />
+        </button>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <main class="body" [attr.data-view]="current()">
+    <p class="visually-hidden" role="status">{{ state.isLoading() ? copy.loading : '' }}</p>
+    @if (summary(); as s) {
+      @switch (current()) {
+        @case ('exercises') {
+          <app-summary-breakdown [exercises]="s.exercises" (open)="openExercise($event)" />
+        }
+        @case ('insights') {
+          <app-summary-insights [insights]="s.insights" />
+        }
+        @case ('next') {
+          <app-summary-next
+            [nextWorkout]="nextWorkout.hasValue() ? nextWorkout.value() : null"
+            [busy]="navigating()"
+            (selected)="openNext($event)"
+          />
+        }
+        @default {
+          <app-summary-overview [overview]="s.overview" />
+        }
+      }
+    } @else if (state.isLoading()) {
+      <h1 class="visually-hidden" tabindex="-1" data-view-heading>{{ copy.title }}</h1>
+      <div class="loading" aria-busy="true">
+        <fit-skeleton width="60%" height="34px" />
+        <fit-skeleton height="120px" radius="card" />
+        <fit-skeleton height="180px" radius="card" />
+      </div>
+    } @else {
+      <h1 class="visually-hidden" tabindex="-1" data-view-heading>{{ copy.notFound.title }}</h1>
+      <fit-card data-testid="summary-not-found">
+        <fit-empty-state icon="barbell-outline" [title]="copy.notFound.title" [description]="copy.notFound.message" />
+      </fit-card>
+    }
+  </main>
+</ion-content>
+
+<ion-footer class="ion-no-border">
+  <div class="footer">
+    @for (action of actions(); track action; let first = $first) {
+      <button
+        fit-button
+        type="button"
+        size="lg"
+        block
+        [variant]="first ? 'primary' : 'ghost'"
+        [disabled]="navigating()"
+        (click)="run(action)"
+      >
+        {{ actionLabels()[action] }}
+        @if (first && action !== 'home') {
+          <ion-icon class="arrow" name="arrow-forward" aria-hidden="true" />
+        }
+      </button>
+    }
+  </div>
+</ion-footer>

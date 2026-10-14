@@ -752,3 +752,19 @@ fat `--color-warning`; a macro is always named and valued next to its colour. Va
 `FitnessAssessment` through `toAssessmentViewModel`; the only arithmetic in the view model is the
 goal adjustment in kcal (target minus maintenance, both engine values) and each macro's calories
 (grams × the engine's energy per gram).
+
+## Workout Summary
+
+`/workout/summary/:workoutId` (`features/workout/summary`), opened by Active Workout when a workout
+is finished. Four views of one finished workout, chosen by the `view` query parameter on the same
+route (`?view=exercises|insights|next`; none is the overview), with the same Back behaviour as the
+Assessment. Shared view mixins: `src/theme/_views.scss` (`@use 'views' as view;`).
+
+| View | Theme | Content |
+|---|---|---|
+| Overview | immersive | Complete (check, confetti) or "Workout finished" (flag) — never "complete" unless every set was. Name, finish date and time; duration, exercises, sets, total volume (only with weighted sets), % of sets completed; a highlight that states only what the log shows. |
+| Exercise breakdown | dashboard | Each exercise in recorded order: completed sets, reps (or seconds) per set, load range, the domain's volume, and a done / partly / skipped mark. Rows with completed sets open the exercise's Progress page. |
+| Performance insights | immersive | Volume, sets and duration against the latest earlier workout of the same kind (session type and variant; volume only in the same unit); "Not enough history yet" without one. A volume trend of up to five same-kind workouts (bars labelled with value and date), and "New best volume" only when strictly higher than every earlier one. |
+| What's next | dashboard | The plan's next training day (its weekly layout), Nutrition, Progress, and recovery advice (not a link: there is no recovery feature). **Go to Home**, *View workout plan*. |
+
+No calories are shown: the app has no supported estimate.
