@@ -332,7 +332,7 @@ Native elements stay native (`button[fit-button]`, not a `<div>` with a click).
 | `fit-empty-state` | `icon`, `title`, `description`, projected actions | No data yet. |
 | `fit-skeleton` | (see component) | Loading placeholders. |
 | `fit-text-field` | (see component) | Labelled input with suffix, hint and error; 52px. |
-| `fit-segmented-control` | (see component) | 2–4 mutually exclusive views or ranges. |
+| `fit-segmented-control` | `variant` **(new)**: default (grey track, forms), ink (ink pill, lime selection: a light screen's main switch), compact (text options with a soft selected pill: a card's range), inverse (surface track, text-colour selection: ranges on dark screens), pills (separate pills: chart metrics on dark screens), underline (tabs of one record) | 2–4 mutually exclusive views or ranges. Native radios; every segment stays a 44px target whatever its look. |
 | `fit-choice-group` | list, grid, chips layouts; single/multiple | Choosing answers (onboarding, forms). |
 | `fit-bottom-sheet` | `title`, `description`, `[(open)]`, `screenTheme` **(new)** | Short focused tasks and confirmations. |
 | `fit-page` | `title`, `heading`, `kicker`, `refreshable`, `wide`, `customHeader` (projected `[fitPageHeader]` instead of toolbar + large title) · projected `[fitPageSubtitle]` and `[fitPageAside]` | Top-level tab pages (large title that collapses into the toolbar). |

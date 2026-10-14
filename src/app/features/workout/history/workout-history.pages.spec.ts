@@ -173,7 +173,8 @@ describe('Workout History', () => {
       ]);
 
       const bench = el.querySelectorAll('[data-testid="history-exercise"]')[0];
-      expect(clean(bench.querySelector('h3'))).toBe('Bench Press');
+      expect(clean(bench.querySelector('h3 .name'))).toBe('Bench Press');
+      expect(spoken(bench.querySelector('h3'))).toBe('Bench Press 4 sets · 6–10 reps, All sets done Best set: 42.5 kg × 9. Open its progress');
       expect(spoken(bench.querySelector('.count'))).toBe('4 sets · 6–10 reps, All sets done');
       expect(clean(bench.querySelector('[data-testid="history-best"]'))).toBe('Best set: 42.5 kg × 9');
       const actual = bench.querySelector('[data-testid="actual-sets"]')!;
@@ -197,6 +198,13 @@ describe('Workout History', () => {
       expect(storage.values.get('fitness.workout-logs')).toBe(before);
     });
 
+    it('an exercise opens its progress (the Progress tab from the Workout tab)', async () => {
+      const { el, fixture, forward } = await renderDetail(full.id, [full]);
+      el.querySelector<HTMLButtonElement>('[data-testid="history-exercise-open"]')!.click();
+      await fixture.whenStable();
+      expect(forward).toHaveBeenCalledWith(['/progress', 'exercise', full.exercises[0].exerciseId]);
+    });
+
     it('Summary shows the totals and what was planned at the time, separately from the sets', async () => {
       const { el, fixture } = await renderDetail(partial.id, [partial]);
       expect(el.querySelector('[data-testid="history-summary"]')).toBeNull();
@@ -212,7 +220,7 @@ describe('Workout History', () => {
     it('is rendered from the stored log (not today’s plan): a renamed exercise keeps its recorded name', async () => {
       const renamed: WorkoutLog = { ...full, exercises: full.exercises.map((e, i) => (i === 0 ? { ...e, name: 'Old Bench Name' } : e)) };
       const { el } = await renderDetail(full.id, [renamed]);
-      expect(clean(el.querySelector('[data-testid="history-exercise"] h3'))).toBe('Old Bench Name');
+      expect(clean(el.querySelector('[data-testid="history-exercise"] h3 .name'))).toBe('Old Bench Name');
     });
 
     it('unknown workout: calm not-found state with a way back to history', async () => {

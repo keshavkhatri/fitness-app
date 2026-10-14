@@ -115,6 +115,23 @@ ion-content {
   gap: var(--space-3);
 }
 
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.view-all {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+}
+
 .section-title {
   @include fx.text(body, bold);
 }

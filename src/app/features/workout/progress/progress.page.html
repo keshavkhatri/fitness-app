@@ -11,7 +11,7 @@
         </button>
       }
     </div>
-    <fit-segmented-control class="switch" name="progress-view" [legend]="copy.views" [options]="views" [(value)]="view" />
+    <fit-segmented-control class="switch" variant="ink" name="progress-view" [legend]="copy.views" [options]="views" [(value)]="view" />
   </header>
   <p class="visually-hidden" role="status" data-testid="announcement">{{ announcement() }}</p>
 
@@ -29,6 +29,7 @@
       [(range)]="weightRange"
       [trend]="weightTrend()"
       [chart]="weightChart()"
+      [callout]="weightCallout()"
       (openHistory)="openWeightHistory()"
       (addWeight)="addWeight()"
     />

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, resource, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { IonBackButton, IonContent, IonIcon, NavController } from '@ionic/angular';
 
 import { ThemeService } from '../../../core/theme/theme.service';
@@ -51,6 +52,7 @@ export class WorkoutHistoryDetailPage {
   private readonly history = inject(WorkoutHistoryService);
   private readonly clock = inject(CLOCK);
   private readonly nav = inject(NavController);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly copy = WORKOUT_COPY.history;
   protected readonly state = resource({
@@ -77,6 +79,16 @@ export class WorkoutHistoryDetailPage {
     // Light status-bar text while this always-dark screen is open.
     const releaseStatusBar = inject(ThemeService).holdAlwaysDark();
     inject(DestroyRef).onDestroy(releaseStatusBar);
+  }
+
+  /**
+   * The exercise's performance in Progress: within this stack when the record
+   * was opened from Progress (…/progress/workout/:id), else the Progress tab.
+   */
+  protected openExercise(exerciseId: string): void {
+    const segments = this.route.snapshot.pathFromRoot.flatMap((r) => r.url.map((u) => u.path));
+    const base = segments[0] === 'you' && segments[1] === 'progress' ? '/you/progress' : '/progress';
+    void this.nav.navigateForward([base, 'exercise', exerciseId]);
   }
 
   protected backToHistory(): void {

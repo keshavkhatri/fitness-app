@@ -9,6 +9,7 @@ import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { WorkoutPlanService } from '../../../core/workout/workout-plan.service';
 import { WeightRange, rangeStart, weightRangeSummary } from '../../../domain/body-measurements';
+import { parseIsoCalendarDate } from '../../../domain/fitness-profile';
 import { performedExercises } from '../../../domain/workout-session';
 import {
   EmptyStateComponent,
@@ -32,7 +33,7 @@ import { ConsistencyCardComponent } from './consistency-card.component';
 import { toExerciseRow } from './exercise-list-view-model';
 import { ExerciseRowListComponent } from './exercise-row-list.component';
 import { progressBaseOf } from './progress-paths';
-import { BodyMetricView, KeyMetricView, ProgressWorkoutsView, toBodyMetrics, toProgressWorkouts } from './progress-view-model';
+import { BodyMetricView, KeyMetricView, ProgressWorkoutsView, dayMonth, toBodyMetrics, toProgressWorkouts } from './progress-view-model';
 import { WeightTrendCardComponent, WeightTrendState } from './weight-trend-card.component';
 
 type ProgressView = 'overview' | 'workout' | 'body';
@@ -149,6 +150,15 @@ export class ProgressPage {
     } catch {
       return null;
     }
+  });
+
+  /** The latest weigh-in in the range, beside its point: "72.4 kg" / "8 Oct". */
+  protected readonly weightCallout = computed(() => {
+    const summary = this.weightSummary();
+    const trend = this.weightTrend();
+    const latest = summary ? parseIsoCalendarDate(summary.latest.entry.date) : null;
+    const today = parseIsoCalendarDate(this.weights.today());
+    return trend && latest && today ? { value: trend.latest.weight, date: dayMonth(latest, today) } : null;
   });
 
   // --- Header ----------------------------------------------------------------------------------

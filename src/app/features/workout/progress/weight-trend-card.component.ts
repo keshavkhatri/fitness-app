@@ -21,19 +21,15 @@ export type WeightTrendState = 'loading' | 'error' | 'none' | 'ready';
       <div class="head">
         <h2 class="title" id="progress-weight">{{ copy.title }}</h2>
         @if (state() === 'ready') {
-          <fit-segmented-control class="ranges" name="progress-weight-range" [legend]="copy.rangeLegend" [options]="options" [(value)]="range" />
+          <fit-segmented-control class="ranges" variant="compact" name="progress-weight-range" [legend]="copy.rangeLegend" [options]="options" [(value)]="range" />
         }
       </div>
 
       @switch (state()) {
         @case ('ready') {
           @if (trend(); as t) {
-            <p class="latest" data-testid="weight-latest">
-              <span class="latest-value">{{ t.latest.weight }}</span>&ngsp;
-              <span class="latest-date">{{ t.latest.dateLabel }}</span>
-            </p>
             @if (chart(); as c) {
-              <app-weight-chart [chart]="c" [label]="t.description" />
+              <app-weight-chart [chart]="c" [label]="t.description" area [callout]="callout()" />
             }
             @if (t.measurements.length === 1) {
               <p class="note" data-testid="weight-single">{{ copy.single }}</p>
@@ -67,6 +63,9 @@ export class WeightTrendCardComponent {
   readonly chart = input<WeightChartView | null>(null);
   readonly openHistory = output<void>();
   readonly addWeight = output<void>();
+
+  /** The latest value beside its point: "72.4 kg" / "8 Oct". */
+  readonly callout = input<{ readonly value: string; readonly date: string } | null>(null);
 
   protected readonly copy = WORKOUT_COPY.progress.weight;
   protected readonly options: readonly SegmentOption<WeightRange>[] = WEIGHT_RANGES.map((value) => ({ value, label: this.copy.ranges[value] }));

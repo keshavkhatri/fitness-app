@@ -16,6 +16,7 @@ import { formatPerformedSet } from './progress-view-model';
  */
 
 const copy = WORKOUT_COPY.progress.detail;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 const localDateOf = (instant: string) => calendarDateOf(new Date(instant));
 
 // --- Ranges -------------------------------------------------------------------------------------
@@ -122,8 +123,8 @@ export interface PerformanceChartView {
 
 const STEPS = [0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
 const dayNumber = (d: CalendarDate) => Date.UTC(d.year, d.month - 1, d.day) / 86_400_000;
-const shortDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-const dateText = (d: CalendarDate) => shortDate.format(new Date(d.year, d.month - 1, d.day));
+/** "24 Sep" */
+const dateText = (d: CalendarDate) => `${d.day} ${MONTHS[d.month - 1]}`;
 const round = (n: number) => Math.round(n * 10) / 10;
 
 /**
@@ -205,7 +206,6 @@ export interface ExercisePerformanceView {
   readonly sessions: readonly PerformanceSessionRowView[];
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 /** "8 Oct 2026" (the app's day-month-year form). */
 const longDate = (d: CalendarDate) => `${d.day} ${MONTHS[d.month - 1]} ${d.year}`;
 

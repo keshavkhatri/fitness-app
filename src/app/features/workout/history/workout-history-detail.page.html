@@ -40,10 +40,10 @@
 
       <section class="sheet fit-theme-dashboard" aria-labelledby="history-sheet-title">
         <h2 class="visually-hidden" id="history-sheet-title">{{ tab() === 'exercises' ? copy.detail.exercisesTitle : copy.detail.summaryTitle }}</h2>
-        <fit-segmented-control class="tabs" name="history-view" [legend]="copy.detail.views" [options]="tabs" [(value)]="tab" />
+        <fit-segmented-control class="tabs" variant="underline" name="history-view" [legend]="copy.detail.views" [options]="tabs" [(value)]="tab" />
 
         @if (tab() === 'exercises') {
-          <app-history-exercise-list [exercises]="v.exercises" />
+          <app-history-exercise-list [exercises]="v.exercises" (openExercise)="openExercise($event)" />
         } @else {
           <app-history-summary [facts]="v.facts" [exercises]="v.exercises" />
         }

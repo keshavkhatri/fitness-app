@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input } from '@angular/core';
 
 import { CHART, WeightChartView } from '../weight-trend-view-model';
 
@@ -28,6 +28,15 @@ import { CHART, WeightChartView } from '../weight-trend-view-model';
           <text class="tick" [attr.x]="size.left - 6" [attr.y]="tick.y + 4" text-anchor="end">{{ tick.label }}</text>
         }
       </g>
+      @if (area() && c.path) {
+        <defs>
+          <linearGradient [attr.id]="areaId" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" class="area-top" />
+            <stop offset="1" class="area-bottom" />
+          </linearGradient>
+        </defs>
+        <polygon [attr.points]="areaPoints()" [attr.fill]="'url(#' + areaId + ')'" />
+      }
       @if (c.path) {
         <polyline class="line" [attr.points]="c.path" data-testid="weight-chart-line" />
       }
@@ -36,6 +45,15 @@ import { CHART, WeightChartView } from '../weight-trend-view-model';
       }
       @for (x of c.xLabels; track x.anchor) {
         <text class="date" [attr.x]="x.x" [attr.y]="size.height - 8" [attr.text-anchor]="x.anchor">{{ x.label }}</text>
+      }
+      @if (callout(); as label) {
+        @let p = c.points[c.points.length - 1];
+        <!-- The latest value, beside its point (to the left: the latest point is at the right edge). -->
+        <g class="callout" [attr.transform]="'translate(' + (p.x - 72) + ' ' + calloutY(p.y) + ')'" data-testid="weight-chart-callout">
+          <rect width="64" height="34" rx="8" />
+          <text class="callout-value" x="32" y="15" text-anchor="middle">{{ label.value }}</text>
+          <text class="callout-date" x="32" y="28" text-anchor="middle">{{ label.date }}</text>
+        </g>
       }
     </svg>
   `,
@@ -79,6 +97,34 @@ import { CHART, WeightChartView } from '../weight-trend-view-model';
       stroke-linecap: round;
     }
 
+    .area-top {
+      stop-color: var(--color-primary);
+      stop-opacity: 0.22;
+    }
+
+    .area-bottom {
+      stop-color: var(--color-primary);
+      stop-opacity: 0;
+    }
+
+    .callout rect {
+      fill: var(--color-surface);
+      stroke: var(--color-border);
+    }
+
+    .callout-value {
+      fill: var(--color-text);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .callout-date {
+      fill: var(--color-text-secondary);
+      font-family: inherit;
+      font-size: 10px;
+    }
+
     .point {
       fill: var(--color-surface);
       stroke: var(--color-primary);
@@ -97,5 +143,24 @@ export class WeightChartComponent {
   /** Accessible name: a sentence describing the range. */
   readonly label = input.required<string>();
 
+  /** A soft fill under the line (decorative). */
+  readonly area = input(false, { transform: booleanAttribute });
+  /** The latest value shown beside its point; null for none. */
+  readonly callout = input<{ readonly value: string; readonly date: string } | null>(null);
+
   protected readonly size = CHART;
+  private static next = 0;
+  protected readonly areaId = `weight-area-${WeightChartComponent.next++}`;
+
+  /** The line closed down to the bottom of the plot. */
+  protected readonly areaPoints = computed(() => {
+    const points = this.chart().points;
+    const base = CHART.height - CHART.bottom;
+    return `${points[0].x},${base} ${this.chart().path} ${points[points.length - 1].x},${base}`;
+  });
+
+  /** Above the point, or below it when it is near the top. */
+  protected calloutY(y: number): number {
+    return y - 44 < CHART.top ? y + 10 : y - 44;
+  }
 }
