@@ -1,45 +1,111 @@
 @use 'mixins' as fx;
 
+// Dark, full-bleed intro: a backdrop under the page body's padding, text at the bottom.
+
 :host {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   justify-content: flex-end;
-  gap: var(--space-4);
-  padding-bottom: var(--space-6);
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--page-gutter)) calc(-1 * var(--space-8));
+  padding: var(--space-8) var(--page-gutter) var(--space-6);
+  overflow: hidden;
 }
 
-.mark {
+.backdrop {
+  position: absolute;
+  inset: 0;
   display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  margin-bottom: var(--space-4);
-  border-radius: var(--radius-card);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: 30px;
+  place-items: start end;
+  // Placeholder until a photo ships: a soft lime glow on ink.
+  background:
+    radial-gradient(120% 70% at 85% 10%, rgba(var(--color-ink-accent-rgb), 0.22), transparent 60%),
+    var(--color-bg);
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  // Readable text over any photo.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 30%, var(--color-bg) 92%);
+  }
+}
+
+.placeholder {
+  margin: 12% 8% 0 0;
+  color: rgba(var(--color-ink-accent-rgb), 0.18);
+  font-size: min(64vw, 280px);
+  transform: rotate(-24deg);
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .title {
-  @include fx.text(display, bold);
-  max-width: 14ch;
+  @include fx.text(display-xl, bold);
+  margin: 0;
   outline: none;
+}
+
+.brand {
+  display: block;
+  color: var(--color-ink-accent);
 }
 
 .text {
   @include fx.text(body);
   max-width: 32ch;
+  margin: 0;
   color: var(--color-text-secondary);
 }
 
-.setup {
+.benefits {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  margin-top: var(--space-4);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include fx.text(body-sm, medium);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  ion-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+    color: var(--color-ink-accent);
+  }
 }
 
-.setup-label {
-  @include fx.text(body-sm, medium);
+.report {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  margin-top: var(--space-2);
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

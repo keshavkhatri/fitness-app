@@ -27,12 +27,16 @@ import { CHOICE_STEPS } from './steps/choice-steps';
 import { EquipmentStepComponent } from './steps/equipment-step.component';
 import { FinishStepComponent } from './steps/finish-step.component';
 import { GoalTargetStepComponent } from './steps/goal-target-step.component';
-import { NameStepComponent } from './steps/name-step.component';
+import { HeightStepComponent } from './steps/height-step.component';
 import { OnboardingStepForm } from './steps/onboarding-step-form';
 import { ReportStepComponent } from './steps/report-step.component';
 import { SingleChoiceStepComponent } from './steps/single-choice-step.component';
 import { SummaryStepComponent } from './steps/summary-step.component';
+import { WeightStepComponent } from './steps/weight-step.component';
 import { WelcomeStepComponent } from './steps/welcome-step.component';
+
+/** A second press of the primary action this soon after the first is the tail of a double tap. */
+const GHOST_TAP_MS = 350;
 
 /** Screens a review may return to when backed out of unchanged (`returnTo`). */
 const REVIEW_RETURN_PATHS: readonly string[] = ['/you'];
@@ -63,14 +67,20 @@ const REVIEW_RETURN_PATHS: readonly string[] = ['/you'];
     BasicsStepComponent,
     EquipmentStepComponent,
     GoalTargetStepComponent,
-    NameStepComponent,
+    HeightStepComponent,
+    WeightStepComponent,
     ReportStepComponent,
     SummaryStepComponent,
     FinishStepComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // Reviewing an existing profile is the Profile editor: an immersive (dark) form.
-  host: { '(keydown.enter)': 'onEnter($event)', '[class.fit-theme-immersive]': 'reviewing()' },
+  // First run is the warm (lime) dashboard look, with a dark welcome. Reviewing an existing
+  // profile is the Profile editor: an immersive (dark) form.
+  host: {
+    '(keydown.enter)': 'onEnter($event)',
+    '[class.fit-theme-immersive]': 'immersive()',
+    '[class.fit-theme-dashboard]': '!immersive()',
+  },
 })
 export class OnboardingPage implements OnInit {
   /** Bound from route data. */
@@ -92,6 +102,7 @@ export class OnboardingPage implements OnInit {
   /** The current step is working (e.g. reading a report): its primary action waits. */
   protected readonly stepBusy = computed(() => this.stepForm()?.busy?.() ?? false);
   protected readonly reviewing = computed(() => this.flow.mode() === 'review');
+  protected readonly immersive = computed(() => this.reviewing() || this.flow.stepId() === 'welcome');
   protected readonly primaryLabel = computed(() => {
     if (this.saving()) {
       return this.reviewing() ? 'Saving your details…' : 'Creating your profile…';
@@ -103,6 +114,8 @@ export class OnboardingPage implements OnInit {
   });
 
   private readonly content = viewChild.required(IonContent);
+  /** When the primary action last ran (see primaryAction). */
+  private lastPrimaryAt = Number.NEGATIVE_INFINITY;
   private readonly stepForm = viewChild(OnboardingStepForm);
 
   constructor() {
@@ -142,6 +155,13 @@ export class OnboardingPage implements OnInit {
   }
 
   protected async primaryAction(): Promise<void> {
+    // The second tap of a double tap would act on the next screen (e.g. skip past the
+    // finish screen after "Create my profile"): taps this close together count once.
+    const now = performance.now();
+    if (now - this.lastPrimaryAt < GHOST_TAP_MS) {
+      return;
+    }
+    this.lastPrimaryAt = now;
     switch (this.flow.step().kind) {
       case 'done':
         await this.router.navigateByUrl(ASSESSMENT_PATH, { replaceUrl: true });

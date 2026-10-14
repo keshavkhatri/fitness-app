@@ -1,5 +1,5 @@
 import { completeDraft } from '../testing/draft-fixtures';
-import { EMPTY_DRAFT, applyDraftChange, draftFromProfile, sanitizeDraft, toFitnessProfile } from './onboarding-draft';
+import { EMPTY_BASICS, EMPTY_DRAFT, applyDraftChange, completeBasics, draftFromProfile, sanitizeDraft, toFitnessProfile } from './onboarding-draft';
 
 describe('onboarding draft', () => {
   describe('applyDraftChange', () => {
@@ -45,7 +45,9 @@ describe('onboarding draft', () => {
     it('returns null when anything required is missing', () => {
       expect(toFitnessProfile(EMPTY_DRAFT, new Date())).toBeNull();
       expect(toFitnessProfile(completeDraft({ equipment: [] }), new Date())).toBeNull();
-      expect(toFitnessProfile(completeDraft({ basics: null }), new Date())).toBeNull();
+      expect(toFitnessProfile(completeDraft({ basics: EMPTY_BASICS }), new Date())).toBeNull();
+      // One body detail still to answer is enough to wait.
+      expect(toFitnessProfile(completeDraft({ basics: { ...completeDraft().basics, weight: null } }), new Date())).toBeNull();
     });
   });
 
@@ -79,8 +81,17 @@ describe('onboarding draft', () => {
       expect(restored.trainingDaysPerWeek).toBeNull();
       expect(restored.unitSystem).toBe('metric');
       expect(restored.equipment).toEqual(['dumbbells']);
-      expect(restored.basics).toBeNull();
+      // Only the bad answer is dropped: the other body details were answered on their own screens.
+      expect(restored.basics).toEqual({ dateOfBirth: null, sex: 'female', height: { centimeters: 168 }, weight: { kilograms: 80 } });
       expect(restored.goalTarget).toEqual({ targetWeight: null }); // no goal → no targets
+    });
+
+    it('keeps body details answered so far (one screen at a time)', () => {
+      const partial = { ...EMPTY_BASICS, sex: 'male', height: { centimeters: 181.5 } } as const;
+      expect(sanitizeDraft({ ...EMPTY_DRAFT, basics: partial }).basics).toEqual(partial);
+      expect(sanitizeDraft({ ...EMPTY_DRAFT, basics: null }).basics).toEqual(EMPTY_BASICS);
+      expect(completeBasics(partial)).toBeNull();
+      expect(completeBasics(completeDraft().basics)).toEqual(completeDraft().basics);
     });
 
     it('returns an empty draft for garbage', () => {

@@ -17,7 +17,7 @@ describe('OnboardingFlow', () => {
 
   async function createFlow(saved?: OnboardingProgress): Promise<OnboardingFlow> {
     if (saved) {
-      storage.values.set(PROGRESS_KEY, JSON.stringify({ version: 2, ...saved }));
+      storage.values.set(PROGRESS_KEY, JSON.stringify({ version: 3, ...saved }));
     }
     TestBed.configureTestingModule({
       providers: [OnboardingFlow, { provide: KeyValueStorage, useValue: storage }],
@@ -43,52 +43,75 @@ describe('OnboardingFlow', () => {
 
   it('does not advance past an unanswered question', async () => {
     const flow = await createFlow();
-    flow.next(); // welcome → name
+    flow.next(); // welcome → basics
 
     expect(flow.next()).toBe(false);
-    expect(flow.stepId()).toBe('name');
+    expect(flow.stepId()).toBe('basics');
+    // Name alone isn't enough: sex and date of birth are on the same screen.
     flow.update({ name: 'Alex' });
-    flow.next(); // name → goal
+    expect(flow.next()).toBe(false);
+    flow.update({ basics: { ...flow.draft().basics, dateOfBirth: '1991-06-15', sex: 'female' } });
+    flow.next(); // basics → height
 
     expect(flow.next()).toBe(false);
-    expect(flow.stepId()).toBe('goal');
+    expect(flow.stepId()).toBe('height');
   });
 
-  it('walks forward and back through the steps', async () => {
+  it('walks forward and back through the steps, in the order of the design', async () => {
     const flow = await createFlow();
     flow.next();
-    expect(flow.stepId()).toBe('name');
-    expect(flow.position()).toEqual({ current: 1, total: 10 });
-    flow.update({ name: 'Alex' });
-    flow.next();
-    flow.update({ primaryGoal: 'lose-fat' });
-    flow.next();
-
     expect(flow.stepId()).toBe('basics');
-    expect(flow.position()).toEqual({ current: 3, total: 10 });
+    expect(flow.position()).toEqual({ current: 1, total: 11 });
+    flow.update({ name: 'Alex', basics: { dateOfBirth: '1991-06-15', sex: 'female', height: null, weight: null } });
+    flow.next();
+    expect(flow.stepId()).toBe('height');
+    flow.update({ basics: { ...flow.draft().basics, height: { centimeters: 168 } } });
+    flow.next();
+    expect(flow.stepId()).toBe('weight');
+    flow.update({ basics: { ...flow.draft().basics, weight: { kilograms: 80 } } });
+    flow.next();
+    expect(flow.stepId()).toBe('activity');
+    expect(flow.position()).toEqual({ current: 4, total: 11 });
+    flow.update({ activityLevel: 'lightly-active' });
+    flow.next();
+    expect(flow.stepId()).toBe('goal');
 
     flow.back();
-    expect(flow.stepId()).toBe('goal');
+    expect(flow.stepId()).toBe('activity');
     flow.back();
-    expect(flow.stepId()).toBe('name');
+    expect(flow.stepId()).toBe('weight');
+    flow.back();
+    expect(flow.stepId()).toBe('height');
+    flow.back();
+    expect(flow.stepId()).toBe('basics');
     flow.back();
     expect(flow.stepId()).toBe('welcome');
+    // Going back loses nothing.
+    expect(flow.draft().basics).toEqual({ dateOfBirth: '1991-06-15', sex: 'female', height: { centimeters: 168 }, weight: { kilograms: 80 } });
+  });
+
+  it('starts the report path with the upload, then the same screens', async () => {
+    const flow = await createFlow();
+    flow.update({ setupMethod: 'report' });
+    flow.next();
+    expect(flow.stepId()).toBe('report');
+    expect(flow.position()).toEqual({ current: 1, total: 12 });
   });
 
   it('skips the target step for goals without targets', async () => {
     const flow = await createFlow({
-      stepId: 'activity',
+      stepId: 'goal',
       draft: completeDraft({ primaryGoal: 'get-stronger' }),
       editingFromSummary: false,
     });
 
-    expect(flow.position()).toEqual({ current: 8, total: 9 });
+    expect(flow.position()).toEqual({ current: 5, total: 10 });
     flow.next();
-    expect(flow.stepId()).toBe('summary');
+    expect(flow.stepId()).toBe('experience');
   });
 
   it('shows the target step for fat loss', async () => {
-    const flow = await createFlow({ stepId: 'activity', draft: completeDraft(), editingFromSummary: false });
+    const flow = await createFlow({ stepId: 'goal', draft: completeDraft(), editingFromSummary: false });
     flow.next();
     expect(flow.stepId()).toBe('goal-target');
   });
@@ -96,18 +119,28 @@ describe('OnboardingFlow', () => {
   it('persists answers and position, and restores them', async () => {
     const flow = await createFlow();
     flow.next();
-    flow.update({ name: 'Alex' });
+    flow.update({ name: 'Alex', basics: { dateOfBirth: '1991-06-15', sex: 'male', height: null, weight: null } });
     flow.next();
-    flow.update({ primaryGoal: 'build-muscle' });
+    flow.update({ basics: { ...flow.draft().basics, height: { centimeters: 181.5 } } });
     flow.next();
 
-    expect(savedProgress()).toMatchObject({ stepId: 'basics', draft: { name: 'Alex', primaryGoal: 'build-muscle' } });
+    expect(savedProgress()).toMatchObject({ version: 3, stepId: 'weight', draft: { name: 'Alex', basics: { height: { centimeters: 181.5 }, weight: null } } });
 
     TestBed.resetTestingModule();
     const restored = await createFlow();
-    expect(restored.stepId()).toBe('basics');
-    expect(restored.draft().primaryGoal).toBe('build-muscle');
+    expect(restored.stepId()).toBe('weight');
+    expect(restored.draft().basics).toEqual({ dateOfBirth: '1991-06-15', sex: 'male', height: { centimeters: 181.5 }, weight: null });
     expect(restored.draft().name).toBe('Alex');
+  });
+
+  it('resumes progress saved by the previous version (one basics screen, a separate name step)', async () => {
+    storage.values.set(
+      PROGRESS_KEY,
+      JSON.stringify({ version: 2, stepId: 'name', draft: { ...completeDraft(), name: null }, editingFromSummary: false }),
+    );
+    const flow = await createFlow();
+    expect(flow.stepId()).toBe('basics'); // the name moved onto this screen
+    expect(flow.draft().basics).toEqual(completeDraft().basics);
   });
 
   it('starts fresh when saved progress is corrupt', async () => {
@@ -154,6 +187,15 @@ describe('OnboardingFlow', () => {
       expect(flow.next()).toBe(false); // must pick home equipment first
     });
 
+    it('a new weight is checked against the target it was set from', async () => {
+      const flow = await createFlow({ stepId: 'summary', draft: completeDraft(), editingFromSummary: false });
+      flow.edit('weight');
+      flow.update({ basics: { ...flow.draft().basics, weight: { kilograms: 70 } } }); // target 72 kg is now above it
+      flow.next();
+      expect(flow.stepId()).toBe('goal-target');
+      expect(flow.next()).toBe(false);
+    });
+
     it('back returns to the summary', async () => {
       const flow = await createFlow({ stepId: 'summary', draft: completeDraft(), editingFromSummary: false });
       flow.edit('frequency');
@@ -181,7 +223,7 @@ describe('OnboardingFlow', () => {
       const flow = await createFlow();
       flow.startReview(toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!);
       expect(await flow.complete()).toBe(false);
-      expect(flow.stepId()).toBe('name');
+      expect(flow.stepId()).toBe('basics');
 
       flow.update({ name: 'Sam' });
       flow.next();

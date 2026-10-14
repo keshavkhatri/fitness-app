@@ -18,6 +18,8 @@ export interface SummaryRow {
   readonly value: string;
   /** Step that edits this value. */
   readonly editStep: OnboardingStepId;
+  /** Decorative icon leading the row (first-run review). */
+  readonly icon?: string;
 }
 
 const MISSING = 'Not answered';
@@ -28,46 +30,48 @@ const MISSING = 'Not answered';
  */
 export function buildSummaryRows(draft: OnboardingDraft, now: Date = new Date()): SummaryRow[] {
   const { basics, unitSystem } = draft;
-  const age = basics ? currentAge(basics.dateOfBirth, now) : null;
+  const age = basics.dateOfBirth ? currentAge(basics.dateOfBirth, now) : null;
   const days = draft.trainingDaysPerWeek;
 
+  // In the order the questions are asked.
   const rows: SummaryRow[] = [
-    { id: 'name', label: 'Name', value: draft.name ?? MISSING, editStep: 'name' },
-    { id: 'goal', label: 'Goal', value: draft.primaryGoal ? labelFor(GOAL_OPTIONS, draft.primaryGoal) : MISSING, editStep: 'goal' },
-    { id: 'age', label: 'Age', value: age !== null ? `${age} years` : MISSING, editStep: 'basics' },
-    { id: 'sex', label: 'Sex', value: basics ? labelFor(SEX_OPTIONS, basics.sex) : MISSING, editStep: 'basics' },
-    { id: 'height', label: 'Height', value: basics ? formatHeight(basics.height, unitSystem) : MISSING, editStep: 'basics' },
-    { id: 'weight', label: 'Weight', value: basics ? formatWeight(basics.weight, unitSystem) : MISSING, editStep: 'basics' },
+    { id: 'name', label: 'Name', value: draft.name ?? MISSING, editStep: 'basics', icon: 'person-outline' },
+    { id: 'age', label: 'Age', value: age !== null ? `${age} years` : MISSING, editStep: 'basics', icon: 'calendar-outline' },
+    { id: 'sex', label: 'Sex', value: basics.sex ? labelFor(SEX_OPTIONS, basics.sex) : MISSING, editStep: 'basics', icon: 'body-outline' },
+    {
+      id: 'height',
+      label: 'Height',
+      value: basics.height ? formatHeight(basics.height, unitSystem) : MISSING,
+      editStep: 'height',
+      icon: 'resize-outline',
+    },
+    {
+      id: 'weight',
+      label: 'Weight',
+      value: basics.weight ? formatWeight(basics.weight, unitSystem) : MISSING,
+      editStep: 'weight',
+      icon: 'scale-outline',
+    },
     {
       id: 'units',
       label: 'Units',
       value: UNIT_SYSTEM_OPTIONS.find((o) => o.value === unitSystem)?.label ?? unitSystem,
-      editStep: 'basics',
-    },
-    {
-      id: 'experience',
-      label: 'Experience',
-      value: draft.trainingExperience ? labelFor(EXPERIENCE_OPTIONS, draft.trainingExperience) : MISSING,
-      editStep: 'experience',
-    },
-    { id: 'training', label: 'Training', value: days ? `${days} days/week` : MISSING, editStep: 'frequency' },
-    {
-      id: 'location',
-      label: 'Location',
-      value: draft.trainingLocation ? labelFor(LOCATION_OPTIONS, draft.trainingLocation) : MISSING,
-      editStep: 'location',
-    },
-    {
-      id: 'equipment',
-      label: 'Equipment',
-      value: draft.equipment.length ? draft.equipment.map((id) => EQUIPMENT_LABELS[id]).join(', ') : MISSING,
-      editStep: 'equipment',
+      editStep: 'height',
+      icon: 'swap-horizontal-outline',
     },
     {
       id: 'activity',
       label: 'Activity',
       value: draft.activityLevel ? labelFor(ACTIVITY_OPTIONS, draft.activityLevel) : MISSING,
       editStep: 'activity',
+      icon: 'walk-outline',
+    },
+    {
+      id: 'goal',
+      label: 'Goal',
+      value: draft.primaryGoal ? labelFor(GOAL_OPTIONS, draft.primaryGoal) : MISSING,
+      editStep: 'goal',
+      icon: 'trophy-outline',
     },
   ];
 
@@ -78,8 +82,34 @@ export function buildSummaryRows(draft: OnboardingDraft, now: Date = new Date())
       label: 'Target weight',
       value: target ? formatWeight(target, unitSystem) : 'Not set',
       editStep: 'goal-target',
+      icon: 'flag-outline',
     });
   }
+
+  rows.push(
+    {
+      id: 'experience',
+      label: 'Experience',
+      value: draft.trainingExperience ? labelFor(EXPERIENCE_OPTIONS, draft.trainingExperience) : MISSING,
+      editStep: 'experience',
+      icon: 'trending-up-outline',
+    },
+    { id: 'training', label: 'Training', value: days ? `${days} days/week` : MISSING, editStep: 'frequency', icon: 'time-outline' },
+    {
+      id: 'location',
+      label: 'Location',
+      value: draft.trainingLocation ? labelFor(LOCATION_OPTIONS, draft.trainingLocation) : MISSING,
+      editStep: 'location',
+      icon: 'business-outline',
+    },
+    {
+      id: 'equipment',
+      label: 'Equipment',
+      value: draft.equipment.length ? draft.equipment.map((id) => EQUIPMENT_LABELS[id]).join(', ') : MISSING,
+      editStep: 'equipment',
+      icon: 'barbell-outline',
+    },
+  );
 
   return rows;
 }

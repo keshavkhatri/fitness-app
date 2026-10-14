@@ -1,0 +1,46 @@
+@use 'mixins' as fx;
+@use 'step';
+
+// Height and weight steps: the question, the picker and the report note.
+
+:host {
+  @include step.host;
+  gap: var(--space-5);
+}
+
+.header {
+  @include step.header;
+}
+
+.title {
+  @include step.title;
+}
+
+.helper {
+  @include step.helper;
+}
+
+.report-note {
+  @include fx.text(body-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 16px;
+  }
+
+  // Tone is carried by the icon and the text too.
+  &[data-tone='read'] {
+    color: var(--color-success-text);
+  }
+
+  &[data-tone='check'] {
+    @include fx.text(body-sm, medium);
+    color: var(--color-warning-text);
+  }
+}

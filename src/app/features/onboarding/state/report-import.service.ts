@@ -50,14 +50,19 @@ const failed = (failure: ReportImportFailure, reportIssues: readonly ReportIssue
  * Provided per route/page and held in memory only: the
  * image, the extraction and the suggestions are never persisted, and the
  * image is let go as soon as it has been read. Nothing here changes the
- * draft; the basics step offers the suggestions for review.
+ * draft; the basics, height and weight steps each offer theirs for review.
  */
+/** The profile values a report can fill in, each confirmed on its own screen. */
+export type PrefillField = 'sex' | 'height' | 'weight';
+const PREFILL_FIELDS: readonly PrefillField[] = ['sex', 'height', 'weight'];
+
 @Injectable()
 export class ReportImport {
   private readonly client = inject(InBodyExtractionClient);
   private readonly clock = inject(CLOCK);
   private readonly state = signal<ReportImportState>({ status: 'empty' });
-  private readonly prefillPending = signal(false);
+  /** Report values not yet confirmed on their screen (each screen starts from the report until then). */
+  private readonly prefillPending = signal<ReadonlySet<PrefillField>>(new Set());
   /** Bumped on every read and reset, so a late answer for an abandoned read is dropped. */
   private attempt = 0;
 
@@ -68,8 +73,10 @@ export class ReportImport {
     const state = this.state();
     return state.status === 'read' ? state.reading : null;
   });
-  /** True from a successful read until the user confirms the prefilled basics. */
-  readonly basicsPrefillPending = this.prefillPending.asReadonly();
+  /** True from a successful read until the user confirms that value on its screen. */
+  isPrefillPending(field: PrefillField): boolean {
+    return this.prefillPending().has(field);
+  }
 
   /** Takes a newly chosen image, if the app can tell it's usable. Ignored while reading. */
   choose(file: File): void {
@@ -103,18 +110,22 @@ export class ReportImport {
       return;
     }
     this.state.set({ status: 'read', reading: { extraction: result.extraction, prefill } });
-    this.prefillPending.set(true);
+    this.prefillPending.set(new Set(PREFILL_FIELDS));
   }
 
-  /** The user confirmed the prefilled basics: from now on the draft is the source. */
-  markBasicsConfirmed(): void {
-    this.prefillPending.set(false);
+  /** The user confirmed a prefilled value: from now on the draft is its source. */
+  markConfirmed(field: PrefillField): void {
+    this.prefillPending.update((pending) => {
+      const next = new Set(pending);
+      next.delete(field);
+      return next;
+    });
   }
 
   /** Forgets the image and any reading (e.g. on switching to manual entry). */
   reset(): void {
     this.attempt++;
     this.state.set({ status: 'empty' });
-    this.prefillPending.set(false);
+    this.prefillPending.set(new Set());
   }
 }

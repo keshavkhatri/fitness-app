@@ -44,7 +44,11 @@ describe('ReportImport', () => {
     expect(state.status).toBe('read');
     expect('file' in state).toBe(false);
     expect(report.reading()?.prefill.profile.height).toMatchObject({ kind: 'prefilled', value: { centimeters: 172 } });
-    expect(report.basicsPrefillPending()).toBe(true);
+    expect(['sex', 'height', 'weight'].map((f) => report.isPrefillPending(f as 'sex'))).toEqual([true, true, true]);
+
+    // Each value is confirmed on its own screen; the others stay pending.
+    report.markConfirmed('height');
+    expect(['sex', 'height', 'weight'].map((f) => report.isPrefillPending(f as 'sex'))).toEqual([true, false, true]);
   });
 
   it('rejects an unusable file without sending it', async () => {
@@ -122,6 +126,6 @@ describe('ReportImport', () => {
     await reading;
 
     expect(report.current()).toEqual({ status: 'empty' });
-    expect(report.basicsPrefillPending()).toBe(false);
+    expect(report.isPrefillPending('weight')).toBe(false);
   });
 });

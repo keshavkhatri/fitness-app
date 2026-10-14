@@ -1,34 +1,107 @@
 @use 'mixins' as fx;
 
 :host {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
+  padding-top: var(--space-8);
   text-align: center;
+}
+
+.confetti {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 220px;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  width: 10px;
+  height: 4px;
+  border-radius: 2px;
+
+  &.tone-0 {
+    background: var(--color-primary);
+  }
+
+  &.tone-1 {
+    background: var(--color-primary-strong);
+  }
+
+  &.tone-2 {
+    background: var(--color-warning);
+  }
 }
 
 .mark {
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   margin-bottom: var(--space-3);
   border-radius: var(--radius-pill);
-  background: var(--color-success-soft);
-  color: var(--color-success-text);
-  font-size: 36px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 40px;
 }
 
 .title {
   @include fx.text(h1, bold);
+  margin: 0;
   outline: none;
 }
 
 .text {
   @include fx.text(body);
   max-width: 30ch;
+  margin: 0;
   color: var(--color-text-secondary);
+}
+
+.next {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: start;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+}
+
+.icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 20px;
+}
+
+.item {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+
+  strong {
+    display: block;
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+  }
 }

@@ -1,51 +1,82 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
-import { ChoiceGroupComponent } from '../../../shared/ui';
-import { SETUP_METHOD_OPTIONS } from '../onboarding-content';
-import { SetupMethod } from '../state/onboarding-draft';
+import { APP_BRAND } from '../../../core/brand';
+import { WELCOME_PHOTO } from '../onboarding-media';
 import { OnboardingFlow } from '../state/onboarding-flow.service';
 import { ReportImport } from '../state/report-import.service';
-import { STEP_HEADING_ID } from './onboarding-step-form';
+import { OnboardingStepForm, STEP_HEADING_ID } from './onboarding-step-form';
+
+/** What the app does, each backed by a real feature. */
+const BENEFITS = [
+  { icon: 'barbell', text: 'A workout plan built for you' },
+  { icon: 'nutrition', text: 'Track your nutrition' },
+  { icon: 'stats-chart', text: 'See your progress' },
+  { icon: 'flash', text: 'Build lasting habits' },
+] as const;
 
 /**
- * Intro, and the choice of how to set up: manually (the default, so "Get
- * Started" works as it always has) or from an InBody report, offered only
- * when this build can read reports.
+ * Intro on a dark backdrop (a photo once one ships; see onboarding-media).
+ * "Get started" sets up by answering questions; when this build can read
+ * InBody reports, a second action sets up from one instead.
  */
 @Component({
   selector: 'app-welcome-step',
   template: `
-    <div class="mark" aria-hidden="true"><ion-icon name="pulse" /></div>
-    <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>Your fitness journey, built around you.</h1>
-    <p class="text">Workouts, nutrition and progress — all in one place.</p>
+    <div class="backdrop" aria-hidden="true">
+      @if (photo) {
+        <img [src]="photo" alt="" />
+      } @else {
+        <ion-icon class="placeholder" name="barbell" />
+      }
+    </div>
 
-    @if (reportUploadAvailable) {
-      <div class="setup">
-        <h2 class="setup-label" id="setup-method-label">How would you like to set up?</h2>
-        <fit-choice-group
-          name="setup-method"
-          labelledBy="setup-method-label"
-          [options]="setupOptions"
-          [selected]="selected()"
-          (optionToggled)="choose($event)"
-        />
-      </div>
-    }
+    <div class="content">
+      <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>
+        Welcome to <span class="brand">{{ brand }}</span>
+      </h1>
+      <p class="text">Workouts, nutrition and progress, all in one place.</p>
+
+      <ul class="benefits">
+        @for (benefit of benefits; track benefit.text) {
+          <li><ion-icon [name]="benefit.icon" aria-hidden="true" />{{ benefit.text }}</li>
+        }
+      </ul>
+
+      @if (reportUploadAvailable) {
+        <button type="button" class="report" (click)="setUpFromReport()">
+          <ion-icon name="document-text-outline" aria-hidden="true" />
+          Set up from an InBody report instead
+        </button>
+      }
+    </div>
   `,
   styleUrl: './welcome-step.component.scss',
-  imports: [IonIcon, ChoiceGroupComponent],
+  imports: [IonIcon],
+  providers: [{ provide: OnboardingStepForm, useExisting: WelcomeStepComponent }],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WelcomeStepComponent {
+export class WelcomeStepComponent implements OnboardingStepForm {
   private readonly flow = inject(OnboardingFlow);
+  private readonly report = inject(ReportImport, { optional: true });
 
   protected readonly headingId = STEP_HEADING_ID;
-  protected readonly setupOptions = SETUP_METHOD_OPTIONS;
-  protected readonly reportUploadAvailable = inject(ReportImport, { optional: true })?.available ?? false;
-  protected readonly selected = computed(() => [this.flow.draft().setupMethod]);
+  protected readonly brand = APP_BRAND;
+  protected readonly photo = WELCOME_PHOTO;
+  protected readonly benefits = BENEFITS;
+  protected readonly reportUploadAvailable = this.report?.available ?? false;
 
-  protected choose(setupMethod: SetupMethod): void {
-    this.flow.update({ setupMethod });
+  /** "Get started": set up by answering the questions (forgetting any report read earlier). */
+  submit(): boolean {
+    if (this.flow.draft().setupMethod === 'report') {
+      this.report?.reset();
+      this.flow.update({ setupMethod: 'manual' });
+    }
+    return true;
+  }
+
+  protected setUpFromReport(): void {
+    this.flow.update({ setupMethod: 'report' });
+    this.flow.next();
   }
 }

@@ -126,6 +126,15 @@
     @include fx.text(h3, semibold);
   }
 
+  // Icon tiles (e.g. equipment): a short label under the icon.
+  .option:has(.icon) {
+    padding: var(--space-3) var(--space-2);
+
+    .title {
+      @include fx.text(body-sm, semibold);
+    }
+  }
+
   .indicator {
     position: absolute;
     top: var(--space-2);

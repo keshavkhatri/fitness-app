@@ -17,3 +17,5 @@ export * from './section-header/section-header.component';
 export * from './segmented-control/segmented-control.component';
 export * from './skeleton/loading-skeleton.component';
 export * from './text-field/text-field.component';
+export * from './ruler/ruler.component';
+export * from './ruler/ruler-math';

@@ -17,6 +17,8 @@ export interface SingleChoiceStepConfig<T extends ChoiceValue = ChoiceValue> {
   readonly options: readonly ChoiceOption<T>[];
   readonly layout?: ChoiceGroupLayout;
   readonly columns?: number;
+  /** A tip under the options. */
+  readonly note?: { readonly icon: string; readonly title: string; readonly text: string };
   /** Current answer from the draft. */
   readonly read: (draft: OnboardingDraft) => T | null;
   /** Draft change for a newly chosen answer. */
@@ -60,6 +62,13 @@ export function defineChoiceStep<T extends ChoiceValue>(config: SingleChoiceStep
         <ion-icon name="alert-circle-outline" aria-hidden="true" />{{ message }}
       }
     </p>
+
+    @if (c.note; as note) {
+      <aside class="note">
+        <ion-icon [name]="note.icon" aria-hidden="true" />
+        <p><strong>{{ note.title }}</strong> {{ note.text }}</p>
+      </aside>
+    }
   `,
   styleUrl: './single-choice-step.component.scss',
   imports: [IonIcon, ChoiceGroupComponent],

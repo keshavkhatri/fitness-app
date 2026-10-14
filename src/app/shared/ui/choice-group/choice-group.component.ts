@@ -6,9 +6,21 @@ export interface ChoiceOption<T extends string | number> {
   readonly label: string;
   readonly description?: string;
   readonly icon?: string;
+  /** A picture leading the card (list layout); decorative. */
+  readonly media?: ChoiceMedia;
 }
 
-export type ChoiceGroupLayout = 'list' | 'grid' | 'chips';
+/**
+ * A photo, or while none ships (`src: null`) a drawn placeholder: the icon
+ * on a dark tile. Paths are local assets; never hotlinked.
+ */
+export interface ChoiceMedia {
+  readonly src: string | null;
+  readonly icon: string;
+}
+
+/** circles: one row of round numbered options (e.g. days per week). */
+export type ChoiceGroupLayout = 'list' | 'grid' | 'chips' | 'circles';
 
 /**
  * Selectable option cards backed by native radios (single) or checkboxes
@@ -42,7 +54,15 @@ export type ChoiceGroupLayout = 'list' | 'grid' | 'chips';
             [checked]="checked"
             (change)="optionToggled.emit(option.value)"
           />
-          @if (option.icon) {
+          @if (option.media; as media) {
+            <span class="media" aria-hidden="true">
+              @if (media.src) {
+                <img [src]="media.src" alt="" loading="lazy" />
+              } @else {
+                <ion-icon [name]="media.icon" />
+              }
+            </span>
+          } @else if (option.icon) {
             <span class="icon" aria-hidden="true"><ion-icon [name]="option.icon" /></span>
           }
           <span class="text">
@@ -60,7 +80,7 @@ export type ChoiceGroupLayout = 'list' | 'grid' | 'chips';
       }
     </div>
   `,
-  styleUrl: './choice-group.component.scss',
+  styleUrls: ['./choice-group.component.scss', './choice-group-extras.scss'],
   imports: [IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[attr.data-mode]': 'multiple() ? "multiple" : "single"' },

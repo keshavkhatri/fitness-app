@@ -1,42 +1,19 @@
-import { REPORT_TODAY, notOnReport, reportReading, uncertain, unreadable } from '../testing/report-fixtures';
-import { basicsFormFromDraft, validateBasicsForm } from '../validation/onboarding-validation';
-import { EMPTY_DRAFT } from './onboarding-draft';
-import { applyReportPrefill, reportFieldNotes, reportReviewSummary } from './report-review';
+import { notOnReport, reportReading, uncertain, unreadable } from '../testing/report-fixtures';
+import { reportFieldNotes, reportPrefillValues, reportReviewSummary } from './report-review';
 
-const emptyForm = basicsFormFromDraft(EMPTY_DRAFT);
-
-describe('applyReportPrefill', () => {
-  it('fills in sex, height and weight from the report, never the date of birth', () => {
-    const form = applyReportPrefill(emptyForm, reportReading().prefill);
-
-    expect(form).toMatchObject({ sex: 'female', heightCm: '172', weight: '68.4' });
-    expect([form.birthDay, form.birthMonth, form.birthYear]).toEqual(['', '', '']);
+describe('reportPrefillValues', () => {
+  it('gives sex, height and weight from the report in canonical units, never a date of birth', () => {
+    expect(reportPrefillValues(reportReading().prefill)).toEqual({ sex: 'female', height: { centimeters: 172 }, weight: { kilograms: 68.4 } });
   });
 
-  it('keeps the decimal of a printed height', () => {
-    const form = applyReportPrefill(emptyForm, reportReading({ profile: { height: { status: 'read', text: '172.4', unit: 'cm', sourceLabel: 'Height' } } }).prefill);
-    expect(form.heightCm).toBe('172.4');
+  it('keeps the decimal of a printed height (not rounded to a ruler mark)', () => {
+    const reading = reportReading({ profile: { height: { status: 'read', text: '172.4', unit: 'cm', sourceLabel: 'Height' } } });
+    expect(reportPrefillValues(reading.prefill).height).toEqual({ centimeters: 172.4 });
   });
 
-  it('keeps what the user already entered for fields the report could not fill', () => {
-    const manual = { ...emptyForm, birthDay: '15', birthMonth: '6', birthYear: '1991', sex: 'female' as const, heightCm: '168' };
+  it('leaves out what the report could not fill, so those screens keep the user’s answer', () => {
     const reading = reportReading({ profile: { gender: notOnReport, height: unreadable('Height') } });
-
-    const form = applyReportPrefill(manual, reading.prefill);
-
-    expect(form).toMatchObject({ birthDay: '15', birthMonth: '6', birthYear: '1991', sex: 'female', heightCm: '168', weight: '68.4' });
-  });
-
-  it('converts into the user’s unit system', () => {
-    const form = applyReportPrefill({ ...emptyForm, unitSystem: 'imperial' }, reportReading().prefill);
-    expect(form).toMatchObject({ heightFeet: '5', heightInches: '8', weight: '150.8' });
-  });
-
-  it('gives a form that still has to pass the usual validation (date of birth is required)', () => {
-    const form = applyReportPrefill(emptyForm, reportReading().prefill);
-    const result = validateBasicsForm(form, new Date(`${REPORT_TODAY}T12:00:00`));
-    expect(result.ok).toBe(false);
-    expect(result.ok ? null : Object.keys(result.errors)).toEqual(['dateOfBirth']);
+    expect(reportPrefillValues(reading.prefill)).toEqual({ weight: { kilograms: 68.4 } });
   });
 });
 
