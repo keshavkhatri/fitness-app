@@ -1,0 +1,124 @@
+@use 'mixins' as fx;
+@use 'views' as view;
+
+// Inbox, second sheet (kept apart for the style budget): notification cards and empty states.
+
+// --- Items ------------------------------------------------------------------------------------
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+  @include view.card;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-3);
+  border: var(--border-hairline) solid var(--color-border);
+  text-align: start;
+
+  // Read items recede a little; unread ones also carry a dot and "unread" for screen readers.
+  &:not(.unread) .item-title {
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+.icon {
+  @include view.icon-badge(44px);
+  font-size: 22px;
+
+  &[data-category='workout'] {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  &[data-category='nutrition'] {
+    background: var(--color-warning);
+    color: var(--color-on-primary);
+  }
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.item-title {
+  @include fx.text(body, bold);
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+
+  // Lime is too faint on the light surfaces.
+  :host(.fit-theme-dashboard) & {
+    background: var(--color-primary-strong);
+  }
+}
+
+.message {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: flex-end;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.time {
+  @include fx.text(caption);
+}
+
+// --- Empty ------------------------------------------------------------------------------------
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.bell {
+  @include view.icon-badge(96px);
+  margin-bottom: var(--space-3);
+  font-size: 44px;
+}
+
+.empty-title {
+  @include fx.text(h2, bold);
+  margin: 0;
+}
+
+.empty-text {
+  @include view.lead;
+  max-width: 32ch;
+}

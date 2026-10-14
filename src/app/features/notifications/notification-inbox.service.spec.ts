@@ -43,6 +43,27 @@ describe('NotificationInboxService', () => {
     expect(again.unreadCount()).toBe(0);
   });
 
+  it('marking one read persists it alone, and refreshing never duplicates reminders', async () => {
+    const { inbox, storage } = setup();
+    const [first] = await inbox.refresh();
+    await inbox.markRead(first.id);
+    expect(inbox.isRead(first.id)).toBe(true);
+    expect(inbox.unreadCount()).toBe(3);
+
+    await inbox.refresh();
+    await inbox.refresh();
+    expect(inbox.items()).toHaveLength(4);
+    expect(new Set(inbox.items().map((n) => n.id)).size).toBe(4);
+
+    TestBed.resetTestingModule();
+    const again = setup(storage).inbox;
+    await again.refresh();
+    expect(again.isRead(first.id)).toBe(true);
+    expect(again.unreadCount()).toBe(3);
+    expect(again.find(first.id)?.title).toBe(first.title);
+    expect(again.find('food:2026-01-01')).toBeNull();
+  });
+
   it('a check-in saved today removes its reminder', async () => {
     const storage = new MemoryKeyValueStorage();
     storage.values.set('fitness.daily-check-ins', JSON.stringify({ version: 1, steps: {}, recovery: { '2026-10-08': 'good' } }));
