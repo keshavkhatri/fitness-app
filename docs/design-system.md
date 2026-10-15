@@ -4,12 +4,18 @@ The implementation contract for the app's UI, and for the redesign towards a
 modern, premium fitness companion. Every screen consumes this system; no
 screen defines its own colors, type sizes, spacing, radii or shadows.
 
-**Status:** Phase 1 (foundation: tokens, screen themes, shared primitives),
-Phase 2 (Home, to the approved mockup) and Phase 3 (the Active Workout) are in
-place. Home, its notifications page and the bottom tab bar use
-`fit-theme-dashboard`; the Active Workout uses `fit-theme-immersive`; every
-other screen still renders with the classic theme, unchanged. Screens adopt the redesign one at a time, in reviewed phases
-(see [Adopting the system](#adopting-the-system-in-a-screen)).
+**Status (15 Oct 2026):** the redesign is in place across the app. All 28
+feature page components and the tab shell render with a redesign screen theme
+(`fit-theme-dashboard`, `fit-theme-immersive`, or one chosen by view); see the
+[screen inventory](#screen-inventory). The classic palettes (`$light` / `$dark`)
+are still the root palettes and the default for any new screen that doesn't
+opt in; retiring them is a separate, reviewed change (see
+[Adopting the system](#adopting-the-system-in-a-screen)). A visual QA pass of the
+running app is recorded in [Visual QA](#visual-qa-15-oct-2026): what was
+inspected, the defects fixed, and what is still open or unverified. The
+approved mockup files are not in the repository, so that pass checked
+consistency with this document and the screens' own specifications, not a pixel
+comparison.
 
 Source of truth, in this order: `src/theme/*.scss` (values) → this document
 (rules) → `src/app/shared/ui` (components). If this document and the code
@@ -61,6 +67,12 @@ Because the names don't change, every `fit-*` component and every existing
 style written against tokens adopts a screen theme with no code changes.
 Screens without a class are unaffected.
 
+A page can pick its theme per view by binding both classes to one signal
+(`[class.fit-theme-immersive]="dark()"`, `[class.fit-theme-dashboard]="!dark()"`),
+never both true: Assessment, Workout Summary, Notifications and Onboarding do.
+The tab bar stays on the app Appearance, so on an immersive view it is light in
+light Appearance: the page above it is dark, the bar is not.
+
 ### Dashboard mode
 
 For: Home, Workout tab, Nutrition, You, Progress and other overview screens.
@@ -76,7 +88,11 @@ For: Home, Workout tab, Nutrition, You, Progress and other overview screens.
 
 ### Immersive mode (active workout)
 
-For: the active workout and its sheets; later possibly the workout summary.
+For: the active workout and its sheets, and the screens that lead to or from
+it or are focused tasks (Workout Detail, History and History Detail, Exercise
+Performance, Add food, the weight / measurement / InBody entry and detail
+screens, Fitness Review). Assessment, Workout Summary and the Notifications
+inbox use it for some of their views (see the [inventory](#screen-inventory)).
 
 - Deep charcoal `--color-bg` (#0F100E), raised surfaces `--color-surface` /
   `--color-surface-elevated`, high-contrast text (#F5F4EE, 15.6:1).
@@ -113,6 +129,12 @@ Rules:
   inheritance). Never put both classes on one element.
 - `FitScreenTheme` and `SCREEN_THEME_CLASS` (`shared/ui/screen-theme.ts`)
   are the typed names; the CSS lives in `_tokens.scss`.
+- **Every `fit-bottom-sheet` passes `screenTheme`**, matching its page. Without
+  it the sheet falls back to the classic palette: in dark Appearance it shows
+  the old blue (Save button, links, icons) on navy over a lime and charcoal
+  page. The visual QA found five sheets without it (Calorie check-in ×2,
+  Food entry's delete confirmation, the Name and photo sheet, Quick add); all
+  now pass `dashboard`. A new sheet without `screenTheme` is a defect.
 - **Status bar:** the native status bar follows the app Appearance, so an
   always-dark screen holds it dark: call `ThemeService.holdAlwaysDark()` and
   release it on destroy (the Active Workout does). It never changes the stored
@@ -189,7 +211,7 @@ separated channels, for `rgba()` in shadows only).
 | Brand graphic | `primary-strong` | Progress fills, selection rings, active markers: anything that must reach 3:1 without text on it. |
 | Focus | `focus` | Keyboard focus rings and focused field borders (via `fx.focus-ring`). |
 | Hero | `ink`, `on-ink`, `on-ink-secondary`, `ink-accent`, `ink-track`, `ink-outline` | The one dark hero card per screen and its content. |
-| Domains | `train*` (ember), `body*` (teal) | Only on their own data, always with an icon and a label. |
+| Domains | `train*` (ember), `body*` (teal) | Only on their own data, always with an icon and a label. **As built:** only the active workout's muscle figure uses `train`; no screen uses `body*` yet (body data uses lime / olive like everything else). |
 | Status | `success*`, `warning*`, `danger*` | Base = graphic/fill, `-text` = text, `-soft` = tinted background, `on-*` = content on the base fill. |
 | Overlay | `scrim` | Backdrops and shadow tint. |
 
@@ -320,7 +342,7 @@ Native elements stay native (`button[fit-button]`, not a `<div>` with a click).
 
 | Component | Variants / inputs | Use |
 | --- | --- | --- |
-| `button[fit-button]`, `a[fit-button]` | `variant`: primary, secondary, outline, ghost, on-ink, ghost-ink · `size`: md (44px), lg (52px) · `icon` · `block` · `loading` | One `primary` per view: the main action. `on-ink`/`ghost-ink` only on the ink hero. |
+| `button[fit-button]`, `a[fit-button]` | `variant`: primary, secondary, outline, ghost, danger, ghost-danger, on-ink, ghost-ink · `size`: md (44px), lg (52px) · `icon` · `block` · `loading` | One `primary` per view: the main action. `on-ink`/`ghost-ink` only on the ink hero. |
 | `button[fit-icon-button]`, `a[fit-icon-button]` **(new)** | `icon` (required) · `variant`: plain, tonal, primary · `size`: md (44px), lg (52px) | Icon-only actions: close, back, more, play/pause. Requires `aria-label` (lint enforces it). |
 | `fit-card` | `tone`: default, muted, ink · `padding`: none, sm, md | Grouping surface. `ink` = the one hero per screen. |
 | `fit-section-header` | `title`, `headingId`, projected trailing action | Section title (h2) + optional "See all". |
@@ -338,8 +360,9 @@ Native elements stay native (`button[fit-button]`, not a `<div>` with a click).
 | `fit-bottom-sheet` | `title`, `description`, `[(open)]`, `screenTheme` **(new)** | Short focused tasks and confirmations. |
 | `fit-page` | `title`, `heading`, `kicker`, `refreshable`, `wide`, `customHeader` (projected `[fitPageHeader]` instead of toolbar + large title) · projected `[fitPageSubtitle]` and `[fitPageAside]` | Top-level tab pages (large title that collapses into the toolbar). |
 
-Known consolidation candidate (leave until its screen is redesigned; then
-replace with `fit-icon-button`): `fit-bottom-sheet`'s close button.
+Known consolidation candidate: `fit-bottom-sheet`'s close button is still its
+own `button.close`, not `fit-icon-button`. Every screen is redesigned now, so it
+can be replaced.
 
 Do not add a component until two screens need it, or one screen needs it and
 it encodes an accessibility rule. Feature-specific pieces live in
@@ -366,10 +389,13 @@ Every change must keep these; reviewers check them.
   `minmax(0, 1fr)`, `overflow-wrap: anywhere` on names); no fixed heights on
   text containers.
 - **Motion:** only via motion tokens; respect reduced motion.
-- **Known gaps (pre-existing, accepted for now):** `text-tertiary` and the
-  `border-strong` input outline are below 3:1 in the light palettes; inputs
-  are identified by their visible label and focus state. Revisit with the
-  form redesign.
+- **Known gaps (pre-existing, accepted for now; measured 15 Oct 2026):** the
+  `border-strong` input outline is 1.45:1 on the warm page (1.59:1 on white;
+  classic 1.47:1) and 1.65:1 on charcoal surfaces, below the 3:1 above;
+  `text-tertiary` is 3.06:1 on the warm page, 3.37:1 on white (classic 2.54:1) and
+  3.4:1 on charcoal surfaces, below 4.5:1, so it stays for placeholders and
+  disabled text only. Inputs are identified by their visible label and focus
+  state. The forms are redesigned now and these are still open.
 
 ## Responsive rules
 
@@ -460,9 +486,11 @@ For each screen redesign phase:
 5. Don't change routes, domain logic, persistence or copy semantics as part
    of a visual change.
 
-When every screen has opted into `fit-theme-dashboard`, make `$warm` /
-`$charcoal` the root palettes, drop the class, and retire the classic
-palettes in one reviewed change.
+Every screen has now opted into a redesign theme, so the last step is open: make
+`$warm` / `$charcoal` the root palettes, drop `fit-theme-dashboard`, and retire
+the classic palettes in one reviewed change (`fit-theme-immersive` stays: those
+screens are always dark). Until then a surface that forgets its theme falls back
+to the classic palette, which is how the five sheets above showed blue.
 
 ## Reference implementation: Home
 
@@ -523,7 +551,7 @@ copy its patterns.
   any rest it shows the programmed rest with a start button. Next to it, a "Next
   up" card (the same action as the footer's next button; confirmation first).
 - Persistent controls: workout time, "Complete set" (the current set, using what
-  is typed) and "Next Exercise" / "Finish Workout"; with nothing left on the
+  is typed) and "Next exercise" / "Finish workout"; with nothing left on the
   exercise the next step becomes the one big action. Respects the bottom safe area.
   Below 360px the clock's icon and label are dropped to keep the labels whole.
 - The current set is scrolled above the footer when it changes (short phones).
@@ -617,7 +645,7 @@ photos or substitute targets. Food artwork is a neutral placeholder (`app-food-t
   negative remainder); without a target a plain ring with intake only and the notices'
   actions (set up / review profile). Macro columns with bars where targets exist.
   A lime **Log food** (suggested meal for the time of day). Meals as rows (what was
-  logged, subtotal): a meal with food expands to its entries (tap to edit) and Add Food;
+  logged, subtotal): a meal with food expands to its entries (tap to edit) and Add food;
   an empty meal's row adds food. Calorie check-in as a link card.
 - **Add food (immersive, always dark).** `/nutrition/food/new?meal&date`; the day and meal
   are shown and kept. Meal pills (`pills` with `--segment-selected-bg` lime). Search over
@@ -745,7 +773,7 @@ result stay put while browser Back, the in-page Back and Android back move betwe
 | Results | immersive (dark) | Confidence chip, calorie target (maintenance underneath), three macro tiles, goal focus, weight / height / activity. |
 | Macro breakdown | dashboard (warm light) | SVG donut of each macro's calories (labelled in words for screen readers; slices separated by gaps), rows with grams, % of calories and kcal, and how the split serves the goal. |
 | Why these numbers? | immersive (dark) | The engine's steps (`explanation`): resting energy, activity factor, maintenance (and a Calorie Check-in figure when one is in use), goal adjustment, then the target, emphasised. Estimate confidence and a collapsible *Factors we consider*. |
-| Next steps | dashboard | Workout plan, Nutrition, Progress (each marks the assessment reviewed, which the tab shell requires) and Adjust anytime (Profile editor); **Go to Home**, *View assessment again*. |
+| Next steps | dashboard | Workout plan, Nutrition, Progress (each marks the assessment reviewed, which the tab shell requires) and Adjust anytime (Profile editor); **Go to home**, *View assessment again*. |
 
 Macro colours reuse theme fills: protein `--color-primary-strong`, carbohydrates `--color-primary`,
 fat `--color-warning`; a macro is always named and valued next to its colour. Values come only from
@@ -765,7 +793,7 @@ Assessment. Shared view mixins: `src/theme/_views.scss` (`@use 'views' as view;`
 | Overview | immersive | Complete (check, confetti) or "Workout finished" (flag) — never "complete" unless every set was. Name, finish date and time; duration, exercises, sets, total volume (only with weighted sets), % of sets completed; a highlight that states only what the log shows. |
 | Exercise breakdown | dashboard | Each exercise in recorded order: completed sets, reps (or seconds) per set, load range, the domain's volume, and a done / partly / skipped mark. Rows with completed sets open the exercise's Progress page. |
 | Performance insights | immersive | Volume, sets and duration against the latest earlier workout of the same kind (session type and variant; volume only in the same unit); "Not enough history yet" without one. A volume trend of up to five same-kind workouts (bars labelled with value and date), and "New best volume" only when strictly higher than every earlier one. |
-| What's next | dashboard | The plan's next training day (its weekly layout), Nutrition, Progress, and recovery advice (not a link: there is no recovery feature). **Go to Home**, *View workout plan*. |
+| What's next | dashboard | The plan's next training day (its weekly layout), Nutrition, Progress, and recovery advice (not a link: there is no recovery feature). **Go to home**, *View workout plan*. |
 
 No calories are shown: the app has no supported estimate.
 
@@ -788,3 +816,128 @@ pushed, scheduled or delivered by the system, and there are no notification sett
   says so, with no action.
 - **Empty states**: "No notifications yet", "All caught up!" (Unread), "No workout / nutrition
   notifications".
+
+## Screen inventory
+
+Every routed page component and its screen theme, read from the code (`host`
+classes and the route files), 15 Oct 2026. The app has 29 `*.page.ts` files: 28
+feature pages and the tab shell page (`shell/tabs`, `fit-theme-dashboard`).
+`app.routes.ts` defines 12 routes and the ten feature route files 35 more
+(31 `loadComponent`, 4 `loadChildren`); Progress is also mounted at
+`/you/progress`, and Workout History Detail at `…/progress/workout/:workoutId`.
+
+| Route | Page | Screen theme |
+| --- | --- | --- |
+| `/home` | Home | dashboard |
+| `/home/notifications` | Notifications | immersive for All / Unread, dashboard for the category filters and the empty inbox |
+| `/home/notifications/:id` | Notification detail | dashboard |
+| `/workout` | Workout (Plan) | dashboard |
+| `/workout/history` | Workout History | immersive (list on `fit-theme-dashboard`) |
+| `/workout/history/:id` | Workout History Detail | immersive |
+| `/workout/session/:id` | Workout Detail | immersive |
+| `/workout/session/:id/active` | Active Workout | immersive |
+| `/workout/summary/:id` | Workout Summary | immersive for Overview and Insights, dashboard for Exercises and What's next |
+| `/nutrition` | Nutrition (daily log) | dashboard |
+| `/nutrition/week` | Nutrition Week | dashboard |
+| `/nutrition/check-in` | Calorie Check-in | dashboard |
+| `/nutrition/food/new` | Add food | immersive |
+| `/nutrition/food/:id` | Food entry (edit) | dashboard |
+| `/progress` | Progress | dashboard |
+| `/progress/exercises` | Progress Exercises | dashboard |
+| `/progress/exercise/:id` | Exercise Performance | immersive |
+| `/you` | You | dashboard |
+| `/you/review` | Fitness Review | immersive |
+| `/you/weight-history` | Weight History | dashboard |
+| `/you/weight-history/new`, `/:id` | Weight entry | immersive |
+| `/you/measurements` | Measurement History | dashboard |
+| `/you/measurements/new`, `/:id` | Measurement entry | immersive |
+| `/you/body-composition` | Body Composition History | dashboard |
+| `/you/body-composition/:id` | Body Composition Detail | immersive |
+| `/you/body-composition/new`, `/:id/edit` | Body Composition entry | immersive |
+| `/onboarding` (`/review`) | Onboarding / Profile editor | dashboard; immersive for the welcome screen and the Profile editor |
+| `/assessment` | Assessment | immersive for Results and Why, dashboard for Macros and Next steps |
+
+## Visual QA (15 Oct 2026)
+
+A pass over the **running app** (dev server, headless Chrome driven over the
+DevTools protocol, no added dependencies) with a seeded profile, ten completed
+workouts, 14 weigh-ins, three measurement sets and food for seven days, and again
+with a profile and no data. Screenshots were taken per screen at 320, 390 and
+430 px wide in light and dark Appearance, and every one was checked by script
+for horizontal overflow, clipped text, tiny controls and console errors.
+Screenshots were only *looked at* where the table below says so.
+
+**Not a mockup comparison.** The approved mockup files aren't in the
+repository, so "matches" below means consistent with this document, the
+screen's own specification above, and the other screens.
+
+### Inspected by eye
+
+| Area | What was looked at |
+| --- | --- |
+| Home | 390 light, 320 light and dark, empty data dark; the recovery check-in sheet |
+| Onboarding → Assessment | the full first run at 390 light (welcome, About you, height, target weight, equipment, review, done) into Assessment |
+| Assessment | Results, Macro breakdown, Why these numbers?, Next steps at 390 light (Results and Why are dark by design) |
+| Workout Summary | Overview, Exercise breakdown, Performance insights, What's next at 390 light; Exercise breakdown at 320 dark; the not-found state; reached from a workout finished in the app |
+| Notifications | All, a category filter and a detail at 390 light; All and the detail at 390 dark; All at 320 light |
+| Workout | Plan 390 light and dark, Workout Detail, History, History Detail, not-found state |
+| Active Workout | start, a set done, rest running, "move to next exercise?" and "finish?" sheets, options sheet, completing every set and finishing (log saved, session cleared, Summary opened); empty state at 320 |
+| Nutrition | daily log 390 light and 320 dark, Week 390 light and dark, Calorie check-in 390 light and dark, Add food, Edit food at 320 dark |
+| Progress | Overview 390 light and 320 dark, empty state, Exercises list, Exercise Performance |
+| You | hub 390 light and 320 dark, Name and photo and Quick add sheets, Fitness Review, Weight History 390 light and dark, Weight entry add / edit / delete sheet, Measurements, Measurement entry at 320 dark, Body Composition empty state and entry at 320 |
+| Navigation | Home → bell → Notifications → filters → detail → its action; Progress tabs and ranges → Weight History; Nutrition day → Add food; Workout → History → a workout; Workout Detail → Active Workout |
+
+### Defects found and fixed
+
+| Where | Defect | Fix |
+| --- | --- | --- |
+| You: Name and photo, Quick add; Calorie check-in ×2; Food entry delete confirmation | Sheets without `screenTheme` rendered in the classic palette: blue Save button, links and icons on navy, over a lime and charcoal page (dark Appearance) | `screenTheme="dashboard"` on all five |
+| Every dashboard-themed sheet (Home's check-ins, and the five above once themed) | In dark Appearance the sheet's modal host was painted opaque charcoal by `:root.theme-dark .fit-theme-dashboard`, hiding the page behind the scrim (the "keep the host transparent" rule only won in light) | The transparent-host rule in `fit-bottom-sheet` now outranks the dark dashboard theme |
+| Active Workout: Next up card | At 390 px a long next exercise ("Dumbbell Romanian Deadlift") broke mid-word (`Dumbbe / ll / Romania / n`) | Slimmer thumbnail between 150 and 170 px wide tiles |
+| Active Workout: empty and loading states | The "No workout in progress" card and the loading skeletons touched the screen edges | Page gutter on both |
+| Exercise Performance | The best set (`72.5 kg × 10`) wrapped, leaving the reps alone on a line, at 360–479 px | Change moves under the value up to 479 px (was 359 px) |
+| Measurements chart | The 3-month axis read "Aug Aug Sep" (labels at fixed fractions named by month) | Month names at the first of each month, no repeats, none on an edge; unit test added |
+| Workout History | Filter pills stretched with their labels left-aligned | Labels centred |
+| Home: Nutrition card | Three-digit protein (`171g`) touched the 72 px ring | Value at body size |
+
+### Open items
+
+- *Resolved after the pass (decisions by the project owner):* button and action
+  copy is **sentence case** everywhere ("Finish workout", "Back to home", "View
+  workout", goal names such as "Build muscle"; proper nouns and session names such
+  as "Upper Body A" and "InBody" keep their capitals), and **destructive actions are
+  red**: `fit-button` variants `danger` (the confirm that deletes or discards, on
+  `--color-danger` with `--color-on-danger`) and `ghost-danger` (the control that
+  opens the confirmation, red text and trash icon); the cancel beside a
+  destructive confirm is `outline` (neutral). Applied to the weight, food and
+  InBody delete sheets, the Active Workout "Discard workout" confirm and the "Discard
+  and start" action. Lime stays for primary and positive actions; only the action
+  itself is red.
+- **Notifications filter row** scrolls sideways at 320 px, the last pill running to
+  the edge (by design, `--segment-wrap: nowrap`; the page doesn't overflow).
+- **Dev-mode NG0956 warning** ("tracking expression … caused re-creation of the
+  entire collection of size 1") on the Assessment footer action, the Active
+  Workout muscle chips and the Workout Summary views: single-item lists whose
+  item really changes. Harmless; production builds don't log it.
+- **Colour tokens** `body*` (teal) is unused and `train*` (ember) only colours
+  the muscle figure (see Roles).
+- The two accessibility gaps in [Accessibility requirements](#accessibility-requirements).
+- `fit-bottom-sheet`'s close button isn't a `fit-icon-button`.
+
+### Not inspected
+
+- **Real devices:** safe-area insets (zero in a desktop browser), the on-screen
+  keyboard, haptics, pull-to-refresh, status bar behaviour, the native date
+  picker.
+- **Ionic `ios` and `md` modes** (only the default mode was run) and **tablet**
+  two-column layouts.
+- **Body Composition Detail, populated History and entry-with-data / edit**:
+  no report was seeded, and reading a report needs the extraction server and its
+  key. Their empty state and manual entry form were looked at; the populated
+  screens were not.
+- **Screenshots captured and machine-checked but not looked at one by one:** most
+  430 px captures; dark Appearance at 320 and 430 for screens not listed above;
+  Notifications Unread / Nutrition filters and the empty inbox; Measurement
+  History's list view; Weight / Measurement *new* in light.
+- Exercise demonstration photos (they load from a CDN on request), screen reader
+  output, reduced motion, large text and keyboard-only navigation.

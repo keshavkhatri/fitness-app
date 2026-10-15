@@ -42,7 +42,7 @@ const EMPTY: Readonly<Record<NotificationFilter | 'none', { readonly title: stri
     <ion-header class="ion-no-border">
       <ion-toolbar>
         <div class="toolbar">
-          <button type="button" class="icon-button" aria-label="Back to Home" (click)="backHome()">
+          <button type="button" class="icon-button" aria-label="Back to home" (click)="backHome()">
             <ion-icon name="chevron-back" aria-hidden="true" />
           </button>
           @if (inbox.unreadCount() > 0) {

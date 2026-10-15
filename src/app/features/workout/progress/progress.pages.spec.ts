@@ -179,7 +179,7 @@ describe('Progress', () => {
       expect(clean(el.querySelector('[data-testid="progress-empty"]'))).toContain('Your training progress starts here');
       expect(el.querySelector('[data-testid="key-metrics"]')).toBeNull();
       expect(clean(el.querySelector('[data-testid="weight-chart-callout"] .callout-value'))).toBe('78.4 kg');
-      button('View Workout')!.click();
+      button('View workout')!.click();
       await settle();
       expect(root).toHaveBeenCalledWith('/workout');
     });

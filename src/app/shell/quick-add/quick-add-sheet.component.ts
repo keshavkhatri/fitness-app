@@ -12,7 +12,7 @@ import { QuickAddAction } from './quick-add.actions';
 @Component({
   selector: 'app-quick-add-sheet',
   template: `
-    <fit-bottom-sheet title="Quick add" [(open)]="open">
+    <fit-bottom-sheet title="Quick add" screenTheme="dashboard" [(open)]="open">
       <ul class="grid">
         @for (action of actions(); track action.id) {
           <li>

@@ -1,8 +1,11 @@
 import { ChangeDetectionStrategy, Component, booleanAttribute, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
-/** `on-ink`: the main action on an ink (hero) surface. */
-export type FitnessButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'on-ink' | 'ghost-ink';
+/**
+ * `on-ink`: the main action on an ink (hero) surface. `danger`: the action that deletes or
+ * discards, in a confirmation (solid red); `ghost-danger`: the control that opens one (red text).
+ */
+export type FitnessButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'ghost-danger' | 'on-ink' | 'ghost-ink';
 export type FitnessButtonSize = 'md' | 'lg';
 
 /**

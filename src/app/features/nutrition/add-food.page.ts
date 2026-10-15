@@ -25,7 +25,7 @@ const FIELD_ORDER: readonly FoodEntryField[] = ['name', 'quantity', 'unit', 'mea
 type Recent = { readonly ok: true; readonly foods: readonly FoodEntry[] } | { readonly ok: false };
 
 /**
- * Add Food (immersive, always dark), for the day and meal it was opened for
+ * Add food (immersive, always dark), for the day and meal it was opened for
  * (`/nutrition/food/new?meal=lunch&date=2026-10-08`).
  *
  * Search covers the user's own Recent foods only; there is no food database

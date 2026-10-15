@@ -117,7 +117,7 @@ describe('WorkoutPage', () => {
       const { text, button, navigate, settle } = await render({ profile: null });
       expect(text('no-profile')).toContain('Complete your profile');
       expect(text('no-profile')).toContain('We need your fitness profile before we can create your training plan.');
-      button('Set Up Profile')!.click();
+      button('Set up profile')!.click();
       await settle();
       expect(navigate).toHaveBeenCalledWith(ONBOARDING_PATH);
     });
@@ -128,11 +128,11 @@ describe('WorkoutPage', () => {
       expect(el.textContent).not.toMatch(/invalid-configuration|Unknown version/);
 
       const load = vi.spyOn(TestBed.inject(WorkoutPlanService), 'load');
-      button('Try Again')!.click();
+      button('Try again')!.click();
       await settle();
       expect(load).toHaveBeenCalledTimes(1);
 
-      button('Review Profile')!.click();
+      button('Review profile')!.click();
       await settle();
       expect(navigate).toHaveBeenCalledWith(ONBOARDING_REVIEW_PATH);
     });
@@ -219,7 +219,7 @@ describe('WorkoutPage', () => {
 
     it('rest day: says so with what comes next; the action moves to the week', async () => {
       const { el, text, button, clean } = await render({ profile: REST_PROFILE });
-      expect(clean(el.querySelector('[data-testid="plan-today"] h2'))).toBe('Rest Day');
+      expect(clean(el.querySelector('[data-testid="plan-today"] h2'))).toBe('Rest day');
       expect(text('plan-today-next')).toBe('Next up: Full Body C on Friday.');
       expect(button('Start workout')).toBeUndefined();
       button('View this week')!.click();

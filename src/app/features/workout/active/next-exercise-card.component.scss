@@ -91,6 +91,15 @@
   color: var(--color-text-secondary);
 }
 
+// Tight tiles (390px phones are ~154px wide): a slimmer thumbnail, so a long
+// name ("Dumbbell Romanian Deadlift") keeps whole words instead of breaking mid-word.
+@container (max-width: 170px) {
+  .thumb {
+    width: 44px;
+    height: 60px;
+  }
+}
+
 // Narrow tiles (small phones, large text): the thumbnail above the name.
 @container (max-width: 150px) {
   .body {

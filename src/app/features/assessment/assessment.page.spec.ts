@@ -169,14 +169,14 @@ describe('AssessmentPage', () => {
   });
 
   describe('next steps', () => {
-    it('Go to Home marks the assessment reviewed and goes Home; View again returns to the results', async () => {
+    it('Go to home marks the assessment reviewed and goes Home; View again returns to the results', async () => {
       const { buttons, click, navigate } = await render({ view: 'next' });
-      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Go to Home', 'View assessment again']);
+      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Go to home', 'View assessment again']);
 
       await click('View assessment again');
       expect(navigate).toHaveBeenLastCalledWith('/assessment', { replaceUrl: true });
 
-      await click('Go to Home');
+      await click('Go to home');
       expect(navigate).toHaveBeenLastCalledWith('/home', { replaceUrl: true });
       expect(await TestBed.inject(OnboardingStatusService).status()).toBe('complete');
     });

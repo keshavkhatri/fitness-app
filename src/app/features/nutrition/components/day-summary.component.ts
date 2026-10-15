@@ -8,7 +8,7 @@ import { CalorieSummaryView, MacroRowView } from '../nutrition-view-model';
 /**
  * The day at a glance: calories eaten in a ring (filled against the target
  * when there is one; a plain ring with intake only when there isn't), the
- * three macros with bars against their targets, and Log Food.
+ * three macros with bars against their targets, and Log food.
  */
 @Component({
   selector: 'app-day-summary',

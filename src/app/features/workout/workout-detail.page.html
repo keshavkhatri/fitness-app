@@ -135,7 +135,7 @@
 >
   <div class="conflict-actions" data-testid="conflict">
     <button fit-button type="button" size="lg" block (click)="resumeOther()">{{ copy.conflict.resume(conflictTitle()) }}</button>
-    <button fit-button type="button" size="lg" block variant="outline" (click)="replaceAndStart()">{{ copy.conflict.replace }}</button>
+    <button fit-button type="button" size="lg" block variant="danger" (click)="replaceAndStart()">{{ copy.conflict.replace }}</button>
     <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelConflict()">{{ copy.conflict.cancel }}</button>
   </div>
 </fit-bottom-sheet>

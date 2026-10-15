@@ -80,7 +80,7 @@
               {{ profileCopy.action }}
             </button>
           }
-          <button fit-button type="button" variant="ghost" icon="trash-outline" block [disabled]="busy()" data-testid="delete" (click)="askDelete()">
+          <button fit-button type="button" variant="ghost-danger" icon="trash-outline" block [disabled]="busy()" data-testid="delete" (click)="askDelete()">
             {{ copy.delete }}
           </button>
         </div>
@@ -127,8 +127,8 @@
 
 <fit-bottom-sheet screenTheme="immersive" [title]="copy.deleteConfirm.title" [description]="copy.deleteConfirm.message(entrySummary())" [(open)]="confirmOpen">
   <div class="sheet-actions" data-testid="delete-confirm">
-    <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
-    <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
+    <button fit-button type="button" size="lg" block variant="danger" data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
+    <button fit-button type="button" size="lg" block variant="outline" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
   </div>
 </fit-bottom-sheet>
 

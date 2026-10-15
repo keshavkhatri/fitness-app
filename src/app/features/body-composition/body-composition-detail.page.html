@@ -96,7 +96,7 @@
           <button
             fit-button
             type="button"
-            variant="ghost"
+            variant="ghost-danger"
             block
             icon="trash-outline"
             aria-haspopup="dialog"
@@ -138,8 +138,8 @@
 
 <fit-bottom-sheet screenTheme="immersive" [title]="copy.deleteConfirm.title" [description]="deleteMessage()" [(open)]="confirmOpen">
   <div class="sheet-actions" data-testid="delete-confirm">
-    <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
-    <button fit-button type="button" size="lg" block variant="ghost" data-testid="cancel-delete" (click)="cancelDelete()">
+    <button fit-button type="button" size="lg" block variant="danger" data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
+    <button fit-button type="button" size="lg" block variant="outline" data-testid="cancel-delete" (click)="cancelDelete()">
       {{ copy.deleteConfirm.cancel }}
     </button>
   </div>

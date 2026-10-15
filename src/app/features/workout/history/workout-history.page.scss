@@ -60,6 +60,7 @@ ion-content {
   color: var(--color-text);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
+  text-align: center; // the pills stretch to fill the row; the reset leaves labels start-aligned
   white-space: nowrap;
 
   &[aria-pressed='true'] {

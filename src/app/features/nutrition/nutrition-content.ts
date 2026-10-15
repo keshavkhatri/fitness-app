@@ -33,7 +33,7 @@ export const NUTRITION_COPY = {
     previous: 'Previous day',
     next: 'Next day',
     today: 'Today',
-    backToToday: 'Back to Today',
+    backToToday: 'Back to today',
   },
 
   calories: {
@@ -54,7 +54,7 @@ export const NUTRITION_COPY = {
 
   meals: {
     title: 'Meals',
-    add: 'Add Food',
+    add: 'Add food',
     addTo: (meal: string) => `Add food to ${meal}`,
     empty: 'Nothing logged',
   },
@@ -62,7 +62,7 @@ export const NUTRITION_COPY = {
   emptyDay: {
     title: 'Start with your first meal',
     message: 'Log what you eat to see your daily nutrition here.',
-    action: 'Log Food',
+    action: 'Log food',
   },
 
   notices: {
@@ -168,7 +168,7 @@ export const NUTRITION_COPY = {
 
   add: {
     title: 'Add food',
-    back: 'Back to Nutrition',
+    back: 'Back to nutrition',
     backToSearch: 'Back to search',
     mealLegend: 'Meal',
     search: 'Search your recent foods',
@@ -252,7 +252,7 @@ export const NUTRITION_COPY = {
       message: 'Something went wrong while reading your saved food.',
       retry: 'Try again',
     },
-    backToNutrition: 'Back to Nutrition',
+    backToNutrition: 'Back to nutrition',
     deleteConfirm: {
       title: 'Delete this food?',
       message: (name: string) => `“${name}” will be removed from this day. This can't be undone.`,

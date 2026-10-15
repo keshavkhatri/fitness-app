@@ -28,7 +28,7 @@ import { NoticeAction, suggestedMeal, toDateHeader, toDayStrip, toNutritionScree
  * Daily nutrition: what was eaten on the selected local day (from the food
  * log) against the day's calculated targets (from the calculation engine).
  * Opens on Today; targets are recalculated whenever the tab is re-entered.
- * The day strip, the day arrows and Back to Today all change the one
+ * The day strip, the day arrows and Back to today all change the one
  * selected date in NutritionService, which Add, Edit and Week also read.
  */
 @Component({

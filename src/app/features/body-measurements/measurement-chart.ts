@@ -43,6 +43,21 @@ const shortDate = (iso: IsoCalendarDate) => {
 };
 const monthLabel = (day: number) => MONTHS[new Date(day * 86_400_000).getUTCMonth()];
 
+/** Day numbers of the first of each month from `from` to `to` (inclusive). */
+function monthStartsWithin(from: number, to: number): number[] {
+  const first = new Date(from * 86_400_000);
+  const starts: number[] = [];
+  for (let month = first.getUTCMonth() + 1, year = first.getUTCFullYear(); ; month++) {
+    const day = Date.UTC(year, month, 1) / 86_400_000; // Date.UTC rolls month 12 into the next year
+    if (day > to) {
+      return starts;
+    }
+    if (day >= from) {
+      starts.push(day);
+    }
+  }
+}
+
 /** Sites read at least once in the range (in display order). */
 export function sitesInRange(entries: readonly MeasurementEntry[], range: WeightRange, today: IsoCalendarDate): MeasurementSite[] {
   const start = rangeStart(range, today);
@@ -99,12 +114,13 @@ export function measurementChart(
   for (let v = min; v <= max + 1e-9; v += step) {
     yTicks.push({ y: y(v), label: String(roundTo(v, 1)) });
   }
-  // Month names across the axis (up to four), else the start and end dates.
+  // Month names across the axis (up to four), each at the first of its month so no month repeats
+  // and none sits on an edge; else the start and end dates.
   const xLabels: { x: number; label: string; anchor: 'start' | 'middle' | 'end' }[] = [];
-  const months = span > 45 ? Math.min(4, Math.round(span / 30)) : 0;
-  if (months >= 2) {
-    for (let i = 0; i <= months - 1; i++) {
-      const day = firstDay + (span * (i + 0.5)) / months;
+  const monthStarts = span > 45 ? monthStartsWithin(firstDay + 3, lastDay - 3) : [];
+  if (monthStarts.length >= 2) {
+    const shown = monthStarts.length <= 4 ? monthStarts : [0, 1, 2, 3].map((i) => monthStarts[Math.round((i * (monthStarts.length - 1)) / 3)]);
+    for (const day of shown) {
       xLabels.push({ x: roundTo(C.left + ((day - firstDay) / span) * plotW, 2), label: monthLabel(day), anchor: 'middle' });
     }
   } else {

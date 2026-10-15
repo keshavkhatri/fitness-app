@@ -103,7 +103,7 @@ import { WorkoutArtComponent } from '../workout-art/workout-art.component';
               <h2 class="name">Plan unavailable</h2>
               <p class="focus">We couldn’t create a training plan from your profile right now.</p>
               <button fit-button type="button" class="cta" (click)="openPlan.emit()">
-                Open Workout<ion-icon name="chevron-forward" aria-hidden="true" />
+                Open workout<ion-icon name="chevron-forward" aria-hidden="true" />
               </button>
             </div>
           }

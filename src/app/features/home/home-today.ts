@@ -126,7 +126,7 @@ function trainTile(w: HomeWorkoutView, finishedToday: boolean): HomeTileView {
     case 'no-profile':
       return { ...base, value: 'No plan', unit: null, fraction: null, accessibleLabel: 'Train: no plan yet. Set up your profile.', action: { kind: 'set-up-profile' } };
     default:
-      return { ...base, value: 'No plan', unit: null, fraction: null, accessibleLabel: 'Train: plan unavailable. Open Workout.', action: { kind: 'workout-tab' } };
+      return { ...base, value: 'No plan', unit: null, fraction: null, accessibleLabel: 'Train: plan unavailable. Open workout.', action: { kind: 'workout-tab' } };
   }
 }
 

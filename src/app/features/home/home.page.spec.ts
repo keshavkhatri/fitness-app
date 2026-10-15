@@ -322,7 +322,7 @@ describe('HomePage', () => {
     it('a rest day shows rest and the next session, with a way to the plan', async () => {
       const { el, fixture, navigateByUrl } = await render({ profile: REST_PROFILE });
       const card = workoutCard(el)!;
-      expect(clean(card.querySelector('.name'))).toBe('Rest Day');
+      expect(clean(card.querySelector('.name'))).toBe('Rest day');
       expect(clean(card.querySelector('[data-testid=home-workout-next]'))).toMatch(/^Next up: .+ on Friday\.$/);
       expect(buttonIn(card, 'Start workout')).toBeUndefined();
       buttonIn(card, 'View plan')!.click();
@@ -334,7 +334,7 @@ describe('HomePage', () => {
       const { el, fixture, forward } = await render({ profile: ACTIVITY_PROFILE });
       const card = workoutCard(el)!;
       expect(clean(card.querySelector('.name'))).toBe('Light Activity');
-      buttonIn(card, 'View Activity')!.click();
+      buttonIn(card, 'View activity')!.click();
       await fixture.whenStable();
       const [path] = forward.mock.calls[0] as unknown as [string[]];
       expect(TestBed.inject(WorkoutPlanService).plan()?.sessions.find((s) => s.id === path[2])?.kind).toBe('activity');

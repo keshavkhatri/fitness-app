@@ -210,11 +210,11 @@ describe('workout summary', () => {
       expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-immersive');
       expect(el.querySelector('h1')?.textContent?.trim()).toBe('Workout complete!');
       expect(el.querySelector('[data-testid="summary-name"]')?.textContent?.trim()).toBe('Upper Body A');
-      expect(buttons()).toEqual(['View detailed breakdown', 'Back to Home']);
+      expect(buttons()).toEqual(['View detailed breakdown', 'Back to home']);
 
       await press('View detailed breakdown');
       expect(navigate).toHaveBeenLastCalledWith('/workout/summary/w?view=exercises');
-      await press('Back to Home');
+      await press('Back to home');
       expect(root).toHaveBeenLastCalledWith('/home');
     });
 
@@ -240,7 +240,7 @@ describe('workout summary', () => {
         fixture.detectChanges();
         expect(el.querySelector('[data-testid="next-workout"]')?.textContent).toMatch(/Next workout\s+\S.*, (Friday|Saturday|Sunday|Monday)/);
       });
-      expect(buttons()).toEqual(['Go to Home', 'View workout plan']);
+      expect(buttons()).toEqual(['Go to home', 'View workout plan']);
 
       el.querySelector<HTMLButtonElement>('[data-testid="next-workout"]')!.click();
       await vi.waitFor(() => expect(forward).toHaveBeenCalledWith(['/workout', 'session', expect.any(String)]));
@@ -254,7 +254,7 @@ describe('workout summary', () => {
 
       await press('View workout plan');
       expect(root).toHaveBeenLastCalledWith('/workout');
-      await press('Go to Home');
+      await press('Go to home');
       expect(root).toHaveBeenLastCalledWith('/home');
     });
 
@@ -278,7 +278,7 @@ describe('workout summary', () => {
     it('an unknown id shows a calm unavailable state with a way home', async () => {
       const { el, buttons } = await render('wl-missing', { view: 'insights' });
       expect(el.querySelector('[data-testid="summary-not-found"]')?.textContent).toContain('Summary unavailable');
-      expect(buttons()).toEqual(['Back to Home']);
+      expect(buttons()).toEqual(['Back to home']);
       expect(el.querySelectorAll('h1')).toHaveLength(1);
     });
   });

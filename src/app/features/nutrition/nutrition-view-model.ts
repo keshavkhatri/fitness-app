@@ -310,7 +310,7 @@ export function toNutritionScreen(state: NutritionState): NutritionScreen {
   };
 }
 
-/** Meal preselected for "Log Food" on an empty day, from the local time of day. */
+/** Meal preselected for "Log food" on an empty day, from the local time of day. */
 export function suggestedMeal(now: Date): MealCategory {
   const hour = now.getHours();
   return hour < 11 ? 'breakfast' : hour < 16 ? 'lunch' : hour < 21 ? 'dinner' : 'snacks';

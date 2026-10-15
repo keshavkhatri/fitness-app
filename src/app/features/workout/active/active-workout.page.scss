@@ -18,6 +18,13 @@
   gap: var(--space-3);
 }
 
+// The stage is full-bleed (.body has no side padding); the empty and loading
+// states keep the page gutter the other screens' not-found cards have.
+.loading,
+[data-testid='not-active'] {
+  margin-inline: var(--space-5);
+}
+
 ion-toolbar {
   --background: var(--color-bg);
   --min-height: 0;

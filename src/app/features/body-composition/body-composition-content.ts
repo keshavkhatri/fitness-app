@@ -161,7 +161,7 @@ export const BODY_COMPOSITION_COPY = {
       message: "Your saved assessments couldn't be read, so a new one can't be saved at the moment. Nothing has been changed or deleted.",
       retry: 'Try again',
     },
-    backToHistory: 'Back to Body composition',
+    backToHistory: 'Back to body composition',
     errors: {
       required: 'Enter at least one value from your report.',
       number: (metric: string) => `Enter ${metric.toLowerCase()} as a number, like 22.4.`,

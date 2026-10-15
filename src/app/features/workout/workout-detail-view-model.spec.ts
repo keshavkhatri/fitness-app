@@ -67,7 +67,7 @@ describe('workout detail view model', () => {
       expect(detailOf(toWorkoutDetailScreen(ready(), restSessionId('wed'), THURSDAY))).toEqual({
         kind: 'rest',
         dayLabel: 'Wednesday',
-        title: 'Rest Day',
+        title: 'Rest day',
         message: 'Recovery is part of your plan. There is no workout scheduled for this day.',
       });
     });
@@ -173,7 +173,7 @@ describe('workout detail view model', () => {
         suggestions: 'Walking, easy cycling or mobility work.',
         guidance: 'Keep the pace easy: you should be able to hold a conversation.',
         cta: {
-          label: 'Start Activity',
+          label: 'Start activity',
           pendingMessage: 'Activity tracking arrives in a later update. Nothing has been started or recorded.',
         },
       });

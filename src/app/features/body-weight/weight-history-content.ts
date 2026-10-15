@@ -72,7 +72,7 @@ export const WEIGHT_HISTORY_COPY = {
     loadingEntry: 'Loading entry',
     notFound: { title: 'Entry not found', message: 'This weigh-in may already have been deleted.' },
     loadFailed: { title: "We couldn't load this entry", message: 'Something went wrong while reading your weight history.', retry: 'Try again' },
-    backToHistory: 'Back to Body weight',
+    backToHistory: 'Back to body weight',
     deleteConfirm: {
       title: 'Delete this weigh-in?',
       message: (summary: string) => `“${summary}” will be removed from your history. This can't be undone.`,

@@ -159,9 +159,9 @@ export const WORKOUT_COPY = {
     workoutEyebrow: "Today's workout",
     activityEyebrow: "Today's activity",
     restEyebrow: 'Today',
-    viewWorkout: 'View Workout',
-    viewActivity: 'View Activity',
-    restTitle: 'Rest Day',
+    viewWorkout: 'View workout',
+    viewActivity: 'View activity',
+    restTitle: 'Rest day',
     restMessage: 'Recovery is part of your plan. Rest, move gently and come back fresh.',
     preview: (title: string) => `Preview ${title}`,
     upNext: (title: string, weekday: string) => `Next up: ${title} on ${weekday}.`,
@@ -205,15 +205,15 @@ export const WORKOUT_COPY = {
       title: 'Another workout is in progress',
       message: (title: string) => `${title} is still in progress. Resume it, or discard it to start this workout.`,
       resume: (title: string) => `Resume ${title}`,
-      replace: 'Discard and Start',
+      replace: 'Discard and start',
       cancel: 'Cancel',
     },
-    startActivity: 'Start Activity',
+    startActivity: 'Start activity',
     activityPending: 'Activity tracking arrives in a later update. Nothing has been started or recorded.',
     activityTitle: 'What to do',
     easyPace: 'Easy pace',
     restMessage: 'Recovery is part of your plan. There is no workout scheduled for this day.',
-    backToWorkout: 'Back to Workout',
+    backToWorkout: 'Back to workout',
     loading: 'Loading workout',
     notFound: {
       title: 'Workout not found',
@@ -222,7 +222,7 @@ export const WORKOUT_COPY = {
     unavailable: {
       title: "Couldn't load this workout",
       message: 'Something went wrong while loading this session. Please try again.',
-      retry: 'Try Again',
+      retry: 'Try again',
     },
     progression: {
       loaded: (percent: number) =>
@@ -237,7 +237,7 @@ export const WORKOUT_COPY = {
   resume: {
     eyebrow: 'Workout in progress',
     progress: (done: number, total: number) => `${done} of ${total} sets done`,
-    action: 'Resume Workout',
+    action: 'Resume workout',
   },
 
   active: {
@@ -254,8 +254,8 @@ export const WORKOUT_COPY = {
     menu: { title: 'Workout options' },
     nextShort: 'Next exercise',
     finishShort: 'Finish workout',
-    restartRest: 'Restart Rest',
-    leaveWorkout: 'Leave Workout',
+    restartRest: 'Restart rest',
+    leaveWorkout: 'Leave workout',
     progressLabel: 'Workout progress',
     exerciseOf: (n: number, total: number) => `${n} of ${total} exercises`,
     progressText: (exercise: number, total: number, done: number, sets: number) =>
@@ -273,8 +273,8 @@ export const WORKOUT_COPY = {
     skipExercise: 'Skip exercise',
     previous: 'Previous',
     previousLabel: 'Previous exercise',
-    next: 'Next Exercise',
-    finish: 'Finish Workout',
+    next: 'Next exercise',
+    finish: 'Finish workout',
     setCompleted: (n: number) => `Set ${n} completed.`,
     setSkipped: (n: number) => `Set ${n} skipped.`,
     allSetsDone: 'All sets done for this exercise.',
@@ -295,7 +295,7 @@ export const WORKOUT_COPY = {
       pause: 'Pause',
       resume: 'Resume',
       restart: 'Restart',
-      skip: 'Skip Rest',
+      skip: 'Skip rest',
       dismiss: 'Dismiss',
       complete: 'Rest complete. Ready for your next set.',
       completeTitle: 'Rest complete',
@@ -305,36 +305,36 @@ export const WORKOUT_COPY = {
       skipExercise: {
         title: 'Skip this exercise?',
         message: 'Your completed sets will be kept.',
-        confirm: 'Skip Exercise',
+        confirm: 'Skip exercise',
         cancel: 'Cancel',
       },
       leaveIncomplete: {
         title: 'Move to the next exercise?',
         message: (n: number) =>
           `${n === 1 ? '1 set is' : `${n} sets are`} not done yet. You can come back to ${n === 1 ? 'it' : 'them'} before finishing.`,
-        confirm: 'Next Exercise',
+        confirm: 'Next exercise',
         cancel: 'Stay',
       },
       finish: {
         title: 'Finish workout?',
         incomplete: (n: number) => `You have ${n === 1 ? '1 incomplete set' : `${n} incomplete sets`}.`,
         complete: 'Every set is done. Nice work.',
-        confirm: 'Finish Workout',
-        confirmAnyway: 'Finish Anyway',
-        cancel: 'Keep Working',
+        confirm: 'Finish workout',
+        confirmAnyway: 'Finish anyway',
+        cancel: 'Keep working',
       },
       exit: {
         title: 'Leave this workout?',
         message: 'Your progress is kept. You can resume it from Workout.',
-        leave: 'Leave for Now',
-        discard: 'Discard Workout',
-        cancel: 'Keep Working',
+        leave: 'Leave for now',
+        discard: 'Discard workout',
+        cancel: 'Keep working',
       },
       discard: {
         title: 'Discard this workout?',
         message: 'Sets you logged in this workout will be deleted.',
-        confirm: 'Discard Workout',
-        cancel: 'Keep Workout',
+        confirm: 'Discard workout',
+        cancel: 'Keep workout',
       },
     },
     errors: {
@@ -367,17 +367,17 @@ export const WORKOUT_COPY = {
     empty: {
       title: 'No completed workouts yet',
       message: 'Complete your first workout and your history will appear here.',
-      action: 'View Workout',
+      action: 'View workout',
     },
     error: {
       title: "Couldn't load workout history",
       message: 'Something went wrong while reading your workouts. Please try again.',
-      retry: 'Try Again',
+      retry: 'Try again',
     },
     recent: {
       title: 'Recent workouts',
       empty: 'Workouts you finish will appear here.',
-      viewAll: 'View History',
+      viewAll: 'View history',
     },
     detail: {
       completedAt: 'Completed',
@@ -404,7 +404,7 @@ export const WORKOUT_COPY = {
       notFound: {
         title: 'Workout not found',
         message: "We couldn't find this workout in your history.",
-        action: 'Back to History',
+        action: 'Back to history',
       },
     },
   },
@@ -500,23 +500,23 @@ export const WORKOUT_COPY = {
       notFound: {
         title: 'No performance yet',
         message: 'There are no completed sets for this exercise in your history.',
-        action: 'Back to Progress',
+        action: 'Back to progress',
       },
     },
     empty: {
       title: 'Your training progress starts here',
       message: 'Complete your first workout to see consistency, totals and exercise progress.',
-      action: 'View Workout',
+      action: 'View workout',
     },
     error: {
       title: "Couldn't load your workouts",
       message: 'Something went wrong while reading your workouts. Please try again.',
-      retry: 'Try Again',
+      retry: 'Try again',
     },
   },
 
   summary: {
-    title: 'Workout Complete',
+    title: 'Workout complete',
     completeHeading: 'Workout complete!',
     partialHeading: 'Workout finished',
     completeMessage: (name: string) => `Great job! You've finished your ${name} workout.`,
@@ -544,8 +544,8 @@ export const WORKOUT_COPY = {
       breakdown: 'View detailed breakdown',
       insights: 'View performance insights',
       next: "What's next?",
-      home: 'Back to Home',
-      goHome: 'Go to Home',
+      home: 'Back to home',
+      goHome: 'Go to home',
       plan: 'View workout plan',
     },
     breakdown: {
@@ -615,13 +615,13 @@ export const WORKOUT_COPY = {
   noProfile: {
     title: 'Complete your profile',
     message: 'We need your fitness profile before we can create your training plan.',
-    action: 'Set Up Profile',
+    action: 'Set up profile',
   },
 
   unavailable: {
     title: "We couldn't create your plan",
     message: 'Something went wrong while preparing your training plan. Please try again, or review your profile.',
-    retry: 'Try Again',
-    review: 'Review Profile',
+    retry: 'Try again',
+    review: 'Review profile',
   },
 } as const;

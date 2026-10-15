@@ -112,9 +112,9 @@
   </ion-footer>
 }
 
-<fit-bottom-sheet [title]="copy.deleteConfirm.title" [description]="copy.deleteConfirm.message(editing()?.name ?? '')" [(open)]="confirmOpen">
+<fit-bottom-sheet screenTheme="dashboard" [title]="copy.deleteConfirm.title" [description]="copy.deleteConfirm.message(editing()?.name ?? '')" [(open)]="confirmOpen">
   <div class="sheet-actions" data-testid="delete-confirm">
-    <button fit-button type="button" size="lg" block data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
-    <button fit-button type="button" size="lg" block variant="ghost" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
+    <button fit-button type="button" size="lg" block variant="danger" data-testid="confirm-delete" (click)="confirmDelete()">{{ copy.deleteConfirm.confirm }}</button>
+    <button fit-button type="button" size="lg" block variant="outline" (click)="cancelDelete()">{{ copy.deleteConfirm.cancel }}</button>
   </div>
 </fit-bottom-sheet>

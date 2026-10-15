@@ -106,7 +106,7 @@ export class WorkoutDetailPage {
   protected readonly statusMessage = signal('');
   protected readonly starting = signal(false);
 
-  /** "Resume Workout" when this session is the workout in progress. */
+  /** "Resume workout" when this session is the workout in progress. */
   protected readonly ctaLabel = computed(() => {
     const screen = this.screen();
     if (screen?.kind !== 'ready' || screen.detail.kind === 'rest') {

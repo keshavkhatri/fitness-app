@@ -58,6 +58,17 @@ ion-icon {
   color: var(--color-primary-text);
 }
 
+// Destructive: the base danger fill with its own on-colour (white on light, ink on the dark red).
+:host([data-variant='danger']) {
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+}
+
+:host([data-variant='ghost-danger']) {
+  background: transparent;
+  color: var(--color-danger-text);
+}
+
 :host([data-variant='on-ink']) {
   background: var(--color-on-ink);
   color: var(--color-ink);

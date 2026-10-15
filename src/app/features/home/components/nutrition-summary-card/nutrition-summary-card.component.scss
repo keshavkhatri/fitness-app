@@ -68,8 +68,9 @@ fit-card {
   gap: var(--space-1);
 }
 
+// Body size, not h3: a three-digit intake ("171g") must stay inside the 72px ring.
 .ring-value {
-  @include fx.text(h3, bold);
+  @include fx.text(body, bold);
   @include fx.tabular-numbers;
   line-height: 20px;
 }

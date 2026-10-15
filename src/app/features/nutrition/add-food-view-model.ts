@@ -3,7 +3,7 @@ import { MEAL_LABELS, NUTRITION_COPY } from './nutrition-content';
 import { formatKcal, formatQuantity } from './nutrition-view-model';
 
 /**
- * Add Food's recent-food search. Foods only ever come from the user's own
+ * Add food's recent-food search. Foods only ever come from the user's own
  * log (the last 30 days); there's no food database behind this search.
  */
 

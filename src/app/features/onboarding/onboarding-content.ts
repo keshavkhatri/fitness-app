@@ -20,11 +20,11 @@ import { SetupMethod } from './state/onboarding-draft';
  */
 
 export const GOAL_OPTIONS: readonly ChoiceOption<PrimaryGoal>[] = [
-  { value: 'lose-fat', label: 'Lose Fat', description: 'Reduce body fat while keeping your muscle', icon: 'flame-outline' },
-  { value: 'build-muscle', label: 'Build Muscle', description: 'Add muscle size and definition', icon: 'barbell-outline' },
+  { value: 'lose-fat', label: 'Lose fat', description: 'Reduce body fat while keeping your muscle', icon: 'flame-outline' },
+  { value: 'build-muscle', label: 'Build muscle', description: 'Add muscle size and definition', icon: 'barbell-outline' },
   { value: 'recomposition', label: 'Recomposition', description: 'Lose fat and build muscle together', icon: 'sync-outline' },
-  { value: 'get-stronger', label: 'Get Stronger', description: 'Lift heavier and build strength', icon: 'trophy-outline' },
-  { value: 'improve-fitness', label: 'Improve Fitness', description: 'Move better, feel fitter, build habits', icon: 'pulse-outline' },
+  { value: 'get-stronger', label: 'Get stronger', description: 'Lift heavier and build strength', icon: 'trophy-outline' },
+  { value: 'improve-fitness', label: 'Improve fitness', description: 'Move better, feel fitter, build habits', icon: 'pulse-outline' },
 ];
 
 /** The goal cards on the onboarding goal screen: the same answers, with a picture each. */

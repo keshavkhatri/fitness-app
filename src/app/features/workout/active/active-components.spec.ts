@@ -48,7 +48,7 @@ describe('RestTimerComponent', () => {
     expect(ring().getAttribute('aria-valuemax')).toBe('90');
     expect(ring().getAttribute('aria-valuetext')).toBe('00:45 remaining');
     expect(button('Restart')).toBeUndefined();
-    expect(button('Skip Rest')).toBeUndefined();
+    expect(button('Skip rest')).toBeUndefined();
     button('Pause')!.click();
     expect(emitted).toEqual(['pause']);
   });
@@ -103,7 +103,7 @@ describe('NextExerciseCardComponent', () => {
 
   it('on the last exercise it is about finishing', () => {
     const { card, opened } = render(null);
-    expect(card.getAttribute('aria-label')).toBe('Last exercise. Finish Workout');
+    expect(card.getAttribute('aria-label')).toBe('Last exercise. Finish workout');
     expect(clean(card)).toContain('Last exercise');
     expect(clean(card)).toContain('Finish when every set is done');
     card.click();

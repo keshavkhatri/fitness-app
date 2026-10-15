@@ -161,7 +161,7 @@ describe('WorkoutDetailPage', () => {
       expect(storage.values.get(PLAN_KEY)).toBe(planBefore);
     });
 
-    it('shows Resume Workout when this session is already in progress', async () => {
+    it('shows Resume workout when this session is already in progress', async () => {
       const { button, settle, forward } = await open('/workout/session/day-3-upper', {
         before: () => void TestBed.inject(WorkoutLogService).start('day-3-upper'),
       });
@@ -199,12 +199,12 @@ describe('WorkoutDetailPage', () => {
       expect(text('activity-guidance')).toContain('Walking, easy cycling or mobility work.');
       expect(all('detail-exercise')).toHaveLength(0);
       expect(button('Start workout')).toBeUndefined();
-      expect(button('Start Activity')).toBeDefined();
+      expect(button('Start activity')).toBeDefined();
     });
 
     it('activity sessions never start the resistance logger', async () => {
       const { button, text, settle, forward, storage } = await open('/workout/session/day-4-light-activity', { profile: ACTIVITY_PROFILE });
-      button('Start Activity')!.click();
+      button('Start activity')!.click();
       await settle();
       expect(text('start-status')).toBe('Activity tracking arrives in a later update. Nothing has been started or recorded.');
       expect(forward).not.toHaveBeenCalled();
@@ -213,11 +213,11 @@ describe('WorkoutDetailPage', () => {
 
     it('defensive rest route: a calm rest view, no start action', async () => {
       const { el, text, button, back, settle } = await open('/workout/session/rest-wed');
-      expect(el.querySelector('h1')?.textContent?.trim()).toBe('Rest Day');
+      expect(el.querySelector('h1')?.textContent?.trim()).toBe('Rest day');
       expect(text('rest')).toContain('There is no workout scheduled for this day.');
       expect(button('Start workout')).toBeUndefined();
       expect(el.querySelector('ion-footer')).toBeNull();
-      button('Back to Workout')!.click();
+      button('Back to workout')!.click();
       await settle();
       expect(back).toHaveBeenCalledWith('/workout');
     });
@@ -234,7 +234,7 @@ describe('WorkoutDetailPage', () => {
       expect(text('not-found')).toContain('This session is no longer available in your current plan.');
       expect(text('announcement')).toBe('Workout not found');
       expect(el.querySelectorAll('h1')).toHaveLength(1);
-      button('Back to Workout')!.click();
+      button('Back to workout')!.click();
       await settle();
       expect(back).toHaveBeenCalledWith('/workout');
     });
@@ -246,11 +246,11 @@ describe('WorkoutDetailPage', () => {
       expect(el.textContent).not.toMatch(/invalid-configuration|Unknown version/);
 
       const load = vi.spyOn(TestBed.inject(WorkoutPlanService), 'load');
-      button('Try Again')!.click();
+      button('Try again')!.click();
       await settle();
       expect(load).toHaveBeenCalledTimes(1);
 
-      button('Back to Workout')!.click();
+      button('Back to workout')!.click();
       await settle();
       expect(back).toHaveBeenCalledWith('/workout');
     });

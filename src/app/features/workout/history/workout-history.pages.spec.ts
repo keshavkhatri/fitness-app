@@ -107,7 +107,7 @@ describe('Workout History', () => {
       expect(clean(el.querySelector('[data-testid="history-empty"]'))).toContain('No completed workouts yet');
       expect(clean(el.querySelector('[data-testid="history-empty"]'))).toContain('Complete your first workout and your history will appear here.');
       expect(el.querySelector('[data-testid="history-error"]')).toBeNull();
-      [...el.querySelectorAll('button')].find((b) => clean(b) === 'View Workout')!.click();
+      [...el.querySelectorAll('button')].find((b) => clean(b) === 'View workout')!.click();
       await fixture.whenStable();
       expect(back).toHaveBeenCalledWith('/workout');
     });
@@ -122,7 +122,7 @@ describe('Workout History', () => {
       expect(clean(el.querySelector('[data-testid="history-error"]'))).toContain("Couldn't load workout history");
       expect(el.textContent).not.toMatch(/Error|storage|disk/);
       fail = false;
-      [...el.querySelectorAll('button')].find((b) => clean(b) === 'Try Again')!.click();
+      [...el.querySelectorAll('button')].find((b) => clean(b) === 'Try again')!.click();
       await fixture.whenStable();
       fixture.detectChanges();
       expect(el.querySelectorAll('[data-testid="history-item"]')).toHaveLength(1);
@@ -227,7 +227,7 @@ describe('Workout History', () => {
       const { el, back, fixture } = await renderDetail('wl-missing', [full]);
       expect(clean(el.querySelector('[data-testid="history-detail-not-found"]'))).toContain('Workout not found');
       expect(el.querySelectorAll('h1')).toHaveLength(1);
-      [...el.querySelectorAll('button')].find((b) => clean(b) === 'Back to History')!.click();
+      [...el.querySelectorAll('button')].find((b) => clean(b) === 'Back to history')!.click();
       await fixture.whenStable();
       expect(back).toHaveBeenCalledWith('/workout/history');
     });

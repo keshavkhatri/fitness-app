@@ -142,6 +142,14 @@ describe('Deleting a body composition assessment', () => {
     expect(forward).toHaveBeenCalledWith(['/you', 'body-composition', 'manual', 'edit']);
   });
 
+  it('styles the destructive action red and the cancel neutral', async () => {
+    const { el, doc, click } = await render(BodyCompositionDetailPage, 'manual', [MANUAL]);
+    expect(byTestId(el, 'delete')?.getAttribute('data-variant')).toBe('ghost-danger');
+    await click(el, 'delete');
+    expect(byTestId(doc, 'confirm-delete')?.getAttribute('data-variant')).toBe('danger');
+    expect(byTestId(doc, 'cancel-delete')?.getAttribute('data-variant')).toBe('outline');
+  });
+
   it('cancel leaves the assessment unchanged', async () => {
     const { el, doc, click, storage, back } = await render(BodyCompositionDetailPage, 'manual', [IMPORTED, MANUAL]);
     const before = storage.values.get(KEY);

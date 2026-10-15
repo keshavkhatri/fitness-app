@@ -11,7 +11,7 @@ import { PHOTO_TYPES, resizePhoto } from './photo-resize';
 @Component({
   selector: 'app-identity-sheet',
   template: `
-    <fit-bottom-sheet title="Name and photo" description="Used for your greeting and avatar. Stays on this device." [(open)]="open">
+    <fit-bottom-sheet title="Name and photo" description="Used for your greeting and avatar. Stays on this device." screenTheme="dashboard" [(open)]="open">
       <form class="form" novalidate (submit)="$event.preventDefault(); submit()">
         <div class="photo-row">
           <fit-avatar [name]="name()" [photo]="photo()" [size]="72" />

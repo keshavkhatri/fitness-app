@@ -65,10 +65,10 @@ export const FITNESS_REVIEW_COPY = {
   },
 
   links: {
-    workout: 'Open Workout',
+    workout: 'Open workout',
     nutritionWeek: 'Open weekly nutrition',
     checkIn: 'Calorie check-in',
-    nutrition: 'Open Nutrition',
+    nutrition: 'Open nutrition',
     exercise: 'See exercise',
     weighIn: 'Log weight',
     measure: 'Add measurement',

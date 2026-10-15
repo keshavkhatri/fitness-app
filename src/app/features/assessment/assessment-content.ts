@@ -80,7 +80,7 @@ export const ASSESSMENT_COPY = {
     viewMacros: 'View macro breakdown',
     viewWhy: 'Why these numbers?',
     viewNext: 'See your next steps',
-    goHome: 'Go to Home',
+    goHome: 'Go to home',
     viewAgain: 'View assessment again',
     continue: 'Continue',
     review: 'Review my details',

@@ -128,7 +128,7 @@
 </ion-content>
 
 @let current = screen();
-<fit-bottom-sheet [title]="copy.confirm.title" [open]="acceptOpen()" (openChange)="setSheetOpen('accept', $event)">
+<fit-bottom-sheet [title]="copy.confirm.title" screenTheme="dashboard" [open]="acceptOpen()" (openChange)="setSheetOpen('accept', $event)">
   @if (current.kind === 'ready' && current.recommendation.proposal; as p) {
     <div class="sheet" data-testid="confirm-sheet">
       <dl class="rows">
@@ -163,7 +163,7 @@
   }
 </fit-bottom-sheet>
 
-<fit-bottom-sheet [title]="copy.formula.title" [open]="formulaOpen()" (openChange)="setSheetOpen('formula', $event)">
+<fit-bottom-sheet [title]="copy.formula.title" screenTheme="dashboard" [open]="formulaOpen()" (openChange)="setSheetOpen('formula', $event)">
   <div class="sheet" data-testid="formula-sheet">
     <p class="caption">Your calorie target will be calculated from your profile again, without this check-in’s maintenance figure. Your records aren’t changed.</p>
     <p class="status" role="status">{{ sheetFailed() ? copy.confirm.failed : '' }}</p>

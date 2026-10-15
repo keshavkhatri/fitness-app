@@ -353,7 +353,7 @@ describe('Measurement entry page', () => {
     expect(clean(byTestId(el, 'unsupported'))).toContain('kept exactly as it is');
     expect(byTestId(el, 'measurement-form')).toBeNull();
     expect(byTestId(el, 'save')).toBeNull();
-    expect(el.querySelector('[data-testid=unsupported] button')?.textContent?.trim()).toBe('Back to Measurements');
+    expect(el.querySelector('[data-testid=unsupported] button')?.textContent?.trim()).toBe('Back to measurements');
     expect(storage.values.get(KEY)).toBe(raw);
   });
 
@@ -375,7 +375,7 @@ describe('Measurement entry page', () => {
       expect(clean(card)).toContain("measurements can't be saved at the moment. Nothing has been changed or deleted.");
       expect(byTestId(el, 'measurement-form')).toBeNull();
       expect(byTestId(el, 'save')).toBeNull();
-      expect([...card.querySelectorAll('button')].map((b) => clean(b))).toEqual(['Try again', 'Back to Measurements']);
+      expect([...card.querySelectorAll('button')].map((b) => clean(b))).toEqual(['Try again', 'Back to measurements']);
       expect(storage.values.get(KEY)).toBe(raw);
       expect(back).not.toHaveBeenCalled();
     }

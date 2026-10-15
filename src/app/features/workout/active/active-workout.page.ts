@@ -31,7 +31,7 @@ type DialogKind = 'menu' | 'skip-exercise' | 'leave-incomplete' | 'finish' | 'ex
 
 interface DialogAction {
   readonly label: string;
-  readonly variant: 'primary' | 'outline' | 'ghost';
+  readonly variant: 'primary' | 'outline' | 'ghost' | 'danger';
   readonly run: () => void | Promise<void>;
 }
 
@@ -402,7 +402,7 @@ export class ActiveWorkoutPage {
           actions: [
             {
               label: d.discard.confirm,
-              variant: 'primary',
+              variant: 'danger',
               run: async () => {
                 this.closeDialog();
                 this.timer.skip();
@@ -410,7 +410,7 @@ export class ActiveWorkoutPage {
                 void this.nav.navigateRoot('/workout');
               },
             },
-            cancel(d.discard.cancel),
+            { label: d.discard.cancel, variant: 'outline', run: () => this.closeDialog() },
           ],
         };
     }

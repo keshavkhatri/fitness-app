@@ -85,7 +85,7 @@ export const MEASUREMENT_COPY = {
       message: "Your saved measurements couldn't be read, so measurements can't be saved at the moment. Nothing has been changed or deleted.",
       retry: 'Try again',
     },
-    backToHistory: 'Back to Measurements',
+    backToHistory: 'Back to measurements',
     errors: {
       required: 'Enter at least one measurement.',
       number: (site: string) => `Enter your ${site.toLowerCase()} as a number, like 80.5.`,

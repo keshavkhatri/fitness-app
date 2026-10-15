@@ -68,7 +68,7 @@ describe('workout view model', () => {
       expect(slots.filter((s) => s === null)).toHaveLength(7 - plan.daysPerWeek);
       const screen = readyScreen(toWorkoutScreen(ready(plan), THURSDAY));
       expect(screen.week.map((d) => d.session.title)).toEqual([
-        'Upper Body A', 'Lower Body A', 'Rest Day', 'Upper Body B', 'Lower Body B', 'Rest Day', 'Rest Day',
+        'Upper Body A', 'Lower Body A', 'Rest day', 'Upper Body B', 'Lower Body B', 'Rest day', 'Rest day',
       ]);
     });
 
@@ -143,7 +143,7 @@ describe('workout view model', () => {
 
     it('rest day: rest view and the next training day (wrapping into next week)', () => {
       const rest = readyScreen(toWorkoutScreen(ready(planFor(REST_PROFILE)), THURSDAY));
-      expect(rest.today.session).toEqual({ kind: 'rest', title: 'Rest Day', summary: 'Rest' });
+      expect(rest.today.session).toEqual({ kind: 'rest', title: 'Rest day', summary: 'Rest' });
       expect(rest.upNext).toMatchObject({ weekday: 'Friday', session: { title: 'Full Body C' } });
 
       const weekend = readyScreen(toWorkoutScreen(ready(), SUNDAY));

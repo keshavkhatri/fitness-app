@@ -7,7 +7,7 @@ import { FoodThumbComponent } from './food-thumb.component';
 /**
  * One meal of the day as a row: placeholder art, what was logged and the
  * subtotal. A meal with food expands to its entries (tap one to edit) and
- * Add Food; an empty meal's row adds food straight away.
+ * Add food; an empty meal's row adds food straight away.
  */
 @Component({
   selector: 'app-meal-section',

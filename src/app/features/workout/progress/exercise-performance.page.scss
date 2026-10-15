@@ -92,15 +92,12 @@ ion-content {
   }
 }
 
-// Small phones: the change goes under the best set, so the value stays on one line.
-@media (max-width: 359px) {
+// Phones: the change goes under the best set, so the value ("72.5 kg × 10") stays on one line.
+// Side by side needs about 450px: the value takes ~205px next to a change of up to 11em.
+@media (max-width: 479px) {
   .headline {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'label' 'value' 'date' 'change';
-  }
-
-  .headline-value {
-    @include fx.text(h1, bold);
   }
 
   .change {
@@ -111,6 +108,13 @@ ion-content {
     max-width: none;
     margin-top: var(--space-2);
     text-align: start;
+  }
+}
+
+// Small phones also take the smaller size.
+@media (max-width: 359px) {
+  .headline-value {
+    @include fx.text(h1, bold);
   }
 }
 

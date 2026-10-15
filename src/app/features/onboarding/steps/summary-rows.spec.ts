@@ -8,7 +8,7 @@ describe('buildSummaryRows', () => {
   it('summarises the profile in metric', () => {
     expect(asMap(buildSummaryRows(completeDraft(), NOW))).toEqual({
       name: 'Alex',
-      goal: 'Lose Fat',
+      goal: 'Lose fat',
       age: '35 years',
       sex: 'Female',
       height: '168 cm',
@@ -74,7 +74,7 @@ describe('groupSummaryRows', () => {
   it('puts every row in exactly one group, keeping order', () => {
     const rows = [
       { id: 'name', label: 'Name', value: 'Alex', editStep: 'basics' },
-      { id: 'goal', label: 'Goal', value: 'Lose Fat', editStep: 'goal' },
+      { id: 'goal', label: 'Goal', value: 'Lose fat', editStep: 'goal' },
       { id: 'age', label: 'Age', value: '31 years', editStep: 'basics' },
       { id: 'experience', label: 'Experience', value: 'Beginner', editStep: 'experience' },
       { id: 'target-weight', label: 'Target weight', value: 'Not set', editStep: 'goal-target' },

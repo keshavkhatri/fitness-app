@@ -188,9 +188,9 @@ describe('Weekly Fitness Review page', () => {
       await fixture.whenStable();
     };
     await showTab(fixture, 'insights');
-    await go(buttonIn(byTestId(el, 'action-complete-workouts'), 'Open Workout'));
+    await go(buttonIn(byTestId(el, 'action-complete-workouts'), 'Open workout'));
     expect(url).toHaveBeenLastCalledWith('/workout');
-    await go(buttonIn(byTestId(el, 'action-protein'), 'Open Nutrition'));
+    await go(buttonIn(byTestId(el, 'action-protein'), 'Open nutrition'));
     expect(url).toHaveBeenLastCalledWith('/nutrition');
     await showTab(fixture, 'trends');
     await go(buttonIn(byTestId(el, 'review-nutrition'), 'Open weekly nutrition'));
