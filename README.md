@@ -42,6 +42,8 @@ Not implemented yet: auth, backend/API and sync, progress photos, notifications,
 | `npm run lint`  | ESLint (TS + templates + template a11y)  |
 | `npm test`      | Vitest unit tests (`--watch=false` in CI) |
 | `npm run server:start` | InBody extraction server on `127.0.0.1:8787` (reads `server/.env`; see `server/README.md`) |
+| `npm run server:install` | Installs the server's own dependencies (once, and after its lockfile changes) |
+| `npm run server:migrate` / `server:migrate:status` | Applies / lists database migrations explicitly (needs `MIGRATION_DATABASE_URL` or `DATABASE_URL`; see `server/DATABASE.md`) |
 | `npm run server:test` / `server:typecheck` | Server tests (no network, no key) / TypeScript check |
 
 Native platforms have not been added yet. Once the bundle ID is final: `npx cap add ios` / `npx cap add android`.

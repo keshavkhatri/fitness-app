@@ -3,10 +3,13 @@
 # project can't end up in the build context or an image layer.
 **
 
-# The server's source and its pinned build manifest.
+# The server's source, migration tool, SQL migrations and its pinned build manifest.
 !server/package.json
 !server/package-lock.json
+!server/build.mjs
 !server/src/**
+!server/tools/**
+!server/migrations/**
 
 # The shared contract the server imports (../../src/app/domain/inbody-extraction).
 !src/app/domain/**

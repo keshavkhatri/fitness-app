@@ -2,11 +2,16 @@
   "name": "pulseform-inbody-server",
   "version": "0.0.1",
   "private": true,
-  "description": "InBody extraction server. Only the container build uses this manifest (reproducible esbuild); the app's root package.json drives local runs and tests.",
+  "description": "InBody extraction and (later) Pulseform data server. Its own manifest keeps the container build reproducible; the repository root scripts (server:*) drive local runs.",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/main.mjs"
+    "build": "node build.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@types/pg": "8.23.1",
     "esbuild": "0.28.2"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
   }
 }

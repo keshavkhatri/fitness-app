@@ -14,6 +14,7 @@ describe('server configuration', () => {
       clientIpHeader: null,
       host: '127.0.0.1',
       port: 8787,
+      database: null,
     });
   });
 

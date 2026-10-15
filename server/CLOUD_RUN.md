@@ -21,6 +21,7 @@ Environment variables only, as in [README.md](README.md). On Cloud Run:
 | `OPENAI_MODEL` | `--set-env-vars` | A vision model that supports Structured Outputs on the Responses API. |
 | `ALLOWED_ORIGINS` | `--set-env-vars` | Exact origins. Android app: `https://localhost`; iOS: `capacitor://localhost`. `*` is refused. |
 | `CLIENT_IP_HEADER` | `--set-env-vars` | `x-forwarded-for`, so rate limits are per client and not per Google proxy. The server uses the **last** entry, the one Google's front end appends. Untested until deployed: confirm by sending requests from two networks. Behind your own load balancer the last entry is the balancer; adjust before relying on it. |
+| `DATABASE_URL` | **Secret Manager** → `--set-secrets` | Only once the database phases begin; Neon's **pooled** string. Setup and migrations: [DATABASE.md](DATABASE.md). The API server never runs migrations. |
 | `PORT`, `HOST` | leave unset | Cloud Run supplies `PORT` (the image defaults to 8080). `NODE_ENV=production`, set by the Dockerfile, makes the server bind `0.0.0.0`. |
 | Limits (`RATE_LIMIT_*`, `DAILY_EXTRACTION_LIMIT`, `MAX_CONCURRENT_EXTRACTIONS`, `INBODY_MAX_UPLOAD_BYTES`) | optional | Keep the defaults unless you have a reason. |
 

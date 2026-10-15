@@ -8,10 +8,13 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "server:build": "esbuild server/src/main.ts --bundle --platform=node --target=node22 --format=esm --outfile=server/dist/main.mjs",
+    "server:build": "npm --prefix server run build",
     "server:start": "npm run server:build && node --env-file-if-exists=server/.env server/dist/main.mjs",
     "server:test": "vitest run --config server/vitest.config.ts",
-    "server:typecheck": "tsc -p server/tsconfig.json"
+    "server:typecheck": "tsc -p server/tsconfig.json",
+    "server:install": "npm --prefix server ci",
+    "server:migrate": "npm run server:build && node --env-file-if-exists=server/.env server/dist/migrate.mjs up",
+    "server:migrate:status": "npm run server:build && node --env-file-if-exists=server/.env server/dist/migrate.mjs status"
   },
   "private": true,
   "dependencies": {

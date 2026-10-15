@@ -6,18 +6,20 @@ API key; the app never does. One endpoint:
 `POST /v1/inbody-extractions` — the raw report image as the body
 (`Content-Type: image/png | image/jpeg | image/webp`), answered with a
 validated `inbody-extraction.v1` JSON document, or
-`{ "error": { "code", "message" } }`. `GET /health` answers `{ "status": "ok" }`.
+`{ "error": { "code", "message" } }`. `GET /health` answers `{ "status": "ok" }` (it never touches the database); `GET /ready` answers 200 `{ "status": "ready" }` or 503 `{ "status": "unavailable" }` depending on whether the database responds, nothing more. The database foundation (PostgreSQL on Neon, migrations, schema) is described in [DATABASE.md](DATABASE.md).
 
 ## Run locally
 
 ```sh
+npm run server:install               # once: the server has its own dependencies (pg, esbuild)
 cp server/.env.example server/.env   # then fill in OPENAI_API_KEY and OPENAI_MODEL
 npm run server:start                 # builds to server/dist and listens on 127.0.0.1:8787
 ```
 
 `server/.env` and `server/dist` are git-ignored. Development builds of the app
-call `http://localhost:8787/v1/inbody-extractions`; production builds hide the
-upload option (`INBODY_EXTRACTION_ENDPOINT` is null) until hosting exists.
+call `http://localhost:8787/v1/inbody-extractions`; production builds call the
+hosted Cloud Run service set in `src/environments/environment.prod.ts` (a null
+`INBODY_EXTRACTION_ENDPOINT` would hide the upload option).
 
 ## Configuration
 
@@ -36,6 +38,7 @@ server at startup with the variable's name, never its value.
 | `RATE_LIMIT_PER_CLIENT` / `RATE_LIMIT_WINDOW_MS` | 5 / 15 min | Attempts per client IP. |
 | `DAILY_EXTRACTION_LIMIT` | 200 | Provider calls per day across all clients: a cost ceiling. |
 | `CLIENT_IP_HEADER` | none | Only behind a trusted proxy that sets it (e.g. `x-forwarded-for`). |
+| `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `DATABASE_POOL_MAX`, … | none | Optional PostgreSQL connection and pool settings; see [DATABASE.md](DATABASE.md). TLS is required except on localhost. |
 | `HOST` / `PORT` | 127.0.0.1 / 8787 | `HOST` defaults to `0.0.0.0` when `NODE_ENV=production` (the container). Cloud Run supplies `PORT`. |
 
 Without a key or model the server still starts, logs `server.not-configured`

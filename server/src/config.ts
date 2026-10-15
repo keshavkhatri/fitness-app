@@ -4,6 +4,12 @@
  * returned. See server/README.md for every variable.
  */
 
+import { DatabaseConfig, loadDatabaseConfig } from './db/database-config';
+import { ConfigError, Env, integer, text } from './env';
+
+export { ConfigError };
+
+
 export interface OpenAiConfig {
   readonly apiKey: string;
   readonly model: string;
@@ -31,33 +37,13 @@ export interface ServerConfig {
   readonly clientIpHeader: string | null;
   readonly host: string;
   readonly port: number;
+  /** null when DATABASE_URL is unset: the server then has no database (readiness reports unavailable). */
+  readonly database: DatabaseConfig | null;
 }
 
 const MIB = 1024 * 1024;
 /** OpenAI accepts larger images, but a phone photo of a report never needs more. */
 export const MAX_UPLOAD_BYTES_CEILING = 20 * MIB;
-
-type Env = Readonly<Record<string, string | undefined>>;
-
-export class ConfigError extends Error {}
-
-const text = (env: Env, name: string): string | null => {
-  const value = env[name]?.trim();
-  return value ? value : null;
-};
-
-function integer(env: Env, name: string, fallback: number, min: number, max: number): number {
-  const raw = text(env, name);
-  if (raw === null) {
-    return fallback;
-  }
-  const value = Number(raw);
-  if (!/^\d+$/.test(raw) || value < min || value > max) {
-    // The variable's name only: values may be secrets in a misconfigured environment.
-    throw new ConfigError(`${name} must be a whole number from ${min} to ${max}.`);
-  }
-  return value;
-}
 
 function origins(env: Env): string[] {
   const list = (text(env, 'ALLOWED_ORIGINS') ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
@@ -92,5 +78,6 @@ export function loadConfig(env: Env): ServerConfig {
     // Loopback for local runs; a container (Cloud Run) must listen on every interface.
     host: text(env, 'HOST') ?? (text(env, 'NODE_ENV') === 'production' ? '0.0.0.0' : '127.0.0.1'),
     port: integer(env, 'PORT', 8787, 0, 65535),
+    database: loadDatabaseConfig(env),
   };
 }

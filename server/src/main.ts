@@ -1,4 +1,5 @@
 import { ConfigError, loadConfig } from './config';
+import { createDatabase } from './db/database';
 import { Log, createExtractionHandler } from './extraction-handler';
 import { createNodeServer } from './node-server';
 import { openAiResponsesClient } from './openai-client';
@@ -22,12 +23,21 @@ if (config.allowedOrigins.length === 0) {
 }
 
 const client = config.openAi ? openAiResponsesClient(config.openAi) : null;
-const server = createNodeServer(createExtractionHandler({ config, client, log }));
+// The pool connects lazily (on first use), so a missing or slow database never delays startup.
+const database = config.database ? createDatabase(config.database, log) : null;
+if (!database) {
+  log('server.no-database');
+}
+const server = createNodeServer(createExtractionHandler({ config, client, log, readiness: database ? () => database.checkReadiness() : undefined }));
 server.listen(config.port, config.host, () => {
   const address = server.address();
   log('server.listening', { host: config.host, port: typeof address === 'object' && address ? address.port : config.port });
 });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.on(signal, () => server.close(() => process.exit(0)));
+  process.on(signal, () =>
+    server.close(() => {
+      void (database?.close() ?? Promise.resolve()).catch(() => undefined).finally(() => process.exit(0));
+    }),
+  );
 }

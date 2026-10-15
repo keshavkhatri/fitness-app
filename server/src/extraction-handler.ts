@@ -20,6 +20,8 @@ import { UploadProblem, readReportUpload } from './report-upload';
 
 export const EXTRACTION_PATH = '/v1/inbody-extractions';
 export const HEALTH_PATH = '/health';
+/** Whether the database answers. Unlike /health (which never touches it), this one does. */
+export const READY_PATH = '/ready';
 
 export type LogFields = Readonly<Record<string, string | number | boolean>>;
 export type Log = (event: string, fields?: LogFields) => void;
@@ -30,6 +32,8 @@ export interface ExtractionHandlerDeps {
   readonly client: ResponsesClient | null;
   readonly log: Log;
   readonly now?: () => number;
+  /** Whether the database is reachable (cached by the database module); undefined when none is configured. */
+  readonly readiness?: () => Promise<boolean>;
 }
 
 /** What the transport knows about the caller. */
@@ -136,7 +140,7 @@ function errorMessage(code: ErrorCode, maxUploadBytes: number): string {
 
 const BASE_HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } as const;
 
-export function createExtractionHandler({ config, client, log, now = Date.now }: ExtractionHandlerDeps) {
+export function createExtractionHandler({ config, client, log, now = Date.now, readiness }: ExtractionHandlerDeps) {
   const clientLimiter = new FixedWindowLimiter(config.clientRateLimit, config.clientRateWindowMs, now);
   const dailyLimiter = new FixedWindowLimiter(config.dailyExtractionLimit, DAY_MS, now);
   /** Extractions holding a slot. Checked and taken synchronously (no await in between), so concurrent requests can't overshoot. */
@@ -246,6 +250,11 @@ export function createExtractionHandler({ config, client, log, now = Date.now }:
       const { pathname } = new URL(request.url);
       if (pathname === HEALTH_PATH && request.method === 'GET') {
         return json(200, { status: 'ok' }, null);
+      }
+      if (pathname === READY_PATH && request.method === 'GET') {
+        // Up or down and nothing else: no host, schema, SQL or error text, whatever went wrong.
+        const ready = readiness ? await readiness().catch(() => false) : false;
+        return json(ready ? 200 : 503, { status: ready ? 'ready' : 'unavailable' }, null);
       }
       if (pathname !== EXTRACTION_PATH) {
         return fail('not-found', origin);

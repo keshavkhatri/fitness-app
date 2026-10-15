@@ -437,8 +437,9 @@ describe('CORS and routing', () => {
 
 describe('storage', () => {
   it('never touches the file system: uploads and extractions stay in memory', () => {
+    // The whole API server, including src/db: the migration tool (server/tools) is the only reader of files.
     const dir = join(__dirname, '../src');
-    for (const file of readdirSync(dir)) {
+    for (const file of readdirSync(dir, { recursive: true, withFileTypes: false }).map(String).filter((f) => f.endsWith('.ts'))) {
       const source = readFileSync(join(dir, file), 'utf8');
       expect(source, file).not.toMatch(/from ['"](node:)?(fs|fs\/promises|os)['"]|require\(['"](node:)?fs/);
       expect(source, file).not.toMatch(/tmpdir|writeFile|createWriteStream/);

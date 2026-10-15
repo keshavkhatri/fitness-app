@@ -76,6 +76,9 @@ describe('node:http adapter', () => {
         status = res.statusCode ?? 0;
         res.resume();
       });
+      // The server cutting the connection is the point, and on Windows it surfaces as an ECONNRESET
+      // on this request: expected, and the assertion below still needs the close it causes.
+      req.on('error', () => undefined);
       // Never ends: only the server can stop it.
       const timer = setInterval(() => req.write(pngBytes(16 * 1024)), 20);
       const done = (closed: boolean) => {
