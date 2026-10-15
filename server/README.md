@@ -36,7 +36,7 @@ server at startup with the variable's name, never its value.
 | `RATE_LIMIT_PER_CLIENT` / `RATE_LIMIT_WINDOW_MS` | 5 / 15 min | Attempts per client IP. |
 | `DAILY_EXTRACTION_LIMIT` | 200 | Provider calls per day across all clients: a cost ceiling. |
 | `CLIENT_IP_HEADER` | none | Only behind a trusted proxy that sets it (e.g. `x-forwarded-for`). |
-| `HOST` / `PORT` | 127.0.0.1 / 8787 | |
+| `HOST` / `PORT` | 127.0.0.1 / 8787 | `HOST` defaults to `0.0.0.0` when `NODE_ENV=production` (the container). Cloud Run supplies `PORT`. |
 
 Without a key or model the server still starts, logs `server.not-configured`
 and answers every extraction with 503 `not-configured` without reading the
@@ -63,13 +63,9 @@ upload.
 - The server saves nothing: the profile is created only after the user reviews
   the values in the app.
 
-## Before production
+## Deploying
 
-Not deployed yet. Hosting still needs: HTTPS, the key in the platform's secret
-store (not a file), the production app origins in `ALLOWED_ORIGINS`,
-`CLIENT_IP_HEADER` matching the proxy, and a shared rate-limit store if more
-than one instance runs (limits are per process). Then set the production
-endpoint for `INBODY_EXTRACTION_ENDPOINT`.
+A `Dockerfile` (repository root) packages the server for Google Cloud Run: see [CLOUD_RUN.md](CLOUD_RUN.md) to build, test and deploy it. Not deployed yet. Production still needs the key in Secret Manager (not a file), the production app origins in `ALLOWED_ORIGINS`, `CLIENT_IP_HEADER` matching the proxy, and a shared rate-limit store if more than one instance runs (limits are per process). Then set the production endpoint in `src/environments/environment.prod.ts`.
 
 ## Tests
 

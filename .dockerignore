@@ -1,0 +1,25 @@
+# Allow-list: the container build sees only what the InBody server needs, so secrets
+# (.env), report photos, node_modules, build output, the Angular app and the Android
+# project can't end up in the build context or an image layer.
+**
+
+# The server's source and its pinned build manifest.
+!server/package.json
+!server/package-lock.json
+!server/src/**
+
+# The shared contract the server imports (../../src/app/domain/inbody-extraction).
+!src/app/domain/**
+
+# ...but not tests, fixtures or anything secret-shaped, even inside the allowed paths.
+**/*.spec.ts
+**/testing/**
+**/.env
+**/.env.*
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webp
+**/*.pdf
+**/node_modules
+**/dist

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, resource, signal, viewChild } from '@angular/core';
-import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, NavController } from '@ionic/angular';
+import { IonContent, IonFooter, IonHeader, IonIcon, IonToolbar, NavController, Platform } from '@ionic/angular';
 
 import { ThemeService } from '../../../core/theme/theme.service';
 import { CLOCK } from '../../../core/time/clock';
@@ -144,6 +144,17 @@ export class ActiveWorkoutPage {
     // The status bar gets light text even in a light Appearance while this always-dark screen is open.
     const releaseStatusBar = inject(ThemeService).holdAlwaysDark();
     inject(DestroyRef).onDestroy(releaseStatusBar);
+
+    // Android Back asks the same "Leave this workout?" as the header's back button, instead of
+    // dropping out of a session in progress. An open sheet handles Back itself (higher priority).
+    const backButton = inject(Platform).backButton.subscribeWithPriority(10, (processNextHandler) => {
+      if (this.view()) {
+        this.openDialog('exit');
+      } else {
+        processNextHandler();
+      }
+    });
+    inject(DestroyRef).onDestroy(() => backButton.unsubscribe());
 
     effect(() => {
       if (this.timer.status() === 'done') {

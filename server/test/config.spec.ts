@@ -17,6 +17,13 @@ describe('server configuration', () => {
     });
   });
 
+  it('listens on loopback by default, on all interfaces in production, and on the port it is given', () => {
+    expect(loadConfig({}).host).toBe('127.0.0.1');
+    expect(loadConfig({ NODE_ENV: 'production' }).host).toBe('0.0.0.0');
+    expect(loadConfig({ NODE_ENV: 'production', HOST: '10.0.0.5' }).host).toBe('10.0.0.5');
+    expect(loadConfig({ NODE_ENV: 'production', PORT: '8080' }).port).toBe(8080);
+  });
+
   it.each([
     ['no key', { OPENAI_MODEL: 'm' }],
     ['no model', { OPENAI_API_KEY: 'k' }],

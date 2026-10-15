@@ -34,6 +34,11 @@ ion-tab-button {
     position: relative;
     margin-top: 3px;
     color: var(--color-text-secondary);
+    // Ionic ellipsises labels wider than the button; at 150% text size "Progress" became "Progre…".
+    // Five labels never need more than their neighbours' empty side space, so let them show whole.
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
   }
 
   // Active: a soft brand glow behind icon and label, the filled icon variant

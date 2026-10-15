@@ -453,6 +453,20 @@ describe('ActiveWorkoutPage', () => {
   });
 
   describe('finishing and leaving', () => {
+    it("Android's Back button asks 'Leave this workout?' instead of leaving", async () => {
+      const { settle, dialog, root, back, logs } = await render();
+      expect(dialog()).toBeNull();
+      // What Ionic fires for the hardware button: every registered handler gets to run.
+      document.dispatchEvent(
+        new CustomEvent('ionBackButton', { detail: { register: (_priority: number, handler: (next: () => void) => void) => handler(() => undefined) } }),
+      );
+      await settle();
+      expect(dialog()).toMatchObject({ title: 'Leave this workout?' });
+      expect(root).not.toHaveBeenCalled();
+      expect(back).not.toHaveBeenCalled();
+      expect(logs.active()?.status).toBe('in-progress');
+    });
+
     it('Finish on the last exercise: incomplete sets are stated, Finish anyway completes and opens the summary', async () => {
       const { logs, settle, click, dialog, choose, root, storage } = await render();
       await logs.goToExercise(6);

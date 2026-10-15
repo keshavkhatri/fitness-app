@@ -89,7 +89,8 @@ export function loadConfig(env: Env): ServerConfig {
     clientRateWindowMs: integer(env, 'RATE_LIMIT_WINDOW_MS', 15 * 60_000, 1_000, 24 * 60 * 60_000),
     dailyExtractionLimit: integer(env, 'DAILY_EXTRACTION_LIMIT', 200, 1, 1_000_000),
     clientIpHeader: text(env, 'CLIENT_IP_HEADER')?.toLowerCase() ?? null,
-    host: text(env, 'HOST') ?? '127.0.0.1',
+    // Loopback for local runs; a container (Cloud Run) must listen on every interface.
+    host: text(env, 'HOST') ?? (text(env, 'NODE_ENV') === 'production' ? '0.0.0.0' : '127.0.0.1'),
     port: integer(env, 'PORT', 8787, 0, 65535),
   };
 }

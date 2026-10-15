@@ -4,6 +4,7 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
 
 import { routes } from './app.routes';
 import { registerAppIcons } from './core/icons/register-icons';
+import { trackTextScale } from './core/text-scale/text-scale';
 import { ThemeService } from './core/theme/theme.service';
 
 const prefersReducedMotion =
@@ -31,6 +32,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withPreloading(PreloadAllModules), withComponentInputBinding()),
     provideAppInitializer(() => {
       registerAppIcons();
+      trackTextScale();
       // Awaited so the stored theme applies before first paint.
       return inject(ThemeService).restore();
     }),

@@ -57,7 +57,9 @@ const RING_CENTER = 18;
     '[attr.data-variant]': 'variant()',
     '[attr.data-tone]': 'tone()',
     '[class.gradient]': 'gradient()',
-    '[style.--ring-size.px]': 'ringSize()',
+    // `ringSize` is the size in px at normal text; it grows with the user's text size (see
+    // core/text-scale) so the figures inside a ring never outgrow it.
+    '[style.--ring-size]': `'calc(' + ringSize() + 'px * var(--text-scale, 1))'`,
     '[style.--ring-thickness]': 'thickness()',
   },
 })
