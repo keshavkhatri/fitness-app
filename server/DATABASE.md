@@ -1,8 +1,9 @@
 # Database (Neon PostgreSQL)
 
 The server can connect to PostgreSQL, and the repository holds the schema and a migration tool.
-**Nothing in the app uses the database yet** (no authentication, no data endpoints, no localStorage
-migration). What exists: a connection pool, `GET /ready`, versioned migrations, and the schema in
+**Only accounts use the database** (sign-up, sign-in and sessions in schema `auth`; see [AUTH.md](AUTH.md)).
+There are no data endpoints and no localStorage migration yet: the `pulseform` tables stay empty. What
+exists: a connection pool, `GET /ready`, versioned migrations, and the schema in
 [`docs/database-schema.md`](../docs/database-schema.md). Nothing here creates cloud resources.
 
 ## How it fits
@@ -13,7 +14,7 @@ migration). What exists: a connection pool, `GET /ready`, versioned migrations, 
 | Pool, readiness check | `src/db/database.ts` |
 | Migration engine (history, checksums, lock, rollback) | `src/db/migrations.ts` |
 | Migration command and SQL file reader | `tools/migrate.ts`, `tools/migration-files.ts` |
-| The schema | `migrations/0001…0005_*.sql` |
+| The schema | `migrations/0001…0005_*.sql` (`pulseform`), `0006_auth_tables.sql` (Better Auth's `auth` tables), `0007_user_ownership.sql` (foreign keys to `auth."user"`) |
 
 The API server never runs migrations and never reads files: migrations are an explicit step, run once
 per release by you (or by a Cloud Run job), not by every instance at startup.
@@ -50,8 +51,10 @@ Environment variables only (see [`.env.example`](.env.example)); errors name the
 | `DATABASE_CONNECT_TIMEOUT_MS` | 10000 | |
 | `DATABASE_STATEMENT_TIMEOUT_MS` | 15000 | Server-side limit for one statement. |
 
-On **Cloud Run**, put `DATABASE_URL` in Secret Manager, like `OPENAI_API_KEY`:
-`--set-secrets "DATABASE_URL=database-url:latest"` (see [CLOUD_RUN.md](CLOUD_RUN.md)). The pool connects on first
+On **Cloud Run**, `DATABASE_URL` is a Secret Manager secret named `DATABASE_URL`, like `OPENAI_API_KEY` (it
+already exists on the deployed service, `deploy-fitness-app-backend`; see [CLOUD_RUN.md](CLOUD_RUN.md)). Change
+it with a new secret version, not a plain variable, and use `--update-secrets` (never `--set-secrets`, which
+replaces every secret on the service). The pool connects on first
 use, so a database that is asleep or slow never delays or fails the container's start; Neon wakes it on the first query.
 
 ## Run the migrations
@@ -74,7 +77,9 @@ npm run server:migrate          # applies what is pending, oldest first
 - Two runners at once are safe: a session advisory lock makes the second wait and then find nothing to do.
 - Failures print the migration name, the SQLSTATE and the database's own message (about SQL objects). Connection
   failures print only an error code, never the host, user or password.
-- Better Auth's tables (schema `auth`) are **not** managed here.
+- Better Auth's tables (schema `auth`) **are** created by this runner (`0006`, Better Auth's own generated SQL);
+  Better Auth's CLI is not used. A test fails if a Better Auth upgrade expects a different schema: add the difference
+  as a new migration.
 
 To run them from the container instead (for example as a Cloud Run job that uses the same image):
 `node migrate.mjs up` with `MIGRATION_DATABASE_URL` set (the image carries `migrate.mjs` and `migrations/`).
@@ -103,7 +108,25 @@ Cloud Run does not use it; it is for you and for monitoring.
   docker rm -f pulseform-pg       # wipes it
   ```
 
-- Use a **Neon dev branch** when you want the real service; keep production's string out of your shell and `server/.env`.
+- This project currently has **one** Neon database, and it is the production one: `server/.env` points at it, so
+  local runs read and write real data. A Neon **branch** for development, with `server/.env` pointed at it and the
+  main branch left to the deployed service, would separate them; that has not been set up.
+
+## Checking a live Neon connection
+
+Verified against a real Neon database (15 Oct 2026): both URLs connect (the first connection takes about 3 s while
+Neon's compute wakes; later ones are fast), the migration history is exactly 0001–0005, and `/ready` answers 200 on the
+pooled `DATABASE_URL` alone. Later the same day, 0006 and 0007 were applied to **this same database** (the only one,
+which is the production one; status checked first, a second run reported "up to date", and on 16 Oct a status check
+showed 0001–0007 applied with nothing pending). A local server completed sign-up, email confirmation, `/v1/auth/me`,
+a wrong password (401), sign-in and sign-out against it, from a browser and from a physical Android phone; the
+throwaway test accounts were deleted afterwards.
+
+- **Check TLS from the client, not the server.** Neon ends TLS at its proxy, so PostgreSQL's own `pg_stat_ssl` reports
+  `ssl = false` even on an encrypted connection. Use the client socket instead: with `pg`,
+  `client.connection.stream.encrypted` and `.authorized` are `true` (TLS 1.3 with a verified certificate chain and hostname),
+  and a plaintext attempt (`ssl: false`) is refused by Neon.
+- The first request after Neon scales to zero is slow (seconds). `DATABASE_CONNECT_TIMEOUT_MS` (10 s) leaves room for it.
 
 ## Verified, and not
 
@@ -111,10 +134,15 @@ Cloud Run does not use it; it is for you and for monitoring.
   idempotence, lock release and every schema constraint (PGlite); the real `pg` driver path (status, apply, idempotent
   re-run, tamper refusal, two runners racing, `/ready` up, down and recovering) against a **throwaway local PostgreSQL 17**;
   the container (non-root, tools present, refusals print nothing secret).
-- **Not verified: any connection to Neon.** No Neon credentials were used. TLS to a real Neon endpoint, the `-pooler`
-  behaviour, `channel_binding`, and cold-start latency of a sleeping Neon compute are untested until you run the steps above.
+- Verified against Neon (see "Checking a live Neon connection"): TLS, both connection types, migration history, `/ready`
+  from a local server.
+- The deployed Cloud Run service has the `DATABASE_URL` secret and its `/ready` answers 200 (checked 16 Oct 2026),
+  so it reaches *a* Neon database. **Not verified:** that this is the same database `server/.env` reaches (and
+  so has migrations 0001–0007); the check is in [AUTH.md](AUTH.md#ordered-plan), step 1.
+- **Not verified:** `channel_binding` (accepted in the URL and ignored, so the connection does
+  not enforce it), behaviour under real load, and any data operation: no application code writes to the
+  `pulseform` tables yet.
 
 ## Next phases (not done)
 
-Better Auth (Google + email/password) in the `auth` schema and the foreign keys to it; data endpoints and a sync/import
-path from `localStorage`; private Cloudflare R2 for images. See [`docs/database-schema.md`](../docs/database-schema.md).
+Data endpoints and a sync/import path from `localStorage`; private Cloudflare R2 for images. See [`docs/database-schema.md`](../docs/database-schema.md).

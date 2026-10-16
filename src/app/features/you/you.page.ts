@@ -15,6 +15,7 @@ import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
 import { CLOCK } from '../../core/time/clock';
 import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { QuickAddLauncher } from '../../shell/quick-add/quick-add-launcher.service';
+import { AccountCardComponent } from './account-card.component';
 import { IdentitySheetComponent } from './identity-sheet.component';
 import { YouHeaderComponent } from './you-header.component';
 import { YOU_TILES, YouDestination, toGoal, toYouHeader } from './you-view-model';
@@ -65,6 +66,7 @@ const TEST_IDS: Readonly<Record<YouDestination, string>> = {
   host: { class: 'fit-theme-dashboard' },
   imports: [
     IonIcon,
+    AccountCardComponent,
     IdentitySheetComponent,
     LinkCardComponent,
     YouHeaderComponent,

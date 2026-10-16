@@ -437,7 +437,8 @@ describe('CORS and routing', () => {
 
 describe('storage', () => {
   it('never touches the file system: uploads and extractions stay in memory', () => {
-    // The whole API server, including src/db: the migration tool (server/tools) is the only reader of files.
+    // The whole API server, including src/db and src/auth. Only server/tools touches files: the migration
+    // tool reads them, and the local-only dev email outbox writes them (refused outside localhost).
     const dir = join(__dirname, '../src');
     for (const file of readdirSync(dir, { recursive: true, withFileTypes: false }).map(String).filter((f) => f.endsWith('.ts'))) {
       const source = readFileSync(join(dir, file), 'utf8');

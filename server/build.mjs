@@ -1,9 +1,9 @@
-// Bundles the API server and the migration tool, each into one file (server/dist/*.mjs).
-// Run with `npm run build` here, or `npm run server:build` from the repository root.
+// Bundles the API server, the migration tool, the unconfirmed-account cleanup job and the email test command, each into one
+// file (server/dist/*.mjs). Run with `npm run build` here, or `npm run server:build` from the repository root.
 import { build } from 'esbuild';
 
 await build({
-  entryPoints: { main: 'src/main.ts', migrate: 'tools/migrate.ts' },
+  entryPoints: { main: 'src/main.ts', migrate: 'tools/migrate.ts', cleanup: 'tools/cleanup.ts', 'email-test': 'tools/email-test.ts' },
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },
   bundle: true,

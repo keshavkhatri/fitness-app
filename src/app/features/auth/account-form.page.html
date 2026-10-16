@@ -1,0 +1,98 @@
+<ion-content>
+  <main class="body">
+    <div class="topbar">
+      <ion-back-button class="back" [defaultHref]="homePath" text="" icon="chevron-back" [attr.aria-label]="copy.back" />
+    </div>
+
+    <header class="intro">
+      <span class="badge" aria-hidden="true"><ion-icon name="person-circle-outline" /></span>
+      <h1 class="title" data-testid="auth-title">{{ text().title }}</h1>
+      <p class="caption">{{ text().intro }}</p>
+    </header>
+
+    <p class="local-data" data-testid="local-data">
+      <ion-icon name="phone-portrait-outline" aria-hidden="true" />
+      <span>{{ copy.localData }}</span>
+    </p>
+
+    @if (providers(); as p) {
+      @if (!p.accounts) {
+        <fit-notice tone="warning" [headingLevel]="2" [title]="copy.unavailable.title" data-testid="accounts-unavailable">
+          {{ copy.unavailable.message }}
+        </fit-notice>
+      } @else if (sentTo(); as address) {
+        <fit-notice tone="info" [headingLevel]="2" [title]="copy.checkEmail.title" role="status" data-testid="check-email">
+          {{ copy.checkEmail.message(address) }}
+        </fit-notice>
+        <p class="hint">{{ copy.checkEmail.hint }}</p>
+        <button fit-button type="button" size="lg" block (click)="goToSignIn()" data-testid="check-email-sign-in">{{ copy.checkEmail.signIn }}</button>
+      } @else {
+        @if (error(); as e) {
+          <fit-notice tone="danger" [headingLevel]="2" [title]="e.title" data-testid="auth-error" role="alert">{{ e.message }}</fit-notice>
+        }
+        @if (auth.googlePending()) {
+          <p class="pending" role="status" data-testid="google-pending">{{ copy.googlePending }}</p>
+        }
+
+        @if (p.emailPassword) {
+        <form class="form" novalidate (submit)="submit($event)" data-testid="auth-form">
+          @if (mode() === 'sign-up') {
+            <fit-text-field
+              [label]="copy.fields.name"
+              autocomplete="name"
+              [maxLength]="nameMax"
+              [(value)]="name"
+              [error]="fieldErrors().name ?? null"
+              data-testid="field-name"
+            />
+          }
+          <fit-text-field
+            [label]="copy.fields.email"
+            type="email"
+            inputMode="email"
+            autocomplete="email"
+            [(value)]="email"
+            [error]="fieldErrors().email ?? null"
+            data-testid="field-email"
+          />
+          <fit-text-field
+            [label]="copy.fields.password"
+            type="password"
+            enterKeyHint="done"
+            [autocomplete]="mode() === 'sign-up' ? 'new-password' : 'current-password'"
+            [maxLength]="passwordMax"
+            [hint]="mode() === 'sign-up' ? copy.fields.passwordHint : undefined"
+            [(value)]="password"
+            [error]="fieldErrors().password ?? null"
+            data-testid="field-password"
+          />
+          <button fit-button type="submit" size="lg" block [loading]="busy()" data-testid="auth-submit">{{ text().submit }}</button>
+        </form>
+        @if (mode() === 'sign-in') {
+          <p class="switch">
+            <a [routerLink]="forgotPath" replaceUrl data-testid="auth-forgot">{{ copy.forgot.link }}</a>
+          </p>
+        }
+        }
+
+        @if (p.google) {
+          @if (p.emailPassword) {
+            <div class="divider" aria-hidden="true"><span>{{ copy.or }}</span></div>
+          }
+          <button fit-button type="button" variant="outline" size="lg" block icon="logo-google" [disabled]="busy()" (click)="google()" data-testid="auth-google">
+            {{ copy.google }}
+          </button>
+        }
+
+        @if (p.emailPassword) {
+          <p class="switch">
+            {{ text().switchPrompt }}
+            <a [routerLink]="switchPath()" [queryParams]="next() ? { next: next() } : {}" replaceUrl data-testid="auth-switch">{{ text().switchAction }}</a>
+          </p>
+        }
+      }
+    } @else {
+      <p class="checking" role="status">{{ copy.checking }}</p>
+    }
+  </main>
+</ion-content>

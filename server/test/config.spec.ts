@@ -15,6 +15,7 @@ describe('server configuration', () => {
       host: '127.0.0.1',
       port: 8787,
       database: null,
+      auth: null,
     });
   });
 

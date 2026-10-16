@@ -12,6 +12,8 @@
     "esbuild": "0.28.2"
   },
   "dependencies": {
+    "better-auth": "1.7.10",
+    "kysely": "0.29.6",
     "pg": "8.23.1"
   }
 }

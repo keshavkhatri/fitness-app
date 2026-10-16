@@ -6,12 +6,12 @@ API key; the app never does. One endpoint:
 `POST /v1/inbody-extractions` — the raw report image as the body
 (`Content-Type: image/png | image/jpeg | image/webp`), answered with a
 validated `inbody-extraction.v1` JSON document, or
-`{ "error": { "code", "message" } }`. `GET /health` answers `{ "status": "ok" }` (it never touches the database); `GET /ready` answers 200 `{ "status": "ready" }` or 503 `{ "status": "unavailable" }` depending on whether the database responds, nothing more. The database foundation (PostgreSQL on Neon, migrations, schema) is described in [DATABASE.md](DATABASE.md).
+`{ "error": { "code", "message" } }`. `GET /health` answers `{ "status": "ok" }` (it never touches the database); `GET /ready` answers 200 `{ "status": "ready" }` or 503 `{ "status": "unavailable" }` depending on whether the database responds, nothing more. The database foundation (PostgreSQL on Neon, migrations, schema) is described in [DATABASE.md](DATABASE.md). Optional accounts (email/password and Google, `GET /v1/auth/me`) are described in [AUTH.md](AUTH.md).
 
 ## Run locally
 
 ```sh
-npm run server:install               # once: the server has its own dependencies (pg, esbuild)
+npm run server:install               # once: the server has its own dependencies (pg, better-auth, esbuild)
 cp server/.env.example server/.env   # then fill in OPENAI_API_KEY and OPENAI_MODEL
 npm run server:start                 # builds to server/dist and listens on 127.0.0.1:8787
 ```
@@ -39,6 +39,7 @@ server at startup with the variable's name, never its value.
 | `DAILY_EXTRACTION_LIMIT` | 200 | Provider calls per day across all clients: a cost ceiling. |
 | `CLIENT_IP_HEADER` | none | Only behind a trusted proxy that sets it (e.g. `x-forwarded-for`). |
 | `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `DATABASE_POOL_MAX`, … | none | Optional PostgreSQL connection and pool settings; see [DATABASE.md](DATABASE.md). TLS is required except on localhost. |
+| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `EMAIL_DELIVERY`, `RESEND_API_KEY`, `EMAIL_FROM`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, … | none (accounts off) | Accounts and email confirmation; see [AUTH.md](AUTH.md). |
 | `HOST` / `PORT` | 127.0.0.1 / 8787 | `HOST` defaults to `0.0.0.0` when `NODE_ENV=production` (the container). Cloud Run supplies `PORT`. |
 
 Without a key or model the server still starts, logs `server.not-configured`

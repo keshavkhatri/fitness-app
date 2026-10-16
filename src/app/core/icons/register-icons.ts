@@ -95,6 +95,11 @@ import {
   optionsOutline,
   rocketOutline,
   layersOutline,
+  // Accounts (features/auth, You)
+  logoGoogle,
+  logOutOutline,
+  phonePortraitOutline,
+  lockClosedOutline,
 } from 'ionicons/icons';
 
 /**
@@ -104,6 +109,10 @@ import {
  */
 export function registerAppIcons(): void {
   addIcons({
+    logoGoogle,
+    logOutOutline,
+    phonePortraitOutline,
+    lockClosedOutline,
     add,
     alertCircleOutline,
     barbell,

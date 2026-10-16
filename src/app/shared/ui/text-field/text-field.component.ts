@@ -26,6 +26,8 @@ let nextId = 0;
         [value]="value()"
         (input)="value.set($any($event.target).value)"
         [attr.inputmode]="inputMode()"
+        [attr.autocapitalize]="credential() ? 'off' : null"
+        [attr.spellcheck]="credential() ? 'false' : null"
         [attr.autocomplete]="autocomplete()"
         [attr.enterkeyhint]="enterKeyHint()"
         [attr.maxlength]="maxLength() ?? null"
@@ -57,9 +59,9 @@ export class TextFieldComponent {
   readonly hint = input<string>();
   readonly error = input<string | null>();
   /** Drives the mobile keyboard: use 'numeric' for whole numbers, 'decimal' for measurements. */
-  readonly inputMode = input<'text' | 'numeric' | 'decimal'>('text');
-  /** 'date' uses the platform date picker; the value is then YYYY-MM-DD. */
-  readonly type = input<'text' | 'date'>('text');
+  readonly inputMode = input<'text' | 'numeric' | 'decimal' | 'email'>('text');
+  /** 'date' uses the platform date picker; the value is then YYYY-MM-DD. 'email' and 'password' are for sign-in. */
+  readonly type = input<'text' | 'date' | 'email' | 'password'>('text');
   /** Latest allowed value (date fields, YYYY-MM-DD). */
   readonly max = input<string>();
   readonly autocomplete = input('off');
@@ -75,6 +77,9 @@ export class TextFieldComponent {
     const id = `fit-field-${nextId++}`;
     return { input: id, label: `${id}-label`, suffix: `${id}-suffix`, message: `${id}-message` };
   })();
+
+  /** Addresses and passwords are never auto-capitalised or spell-checked. */
+  protected readonly credential = computed(() => this.type() === 'email' || this.type() === 'password');
 
   protected readonly labelledBy = computed(() =>
     this.suffix() ? `${this.ids.label} ${this.ids.suffix}` : this.ids.label,

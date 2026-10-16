@@ -2,6 +2,8 @@
 // API keys or other secrets.
 export const environment = {
   production: true,
+  /** The Pulseform API on Google Cloud Run (server/CLOUD_RUN.md). null hides accounts. */
+  apiBaseUrl: 'https://deploy-fitness-app-backend-893557393361.europe-west1.run.app' as string | null,
   /** The hosted extraction server on Google Cloud Run (server/CLOUD_RUN.md). null hides report upload. */
   inbodyExtractionEndpoint: 'https://deploy-fitness-app-backend-893557393361.europe-west1.run.app/v1/inbody-extractions' as string | null,
   /**

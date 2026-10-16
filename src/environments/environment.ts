@@ -6,6 +6,8 @@
 // API keys or other secrets (the OpenAI key lives in server/.env).
 export const environment = {
   production: false,
+  /** The Pulseform API (server/): accounts today, user data later. A public URL, never a secret. */
+  apiBaseUrl: 'http://localhost:8787' as string | null,
   /** The local InBody extraction server (`npm run server:start`). */
   inbodyExtractionEndpoint: 'http://localhost:8787/v1/inbody-extractions' as string | null,
   /**

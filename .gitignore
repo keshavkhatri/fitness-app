@@ -73,6 +73,8 @@ Thumbs.db
 /server/.env
 /server/dist
 /server/node_modules
+# Local "sent" emails (EMAIL_DELIVERY=dev-outbox): they hold confirmation links
+/server/.dev-outbox
 .env
 .env.*
 !.env.example

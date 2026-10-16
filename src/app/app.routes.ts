@@ -17,6 +17,9 @@ import { requireOnboardingComplete } from './core/profile/onboarding.guards';
 export const routes: Routes = [
   { path: 'onboarding', loadChildren: () => import('./features/onboarding/onboarding.routes') },
   { path: 'assessment', loadChildren: () => import('./features/assessment/assessment.routes') },
+  // Optional accounts (sign in, create account, Google return). Not guarded by onboarding: the app
+  // works without an account, and an account never replaces the local data.
+  { path: 'auth', loadChildren: () => import('./features/auth/auth.routes') },
   // Full-screen workout flows (no tab bar). Declared before the shell so they match first.
   {
     path: 'workout/session/:sessionId/active',

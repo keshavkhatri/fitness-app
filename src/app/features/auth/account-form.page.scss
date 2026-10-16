@@ -1,0 +1,121 @@
+@use 'mixins' as fx;
+
+// Dashboard (warm light), like the other single-task screens: a back button, one heading, one
+// primary action. Fields and buttons are full width; nothing sits side by side, so 320 px works.
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4)
+    calc(var(--ion-safe-area-bottom, 0px) + var(--space-10));
+}
+
+.back {
+  --background: var(--color-surface);
+  --border-radius: var(--radius-pill);
+  --color: var(--color-text);
+  --icon-font-size: 22px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --icon-margin-start: 0;
+  --icon-margin-end: 0;
+
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 24px;
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.caption {
+  @include fx.text(body);
+  color: var(--color-text-secondary);
+}
+
+.local-data {
+  @include fx.text(body-sm);
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--color-primary-text);
+    font-size: var(--icon-size-md);
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.divider {
+  @include fx.text(caption, medium);
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  color: var(--color-text-secondary);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: var(--border-hairline);
+    background: var(--color-border);
+  }
+}
+
+.pending,
+.checking,
+.hint {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.switch {
+  @include fx.text(body);
+  text-align: center;
+  color: var(--color-text-secondary);
+
+  a {
+    @include fx.focus-ring;
+    display: inline-block;
+    padding: var(--space-2) var(--space-1);
+    color: var(--color-primary-text);
+    font-weight: var(--font-weight-semibold);
+  }
+}

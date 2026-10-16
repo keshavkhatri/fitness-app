@@ -23,12 +23,12 @@ COPY server/tools ./tools
 COPY src/app/domain /app/src/app/domain
 RUN npm run build
 
-# --- Runtime: Node and two bundles (the pg driver is bundled in; no node_modules at runtime) --
+# --- Runtime: Node and four bundles: the API, the migration tool, the cleanup job, the email test (dependencies are bundled in; no node_modules at runtime) --
 FROM node:${NODE_VERSION}-slim AS runtime
 ENV NODE_ENV=production \
     PORT=8080
 WORKDIR /srv
-COPY --from=build --chown=node:node /app/server/dist/main.mjs /app/server/dist/migrate.mjs ./
+COPY --from=build --chown=node:node /app/server/dist/main.mjs /app/server/dist/migrate.mjs /app/server/dist/cleanup.mjs /app/server/dist/email-test.mjs ./
 # The SQL migrations, for the explicit migration step (see server/DATABASE.md). The server never runs them.
 COPY --chown=node:node server/migrations ./migrations
 # The image's built-in unprivileged user.

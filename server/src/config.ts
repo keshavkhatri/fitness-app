@@ -4,6 +4,7 @@
  * returned. See server/README.md for every variable.
  */
 
+import { AuthConfig, loadAuthConfig } from './auth/auth-config';
 import { DatabaseConfig, loadDatabaseConfig } from './db/database-config';
 import { ConfigError, Env, integer, text } from './env';
 
@@ -39,6 +40,8 @@ export interface ServerConfig {
   readonly port: number;
   /** null when DATABASE_URL is unset: the server then has no database (readiness reports unavailable). */
   readonly database: DatabaseConfig | null;
+  /** null when BETTER_AUTH_SECRET is unset: account routes answer 503 and nothing else changes. */
+  readonly auth: AuthConfig | null;
 }
 
 const MIB = 1024 * 1024;
@@ -79,5 +82,6 @@ export function loadConfig(env: Env): ServerConfig {
     host: text(env, 'HOST') ?? (text(env, 'NODE_ENV') === 'production' ? '0.0.0.0' : '127.0.0.1'),
     port: integer(env, 'PORT', 8787, 0, 65535),
     database: loadDatabaseConfig(env),
+    auth: loadAuthConfig(env),
   };
 }

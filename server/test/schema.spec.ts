@@ -5,10 +5,15 @@ import { loadMigrations } from '../tools/migration-files';
 import { MIGRATIONS_DIRECTORY, failure, newDatabase, sqlClient } from './pglite';
 
 /** The real migrations on a real PostgreSQL engine (PGlite): the constraints are the domain rules, so they are tested as rules. */
+const OWNERS = ['u-bc', 'u-cal-full', 'u-cal-low', 'u-cal-partial', 'u-ci', 'u-del-a', 'u-del-b', 'u-ex', 'u-food', 'u-log', 'u-log-other', 'u-m', 'u-n', 'u-n-other', 'u-plan-a', 'u-plan-b', 'u-plan-c', 'u-plan-d', 'u-pref', 'u-pref-bad', 'u-pref-default', 'u-pref-long', 'u-profile', 'u-profile-2', 'u-set', 'u-w', 'u-w-other'];
 let db: PGlite;
 beforeAll(async () => {
   db = await newDatabase();
   await migrateUp(sqlClient(db), await loadMigrations(MIGRATIONS_DIRECTORY));
+  // Owners must exist since 0007 (user_id references auth."user"): one account per test user.
+  for (const id of OWNERS) {
+    await db.query('INSERT INTO auth."user" (id, name, email, "emailVerified") VALUES ($1, $1, $2, false)', [id, `${id}@example.test`]);
+  }
 }, 60_000);
 
 const T = '2026-10-15T08:00:00.000Z';
@@ -26,10 +31,32 @@ const profile = (user: string, overrides: Record<string, unknown> = {}) => {
 };
 
 describe('structure', () => {
-  it('keeps Better Auth separate: the auth schema exists and is empty, and no Pulseform table references it', async () => {
-    expect(await count("information_schema.schemata WHERE schema_name = 'auth'")).toBe(1);
-    expect(await count("information_schema.tables WHERE table_schema = 'auth'")).toBe(0);
-    expect(await count("information_schema.referential_constraints rc JOIN information_schema.table_constraints tc ON tc.constraint_name = rc.constraint_name AND tc.constraint_schema = rc.constraint_schema JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = rc.unique_constraint_name WHERE tc.table_schema = 'pulseform' AND ccu.table_schema = 'auth'")).toBe(0);
+  it('keeps Better Auth in its own schema: exactly its four tables, which pulseform references but never extends', async () => {
+    const authTables = (await run("SELECT table_name FROM information_schema.tables WHERE table_schema = 'auth' ORDER BY 1")).rows.map((r) => (r as { table_name: string }).table_name);
+    expect(authTables).toEqual(['account', 'session', 'user', 'verification']);
+    expect(await count("information_schema.tables WHERE table_schema = 'public'")).toBe(0);
+  });
+
+  it('gives every root user-owned table a cascading key to the Better Auth user (0007)', async () => {
+    const owned = (await run(
+      `SELECT conrelid::regclass::text AS tbl FROM pg_constraint
+       WHERE contype = 'f' AND confrelid = 'auth."user"'::regclass AND connamespace = 'pulseform'::regnamespace AND confdeltype = 'c' ORDER BY 1`,
+    )).rows.map((r) => (r as { tbl: string }).tbl);
+    expect(owned).toEqual([
+      'pulseform.body_composition_assessments', 'pulseform.daily_check_ins', 'pulseform.food_entries', 'pulseform.measurement_entries',
+      'pulseform.notification_reads', 'pulseform.user_preferences', 'pulseform.user_profiles', 'pulseform.weight_entries',
+      'pulseform.workout_logs', 'pulseform.workout_plans',
+    ]);
+  });
+
+  it('refuses data for a user that does not exist, and deletes a user with all their data', async () => {
+    expect(await failure(db, "INSERT INTO pulseform.weight_entries (user_id, id, date, weight_kg, created_at, updated_at) VALUES ('nobody', 'w', '2026-10-15', 80, now(), now())")).toMatch(/foreign key/);
+    await run('INSERT INTO auth."user" (id, name, email, "emailVerified") VALUES ($1, $1, $2, false)', ['u-gone', 'gone@example.test']);
+    await run("INSERT INTO pulseform.measurement_entries (user_id, id, date, created_at, updated_at) VALUES ('u-gone', 'm1', '2026-10-15', now(), now())");
+    await run("INSERT INTO pulseform.measurement_values (user_id, entry_id, site, centimeters) VALUES ('u-gone', 'm1', 'waist', 80)");
+    await run('DELETE FROM auth."user" WHERE id = $1', ['u-gone']);
+    expect(await count("pulseform.measurement_entries WHERE user_id = 'u-gone'")).toBe(0);
+    expect(await count("pulseform.measurement_values WHERE user_id = 'u-gone'")).toBe(0);
   });
 
   it('puts every domain table in the pulseform schema, owned by a user_id that leads its primary key', async () => {

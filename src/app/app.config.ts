@@ -4,6 +4,7 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
 
 import { routes } from './app.routes';
 import { registerAppIcons } from './core/icons/register-icons';
+import { AuthService } from './core/auth/auth.service';
 import { trackTextScale } from './core/text-scale/text-scale';
 import { ThemeService } from './core/theme/theme.service';
 
@@ -33,6 +34,8 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       registerAppIcons();
       trackTextScale();
+      // Not awaited: the stored account is checked in the background, so startup never waits on the network.
+      void inject(AuthService).restore();
       // Awaited so the stored theme applies before first paint.
       return inject(ThemeService).restore();
     }),

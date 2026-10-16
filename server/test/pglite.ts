@@ -36,3 +36,23 @@ export async function failure(db: PGlite, sql: string, values: unknown[] = []): 
     return (error as Error).message;
   }
 }
+
+/**
+ * A pg-Pool-shaped wrapper over PGlite, so Kysely's PostgresDialect (and Better Auth through it) runs
+ * its real queries on the in-process engine. One connection: fine for sequential tests.
+ */
+export function pglitePool(db: PGlite) {
+  const command = (sql: string) => (/^\s*(\w+)/.exec(sql)?.[1] ?? '').toUpperCase();
+  return {
+    async connect() {
+      return {
+        async query(sql: string, params?: unknown[]) {
+          const result = await db.query<Record<string, unknown>>(sql, params ?? []);
+          return { rows: result.rows, rowCount: result.affectedRows ?? result.rows.length, command: command(sql) };
+        },
+        release() {},
+      };
+    },
+    async end() {},
+  };
+}

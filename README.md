@@ -44,9 +44,16 @@ Not implemented yet: auth, backend/API and sync, progress photos, notifications,
 | `npm run server:start` | InBody extraction server on `127.0.0.1:8787` (reads `server/.env`; see `server/README.md`) |
 | `npm run server:install` | Installs the server's own dependencies (once, and after its lockfile changes) |
 | `npm run server:migrate` / `server:migrate:status` | Applies / lists database migrations explicitly (needs `MIGRATION_DATABASE_URL` or `DATABASE_URL`; see `server/DATABASE.md`) |
+| `npm run server:email:test -- --to <address>` | Sends ONE test email to the address you name through the configured delivery (needs `--to`; see `server/AUTH.md`, "Setting up real email") |
+| `npm run server:cleanup` / `server:cleanup:apply` | Preview / delete old accounts whose email was never confirmed (preview is the default; reads `DATABASE_URL`; see `server/AUTH.md`) |
 | `npm run server:test` / `server:typecheck` | Server tests (no network, no key) / TypeScript check |
+| `npm run android:debug:local` / `android:debug:cloud` | Debug APK talking to the API on this PC (via `adb reverse`) / to Cloud Run. Windows; needs a JDK 21 and the Android SDK (`JAVA_HOME`, `ANDROID_HOME`, or the scoop installs). See `server/AUTH.md`, "Testing on an Android phone". |
 
-Native platforms have not been added yet. Once the bundle ID is final: `npx cap add ios` / `npx cap add android`.
+## Android
+
+The Android project is in `android/` (app ID `com.fitnessapp.app`). Debug builds are signed with the
+local debug key; `adb install -r android/app/build/outputs/apk/debug/app-debug.apk` updates an installed
+debug build and keeps its data. iOS has not been added yet (`npx cap add ios`).
 
 ## Structure
 

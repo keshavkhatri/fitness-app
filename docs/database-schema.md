@@ -29,21 +29,20 @@ How to run and develop with it: [`server/DATABASE.md`](../server/DATABASE.md).
 
 | Schema | Owner | Contents |
 | --- | --- | --- |
-| `auth` | **Better Auth** (a later phase) | `user`, `session`, `account`, `verification` (and whatever plugins add). Created by Better Auth's own tooling, never by `server/migrations`. Today the schema exists and is empty. |
+| `auth` | **Better Auth** (accounts, see [`server/AUTH.md`](../server/AUTH.md)) | `user`, `session`, `account`, `verification`. Better Auth reads and writes them; their shape is Better Auth's generated SQL, applied by `server/migrations/0006_auth_tables.sql`. |
 | `pulseform` | **this repository** | Every Pulseform table below, plus `schema_migrations` (the migration history). |
 
 Rules that keep them from colliding:
 
-1. `server/migrations` never creates, alters or reads anything in `auth`; Better Auth's tooling never
-   touches `pulseform`. Each tracks its own versions.
-2. Better Auth's pool should set `search_path=auth` (for example through the `options` parameter of
-   its connection string) so its tables land in `auth` and not in `public`. The Pulseform server
-   already passes a URL's `options` through. Confirm this against the Better Auth version used when
-   that phase starts.
-3. `pulseform.*.user_id` is `text`, matching Better Auth's string user id. **There is no foreign key
-   yet**, because the `auth` tables don't exist until Better Auth is added. That phase adds one
-   migration giving every `user_id` a `REFERENCES auth."user"(id) ON DELETE CASCADE`, which makes
-   deleting an account delete all its data.
+1. One migration history (`pulseform.schema_migrations`) covers both schemas; Better Auth's own CLI is
+   not used. `0006` is exactly what Better Auth generates, and `server/test/auth.spec.ts` fails if the
+   installed Better Auth expects anything different (after an upgrade, add the difference as a new
+   migration). Pulseform code never writes to `auth`; Better Auth never touches `pulseform`.
+2. Better Auth is configured with `schemaName: 'auth'`, so it queries `auth.*` explicitly; no
+   `search_path` setting is needed.
+3. `pulseform.*.user_id` is `text`, matching Better Auth's string user id. `0007` gives every root
+   table's `user_id` a `REFERENCES auth."user"(id) ON DELETE CASCADE`, so deleting an account deletes
+   all its data, and no row can belong to a user that doesn't exist.
 4. No custom password or session tables are defined here, on purpose. Google sign-in and
    email/password are Better Auth's job (its `account` table holds the credentials or provider link).
 
@@ -94,13 +93,12 @@ could disagree with the entries it came from.
 
 ## Deliberately open
 
-- **User foreign keys** wait for Better Auth (above).
 - **Row-level security** is not enabled: the server will be the only database client and scopes every query
   by `user_id`. Revisit if clients ever connect directly.
 - **Sync and conflict rules** (offline edits, last-write-wins by `updated_at`, tombstones for deletes) are
   not designed here: they belong to the migration/sync phase.
 - **Data export and account deletion** are not in the app today. The cascading foreign keys inside a user's
-  data make deletion a single `DELETE` per root row once the `auth` keys exist.
+  data and the `auth` keys (`0007`) make deleting the `auth."user"` row delete everything the user owns.
 - **Retention** of `notification_reads` (the app keeps the newest 200) is left to the application.
 
 ## Changing the schema
