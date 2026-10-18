@@ -595,6 +595,7 @@ export const WORKOUT_COPY = {
 
   plan: {
     title: 'Your plan',
+    type: 'Plan',
     goal: 'Goal',
     days: 'Training days',
     experience: 'Experience',

@@ -40,6 +40,16 @@ export interface WorkoutPlan {
   readonly explanation: PlanExplanation;
   readonly assumptions: readonly PlanAssumption[];
   readonly warnings: readonly PlanWarning[];
+  /**
+   * Present only when the user replaced the generated exercises with their own (Premium custom plan).
+   * Absent = generated. A marked plan is the user's, never regenerated behind their back.
+   */
+  readonly custom?: CustomPlanMark;
+}
+
+export interface CustomPlanMark {
+  /** Local calendar date of the last edit. */
+  readonly editedAt: IsoCalendarDate;
 }
 
 export type PlanSession = WorkoutSession | ActivitySession;

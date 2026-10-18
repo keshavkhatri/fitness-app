@@ -4,14 +4,16 @@ import { Plan } from './entitlement.service';
  * The Free / Premium feature matrix: the one place that says who may use what (docs/access-model.md).
  * Screens ask `canAccess(feature, plan)`; they never compare plans themselves.
  *
- * Today every feature the app has is Free: nothing that works was taken away. The Premium rows are
- * candidates that are not built yet (`available: false`), so nobody can use them, Free or Premium.
+ * Everything that existed before Premium stays Free: nothing that worked was taken away. The one built
+ * Premium feature is the custom workout plan; until billing is integrated nobody is Premium, so nobody
+ * can use it. The other Premium rows are candidates that are not built yet (`available: false`).
  * When the final matrix is decided, change a row's `tier` here (and enforce it on the server for any
  * server-backed feature: a client check alone is not authorization).
  */
 export type FeatureId =
   // Built, Free.
   | 'workout-plan'
+  | 'exercise-library'
   | 'workout-logging'
   | 'workout-history'
   | 'exercise-progress'
@@ -24,6 +26,8 @@ export type FeatureId =
   | 'weekly-review'
   | 'reminders'
   | 'account'
+  // Built, Premium. Billing isn't integrated, so nobody is Premium yet (docs/access-model.md).
+  | 'custom-workout-plan'
   // Not built: Premium candidates.
   | 'cloud-backup'
   | 'progress-photos'
@@ -40,6 +44,7 @@ export interface FeatureRule {
 
 export const FEATURE_MATRIX: readonly FeatureRule[] = [
   { id: 'workout-plan', label: 'Personal workout plan', tier: 'free', available: true },
+  { id: 'exercise-library', label: 'Exercise library with photos and details', tier: 'free', available: true },
   { id: 'workout-logging', label: 'Guided workout logging with rest timer', tier: 'free', available: true },
   { id: 'workout-history', label: 'Workout history and summaries', tier: 'free', available: true },
   { id: 'exercise-progress', label: 'Exercise progress and personal bests', tier: 'free', available: true },
@@ -52,6 +57,7 @@ export const FEATURE_MATRIX: readonly FeatureRule[] = [
   { id: 'weekly-review', label: 'Weekly fitness review', tier: 'free', available: true },
   { id: 'reminders', label: 'In-app reminders', tier: 'free', available: true },
   { id: 'account', label: 'Your StokeForm account', tier: 'free', available: true },
+  { id: 'custom-workout-plan', label: 'Build and edit your own workout plan', tier: 'premium', available: true },
   { id: 'cloud-backup', label: 'Back up and sync your data across devices', tier: 'premium', available: false },
   { id: 'progress-photos', label: 'Progress photos', tier: 'premium', available: false },
   { id: 'health-app-sync', label: 'Connect health apps', tier: 'premium', available: false },

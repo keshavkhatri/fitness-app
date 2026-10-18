@@ -2,3 +2,4 @@
 // (creation from the profile, freshness, stored-plan parsing). Framework-free.
 export * from './training-plan';
 export * from './parse-workout-plan';
+export * from './custom-plan';

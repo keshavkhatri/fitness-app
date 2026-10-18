@@ -89,3 +89,26 @@ h2[tabindex='-1']:focus {
 .plan {
   margin-top: var(--space-2);
 }
+
+// --- Custom plan entry points ---------------------------------------------------------------
+.plan-actions,
+.switch-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.premium-note {
+  @include fx.text(caption);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.switch-message {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-danger-text, var(--color-text));
+}

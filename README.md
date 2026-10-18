@@ -92,7 +92,8 @@ src/
                             UnitPreferenceService, guards
       calculations/         FITNESS_CALCULATION_CONFIG injection token for the domain engine
       workout/              WorkoutPlanRepository (local snapshot today), WorkoutPlanService (create / keep /
-                            regenerate the plan as the profile changes), WORKOUT_PROGRAMMING_CONFIG token,
+                            regenerate the plan as the profile changes; saves a Premium custom plan, which is never
+                            regenerated automatically), WORKOUT_PROGRAMMING_CONFIG token,
                             WorkoutLogRepository/Service (active workout + finished workouts), WorkoutHistoryService
       nutrition/            NutritionRepository (local food log), NutritionService (day log + calculated targets)
       body-measurements/    Weight and measurement history repositories/services; ProfileWeightService
@@ -111,7 +112,8 @@ src/
       home/                 Dashboard: page, routes, view models, section cards (all real data: profile goal, plan,
                             workout history, nutrition, recorded weight)
       workout/              Plan, Workout Detail, active workout (full screen), summary, history; progress/ is
-                            mounted under You (/you/progress)
+                            mounted under You (/you/progress); custom-plan/ is the Premium plan editor and the exercise
+                            library/picker (the library is Free; the editor is gated, see docs/access-model.md)
       nutrition/            Daily food log, Add food (recent-food search), Edit food (portions), weekly view
       body-weight/          Weight history (/you/weight-history) and weigh-in entry
       body-measurements/    Measurement history (/you/measurements) and entry

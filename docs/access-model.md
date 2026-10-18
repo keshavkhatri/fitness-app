@@ -40,6 +40,7 @@ Defined once in `core/entitlements/access-policy.ts` (`FEATURE_MATRIX`, `canAcce
 | Feature | Plan | Built |
 | --- | --- | --- |
 | Personal workout plan | Free | Yes |
+| Exercise library (browse, search, details and photos) | Free | Yes |
 | Guided workout logging with rest timer | Free | Yes |
 | Workout history and summaries | Free | Yes |
 | Exercise progress and personal bests | Free | Yes |
@@ -52,11 +53,29 @@ Defined once in `core/entitlements/access-policy.ts` (`FEATURE_MATRIX`, `canAcce
 | Weekly fitness review | Free | Yes |
 | In-app reminders | Free | Yes |
 | StokeForm account | Free | Yes |
+| Custom workout plan (build and edit your own) | Premium | Yes, but unavailable until billing exists |
 | Back up and sync data across devices | Premium (candidate) | No |
 | Progress photos | Premium (candidate) | No |
 | Connect health apps | Premium (candidate) | No |
 
-Every feature that exists today stays Free, so the offer takes nothing away. The Premium rows are proposals awaiting a product decision. When a Premium feature is server-backed, the server must enforce it too, because a client check alone is not authorization.
+Every feature that existed before Premium stays Free, so the offer takes nothing away. The custom workout plan is the one built Premium feature (below). The other Premium rows are proposals awaiting a product decision. When a Premium feature is server-backed, the server must enforce it too, because a client check alone is not authorization.
+
+## Custom workout plan (Premium)
+
+A Premium user can replace their generated plan with one they build from the exercise library, and edit it later. It is one active plan, not a template library.
+
+- **Choice.** At the end of first-run setup the plan preview offers "Use generated plan" (Free, the default; Continue starts it) and "Build my own (Premium)". Existing users are not sent through setup again and see no first-run choice; the Workout tab's plan section has "Build my own" (generated plan) or "Edit my plan" (custom plan), a "Plan: Generated plan / Custom plan" fact, and "Use generated plan" to switch back.
+- **What changes.** The training days, session ids and names, and activity days stay the generated plan's. Only each workout day's exercises and their sets, reps (or seconds for timed exercises) and rest are the user's. No target weights are stored: the plan model has none, and weights come from logging.
+- **Storage.** The same plan snapshot (`fitness.workout-plan`), marked `custom: { editedAt }`. Absent mark = generated. Completed and in-progress workouts snapshot their exercises when started, so editing or replacing the plan never rewrites history.
+- **Freshness.** A custom plan is never regenerated automatically. If the profile's goal, experience, days, location or equipment change afterwards, the plan is kept and the Workout tab says so; "Use generated plan" (confirmed) is the only way it is replaced.
+- **Enforcement.** `canAccess('custom-workout-plan', plan)` in three places: the editor and picker routes (`requireCustomPlanAccess`, which re-reads the entitlement and sends anyone else to the offer), the first-run choice (shows a button only when allowed), and `WorkoutPlanService.saveCustomPlan` (refuses with `not-allowed`). Using an existing custom plan, logging and history are never gated, so a lapsed subscription keeps the plan but cannot edit it.
+- **Exercise library.** Browsing, search, filters and exercise details (`/workout/exercises`) are Free. Only adding to a plan day is Premium.
+
+### Current availability
+
+**Not available to anyone in production.** No billing provider is integrated, so `NO_BILLING` never reports a subscription, every user is Free, and `canAccess('custom-workout-plan', 'free')` is false. The feature is built and tested, and the first-run screen and offer say Premium isn't available yet. Nothing grants Premium locally; tests prove the Premium path only through a test-only billing provider (`core/entitlements/testing/premium-billing.ts`) that the app never provides.
+
+To activate: finish the "Billing: not integrated" steps below, then verify on a device with a real sandbox subscription. No change to the feature itself is needed. If the feature should later be offered to Free users in any form (for example a limited trial), that is a change to the matrix row's `tier`, decided as a product question.
 
 ## Billing: not integrated
 

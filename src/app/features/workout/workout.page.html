@@ -50,6 +50,30 @@
     <section class="plan" aria-labelledby="workout-plan">
       <h2 class="row-heading strong" id="workout-plan">{{ tab.planTitle }}</h2>
       <app-plan-summary [facts]="s.plan" />
+
+      <div class="plan-actions" data-testid="plan-actions">
+        @if (s.planKind === 'custom') {
+          <button fit-button type="button" variant="outline" block icon="create-outline" data-testid="plan-edit" (click)="editPlan()">
+            {{ customCopy.entry.edit }}
+          </button>
+          <button fit-button type="button" variant="ghost" block data-testid="plan-use-generated" (click)="switchOpen.set(true)">
+            {{ customCopy.entry.useGenerated }}
+          </button>
+        } @else {
+          <button fit-button type="button" variant="outline" block icon="create-outline" data-testid="plan-build" (click)="editPlan()">
+            {{ customCopy.entry.build }}
+          </button>
+          @if (!canCustomize()) {
+            <p class="premium-note" data-testid="plan-premium-note">
+              <fit-chip icon="sparkles-outline">Premium</fit-chip>
+              {{ customCopy.entry.buildPremium }}
+            </p>
+          }
+        }
+        <button fit-button type="button" variant="ghost" block icon="barbell-outline" data-testid="plan-browse" (click)="browseExercises()">
+          {{ customCopy.entry.browse }}
+        </button>
+      </div>
     </section>
   } @else if (s?.kind === 'no-profile') {
     <fit-card data-testid="no-profile">
@@ -75,3 +99,17 @@
     </div>
   }
 </fit-page>
+
+<fit-bottom-sheet screenTheme="dashboard" [title]="customCopy.switchBack.title" [description]="customCopy.switchBack.message" [(open)]="switchOpen">
+  @if (switchMessage(); as message) {
+    <p class="switch-message" role="alert" data-testid="switch-message">{{ message }}</p>
+  }
+  <div class="switch-actions">
+    <button fit-button type="button" block [disabled]="switching()" [loading]="switching()" data-testid="switch-confirm" (click)="switchToGenerated()">
+      {{ customCopy.switchBack.confirm }}
+    </button>
+    <button fit-button type="button" variant="ghost" block [disabled]="switching()" data-testid="switch-keep" (click)="switchOpen.set(false)">
+      {{ customCopy.switchBack.keep }}
+    </button>
+  </div>
+</fit-bottom-sheet>

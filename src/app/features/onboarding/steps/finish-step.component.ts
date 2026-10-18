@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
+import { NavController } from '@ionic/angular';
+
+import { canAccess } from '../../../core/entitlements/access-policy';
+import { EntitlementService } from '../../../core/entitlements/entitlement.service';
 import { WorkoutPlanService, WorkoutPlanState } from '../../../core/workout/workout-plan.service';
+import { CUSTOM_PLAN_EDIT_PATH } from '../../workout/workout-paths';
 import { STEP_HEADING_ID } from './onboarding-step-form';
 
 /** Decorative confetti: [left %, top %, rotation deg, tone]. */
@@ -47,6 +52,29 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
       </section>
     }
 
+    @if (preview()) {
+      <!-- Free by default: the generated plan above. Building your own is Premium. -->
+      <section class="choice" aria-labelledby="plan-choice-title" data-testid="plan-choice">
+        <h2 class="preview-title" id="plan-choice-title">Choose how to train</h2>
+        <div class="option selected" data-testid="choice-generated">
+          <ion-icon name="checkmark-circle" aria-hidden="true" />
+          <span class="item"><strong>Use generated plan</strong> Free. Tap Continue to start with the plan above.</span>
+        </div>
+        @if (canBuild()) {
+          <button type="button" class="option action" data-testid="choice-build" (click)="build()">
+            <ion-icon name="create-outline" aria-hidden="true" />
+            <span class="item"><strong>Build my own <span class="badge">Premium</span></strong> Choose your own exercises, and edit your plan any time.</span>
+            <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+          </button>
+        } @else {
+          <div class="option unavailable" data-testid="choice-build-unavailable">
+            <ion-icon name="create-outline" aria-hidden="true" />
+            <span class="item"><strong>Build my own <span class="badge">Premium</span></strong> Premium users can choose their own exercises and edit their plan. Premium isn't available yet.</span>
+          </div>
+        }
+      </section>
+    }
+
     <ul class="next">
       <li>
         <span class="icon" aria-hidden="true"><ion-icon name="barbell-outline" /></span>
@@ -68,6 +96,20 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
 })
 export class FinishStepComponent {
   private readonly plans = inject(WorkoutPlanService);
+  private readonly entitlements = inject(EntitlementService);
+  private readonly nav = inject(NavController);
+
+  /** Only a verified Premium subscription (the access policy) opens the editor; nobody is Premium without billing. */
+  protected readonly canBuild = computed(() => canAccess('custom-workout-plan', this.entitlements.plan()));
+
+  constructor() {
+    void this.entitlements.refresh();
+  }
+
+  /** The editor works on the plan just made; leaving it returns here, which continues to the assessment. */
+  protected build(): void {
+    void this.nav.navigateForward(CUSTOM_PLAN_EDIT_PATH);
+  }
 
   protected readonly headingId = STEP_HEADING_ID;
   protected readonly confetti = CONFETTI;
