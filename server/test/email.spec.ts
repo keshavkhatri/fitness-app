@@ -26,10 +26,10 @@ describe('email delivery configuration', () => {
   });
 
   it('Resend needs a key and a sender address, and never echoes the key', () => {
-    expect(loadEmailConfig({ EMAIL_DELIVERY: 'resend', RESEND_API_KEY: KEY, EMAIL_FROM: 'Pulseform <no-reply@example.com>' }, { localOnly: false })).toEqual({
+    expect(loadEmailConfig({ EMAIL_DELIVERY: 'resend', RESEND_API_KEY: KEY, EMAIL_FROM: 'StokeForm <no-reply@example.com>' }, { localOnly: false })).toEqual({
       kind: 'resend',
       apiKey: KEY,
-      from: 'Pulseform <no-reply@example.com>',
+      from: 'StokeForm <no-reply@example.com>',
     });
     expect(message(() => loadEmailConfig({ EMAIL_DELIVERY: 'resend', EMAIL_FROM: 'a@example.com' }, { localOnly: false }))).toMatch(/RESEND_API_KEY/);
     const bad = message(() => loadEmailConfig({ EMAIL_DELIVERY: 'resend', RESEND_API_KEY: KEY, EMAIL_FROM: 'not an address' }, { localOnly: false }));
@@ -57,14 +57,14 @@ describe('the confirmation email', () => {
     const mail = verificationEmail(LINK);
     expect(mail.text).toContain(LINK);
     expect(mail.text).toMatch(/24 hours/);
-    expect(mail.text).toMatch(/didn't create a Pulseform account/);
+    expect(mail.text).toMatch(/didn't create a StokeForm account/);
     expect(mail.html).toContain(LINK.replace(/&/g, '&amp;'));
     expect(verificationEmail('https://x.test/?a="><script>').html).not.toContain('"><script>');
   });
 
   it('the reset email says it works once for an hour, that other devices are signed out, and what to do if unrequested', () => {
     const mail = passwordResetEmail(LINK);
-    expect(mail.subject).toBe('Reset your Pulseform password');
+    expect(mail.subject).toBe('Reset your StokeForm password');
     expect(mail.text).toContain(LINK);
     expect(mail.text).toMatch(/once, for 1 hour/);
     expect(mail.text).toMatch(/signed out of your other devices/);
@@ -83,7 +83,7 @@ describe('senders', () => {
       calls.push({ url: String(url), init: init! });
       return new Response('{"id":"x","to":"alex@example.test"}', { status: 200 });
     }) as typeof fetch;
-    const sender = createEmailSender({ kind: 'resend', apiKey: KEY, from: 'Pulseform <no-reply@example.com>' }, (event, fields) => logs.push({ event, fields }), { fetch: fakeFetch });
+    const sender = createEmailSender({ kind: 'resend', apiKey: KEY, from: 'StokeForm <no-reply@example.com>' }, (event, fields) => logs.push({ event, fields }), { fetch: fakeFetch });
     await sender.sendVerification({ to: 'alex@example.test', url: LINK });
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe('https://api.resend.com/emails');
@@ -107,7 +107,7 @@ describe('senders', () => {
     await sender.sendPasswordReset({ to: 'alex@example.test', url: resetLink });
     const body = JSON.parse(String(calls[0].init.body)) as { subject: string; text: string; html: string; to: string[] };
     expect(body.to).toEqual(['alex@example.test']);
-    expect(body.subject).toBe('Reset your Pulseform password');
+    expect(body.subject).toBe('Reset your StokeForm password');
     expect(body.text).toContain(resetLink);
     expect(body.html).toContain(resetLink);
     expect(String(calls[0].init.body)).not.toContain(KEY);
@@ -136,7 +136,7 @@ describe('senders', () => {
   });
 
   it('dev outbox: writes the email to a local file instead of sending it', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'pulseform-outbox-'));
+    const directory = await mkdtemp(join(tmpdir(), 'stokeform-outbox-'));
     try {
       const logs: string[] = [];
       const sender = createEmailSender({ kind: 'dev-outbox', directory }, (event, fields) => logs.push(event + JSON.stringify(fields)), { writeOutbox: writeDevOutboxEmail });
@@ -149,7 +149,7 @@ describe('senders', () => {
         expect(content).toContain('To: alex@example.test');
       }
       expect(contents.some((c) => c.includes('Subject: Confirm your email') && c.includes(LINK))).toBe(true);
-      expect(contents.some((c) => c.includes('Subject: Reset your Pulseform password') && c.includes('reset-password'))).toBe(true);
+      expect(contents.some((c) => c.includes('Subject: Reset your StokeForm password') && c.includes('reset-password'))).toBe(true);
       expect(logs.join()).not.toMatch(/alex@example\.test|placeholder\.token/);
     } finally {
       await rm(directory, { recursive: true, force: true });
@@ -198,7 +198,7 @@ describe('diagnosing a failed send without exposing anything', () => {
 
   it('the test message has no link and says so', () => {
     const mail = testEmail();
-    expect(mail.subject).toBe('Pulseform email test');
+    expect(mail.subject).toBe('StokeForm email test');
     expect(mail.text).not.toMatch(/https?:\/\//);
     expect(mail.html).not.toContain('<a ');
     expect(mail.text).toMatch(/nothing to open or confirm/i);

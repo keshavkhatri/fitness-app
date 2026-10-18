@@ -20,7 +20,6 @@ import {
 const NOW = new Date(2026, 9, 7);
 
 const about = (overrides: Partial<AboutFormInput> = {}): AboutFormInput => ({
-  name: 'Alex',
   birthDate: '1991-06-15',
   sex: 'female',
   ...overrides,
@@ -125,17 +124,13 @@ describe('onboarding validation', () => {
     });
   });
 
-  describe('about you (name, sex, date of birth)', () => {
-    it('accepts valid answers, trimming the name', () => {
-      expect(validateAboutForm(about({ name: '  Alex  ' }), NOW)).toEqual({
-        ok: true,
-        value: { name: 'Alex', dateOfBirth: '1991-06-15', sex: 'female' },
-      });
+  describe('about you (sex, date of birth; the name comes from the account)', () => {
+    it('accepts valid answers', () => {
+      expect(validateAboutForm(about(), NOW)).toEqual({ ok: true, value: { dateOfBirth: '1991-06-15', sex: 'female' } });
     });
 
-    it('requires every answer', () => {
-      expect(aboutErrors(about({ name: ' ', birthDate: '', sex: null }))).toEqual({
-        name: 'Add your name to continue.',
+    it('requires every answer, and does not ask for a name', () => {
+      expect(aboutErrors(about({ birthDate: '', sex: null }))).toEqual({
         dateOfBirth: 'Enter your date of birth.',
         sex: 'Choose an option.',
       });
@@ -146,8 +141,8 @@ describe('onboarding validation', () => {
     });
 
     it('prefills from saved answers, including partial ones', () => {
-      expect(aboutFormFromDraft(completeDraft())).toEqual({ name: 'Alex', birthDate: '1991-06-15', sex: 'female' });
-      expect(aboutFormFromDraft(EMPTY_DRAFT)).toEqual({ name: '', birthDate: '', sex: null });
+      expect(aboutFormFromDraft(completeDraft())).toEqual({ birthDate: '1991-06-15', sex: 'female' });
+      expect(aboutFormFromDraft(EMPTY_DRAFT)).toEqual({ birthDate: '', sex: null });
     });
   });
 

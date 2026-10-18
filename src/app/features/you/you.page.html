@@ -62,6 +62,17 @@
         </section>
       }
 
+      <section aria-labelledby="you-plan">
+        <h3 class="setting-title" id="you-plan">{{ copy.plan }}</h3>
+        <button type="button" class="plan-row" (click)="openPlans()" data-testid="plan-entry">
+          <span class="plan-text">
+            <span class="plan-name" data-testid="plan-name">{{ plan() === 'premium' ? 'Premium' : 'Free' }}</span>&ngsp;
+            <span class="hint">{{ plan() === 'premium' ? 'Confirmed by the store' : 'See what Premium will add' }}</span>
+          </span>
+          <ion-icon name="chevron-forward" aria-hidden="true" />
+        </button>
+      </section>
+
       <ul class="settings-list" [attr.aria-label]="copy.upcoming">
         @for (setting of upcomingSettings; track setting) {
           <li>

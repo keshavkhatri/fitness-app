@@ -100,7 +100,7 @@ describe('running migrations (PGlite, real PostgreSQL semantics)', () => {
     expect(applied).toEqual(files.map((m) => `${String(m.version).padStart(4, '0')}_${m.name}`));
     expect(messages).toEqual(applied.map((label) => `Applied ${label}`));
 
-    const history = (await db.query<{ version: number; name: string; checksum: string }>('SELECT version, name, checksum FROM pulseform.schema_migrations ORDER BY version')).rows;
+    const history = (await db.query<{ version: number; name: string; checksum: string }>('SELECT version, name, checksum FROM stokeform.schema_migrations ORDER BY version')).rows;
     expect(history.map((h) => h.version)).toEqual(files.map((m) => m.version));
     expect(history.map((h) => h.checksum)).toEqual(files.map((m) => m.checksum));
 
@@ -114,17 +114,17 @@ describe('running migrations (PGlite, real PostgreSQL semantics)', () => {
     const client = sqlClient(db);
     const files = await loadMigrations(MIGRATIONS_DIRECTORY);
     await migrateUp(client, files);
-    const before = (await db.query('SELECT version, applied_at FROM pulseform.schema_migrations ORDER BY version')).rows;
+    const before = (await db.query('SELECT version, applied_at FROM stokeform.schema_migrations ORDER BY version')).rows;
     expect(await migrateUp(client, files)).toEqual([]);
-    expect((await db.query('SELECT version, applied_at FROM pulseform.schema_migrations ORDER BY version')).rows).toEqual(before);
+    expect((await db.query('SELECT version, applied_at FROM stokeform.schema_migrations ORDER BY version')).rows).toEqual(before);
   });
 
   it('applies only new migrations when more files arrive later', async () => {
     const db = await newDatabase();
     const client = sqlClient(db);
-    const first = [file(1, 'one', 'CREATE TABLE pulseform_probe_one (id int)')];
+    const first = [file(1, 'one', 'CREATE TABLE stokeform_probe_one (id int)')];
     await migrateUp(client, first);
-    const both = [...first, file(2, 'two', 'CREATE TABLE pulseform_probe_two (id int)')];
+    const both = [...first, file(2, 'two', 'CREATE TABLE stokeform_probe_two (id int)')];
     expect(await migrateUp(client, both)).toEqual(['0002_two']);
   });
 
@@ -138,7 +138,7 @@ describe('running migrations (PGlite, real PostgreSQL semantics)', () => {
     ];
     await expect(migrateUp(client, files)).rejects.toThrow(/Migration 0002_bad failed \(42P07\) and was rolled back/);
 
-    expect((await db.query('SELECT version FROM pulseform.schema_migrations ORDER BY version')).rows).toEqual([{ version: 1 }]);
+    expect((await db.query('SELECT version FROM stokeform.schema_migrations ORDER BY version')).rows).toEqual([{ version: 1 }]);
     // Nothing from the failed script survived, and the next one never ran.
     expect(await failure(db, 'SELECT 1 FROM probe_half')).toMatch(/does not exist/);
     expect(await failure(db, 'SELECT 1 FROM probe_never')).toMatch(/does not exist/);
@@ -159,7 +159,7 @@ describe('running migrations (PGlite, real PostgreSQL semantics)', () => {
     await expect(migrateUp(client, [file(1, 'a', 'CREATE TABLE probe_a (id bigint)'), file(2, 'b', 'CREATE TABLE probe_b (id int)')])).rejects.toThrow(/edited after it was applied/);
     await expect(migrateUp(client, [file(1, 'a', 'CREATE TABLE probe_a (id int)')])).rejects.toThrow(/ahead of this checkout/);
     // The refusals changed nothing.
-    expect((await db.query('SELECT count(*)::int AS n FROM pulseform.schema_migrations')).rows).toEqual([{ n: 2 }]);
+    expect((await db.query('SELECT count(*)::int AS n FROM stokeform.schema_migrations')).rows).toEqual([{ n: 2 }]);
   });
 
   it('status is read-only: on a fresh database it creates nothing', async () => {
@@ -168,7 +168,7 @@ describe('running migrations (PGlite, real PostgreSQL semantics)', () => {
     const status = await migrationStatus(sqlClient(db), files);
     expect(status.applied).toEqual([]);
     expect(status.pending.map((m) => m.version)).toEqual([1, 2]);
-    expect((await db.query("SELECT to_regclass('pulseform.schema_migrations') AS t")).rows).toEqual([{ t: null }]);
+    expect((await db.query("SELECT to_regclass('stokeform.schema_migrations') AS t")).rows).toEqual([{ t: null }]);
   });
 
   it('releases its lock when it fails, so the next run is not blocked', async () => {

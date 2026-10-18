@@ -14,7 +14,7 @@ beforeAll(async () => {
   await migrateUp(client(), await loadMigrations(MIGRATIONS_DIRECTORY));
 }, 60_000);
 beforeEach(async () => {
-  // Cascades to accounts, sessions and every Pulseform table that references the user.
+  // Cascades to accounts, sessions and every StokeForm table that references the user.
   await db.query('DELETE FROM auth."user"');
   await db.query('DELETE FROM auth.verification');
 });
@@ -103,15 +103,15 @@ describe('which accounts are eligible', () => {
 });
 
 describe('accounts with data are never deleted', () => {
-  it('any row in any Pulseform table that references the user protects it', async () => {
+  it('any row in any StokeForm table that references the user protects it', async () => {
     await seed({ id: 'has-weight' });
     await seed({ id: 'has-food' });
     await seed({ id: 'has-prefs' });
     await seed({ id: 'empty' });
-    await db.query(`INSERT INTO pulseform.weight_entries (user_id, id, date, weight_kg, created_at, updated_at) VALUES ('has-weight', 'w1', '2026-10-15', 80, now(), now())`);
-    await db.query(`INSERT INTO pulseform.user_preferences (user_id, theme_preference) VALUES ('has-prefs', 'system')`);
+    await db.query(`INSERT INTO stokeform.weight_entries (user_id, id, date, weight_kg, created_at, updated_at) VALUES ('has-weight', 'w1', '2026-10-15', 80, now(), now())`);
+    await db.query(`INSERT INTO stokeform.user_preferences (user_id, theme_preference) VALUES ('has-prefs', 'system')`);
     await db.query(
-      `INSERT INTO pulseform.food_entries (user_id, id, date, meal, name, quantity, unit, calories, protein_grams, carbohydrate_grams, fat_grams, created_at, updated_at)
+      `INSERT INTO stokeform.food_entries (user_id, id, date, meal, name, quantity, unit, calories, protein_grams, carbohydrate_grams, fat_grams, created_at, updated_at)
        VALUES ('has-food', 'f1', '2026-10-15', 'lunch', 'Rice', 1, 'serving', 200, 4, 40, 1, now(), now())`,
     );
     const result = await apply();
@@ -120,15 +120,15 @@ describe('accounts with data are never deleted', () => {
   });
 
   it('a table added later is protected too, because tables are found from the foreign keys', async () => {
-    await db.query('CREATE TABLE pulseform.future_feature (user_id text NOT NULL REFERENCES auth."user"(id) ON DELETE CASCADE, note text)');
+    await db.query('CREATE TABLE stokeform.future_feature (user_id text NOT NULL REFERENCES auth."user"(id) ON DELETE CASCADE, note text)');
     try {
       await seed({ id: 'has-future-data' });
       await seed({ id: 'empty' });
-      await db.query(`INSERT INTO pulseform.future_feature (user_id, note) VALUES ('has-future-data', 'x')`);
+      await db.query(`INSERT INTO stokeform.future_feature (user_id, note) VALUES ('has-future-data', 'x')`);
       expect((await apply()).deleted).toBe(1);
       expect(await ids()).toEqual(['has-future-data']);
     } finally {
-      await db.query('DROP TABLE pulseform.future_feature');
+      await db.query('DROP TABLE stokeform.future_feature');
     }
   });
 
@@ -202,7 +202,7 @@ describe('races', () => {
     await seed({ id: 'signed-in' });
     await apply({
       beforeDelete: async () => {
-        await db.query(`INSERT INTO pulseform.weight_entries (user_id, id, date, weight_kg, created_at, updated_at) VALUES ('gained-data', 'w', '2026-10-15', 80, now(), now())`);
+        await db.query(`INSERT INTO stokeform.weight_entries (user_id, id, date, weight_kg, created_at, updated_at) VALUES ('gained-data', 'w', '2026-10-15', 80, now(), now())`);
         await db.query(`INSERT INTO auth.account (id, "accountId", "providerId", "userId", "updatedAt") VALUES ('g', 'x', 'google', 'gained-google', now())`);
         await db.query(`INSERT INTO auth.session (id, "expiresAt", token, "updatedAt", "userId") VALUES ('s', now() + interval '1 day', 'tok', now(), 'signed-in')`);
       },

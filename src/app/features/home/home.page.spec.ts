@@ -156,7 +156,7 @@ describe('HomePage', () => {
     it('renders the redesigned dashboard: wordmark, greeting with the saved name, dashboard theme', async () => {
       const { el } = await render({ name: 'Alex' });
       expect(el.classList.contains('fit-theme-dashboard')).toBe(true);
-      expect(clean(el.querySelector('.brand'))).toBe('Pulseform');
+      expect(clean(el.querySelector('.brand'))).toBe('StokeForm');
       expect(parts(el.querySelector('h1'))).toBe('Good afternoon, Alex 👋');
       for (const heading of ['Your day, in motion', 'Recommended', 'Nutrition', 'This week']) {
         expect(el.textContent).toContain(heading);

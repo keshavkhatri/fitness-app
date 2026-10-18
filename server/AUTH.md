@@ -115,7 +115,7 @@ Behaviours worth knowing:
   app shows accounts as unavailable.
 - Logs record only `auth.password-reset` and the email outcome (`auth.email-sent`/`failed`, with the
   provider, the type and an HTTP status): never the link, token, address or password. Tested.
-- Email: the same Resend/dev-outbox sender as confirmation emails (subject "Reset your Pulseform password").
+- Email: the same Resend/dev-outbox sender as confirmation emails (subject "Reset your StokeForm password").
   In development the link is in `server/.dev-outbox/` and opens at `http://localhost:8787/v1/auth/reset-password?...`.
 
 ## Cleaning up unconfirmed accounts
@@ -205,7 +205,7 @@ credentials**; with neither, the app says accounts are unavailable. While off, a
 | `BETTER_AUTH_URL` | (required with the secret) | The server's public origin, e.g. `https://<service>.run.app`. `https` except for `localhost`. No path. |
 | `EMAIL_DELIVERY` | unset (email/password off) | `resend` (real email) or `dev-outbox` (local files; refused unless `BETTER_AUTH_URL` is localhost and `NODE_ENV` isn't production). |
 | `RESEND_API_KEY` | | With `resend`. **Secret.** |
-| `EMAIL_FROM` | | With `resend`: e.g. `Pulseform <no-reply@your-domain>`, on a domain verified in Resend. |
+| `EMAIL_FROM` | | With `resend`: e.g. `StokeForm <no-reply@your-domain>`, on a domain verified in Resend. |
 | `EMAIL_DEV_OUTBOX_DIR` | `server/.dev-outbox` | With `dev-outbox` (git-ignored). |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | unset (Google hidden) | Both or neither. The secret is **secret**; the id is not. |
 | `AUTH_APP_REDIRECT_URLS` | `com.fitnessapp.app://auth/callback` | Where Google sign-in may return, comma-separated. Add `http://localhost:4200/auth/callback` for web development. |
@@ -240,7 +240,7 @@ Exactly three variables (plus the public URL used for links):
 | --- | --- |
 | `EMAIL_DELIVERY` | `resend` |
 | `RESEND_API_KEY` | the API key (**secret**: Secret Manager on Cloud Run, git-ignored `.env` locally) |
-| `EMAIL_FROM` | the sender: `Pulseform <no-reply@mail.your-domain.com>` or just `no-reply@mail.your-domain.com`, on a domain **verified in Resend** |
+| `EMAIL_FROM` | the sender: `StokeForm <no-reply@mail.your-domain.com>` or just `no-reply@mail.your-domain.com`, on a domain **verified in Resend** |
 | `BETTER_AUTH_URL` | the public origin the links point at (already required for accounts) |
 
 ### What happens when something is wrong
@@ -273,7 +273,7 @@ people to a dead link.
    record); add them at your DNS host and wait for "Verified". A DMARC record on the domain is recommended for
    inbox delivery. Without a verified domain, Resend only lets its test sender `onboarding@resend.dev` deliver
    to **your own Resend account address**: fine for a first test, useless for users.
-3. **Choose the sender**: `EMAIL_FROM=Pulseform <no-reply@mail.your-domain.com>`. Replies to a `no-reply`
+3. **Choose the sender**: `EMAIL_FROM=StokeForm <no-reply@mail.your-domain.com>`. Replies to a `no-reply`
    address go nowhere; use a real mailbox if you want replies.
 4. **Create an API key** (Resend → API Keys) with **Sending access** (not full access), restricted to the
    domain if offered. The key is shown once.
@@ -313,13 +313,13 @@ Run job (it ships in the image as `email-test.mjs`), read its log, and delete it
 ```powershell
 $P='fitness-app-511714'; $R='europe-west1'
 $IMAGE = gcloud run services describe deploy-fitness-app-backend --project $P --region $R --format "value(spec.template.spec.containers[0].image)"
-gcloud run jobs create pulseform-email-test --project $P --region $R --image $IMAGE `
+gcloud run jobs create stokeform-email-test --project $P --region $R --image $IMAGE `
   --command node --args "email-test.mjs,--to,you@your-domain.com" `
   --set-secrets "RESEND_API_KEY=RESEND_API_KEY:latest" `
-  --set-env-vars "^#^EMAIL_DELIVERY=resend#EMAIL_FROM=Pulseform <no-reply@mail.your-domain.com>#BETTER_AUTH_URL=https://deploy-fitness-app-backend-893557393361.europe-west1.run.app" `
+  --set-env-vars "^#^EMAIL_DELIVERY=resend#EMAIL_FROM=StokeForm <no-reply@mail.your-domain.com>#BETTER_AUTH_URL=https://deploy-fitness-app-backend-893557393361.europe-west1.run.app" `
   --max-retries 0
-gcloud run jobs execute pulseform-email-test --project $P --region $R --wait     # then read the job's log
-gcloud run jobs delete pulseform-email-test --project $P --region $R
+gcloud run jobs execute stokeform-email-test --project $P --region $R --wait     # then read the job's log
+gcloud run jobs delete stokeform-email-test --project $P --region $R
 ```
 
 (Written from the gcloud documentation; not run. It needs the `RESEND_API_KEY` secret to exist and the default
@@ -359,7 +359,7 @@ The tables are in schema `auth` (`user`, `session`, `account`, `verification`) a
 repository's migration runner (`0006`), not by Better Auth's CLI. `0006` is Better Auth's own generated
 SQL; `server/test/auth.spec.ts` asks Better Auth whether the migrated schema matches what it expects and
 fails if an upgrade needs changes. After a Better Auth upgrade, generate the difference and add it as a
-new migration. `0007` gives every `pulseform` root table a `user_id` foreign key to `auth."user"(id)`
+new migration. `0007` gives every `stokeform` root table a `user_id` foreign key to `auth."user"(id)`
 with `ON DELETE CASCADE`, so deleting an account deletes its data. Email verification needs **no schema
 change** (it uses the existing `emailVerified` column; links are signed tokens, not rows).
 
@@ -418,7 +418,7 @@ link in it in a browser (on the PC, or on the phone when it is connected through
 sign in. The files contain working links: they are git-ignored; delete them when done.
 
 To try **password reset**: sign out, **Sign in → Forgot your password?**, enter the address, then open the
-newest "Reset your Pulseform password" file in `server/.dev-outbox/` and open its link in a browser (on the
+newest "Reset your StokeForm password" file in `server/.dev-outbox/` and open its link in a browser (on the
 phone too, through `adb reverse`). Choose a new password on that page, then sign in with it in the app. The
 page needs `BETTER_AUTH_URL` to be the address the browser uses (`http://localhost:8787`). To preview the
 cleanup job: `npm run server:cleanup` (read-only).
@@ -479,7 +479,7 @@ that are not enabled can't be reached.
 | P2 | **Neon password rotated** after the 15 Oct leak of a connection string in `server/.env.example` (commit `8981114`, pushed; removed from the files but still in Git history), and `DATABASE_URL` (secret and `server/.env`) updated. | **unconfirmed** |
 | P3 | **OpenAI key rotated** (it was exposed earlier; Phase 1 notes). | **unconfirmed** |
 | P4 | Resend account, **verified sending domain**, sending-only API key, a real `server:email:test` and (after enabling) real sign-up and reset emails received. | not done |
-| P5 | Google OAuth client for production with the exact redirect URI below; consent screen renamed from "StokeForm" to "Pulseform"; a decision on one client vs. two (below). | partly (a client exists and works locally; production redirect URI not added) |
+| P5 | Google OAuth client for production with the exact redirect URI below; consent screen named "StokeForm" (it already is, which now matches the app); a decision on one client vs. two (below). | partly (a client exists and works locally; production redirect URI not added) |
 | P6 | Secrets created in Secret Manager and readable by the service: `BETTER_AUTH_SECRET` (new, production-only), `RESEND_API_KEY`, `GOOGLE_CLIENT_SECRET`. | not done |
 | P7 | The auth work **committed**, reviewed and deployed from a known commit (it is all uncommitted today; the running image is traceable to `c1c92a3`). | not done |
 | P8 | **`--max-instances 1`** (the service allows 20 today; Google sign-in fails at random with more than one). | not done |
@@ -530,7 +530,7 @@ Do these in order; stop at any failed check. Steps 1–8 change nothing that use
    continue until a real message arrives from your verified sender. (Alternative: launch with Google only: leave
    `EMAIL_DELIVERY` unset and email/password stays off; the cleanup job and reset then have nothing to do.)
 5. **Google (P5):** add the production redirect URI (exactly as in the table) to the OAuth client you chose,
-   rename the consent screen to "Pulseform".
+   confirm the consent screen is named "StokeForm" (it is).
 6. **Create the secrets (P6)** and grant the service account access ([commands](CLOUD_RUN.md#turning-on-accounts)).
 7. **Commit and deploy the new build inert (P7):** `gcloud run deploy deploy-fitness-app-backend --source . --project fitness-app-511714 --region europe-west1`
    with **no** account variables. Check `/health` 200, `/ready` 200, `/v1/auth/providers` all `false`,
@@ -551,14 +551,14 @@ Do these in order; stop at any failed check. Steps 1–8 change nothing that use
 ### Migrations 0006 and 0007 (already applied to the database `server/.env` reaches)
 
 - **0006** creates schema `auth` with `user`, `session`, `account`, `verification` (Better Auth's own SQL).
-- **0007** adds a `FOREIGN KEY (user_id) REFERENCES auth."user"(id) ON DELETE CASCADE` to the 10 root `pulseform`
+- **0007** adds a `FOREIGN KEY (user_id) REFERENCES auth."user"(id) ON DELETE CASCADE` to the 10 root `stokeform`
   tables. **Order matters** (0007 needs 0006's table; the runner enforces it).
 - **Ownership and deletion:** every data row must belong to a real account, and **deleting an account row
   deletes all of that person's data** in one cascade (and their sessions and sign-in methods). No endpoint
   deletes accounts today, but the cleanup job does delete accounts, which is why it never touches an account
   that owns data, has a session, or is linked to Google.
 - **Safe to apply:** additive (tables and constraints; no existing row changes), applied cleanly because the
-  `pulseform` tables are empty (nothing is synced yet). Not needed to run again here (P1 confirms it).
+  `stokeform` tables are empty (nothing is synced yet). Not needed to run again here (P1 confirms it).
 - If they ever must be applied to another database: Neon backup first, `npm run server:migrate:status`, then
   `npm run server:migrate` with the **direct** (non-pooled) string as `MIGRATION_DATABASE_URL`, then status again.
 
@@ -609,4 +609,5 @@ Do these in order; stop at any failed check. Steps 1–8 change nothing that use
 - **Not yet exercised with real credentials:** real email delivery through Resend (no key, sender or test
   recipient exists). The automated tests simulate it; the dev outbox was used with the real database (see
   "One database") and the phone. See [Setting up real email](#setting-up-real-email-resend).
-- The consent screen currently shows the name "StokeForm"; rename it to "Pulseform" before real users see it.
+- The Google consent screen is named "StokeForm", matching the app. Its logo is optional: upload
+  `src/assets/brand/stokeform-icon.svg` (as a PNG, 120 x 120) in the OAuth consent screen settings if you want it shown.

@@ -1,4 +1,4 @@
-# Fitness App ("Pulseform") — complete project reference
+# StokeForm — complete project reference
 
 > **Purpose of this file.** A single, self-contained description of the whole project (product, architecture, domain logic, screens, data, design system, server, build and deployment, tests, known issues and open decisions), written so that an AI assistant (ChatGPT or similar) with **no access to the repository** can understand the app entirely and answer questions, review designs, or propose changes.
 >
@@ -39,7 +39,7 @@
 
 ## 1. What the app is (one-minute summary)
 
-A **cross-platform (iOS/Android) personal fitness companion** built with **Ionic 9 + Angular 22 + Capacitor 8**. Brand name in the UI: **Pulseform** (`src/app/core/brand.ts`); Capacitor app name is "Fitness", app id `com.fitnessapp.app`; package name `fitness-app`.
+A **cross-platform (iOS/Android) personal fitness companion** built with **Ionic 9 + Angular 22 + Capacitor 8**. Brand name in the UI: **StokeForm** (`src/app/core/brand.ts`); Capacitor/Android app name is "StokeForm"; the app id `com.fitnessapp.app` and the root npm package name `fitness-app` are deliberately not named after the brand (installation, signing and the Google sign-in deep link depend on the id).
 
 It is **local-first and single-user**: there is **no account, no login, no backend for user data, and no sync**. Everything the user records lives in the device's storage (`localStorage` via a storage abstraction). The only server in the project is a small optional Node service that proxies a photo of an **InBody body-composition report** to the OpenAI API and returns validated JSON; it stores nothing.
 
@@ -392,7 +392,7 @@ A deterministic review of one Monday–Sunday week, built from training logs, nu
 | `EXERCISE_MEDIA_BASE_URL`, `injectExerciseDemonstration()` | Demonstration photo URLs |
 | `registerAppIcons()` | Only listed ionicons are bundled |
 | `trackTextScale()` (uncommitted) | Publishes `--text-scale` CSS variable from the user's OS/browser font size (§22) |
-| `APP_BRAND` (`core/brand.ts`) | The wordmark name "Pulseform" |
+| `APP_BRAND` (`core/brand.ts`) | The wordmark name "StokeForm" |
 
 ---
 

@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
-import { NAME_MAX_LENGTH, normalizeName } from '../../../core/identity/user-identity.service';
 import { CLOCK, localIsoDate } from '../../../core/time/clock';
 import { ChoiceGroupComponent, NoticeComponent, TextFieldComponent } from '../../../shared/ui';
 import { SEX_CARD_OPTIONS } from '../onboarding-content';
@@ -19,11 +18,12 @@ import {
 import { OnboardingStepForm, STEP_HEADING_ID } from './onboarding-step-form';
 import { reportNotesWithIcons } from './report-notes';
 
-const FIELD_ORDER: readonly AboutField[] = ['name', 'sex', 'dateOfBirth'];
+const FIELD_ORDER: readonly AboutField[] = ['sex', 'dateOfBirth'];
 
 /**
- * About you: name (for Home's greeting), sex and date of birth. Height and
- * weight follow on their own screens.
+ * About you: sex and date of birth. Height and weight follow on their own
+ * screens. The name isn't asked here: it comes from the account created after
+ * the questionnaire (and can be changed in You).
  *
  * When the user set up from an InBody report, this is also where its
  * summary is shown, and sex starts from the report until confirmed here.
@@ -43,7 +43,6 @@ export class BasicsStepComponent implements OnboardingStepForm {
 
   protected readonly headingId = STEP_HEADING_ID;
   protected readonly sexOptions = SEX_CARD_OPTIONS;
-  protected readonly nameMaxLength = NAME_MAX_LENGTH;
   /** Latest date the picker offers. */
   protected readonly today = computed(() => localIsoDate(this.clock()));
 
@@ -79,7 +78,6 @@ export class BasicsStepComponent implements OnboardingStepForm {
     return sex ? [sex] : [];
   });
 
-  private readonly nameField = viewChild.required<TextFieldComponent>('nameField');
   private readonly sexGroup = viewChild.required(ChoiceGroupComponent);
   private readonly birthDateField = viewChild.required<TextFieldComponent>('birthDateField');
 
@@ -97,11 +95,11 @@ export class BasicsStepComponent implements OnboardingStepForm {
     this.submitted.set(true);
     const result = validateAboutForm(this.form(), this.clock());
     if (!result.ok) {
-      this.focusField(FIELD_ORDER.find((field) => result.errors[field]) ?? 'name');
+      this.focusField(FIELD_ORDER.find((field) => result.errors[field]) ?? 'sex');
       return false;
     }
-    const { name, dateOfBirth, sex } = result.value;
-    this.flow.update({ name, basics: { ...this.flow.draft().basics, dateOfBirth, sex } });
+    const { dateOfBirth, sex } = result.value;
+    this.flow.update({ basics: { ...this.flow.draft().basics, dateOfBirth, sex } });
     this.confirmReport();
     this.dirty = false;
     return true;
@@ -117,11 +115,9 @@ export class BasicsStepComponent implements OnboardingStepForm {
       return;
     }
     const form = this.form();
-    const name = normalizeName(form.name);
     const dob = validateBirthDateInput(form.birthDate, this.clock());
     const basics = this.flow.draft().basics;
     this.flow.update({
-      ...(name ? { name } : {}),
       basics: { ...basics, sex: form.sex ?? basics.sex, dateOfBirth: dob.ok ? dob.value : basics.dateOfBirth },
     });
     if (form.sex) {
@@ -144,7 +140,6 @@ export class BasicsStepComponent implements OnboardingStepForm {
 
   private focusField(field: AboutField): void {
     const targets: Record<AboutField, { focus(): void }> = {
-      name: this.nameField(),
       sex: this.sexGroup(),
       dateOfBirth: this.birthDateField(),
     };

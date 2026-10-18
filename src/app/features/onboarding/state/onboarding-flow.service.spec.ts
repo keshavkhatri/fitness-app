@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 
-import { UserIdentityService } from '../../../core/identity/user-identity.service';
 import { FitnessProfileService } from '../../../core/profile/fitness-profile.service';
 import { KeyValueStorage } from '../../../core/storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../../../core/storage/testing/memory-key-value-storage';
@@ -47,8 +46,8 @@ describe('OnboardingFlow', () => {
 
     expect(flow.next()).toBe(false);
     expect(flow.stepId()).toBe('basics');
-    // Name alone isn't enough: sex and date of birth are on the same screen.
-    flow.update({ name: 'Alex' });
+    // Sex alone isn't enough: the date of birth is on the same screen.
+    flow.update({ basics: { ...flow.draft().basics, sex: 'female' } });
     expect(flow.next()).toBe(false);
     flow.update({ basics: { ...flow.draft().basics, dateOfBirth: '1991-06-15', sex: 'female' } });
     flow.next(); // basics → height
@@ -219,17 +218,18 @@ describe('OnboardingFlow', () => {
       expect(flow.draft()).toEqual(completeDraft());
     });
 
-    it('a profile saved before names existed asks for one before saving, then saves it', async () => {
+    it('saves without asking for a name (the name comes from the account and is changed in You)', async () => {
+      storage.values.set('fitness.identity', JSON.stringify({ version: 1, name: 'Sam', photo: null }));
       const flow = await createFlow();
       flow.startReview(toFitnessProfile(completeDraft(), new Date('2026-10-01T09:00:00Z'))!);
-      expect(await flow.complete()).toBe(false);
-      expect(flow.stepId()).toBe('basics');
-
-      flow.update({ name: 'Sam' });
-      flow.next();
-      expect(flow.stepId()).toBe('summary');
       expect(await flow.complete()).toBe(true);
-      expect(TestBed.inject(UserIdentityService).identity().name).toBe('Sam');
+      expect(JSON.parse(storage.values.get('fitness.identity')!)).toEqual({ version: 1, name: 'Sam', photo: null });
+    });
+
+    it('never shows the plan offer again: only a new profile from first-run setup does', async () => {
+      const { flow } = await reviewFlow();
+      expect(await flow.complete()).toBe(true);
+      expect(storage.values.has('stokeform.first-run-offer')).toBe(false);
     });
 
     it('does not persist in-progress edits', async () => {
@@ -279,6 +279,33 @@ describe('OnboardingFlow', () => {
     });
   });
 
+  describe('the account gate (first run)', () => {
+    it('from a complete summary, moves to the account step without saving anything', async () => {
+      const flow = await createFlow({ stepId: 'summary', draft: completeDraft(), editingFromSummary: false });
+      expect(flow.continueToAccount()).toBe(true);
+      expect(flow.stepId()).toBe('account');
+      expect(storage.values.has(PROFILE_KEY)).toBe(false);
+      expect(TestBed.inject(FitnessProfileService).hasProfile()).toBe(false);
+      // Resumable: a trip to the browser or a restart comes back to the account step with the answers.
+      expect(savedProgress()).toMatchObject({ stepId: 'account', draft: completeDraft() });
+      expect(flow.position()).toBeNull();
+    });
+
+    it('sends an incomplete questionnaire back to its first missing answer', async () => {
+      const flow = await createFlow({ stepId: 'summary', draft: { ...completeDraft(), primaryGoal: null }, editingFromSummary: false });
+      expect(flow.continueToAccount()).toBe(false);
+      expect(flow.stepId()).toBe('goal');
+    });
+
+    it('Back from the account step returns to the summary, keeping the answers', async () => {
+      const flow = await createFlow({ stepId: 'account', draft: completeDraft(), editingFromSummary: false });
+      expect(flow.canGoBack()).toBe(true);
+      flow.back();
+      expect(flow.stepId()).toBe('summary');
+      expect(flow.draft()).toEqual(completeDraft());
+    });
+  });
+
   describe('complete', () => {
     it('saves the profile, clears saved progress and shows finish', async () => {
       const flow = await createFlow({ stepId: 'summary', draft: completeDraft(), editingFromSummary: false });
@@ -289,17 +316,17 @@ describe('OnboardingFlow', () => {
       expect(storage.values.has(PROGRESS_KEY)).toBe(false);
       expect(JSON.parse(storage.values.get(PROFILE_KEY)!).profile.primaryGoal).toBe('lose-fat');
       expect(TestBed.inject(FitnessProfileService).hasProfile()).toBe(true);
-      // The name goes to the identity store (Home's greeting), not into the profile.
-      expect(JSON.parse(storage.values.get('fitness.identity')!)).toEqual({ version: 1, name: 'Alex', photo: null });
       expect(JSON.parse(storage.values.get(PROFILE_KEY)!).profile.name).toBeUndefined();
+      // A new user sees the plan offer once, after the assessment.
+      expect(JSON.parse(storage.values.get('stokeform.first-run-offer')!)).toEqual({ version: 1 });
     });
 
-    it('keeps a photo already saved with the name', async () => {
+    it('never writes the name or photo: the account step and You own them', async () => {
       const photo = 'data:image/jpeg;base64,/9j/4AAQ';
       storage.values.set('fitness.identity', JSON.stringify({ version: 1, name: 'Old', photo }));
       const flow = await createFlow({ stepId: 'summary', draft: completeDraft(), editingFromSummary: false });
       expect(await flow.complete()).toBe(true);
-      expect(JSON.parse(storage.values.get('fitness.identity')!)).toEqual({ version: 1, name: 'Alex', photo });
+      expect(JSON.parse(storage.values.get('fitness.identity')!)).toEqual({ version: 1, name: 'Old', photo });
     });
 
     it('reports an error and keeps the answers when saving fails', async () => {

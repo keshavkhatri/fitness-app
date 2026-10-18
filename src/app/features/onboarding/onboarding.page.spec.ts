@@ -4,6 +4,7 @@ import { provideIonicAngular } from '@ionic/angular';
 
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { KeyValueStorage } from '../../core/storage/key-value-storage';
+import { ThemeService } from '../../core/theme/theme.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
 import { MemoryKeyValueStorage } from '../../core/storage/testing/memory-key-value-storage';
 import { CLOCK } from '../../core/time/clock';
@@ -117,21 +118,57 @@ describe('OnboardingPage (first run)', () => {
     return { fixture, flow, el, primary, navigate, storage };
   }
 
-  it('a double tap on "Create my profile" saves once and stays on the finish screen', async () => {
+  /** Presses Android's hardware Back: Ionic hands every registered handler to the one with the top priority. */
+  function pressHardwareBack() {
+    const handlers: [number, (next: () => void) => void][] = [];
+    const next = vi.fn();
+    document.dispatchEvent(new CustomEvent('ionBackButton', { detail: { register: (priority: number, handler: (next: () => void) => void) => handlers.push([priority, handler]) } }));
+    handlers.sort((x, y) => y[0] - x[0])[0]?.[1](next);
+    return next;
+  }
+
+  it('hardware Back on the account step goes back to the review', async () => {
+    const { flow } = await renderAt('account');
+    const next = pressHardwareBack();
+    await vi.waitFor(() => expect(flow.stepId()).toBe('summary'));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("hardware Back is left to the sign-in screen on top: the hidden questionnaire doesn't step back", async () => {
+    const { fixture, flow } = await renderAt('account');
+    (fixture.nativeElement as HTMLElement).classList.add('ion-page-hidden');
+    const next = pressHardwareBack();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(next).toHaveBeenCalledOnce();
+    expect(flow.stepId()).toBe('account');
+  });
+
+  it('the dark welcome step gets light status-bar text; the light questions do not', async () => {
+    const { fixture, flow } = await renderAt('welcome');
+    const theme = TestBed.inject(ThemeService);
+    theme.setPreference('light');
+    fixture.detectChanges();
+    expect(theme.statusBarTheme()).toBe('dark');
+
+    flow.next();
+    fixture.detectChanges();
+    expect(flow.stepId()).not.toBe('welcome');
+    expect(theme.statusBarTheme()).toBe('light');
+  });
+
+  it('the summary continues to the account step: nothing is saved and no results are shown yet', async () => {
     const { fixture, flow, primary, navigate, storage } = await renderAt('summary');
     const save = vi.spyOn(TestBed.inject(FitnessProfileService), 'save');
-    expect(primary().textContent?.trim()).toBe('Create my profile');
+    expect(primary().textContent?.trim()).toBe('Continue');
 
     primary().click();
     primary().click();
-    await vi.waitFor(() => expect(flow.stepId()).toBe('finish'));
+    await vi.waitFor(() => expect(flow.stepId()).toBe('account'));
     await fixture.whenStable();
-    fixture.detectChanges();
 
-    expect(save).toHaveBeenCalledOnce();
+    expect(save).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
-    expect(storage.values.has('fitness.onboarding-progress')).toBe(false);
-    expect(primary().textContent?.trim()).toBe('See my starting point');
+    expect(JSON.parse(storage.values.get('fitness.onboarding-progress')!).stepId).toBe('account');
   });
 
   it('the finish screen says the workout plan is ready only once it was made', async () => {

@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
     "android:debug:local": "powershell -ExecutionPolicy Bypass -File scripts/android-debug.ps1 -Api Local",
     "android:debug:cloud": "powershell -ExecutionPolicy Bypass -File scripts/android-debug.ps1 -Api Cloud",
     "server:build": "npm --prefix server run build",

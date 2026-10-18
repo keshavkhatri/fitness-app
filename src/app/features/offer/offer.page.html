@@ -1,0 +1,95 @@
+<ion-content>
+  <main class="body">
+    <header class="intro">
+      <h1 class="title" data-testid="offer-title">Choose your plan</h1>
+      <p class="caption">You can change your mind any time from You.</p>
+    </header>
+
+    @if (premiumActive()) {
+      <fit-notice tone="info" [headingLevel]="2" title="You have Premium" data-testid="offer-premium-active">
+        Your subscription is confirmed by the store.
+      </fit-notice>
+    }
+
+    <section class="plan free" aria-labelledby="offer-free" data-testid="offer-free">
+      <h2 class="plan-name" id="offer-free">Free</h2>
+      <p class="plan-lead">Everything in StokeForm today is included.</p>
+      <ul class="features">
+        @for (feature of freeFeatures; track feature.id) {
+          <li><ion-icon name="checkmark" aria-hidden="true" /><span>{{ feature.label }}</span></li>
+        }
+      </ul>
+    </section>
+
+    <section class="plan premium" aria-labelledby="offer-premium" data-testid="offer-premium">
+      <h2 class="plan-name" id="offer-premium">Premium</h2>
+
+      @if (billing.isLoading()) {
+        <fit-skeleton height="44px" radius="md" />
+      } @else if (products(); as items) {
+        <p class="plan-lead">Adds, when they become available:</p>
+        <ul class="features">
+          @for (feature of premiumFeatures; track feature.id) {
+            <li><ion-icon name="sparkles-outline" aria-hidden="true" /><span>{{ feature.label }}</span></li>
+          }
+        </ul>
+        @for (product of items; track product.id) {
+          <div class="product" [attr.data-testid]="'offer-product-' + product.id">
+            <p class="price"><strong>{{ product.price }}</strong> / {{ product.period }}</p>
+            @if (product.trial; as trial) {
+              <p class="terms" data-testid="offer-trial-terms">
+                Free for {{ trial.length }}, then {{ trial.renewalPrice }}. {{ trial.cancellationTerms }}
+              </p>
+            }
+            <button
+              fit-button
+              type="button"
+              variant="on-ink"
+              block
+              [loading]="entitlements.purchase().status === 'pending'"
+              [disabled]="entitlements.purchase().status === 'pending' || leaving()"
+              (click)="subscribe(product)"
+              [attr.data-testid]="'offer-buy-' + product.id"
+            >
+              {{ product.trial ? 'Start ' + product.trial.length + ' free trial' : 'Subscribe for ' + product.price + ' / ' + product.period }}
+            </button>
+          </div>
+        }
+        <button type="button" class="link on-ink" (click)="restore()" data-testid="offer-restore">Restore purchases</button>
+      } @else {
+        <p class="plan-lead">Planned, not available yet:</p>
+        <ul class="features planned">
+          @for (feature of premiumFeatures; track feature.id) {
+            <li><ion-icon name="time-outline" aria-hidden="true" /><span>{{ feature.label }}</span></li>
+          }
+        </ul>
+        <button fit-button type="button" variant="on-ink" block disabled aria-describedby="offer-premium-unavailable" data-testid="offer-premium-unavailable">
+          Premium isn't available yet
+        </button>
+        <p class="terms" id="offer-premium-unavailable">
+          Subscriptions aren't set up in this version of the app, so there is nothing to buy and nothing will be charged.
+        </p>
+      }
+
+      @switch (entitlements.purchase().status) {
+        @case ('pending') {
+          <p class="status" role="status" data-testid="offer-purchase-pending">Waiting for the store to confirm. You stay on Free until it does.</p>
+        }
+        @case ('cancelled') {
+          <p class="status" role="status" data-testid="offer-purchase-cancelled">No purchase was made. You're on Free.</p>
+        }
+        @case ('failed') {
+          <p class="status" role="alert" data-testid="offer-purchase-failed">The purchase didn't go through, so nothing was charged and you're on Free. Try again later.</p>
+        }
+      }
+    </section>
+  </main>
+</ion-content>
+
+<ion-footer class="ion-no-border">
+  <div class="footer">
+    <button fit-button type="button" size="lg" block [loading]="leaving()" [disabled]="leaving()" (click)="continueFree()" data-testid="offer-continue-free">
+      {{ premiumActive() ? 'Continue' : 'Continue with Free' }}
+    </button>
+  </div>
+</ion-footer>

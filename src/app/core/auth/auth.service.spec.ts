@@ -178,6 +178,25 @@ describe('AuthService', () => {
     localStorage.clear();
   });
 
+  it('changing the account name sends it with the Bearer token and updates the signed-in user', async () => {
+    const { auth, backend, store } = setup({ 'POST /api/auth/sign-in/email': signedIn, 'POST /api/auth/update-user': () => json(200, { status: true }) });
+    await auth.signIn('alex@example.test', 'correct horse battery');
+    expect(await auth.updateName('Sam')).toEqual({ ok: true, value: { ...USER, name: 'Sam' } });
+    expect(backend.calls.at(-1)).toMatchObject({ method: 'POST', path: '/api/auth/update-user', body: { name: 'Sam' }, headers: { authorization: `Bearer ${TOKEN}` } });
+    expect(auth.user()?.name).toBe('Sam');
+    expect(JSON.parse(store.values.get('session')!).user.name).toBe('Sam');
+  });
+
+  it('a name change that fails, or without a session, changes nothing', async () => {
+    const { auth, backend, store } = setup({ 'POST /api/auth/sign-in/email': signedIn, 'POST /api/auth/update-user': () => json(401, {}) });
+    expect(await auth.updateName('Sam')).toEqual({ ok: false, error: 'invalid-credentials' });
+    expect(backend.calls).toHaveLength(0);
+    await auth.signIn('alex@example.test', 'correct horse battery');
+    expect((await auth.updateName('Sam')).ok).toBe(false);
+    expect(auth.user()?.name).toBe(USER.name);
+    expect(JSON.parse(store.values.get('session')!).user.name).toBe(USER.name);
+  });
+
   it('signing out still works offline (the token is forgotten locally)', async () => {
     const { auth, store } = setup({ 'POST /api/auth/sign-in/email': signedIn, 'POST /api/auth/sign-out': () => Promise.reject(new TypeError('offline')) });
     await auth.signIn('alex@example.test', 'correct horse battery');

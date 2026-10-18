@@ -38,7 +38,7 @@ describe('connection settings', () => {
       password: 's3cret-p@ss',
       database: 'neondb',
       ssl: { rejectUnauthorized: true },
-      application_name: 'pulseform-api',
+      application_name: 'stokeform-api',
       keepAlive: true,
     });
     expect(c).not.toHaveProperty('connectionString');

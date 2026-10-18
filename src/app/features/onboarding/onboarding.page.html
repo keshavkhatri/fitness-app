@@ -66,6 +66,9 @@
         @case ('summary') {
           <app-summary-step />
         }
+        @case ('account') {
+          <app-account-step />
+        }
         @case ('finish') {
           <app-finish-step />
         }
@@ -75,17 +78,19 @@
 </ion-content>
 
 <ion-footer class="ion-no-border">
-  <div class="footer">
-    <button
-      fit-button
-      type="button"
-      size="lg"
-      block
-      [disabled]="saving() || stepBusy() || !flow.ready()"
-      [loading]="saving() || stepBusy()"
-      (click)="primaryAction()"
-    >
-      {{ primaryLabel() }}
-    </button>
-  </div>
+  @if (!primaryHidden()) {
+    <div class="footer">
+      <button
+        fit-button
+        type="button"
+        size="lg"
+        block
+        [disabled]="saving() || stepBusy() || !flow.ready()"
+        [loading]="saving() || stepBusy()"
+        (click)="primaryAction()"
+      >
+        {{ primaryLabel() }}
+      </button>
+    </div>
+  }
 </ion-footer>

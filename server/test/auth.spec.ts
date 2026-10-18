@@ -516,6 +516,45 @@ describe('GET /v1/auth/me', () => {
   });
 });
 
+describe('POST /api/auth/update-user (the app saves the display name here)', () => {
+  it('changes the name of the bearer session\'s own account, and /v1/auth/me then returns it', async () => {
+    const { token, id } = await verifiedUser();
+    const response = await post('/api/auth/update-user', { name: 'Sam Rivera' }, bearer(token));
+    expect(response.status).toBe(200);
+    const me = (await (await get('/v1/auth/me', bearer(token))).json()) as { user: { name: string } };
+    expect(me.user.name).toBe('Sam Rivera');
+    const row = await db.query<{ name: string }>('SELECT name FROM auth."user" WHERE id = $1', [id]);
+    expect(row.rows[0]?.name).toBe('Sam Rivera');
+  });
+
+  it('is refused without a session, and changes nothing', async () => {
+    const { email: address } = await verifiedUser();
+    const response = await post('/api/auth/update-user', { name: 'Nobody' });
+    expect(response.status).toBe(401);
+    const row = await db.query<{ name: string }>('SELECT name FROM auth."user" WHERE email = $1', [address]);
+    expect(row.rows[0]?.name).toBe('Test Person');
+  });
+
+  it("only ever changes the caller's own account, whatever user id the request names", async () => {
+    const victim = await verifiedUser();
+    const attacker = await verifiedUser();
+    const response = await post('/api/auth/update-user', { name: 'Mallory', userId: victim.id, id: victim.id }, { ...bearer(attacker.token), 'x-user-id': victim.id });
+    expect(response.status).toBe(200);
+    const names = await db.query<{ id: string; name: string }>('SELECT id, name FROM auth."user" WHERE id = ANY($1)', [[victim.id, attacker.id]]);
+    expect(names.rows.find((r) => r.id === victim.id)?.name).toBe('Test Person');
+    expect(names.rows.find((r) => r.id === attacker.id)?.name).toBe('Mallory');
+  });
+
+  it('cannot be used to change the address or mark it confirmed', async () => {
+    const { token, email: address, id } = await verifiedUser();
+    const other = email();
+    await post('/api/auth/update-user', { name: 'Sam', email: other, emailVerified: false });
+    await post('/api/auth/update-user', { name: 'Sam', email: other, emailVerified: false }, bearer(token));
+    const row = await db.query<{ email: string; emailVerified: boolean }>('SELECT email, "emailVerified" FROM auth."user" WHERE id = $1', [id]);
+    expect(row.rows[0]).toEqual({ email: address, emailVerified: true });
+  });
+});
+
 describe('sessions', () => {
   it('logout ends the session on the server', async () => {
     const { token } = await verifiedUser();
@@ -547,12 +586,12 @@ describe('sessions', () => {
     expect(days).toBeLessThanOrEqual(30);
   });
 
-  it('a deleted account loses its sessions and its Pulseform data', async () => {
+  it('a deleted account loses its sessions and its StokeForm data', async () => {
     const { token, id } = await verifiedUser();
-    await db.query(`INSERT INTO pulseform.weight_entries (user_id, id, date, weight_kg, created_at, updated_at) VALUES ($1, 'w1', '2026-10-15', 80, now(), now())`, [id]);
+    await db.query(`INSERT INTO stokeform.weight_entries (user_id, id, date, weight_kg, created_at, updated_at) VALUES ($1, 'w1', '2026-10-15', 80, now(), now())`, [id]);
     await db.query('DELETE FROM auth."user" WHERE id = $1', [id]);
     expect((await get('/v1/auth/me', bearer(token))).status).toBe(401);
-    expect((await db.query<{ n: number }>('SELECT count(*)::int AS n FROM pulseform.weight_entries WHERE user_id = $1', [id])).rows[0].n).toBe(0);
+    expect((await db.query<{ n: number }>('SELECT count(*)::int AS n FROM stokeform.weight_entries WHERE user_id = $1', [id])).rows[0].n).toBe(0);
   });
 });
 

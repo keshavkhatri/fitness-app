@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { IonIcon, NavController } from '@ionic/angular';
+import { EntitlementService } from '../../core/entitlements/entitlement.service';
+import { OFFER_PATH } from '../../core/profile/onboarding.guards';
 
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
@@ -33,7 +35,7 @@ const THEME_OPTIONS: readonly SegmentOption<ThemePreference>[] = [
 ];
 
 /** Settings that exist in the product plan but are not built yet. */
-const UPCOMING_SETTINGS: readonly string[] = ['Notifications', 'Connected health apps', 'Subscription'];
+const UPCOMING_SETTINGS: readonly string[] = ['Notifications', 'Connected health apps'];
 
 const COPY = {
   goal: 'Your goal',
@@ -43,6 +45,7 @@ const COPY = {
   appearance: 'Appearance',
   units: 'Units',
   upcoming: 'Coming soon',
+  plan: 'Your plan',
 } as const;
 
 const TEST_IDS: Readonly<Record<YouDestination, string>> = {
@@ -80,6 +83,8 @@ export class YouPage {
   protected readonly theme = inject(ThemeService);
   protected readonly themeOptions = THEME_OPTIONS;
   protected readonly upcomingSettings = UPCOMING_SETTINGS;
+  /** Free or Premium, as the entitlement service decides (never assumed). */
+  protected readonly plan = inject(EntitlementService).plan;
   protected readonly copy = COPY;
   protected readonly tiles = YOU_TILES;
   protected readonly testIds = TEST_IDS;
@@ -172,6 +177,11 @@ export class YouPage {
 
   protected openProgress(): void {
     void this.nav.navigateForward(['/you', 'progress']);
+  }
+
+  /** The plan offer; choosing there comes back here. */
+  protected openPlans(): void {
+    void this.nav.navigateForward(OFFER_PATH, { queryParams: { next: '/you' } });
   }
 
   protected openWeightHistory(): void {

@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
  * - Files are `NNNN_name.sql` in `server/migrations`: versions run from 1 with no gaps, in order.
  * - Each migration runs in its own transaction together with its history row: it applies
  *   completely or not at all.
- * - History is in `pulseform.schema_migrations` (version, name, checksum, applied time). An
+ * - History is in `stokeform.schema_migrations` (version, name, checksum, applied time). An
  *   applied file that was later edited, or a database that is ahead of the files, stops the run:
  *   applied migrations are never rewritten, a new migration fixes forward.
  * - A session-level advisory lock serialises concurrent runs.
@@ -39,7 +39,7 @@ export class MigrationError extends Error {}
 export type MigrationLog = (message: string) => void;
 
 export const FILE_PATTERN = /^(\d{4})_([a-z0-9][a-z0-9_]*)\.sql$/;
-const LOCK_KEY = "hashtext('pulseform.schema_migrations')";
+const LOCK_KEY = "hashtext('stokeform.schema_migrations')";
 
 export function checksumOf(sql: string): string {
   return createHash('sha256').update(sql.replace(/\r\n/g, '\n')).digest('hex');
@@ -72,8 +72,8 @@ const label = (m: { version: number; name: string }) => `${String(m.version).pad
 /** Creates the history table if needed (outside any numbered migration: it must exist to read history). */
 async function ensureHistory(client: SqlClient): Promise<void> {
   await client.query(
-    `CREATE SCHEMA IF NOT EXISTS pulseform;
-     CREATE TABLE IF NOT EXISTS pulseform.schema_migrations (
+    `CREATE SCHEMA IF NOT EXISTS stokeform;
+     CREATE TABLE IF NOT EXISTS stokeform.schema_migrations (
        version     integer PRIMARY KEY CHECK (version > 0),
        name        text NOT NULL,
        checksum    text NOT NULL,
@@ -83,7 +83,7 @@ async function ensureHistory(client: SqlClient): Promise<void> {
 }
 
 export async function readApplied(client: SqlClient): Promise<AppliedMigration[]> {
-  const { rows } = await client.query('SELECT version, name, checksum FROM pulseform.schema_migrations ORDER BY version');
+  const { rows } = await client.query('SELECT version, name, checksum FROM stokeform.schema_migrations ORDER BY version');
   return rows.map((row) => ({ version: Number(row['version']), name: String(row['name']), checksum: String(row['checksum']) }));
 }
 
@@ -114,7 +114,7 @@ export interface MigrationStatus {
 
 /** Read-only: reports history against files (creates nothing, takes no lock). */
 export async function migrationStatus(client: SqlClient, files: readonly MigrationFile[]): Promise<MigrationStatus> {
-  const exists = await client.query("SELECT to_regclass('pulseform.schema_migrations') AS t");
+  const exists = await client.query("SELECT to_regclass('stokeform.schema_migrations') AS t");
   const applied = exists.rows[0]?.['t'] ? await readApplied(client) : [];
   return { applied, pending: pendingMigrations(files, applied) };
 }
@@ -134,7 +134,7 @@ export async function migrateUp(client: SqlClient, files: readonly MigrationFile
       try {
         await client.query('BEGIN');
         await client.query(migration.sql);
-        await client.query('INSERT INTO pulseform.schema_migrations (version, name, checksum) VALUES ($1, $2, $3)', [
+        await client.query('INSERT INTO stokeform.schema_migrations (version, name, checksum) VALUES ($1, $2, $3)', [
           migration.version,
           migration.name,
           migration.checksum,

@@ -61,7 +61,7 @@ export function createAuth({ config, pool, trustedOrigins, clientIpHeader, email
   const verificationUrl = (token: string) =>
     `${config.baseUrl}${AUTH_BASE_PATH}/verify-email?${new URLSearchParams({ token, callbackURL: `${config.baseUrl}${EMAIL_VERIFIED_PATH}` }).toString()}`;
   return betterAuth({
-    appName: 'Pulseform',
+    appName: 'StokeForm',
     secret: config.secret,
     baseURL: config.baseUrl,
     basePath: AUTH_BASE_PATH,

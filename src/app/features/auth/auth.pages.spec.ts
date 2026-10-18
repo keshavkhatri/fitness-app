@@ -277,7 +277,7 @@ describe('password reset screens', () => {
     expect(Object.keys(backend.calls.at(-1)!.body as object)).toEqual(['email']);
     expect(backend.calls.at(-1)!.headers['authorization']).toBeUndefined();
     const notice = q(fixture, 'forgot-sent')!.textContent!;
-    expect(notice).toContain("If alex@example.test has a Pulseform account, we've sent it a link");
+    expect(notice).toContain("If alex@example.test has a StokeForm account, we've sent it a link");
     expect(notice).not.toMatch(/no account|not found|doesn't exist|unknown/i);
     expect(q(fixture, 'forgot-form')).toBeNull();
   });

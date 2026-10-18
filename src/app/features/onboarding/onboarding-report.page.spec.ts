@@ -99,7 +99,6 @@ async function render(options: { answers?: (() => Promise<Response>)[]; saved?: 
   /** The report was read: on to the details screen, answered, then on to height. */
   const confirmDetails = async () => {
     await clickPrimary(); // "Check my details"
-    await type('Your name', 'Alex');
     await type('Date of birth', '1988-03-09');
     await clickPrimary();
   };
@@ -171,7 +170,6 @@ describe('OnboardingPage (InBody report setup)', () => {
     expect(el.querySelector('fit-choice-group .selected')?.textContent).toContain('Female');
     expect(field('Date of birth').value).toBe('');
     expect(el.textContent).toContain('Your report lists age 38');
-    await type('Your name', 'Alex');
     await type('Date of birth', '1988-03-09');
     await clickPrimary();
 
@@ -198,8 +196,13 @@ describe('OnboardingPage (InBody report setup)', () => {
     expect(storage.values.has(PROFILE_KEY)).toBe(false);
     expect(storage.values.get(PROGRESS_KEY)).not.toContain('inbody-extraction');
 
-    await clickPrimary(); // "Create my profile"
-    await vi.waitFor(() => expect(flow.stepId()).toBe('finish'));
+    // The summary leads to the account gate; nothing is saved before it (covered in onboarding-account.page.spec).
+    await clickPrimary();
+    expect(flow.stepId()).toBe('account');
+    expect(storage.values.has(PROFILE_KEY)).toBe(false);
+    await flow.complete();
+    await settle();
+    expect(flow.stepId()).toBe('finish');
 
     const saved = JSON.parse(storage.values.get(PROFILE_KEY)!).profile;
     expect(saved).toMatchObject({ dateOfBirth: '1988-03-09', sex: 'female', height: { centimeters: 173 }, weight: { kilograms: 68.4 } });
@@ -315,7 +318,6 @@ describe('OnboardingPage (InBody report setup)', () => {
 
     expect(heading()).toBe("Let's get to know you");
     expect(flow.draft().setupMethod).toBe('manual');
-    expect(field('Your name').value).toBe('Alex');
     expect(field('Date of birth').value).toBe('1991-06-15');
     expect(el.querySelector('.report-note')).toBeNull();
   });

@@ -16,8 +16,9 @@ export const INITIAL_PROGRESS: OnboardingProgress = { stepId: 'welcome', draft: 
 const STORAGE_KEY = 'fitness.onboarding-progress';
 /**
  * v2: basics store `dateOfBirth` instead of `age`; older progress restarts onboarding.
- * v3: basics are answered one screen at a time (partial), and the name moved
- * onto the basics screen. v2 progress reads the same way (see LEGACY_STEPS).
+ * v3: basics are answered one screen at a time (partial). v2 progress reads the same way
+ * (see LEGACY_STEPS). The questionnaire no longer asks for a name (it comes from the account);
+ * a name saved in an older draft is still read, and only shown on the review's avatar.
  */
 const SCHEMA_VERSION = 3;
 const READABLE_VERSIONS: readonly unknown[] = [2, 3];

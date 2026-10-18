@@ -8,9 +8,9 @@ export const AUTH_COPY = {
   back: 'Back',
   signIn: {
     title: 'Sign in',
-    intro: 'Sign in to your Pulseform account.',
+    intro: 'Sign in to your StokeForm account.',
     submit: 'Sign in',
-    switchPrompt: 'New to Pulseform?',
+    switchPrompt: 'New to StokeForm?',
     switchAction: 'Create an account',
   },
   signUp: {
@@ -45,7 +45,7 @@ export const AUTH_COPY = {
     sentTitle: 'Check your email',
     /** The same words for every address: this screen never says whether an account exists. */
     sent: (email: string) =>
-      `If ${email} has a Pulseform account, we've sent it a link to choose a new password. The link works once, for 1 hour, and opens in your browser.`,
+      `If ${email} has a StokeForm account, we've sent it a link to choose a new password. The link works once, for 1 hour, and opens in your browser.`,
     sentHint: "No email after a few minutes? Check your spam folder, or try again. After changing your password you'll be signed out of your other devices, then sign in here with the new one.",
   },
   /** After sign-up: the account exists but needs its address confirmed before anyone can sign in. */
@@ -94,7 +94,7 @@ export const AUTH_ERRORS: Readonly<Record<AuthError, { readonly title: string; r
       "It uses a password and its email address hasn't been confirmed, so it can't be joined to Google. Sign in with your email and password to get a confirmation link, then try Google again.",
   },
   'code-expired': { title: 'That sign-in expired', message: 'Start Google sign-in again from this screen.' },
-  network: { title: "Couldn't reach Pulseform", message: 'Check your internet connection and try again.' },
+  network: { title: "Couldn't reach StokeForm", message: 'Check your internet connection and try again.' },
   unavailable: { title: 'Something went wrong', message: "The account service didn't respond as expected. Try again later." },
 };
 

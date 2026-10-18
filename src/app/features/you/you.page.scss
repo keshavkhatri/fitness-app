@@ -153,3 +153,36 @@
     border-top: var(--border-hairline) solid var(--color-border);
   }
 }
+
+// Your plan: Free or Premium, opens the offer.
+.plan-row {
+  @include fx.focus-ring;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  ion-icon {
+    flex: none;
+    color: var(--color-text-secondary);
+  }
+}
+
+.plan-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.plan-name {
+  @include fx.text(body, semibold);
+}

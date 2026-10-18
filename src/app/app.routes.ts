@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { requireOnboardingComplete } from './core/profile/onboarding.guards';
+import { requireAppReady, requireOnboardingComplete } from './core/profile/onboarding.guards';
 
 /**
  * Top-level routes.
@@ -10,9 +10,9 @@ import { requireOnboardingComplete } from './core/profile/onboarding.guards';
  *   `workout/plans/:id` are added there without touching this file.
  * - Full-screen flows that should hide the tab bar (e.g. onboarding, a future
  *   active workout) go as siblings of the shell route, above the wildcard.
- * - First run: onboarding → assessment → home. The shell requires a profile
- *   and a reviewed assessment; guards send users to whichever step is
- *   outstanding (see core/profile/onboarding.guards.ts).
+ * - First run: onboarding (questionnaire → account) → assessment → plan offer → home. The shell
+ *   requires a profile and a reviewed assessment, and sends a user who has just finished setup to
+ *   the offer once; guards send users to whichever step is outstanding (core/profile/onboarding.guards.ts).
  */
 export const routes: Routes = [
   { path: 'onboarding', loadChildren: () => import('./features/onboarding/onboarding.routes') },
@@ -20,6 +20,13 @@ export const routes: Routes = [
   // Optional accounts (sign in, create account, Google return). Not guarded by onboarding: the app
   // works without an account, and an account never replaces the local data.
   { path: 'auth', loadChildren: () => import('./features/auth/auth.routes') },
+  // Free or Premium (full screen): once after first-run setup, and from You.
+  {
+    path: 'offer',
+    title: 'Your plan',
+    canActivate: [requireOnboardingComplete],
+    loadComponent: () => import('./features/offer/offer.page').then((m) => m.OfferPage),
+  },
   // Full-screen workout flows (no tab bar). Declared before the shell so they match first.
   {
     path: 'workout/session/:sessionId/active',
@@ -35,7 +42,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    canActivate: [requireOnboardingComplete],
+    canActivate: [requireAppReady],
     loadComponent: () => import('./shell/tabs/tabs.page').then((m) => m.TabsPage),
     children: [
       { path: 'home', loadChildren: () => import('./features/home/home.routes') },

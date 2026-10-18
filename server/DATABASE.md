@@ -2,7 +2,7 @@
 
 The server can connect to PostgreSQL, and the repository holds the schema and a migration tool.
 **Only accounts use the database** (sign-up, sign-in and sessions in schema `auth`; see [AUTH.md](AUTH.md)).
-There are no data endpoints and no localStorage migration yet: the `pulseform` tables stay empty. What
+There are no data endpoints and no localStorage migration yet: the `stokeform` tables stay empty. What
 exists: a connection pool, `GET /ready`, versioned migrations, and the schema in
 [`docs/database-schema.md`](../docs/database-schema.md). Nothing here creates cloud resources.
 
@@ -14,7 +14,7 @@ exists: a connection pool, `GET /ready`, versioned migrations, and the schema in
 | Pool, readiness check | `src/db/database.ts` |
 | Migration engine (history, checksums, lock, rollback) | `src/db/migrations.ts` |
 | Migration command and SQL file reader | `tools/migrate.ts`, `tools/migration-files.ts` |
-| The schema | `migrations/0001…0005_*.sql` (`pulseform`), `0006_auth_tables.sql` (Better Auth's `auth` tables), `0007_user_ownership.sql` (foreign keys to `auth."user"`) |
+| The schema | `migrations/0001…0005_*.sql` (`stokeform`), `0006_auth_tables.sql` (Better Auth's `auth` tables), `0007_user_ownership.sql` (foreign keys to `auth."user"`) |
 
 The API server never runs migrations and never reads files: migrations are an explicit step, run once
 per release by you (or by a Cloud Run job), not by every instance at startup.
@@ -71,9 +71,17 @@ npm run server:migrate          # applies what is pending, oldest first
 
 - Each migration runs in its own transaction with its history row: it applies completely or not at all.
 - It is repeatable: a second run reports "Database is up to date".
-- History is `pulseform.schema_migrations` (version, name, checksum, time). A migration file that is **edited after
+- History is `stokeform.schema_migrations` (version, name, checksum, time). A migration file that is **edited after
   it was applied**, or a database **ahead** of your files, stops the run with a clear message. Never edit an applied
   file; add the next `NNNN_name.sql`.
+  *One exception, made once and not to be repeated:* on 18 Oct 2026, before launch and while every data table was
+  empty, migrations 0001–0007 were rewritten in place to rename the schema's earlier placeholder name to
+  `stokeform` (and their comments updated), and the one database was brought in line by hand in a single
+  transaction (`ALTER SCHEMA ... RENAME`, the schema comment, and the seven stored checksums). From the first real
+  user data on, an applied migration is never edited, whatever the reason.
+  The live database was brought in line on 18 Oct 2026 (the one-time script checked that only the old schema existed, the
+  history matched and every data table was empty, then ran in one transaction; `migrate status` then reported all
+  seven applied and up to date). The script has been deleted. A new database needs nothing: it migrates normally.
 - Two runners at once are safe: a session advisory lock makes the second wait and then find nothing to do.
 - Failures print the migration name, the SQLSTATE and the database's own message (about SQL objects). Connection
   failures print only an error code, never the host, user or password.
@@ -101,11 +109,11 @@ Cloud Run does not use it; it is for you and for monitoring.
   for `localhost` only:
 
   ```powershell
-  docker run -d --name pulseform-pg -e POSTGRES_PASSWORD=<pick-a-throwaway> -p 127.0.0.1:5432:5432 postgres:17
+  docker run -d --name stokeform-pg -e POSTGRES_PASSWORD=<pick-a-throwaway> -p 127.0.0.1:5432:5432 postgres:17
   $env:DATABASE_URL = "postgresql://postgres:<throwaway>@localhost:5432/postgres"
   npm run server:migrate
   npm run server:start            # then: curl.exe -i http://localhost:8787/ready
-  docker rm -f pulseform-pg       # wipes it
+  docker rm -f stokeform-pg       # wipes it
   ```
 
 - This project currently has **one** Neon database, and it is the production one: `server/.env` points at it, so
@@ -141,7 +149,7 @@ throwaway test accounts were deleted afterwards.
   so has migrations 0001–0007); the check is in [AUTH.md](AUTH.md#ordered-plan), step 1.
 - **Not verified:** `channel_binding` (accepted in the URL and ignored, so the connection does
   not enforce it), behaviour under real load, and any data operation: no application code writes to the
-  `pulseform` tables yet.
+  `stokeform` tables yet.
 
 ## Next phases (not done)
 

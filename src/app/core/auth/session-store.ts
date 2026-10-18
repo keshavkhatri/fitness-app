@@ -14,7 +14,8 @@ export interface SecretStore {
   remove(key: string): Promise<void>;
 }
 
-const PREFIX = 'pulseform.auth.';
+// A storage key, never shown to anyone. Changing it orphans every stored session (each phone would have to sign in again).
+const PREFIX = 'stokeform.auth.';
 
 class NativeSecretStore implements SecretStore {
   async get(key: string): Promise<string | null> {

@@ -35,7 +35,7 @@ const BENEFITS = [
       <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>
         Welcome to <span class="brand">{{ brand }}</span>
       </h1>
-      <p class="text">Workouts, nutrition and progress, all in one place.</p>
+      <p class="text">Answer a few questions and get a workout plan and calorie target built for you.</p>
 
       <ul class="benefits">
         @for (benefit of benefits; track benefit.text) {

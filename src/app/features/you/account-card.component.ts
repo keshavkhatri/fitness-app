@@ -27,7 +27,7 @@ import { FitnessButtonComponent, LoadingSkeletonComponent } from '../../shared/u
             </div>
             <p class="hint">Signed in. Your workouts, food and measurements still stay on this device: nothing is uploaded or synced yet.</p>
             @if (!state.verified) {
-              <p class="hint" data-testid="account-unverified">Couldn't reach Pulseform to confirm your sign-in. It will be checked again next time.</p>
+              <p class="hint" data-testid="account-unverified">Couldn't reach StokeForm to confirm your sign-in. It will be checked again next time.</p>
             }
             <button fit-button type="button" variant="outline" block icon="log-out-outline" [loading]="signingOut()" (click)="signOut()" data-testid="account-sign-out">
               Sign out
@@ -38,7 +38,7 @@ import { FitnessButtonComponent, LoadingSkeletonComponent } from '../../shared/u
             <fit-skeleton height="44px" radius="md" />
           }
           @default {
-            <p class="lead" data-testid="account-guest">You're using Pulseform on this device only.</p>
+            <p class="lead" data-testid="account-guest">You're using StokeForm on this device only.</p>
             <p class="hint">Create an account to get ready for backup and syncing across devices, which come later. Your data stays on this device either way.</p>
             @if (auth.available) {
               <div class="actions">

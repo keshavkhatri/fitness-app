@@ -29,6 +29,24 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
     <h1 class="title" [id]="headingId" tabindex="-1" data-step-heading>You're all set!</h1>
     <p class="text" aria-live="polite">{{ status() }}</p>
 
+    @if (preview(); as days) {
+      <section class="preview" aria-labelledby="plan-preview-title" data-testid="plan-preview">
+        <h2 class="preview-title" id="plan-preview-title">Your training week</h2>
+        <ol class="days">
+          @for (day of days; track day.id) {
+            <li class="day">
+              <span class="day-index" aria-hidden="true">{{ day.dayIndex }}</span>
+              <span class="day-text">
+                <span class="day-name">Day {{ day.dayIndex }} · {{ day.name }}</span>&ngsp;
+                <span class="day-detail">{{ day.detail }}</span>
+              </span>
+            </li>
+          }
+        </ol>
+        <p class="preview-note">Times are rough estimates. The full plan, with every exercise, is in the Train tab.</p>
+      </section>
+    }
+
     <ul class="next">
       <li>
         <span class="icon" aria-hidden="true"><ion-icon name="barbell-outline" /></span>
@@ -70,6 +88,23 @@ export class FinishStepComponent {
     return state !== 'failed' && state.kind === 'ready'
       ? 'Your profile is saved and your workout plan is ready.'
       : 'Your profile is saved.';
+  });
+
+  /** The real plan, one line per planned day (null until it is made, or if it couldn't be). */
+  protected readonly preview = computed(() => {
+    const state = this.state();
+    if (state === null || state === 'failed' || state.kind !== 'ready') {
+      return null;
+    }
+    return state.plan.sessions.map((session) => ({
+      id: session.id,
+      dayIndex: session.dayIndex,
+      name: session.name,
+      detail:
+        session.kind === 'resistance'
+          ? `${session.exercises.length} exercises · about ${session.estimatedDurationMinutes} min`
+          : `${session.optional ? 'Optional · ' : ''}${session.durationMinutes.min}–${session.durationMinutes.max} min, easy`,
+    }));
   });
 
   protected readonly planText = computed(() => {

@@ -22,6 +22,7 @@ import { ASSESSMENT_PATH, ONBOARDING_PATH } from '../../core/profile/onboarding.
 import { OnboardingMode } from './state/onboarding-flow.service';
 import { FitnessButtonComponent, FitnessProgressComponent } from '../../shared/ui';
 import { OnboardingFlow } from './state/onboarding-flow.service';
+import { AccountStepComponent } from './steps/account-step.component';
 import { BasicsStepComponent } from './steps/basics-step.component';
 import { CHOICE_STEPS } from './steps/choice-steps';
 import { EquipmentStepComponent } from './steps/equipment-step.component';
@@ -72,6 +73,7 @@ const REVIEW_RETURN_PATHS: readonly string[] = ['/you'];
     ReportStepComponent,
     SummaryStepComponent,
     FinishStepComponent,
+    AccountStepComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // First run is the warm (lime) dashboard look, with a dark welcome. Reviewing an existing
@@ -95,12 +97,13 @@ export class OnboardingPage implements OnInit {
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly theme = inject(ThemeService);
-  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly choiceSteps = CHOICE_STEPS;
   protected readonly saving = computed(() => this.flow.saveStatus() === 'saving');
   /** The current step is working (e.g. reading a report): its primary action waits. */
   protected readonly stepBusy = computed(() => this.stepForm()?.busy?.() ?? false);
+  /** The account gate offers its own choices while signed out. */
+  protected readonly primaryHidden = computed(() => this.stepForm()?.primaryHidden?.() ?? false);
   protected readonly reviewing = computed(() => this.flow.mode() === 'review');
   protected readonly immersive = computed(() => this.reviewing() || this.flow.stepId() === 'welcome');
   protected readonly primaryLabel = computed(() => {
@@ -119,6 +122,13 @@ export class OnboardingPage implements OnInit {
   private readonly stepForm = viewChild(OnboardingStepForm);
 
   constructor() {
+    // Light status-bar text while a dark screen is showing: the welcome step and the Profile editor.
+    effect((onCleanup) => {
+      if (this.immersive()) {
+        onCleanup(this.theme.holdAlwaysDark());
+      }
+    });
+
     // On every step change: start at the top and move focus to the new heading
     // so screen-reader and keyboard users land on the new question.
     effect(() => {
@@ -128,9 +138,13 @@ export class OnboardingPage implements OnInit {
       }
     });
 
-    // Android hardware back steps back through onboarding before leaving it.
+    // Android hardware back steps back through onboarding before leaving it. While another screen is
+    // open on top (the sign-in and create-account screens, opened from the account step), this page is
+    // still alive underneath: it must leave Back to that screen, not step its own hidden questionnaire.
     const backButton = inject(Platform).backButton.subscribeWithPriority(10, (processNextHandler) => {
-      if (this.flow.canGoBack()) {
+      if (this.host.nativeElement.classList.contains('ion-page-hidden')) {
+        processNextHandler();
+      } else if (this.flow.canGoBack()) {
         void this.back();
       } else {
         processNextHandler();
@@ -167,8 +181,19 @@ export class OnboardingPage implements OnInit {
         await this.router.navigateByUrl(ASSESSMENT_PATH, { replaceUrl: true });
         return;
       case 'review':
-        if ((await this.flow.complete()) && this.flow.mode() === 'review') {
+        if (this.flow.mode() === 'new') {
+          // First run: the account comes before anything personal is created or shown.
+          this.flow.continueToAccount();
+          return;
+        }
+        if (await this.flow.complete()) {
           await this.router.navigateByUrl(ASSESSMENT_PATH, { replaceUrl: true });
+        }
+        return;
+      case 'account':
+        // Signed in (and named): only now is the profile created, then the plan on the finish step.
+        if (this.stepForm()?.submit() ?? false) {
+          await this.flow.complete();
         }
         return;
       default:
@@ -193,8 +218,6 @@ export class OnboardingPage implements OnInit {
     }
     const [profile, identity] = await Promise.all([this.profiles.load(), this.identity.load().catch(() => null)]);
     if (profile) {
-      // Light status-bar text while the dark Profile editor is open.
-      this.destroyRef.onDestroy(this.theme.holdAlwaysDark());
       this.flow.startReview(profile, identity?.name ?? null);
     } else {
       await this.router.navigateByUrl(ONBOARDING_PATH, { replaceUrl: true });

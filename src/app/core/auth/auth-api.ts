@@ -57,7 +57,7 @@ export const AUTH_FETCH = new InjectionToken<typeof fetch>('AUTH_FETCH', {
 const TIMEOUT_MS = 20_000;
 
 /**
- * The account endpoints of the Pulseform API (server/AUTH.md). Sessions travel as
+ * The account endpoints of the StokeForm API (server/AUTH.md). Sessions travel as
  * `Authorization: Bearer <token>`; the app's WebView origin is a different site from the API, so
  * cookies are not used.
  */
@@ -142,6 +142,15 @@ export class AuthApi {
   /** Ends the session on the server. Best effort: the app forgets the token either way. */
   async signOut(token: string): Promise<void> {
     await this.request('POST', '/api/auth/sign-out', {}, token);
+  }
+
+  /** Sets the signed-in account's display name (Better Auth's update-user; the server takes the user from the token). */
+  async updateName(token: string, name: string): Promise<AuthResult<void>> {
+    const response = await this.request('POST', '/api/auth/update-user', { name }, token);
+    if (!response.ok) {
+      return response;
+    }
+    return response.value.status === 200 ? { ok: true, value: undefined } : { ok: false, error: await errorOf(response.value) };
   }
 
   /** The URL that starts Google sign-in in a browser; the server checks `redirect` against its allowlist. */

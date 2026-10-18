@@ -1,0 +1,125 @@
+@use 'mixins' as fx;
+
+// Warm dashboard page; the Premium card is the screen's one ink surface. Single column: works at 320 px.
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-8)) var(--space-4) var(--space-6);
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  @include fx.text(h1, bold);
+}
+
+.caption {
+  @include fx.text(body);
+  color: var(--color-text-secondary);
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-card);
+}
+
+.free {
+  background: var(--color-surface);
+}
+
+.premium {
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+}
+
+.plan-name {
+  @include fx.text(h2, bold);
+}
+
+.plan-lead {
+  @include fx.text(body, medium);
+}
+
+.premium .plan-lead,
+.premium .terms,
+.premium .status {
+  color: var(--color-on-ink-secondary);
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include fx.text(body-sm);
+    display: flex;
+    gap: var(--space-2);
+    align-items: flex-start;
+  }
+
+  ion-icon {
+    flex: none;
+    margin-top: 2px;
+    font-size: var(--icon-size-sm);
+    color: var(--color-primary-text);
+  }
+}
+
+.premium .features ion-icon {
+  color: var(--color-primary);
+}
+
+.product {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.price {
+  @include fx.text(body);
+}
+
+.terms,
+.status {
+  @include fx.text(body-sm);
+}
+
+.link {
+  @include fx.focus-ring;
+  align-self: center;
+  padding: var(--space-2);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+
+  &.on-ink {
+    color: var(--color-on-ink);
+  }
+}
+
+.footer {
+  padding: var(--space-3) var(--space-4) calc(var(--ion-safe-area-bottom, 0px) + var(--space-3));
+  background: var(--color-bg);
+}

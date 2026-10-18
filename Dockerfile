@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 #
-# The Pulseform API server (server/) and its database migration tool, for Google Cloud Run. Build from the repository
+# The StokeForm API server (server/) and its database migration tool, for Google Cloud Run. Build from the repository
 # root (the server imports the shared contract in src/app/domain):
 #
-#   docker build -t pulseform-inbody .
+#   docker build -t stokeform-api .
 #
 # See server/CLOUD_RUN.md. No secret is read or stored here: OPENAI_API_KEY and the rest
 # arrive as environment variables when the container runs.

@@ -1,6 +1,6 @@
 # Database schema (PostgreSQL / Neon)
 
-The relational foundation for Pulseform's future server-side data. **Nothing uses it yet**: the app
+The relational foundation for StokeForm's future server-side data. **Nothing uses it yet**: the app
 still keeps everything in `localStorage`, and no data is migrated. This document explains the schema
 in [`server/migrations/`](../server/migrations) and how it maps to the app's domain models.
 How to run and develop with it: [`server/DATABASE.md`](../server/DATABASE.md).
@@ -30,17 +30,17 @@ How to run and develop with it: [`server/DATABASE.md`](../server/DATABASE.md).
 | Schema | Owner | Contents |
 | --- | --- | --- |
 | `auth` | **Better Auth** (accounts, see [`server/AUTH.md`](../server/AUTH.md)) | `user`, `session`, `account`, `verification`. Better Auth reads and writes them; their shape is Better Auth's generated SQL, applied by `server/migrations/0006_auth_tables.sql`. |
-| `pulseform` | **this repository** | Every Pulseform table below, plus `schema_migrations` (the migration history). |
+| `stokeform` | **this repository** | Every StokeForm table below, plus `schema_migrations` (the migration history). |
 
 Rules that keep them from colliding:
 
-1. One migration history (`pulseform.schema_migrations`) covers both schemas; Better Auth's own CLI is
+1. One migration history (`stokeform.schema_migrations`) covers both schemas; Better Auth's own CLI is
    not used. `0006` is exactly what Better Auth generates, and `server/test/auth.spec.ts` fails if the
    installed Better Auth expects anything different (after an upgrade, add the difference as a new
-   migration). Pulseform code never writes to `auth`; Better Auth never touches `pulseform`.
+   migration). StokeForm code never writes to `auth`; Better Auth never touches `stokeform`.
 2. Better Auth is configured with `schemaName: 'auth'`, so it queries `auth.*` explicitly; no
    `search_path` setting is needed.
-3. `pulseform.*.user_id` is `text`, matching Better Auth's string user id. `0007` gives every root
+3. `stokeform.*.user_id` is `text`, matching Better Auth's string user id. `0007` gives every root
    table's `user_id` a `REFERENCES auth."user"(id) ON DELETE CASCADE`, so deleting an account deletes
    all its data, and no row can belong to a user that doesn't exist.
 4. No custom password or session tables are defined here, on purpose. Google sign-in and
@@ -48,7 +48,7 @@ Rules that keep them from colliding:
 
 ## Tables
 
-All in schema `pulseform`; every table below also has `user_id` leading its key.
+All in schema `stokeform`; every table below also has `user_id` leading its key.
 
 | Table | Domain source (local key) | Key columns and rules |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ could disagree with the entries it came from.
 | --- | --- |
 | **InBody report images** and the raw AI extraction | Memory only today. If images are ever kept, in **private Cloudflare R2** with a key reference. The extraction server already streams, never writes to disk, and sends `store: false`. |
 | **Profile photo** (today a data URL in `fitness.identity`) | Private R2 object; only `avatar_object_key` is stored. The schema has no `bytea` column and no image-named column (a test enforces both). |
-| **Passwords, sessions, OAuth tokens** | Better Auth's `auth` schema, never `pulseform`. |
+| **Passwords, sessions, OAuth tokens** | Better Auth's `auth` schema, never `stokeform`. |
 | **The OpenAI key, `DATABASE_URL` and other secrets** | Secret Manager / git-ignored `.env`, never rows, logs or the image. |
 | **Derived numbers** (totals, assessment, age, streak, review) | Recomputed from rows. |
 | **Onboarding draft** (`fitness.onboarding-progress`) | Stays on the device: it is transient and resumable per install. |

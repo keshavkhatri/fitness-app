@@ -29,7 +29,6 @@ import {
   weightInUnit,
   weightUnitLabel,
 } from '../../../domain/fitness-profile';
-import { normalizeName } from '../../../core/identity/user-identity.service';
 import { OnboardingDraft } from '../state/onboarding-draft';
 import { OnboardingStepId, applicableSteps } from '../state/onboarding-steps';
 
@@ -59,7 +58,7 @@ export function validateStep(stepId: OnboardingStepId, draft: OnboardingDraft): 
   const required = STEP_REQUIRED_MESSAGES[stepId] ?? null;
   switch (stepId) {
     case 'basics':
-      return draft.name && draft.basics.dateOfBirth && draft.basics.sex ? null : required;
+      return draft.basics.dateOfBirth && draft.basics.sex ? null : required;
     case 'height':
       return draft.basics.height ? null : required;
     case 'weight':
@@ -94,38 +93,32 @@ export function firstIncompleteStep(draft: OnboardingDraft): OnboardingStepId | 
   return step?.id ?? null;
 }
 
-// --- About you: name, date of birth, sex -------------------------------------------
+// --- About you: date of birth, sex (the name comes from the account) -------------
 
 /** The body details a report can speak to; one note each (see report-review). */
 export type BasicsField = 'dateOfBirth' | 'sex' | 'height' | 'weight';
 
-export type AboutField = 'name' | 'dateOfBirth' | 'sex';
+export type AboutField = 'dateOfBirth' | 'sex';
 export type AboutErrors = Partial<Record<AboutField, string>>;
 
 /** Raw form state: kept as entered until validated. */
 export interface AboutFormInput {
-  readonly name: string;
   /** From the platform date picker: YYYY-MM-DD, or '' while incomplete. */
   readonly birthDate: string;
   readonly sex: Sex | null;
 }
 
 export interface AboutAnswers {
-  readonly name: string;
   readonly dateOfBirth: IsoCalendarDate;
   readonly sex: Sex;
 }
 
 export function aboutFormFromDraft(draft: OnboardingDraft): AboutFormInput {
-  return { name: draft.name ?? '', birthDate: draft.basics.dateOfBirth ?? '', sex: draft.basics.sex };
+  return { birthDate: draft.basics.dateOfBirth ?? '', sex: draft.basics.sex };
 }
 
 export function validateAboutForm(input: AboutFormInput, now: Date = new Date()): ValidationResult<AboutAnswers, AboutErrors> {
   const errors: AboutErrors = {};
-  const name = normalizeName(input.name);
-  if (!name) {
-    errors.name = 'Add your name to continue.';
-  }
   const dob = validateBirthDateInput(input.birthDate, now);
   if (!dob.ok) {
     errors.dateOfBirth = dob.errors;
@@ -133,10 +126,10 @@ export function validateAboutForm(input: AboutFormInput, now: Date = new Date())
   if (!input.sex) {
     errors.sex = 'Choose an option.';
   }
-  if (!name || !dob.ok || !input.sex) {
+  if (!dob.ok || !input.sex) {
     return { ok: false, errors };
   }
-  return { ok: true, value: { name, dateOfBirth: dob.value, sex: input.sex } };
+  return { ok: true, value: { dateOfBirth: dob.value, sex: input.sex } };
 }
 
 /**

@@ -6,8 +6,8 @@ const NOW = new Date(2026, 9, 7);
 
 describe('buildSummaryRows', () => {
   it('summarises the profile in metric', () => {
+    // No name: it comes from the account (and is changed in You), not the questionnaire.
     expect(asMap(buildSummaryRows(completeDraft(), NOW))).toEqual({
-      name: 'Alex',
       goal: 'Lose fat',
       age: '35 years',
       sex: 'Female',
@@ -25,7 +25,7 @@ describe('buildSummaryRows', () => {
 
   it('lists answers in the order they are asked, and marks unanswered ones', () => {
     expect(buildSummaryRows(completeDraft(), NOW).map((r) => r.id)).toEqual([
-      'name', 'age', 'sex', 'height', 'weight', 'units', 'activity', 'goal', 'target-weight', 'experience', 'training', 'location', 'equipment',
+      'age', 'sex', 'height', 'weight', 'units', 'activity', 'goal', 'target-weight', 'experience', 'training', 'location', 'equipment',
     ]);
     const partial = asMap(buildSummaryRows(completeDraft({ basics: { ...completeDraft().basics, weight: null } }), NOW));
     expect(partial['weight']).toBe('Not answered');
@@ -57,7 +57,6 @@ describe('buildSummaryRows', () => {
   it('links each row to the step that edits it', () => {
     const rows = buildSummaryRows(completeDraft());
     expect(Object.fromEntries(rows.map((r) => [r.id, r.editStep]))).toMatchObject({
-      name: 'basics',
       age: 'basics',
       sex: 'basics',
       height: 'height',
@@ -73,7 +72,7 @@ describe('buildSummaryRows', () => {
 describe('groupSummaryRows', () => {
   it('puts every row in exactly one group, keeping order', () => {
     const rows = [
-      { id: 'name', label: 'Name', value: 'Alex', editStep: 'basics' },
+      { id: 'sex', label: 'Sex', value: 'Female', editStep: 'basics' },
       { id: 'goal', label: 'Goal', value: 'Lose fat', editStep: 'goal' },
       { id: 'age', label: 'Age', value: '31 years', editStep: 'basics' },
       { id: 'experience', label: 'Experience', value: 'Beginner', editStep: 'experience' },
@@ -82,7 +81,7 @@ describe('groupSummaryRows', () => {
     ] as const;
     const groups = groupSummaryRows(rows);
     expect(groups.map((g) => [g.title, g.rows.map((r) => r.id)])).toEqual([
-      ['Personal details', ['name', 'age', 'activity']],
+      ['Personal details', ['sex', 'age', 'activity']],
       ['Goal', ['goal', 'target-weight']],
       ['Training', ['experience']],
     ]);

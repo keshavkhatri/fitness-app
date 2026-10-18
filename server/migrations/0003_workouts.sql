@@ -3,7 +3,7 @@
 -- key facts as columns, not exploded into tables: nothing queries inside it, and history never
 -- depends on it (a performed workout snapshots its own exercises, see workout_logs).
 -- The plan id is a hash of its inputs, so two users can hold the same id: ids are unique per user.
-CREATE TABLE pulseform.workout_plans (
+CREATE TABLE stokeform.workout_plans (
   user_id                      text NOT NULL,
   id                           text NOT NULL,
   workout_programming_version  text NOT NULL CHECK (workout_programming_version IN ('v2')),
@@ -18,12 +18,12 @@ CREATE TABLE pulseform.workout_plans (
   PRIMARY KEY (user_id, id)
 );
 -- At most one current plan per user (older plans may be kept).
-CREATE UNIQUE INDEX workout_plans_one_current ON pulseform.workout_plans (user_id) WHERE is_current;
+CREATE UNIQUE INDEX workout_plans_one_current ON stokeform.workout_plans (user_id) WHERE is_current;
 
 -- A performed workout (domain: WorkoutLog). Independent of the plan afterwards. plan_id and
 -- session_id record where it came from but are not foreign keys: the plan may be regenerated
 -- or removed and the history must remain.
-CREATE TABLE pulseform.workout_logs (
+CREATE TABLE stokeform.workout_logs (
   user_id                      text NOT NULL,
   id                           text NOT NULL,
   plan_id                      text NOT NULL,
@@ -40,10 +40,10 @@ CREATE TABLE pulseform.workout_logs (
   CONSTRAINT completed_iff_finished CHECK ((status = 'completed') = (completed_at IS NOT NULL))
 );
 -- One workout in progress at a time (the app resumes it).
-CREATE UNIQUE INDEX workout_logs_one_in_progress ON pulseform.workout_logs (user_id) WHERE status = 'in-progress';
-CREATE INDEX workout_logs_history ON pulseform.workout_logs (user_id, completed_at DESC) WHERE status = 'completed';
+CREATE UNIQUE INDEX workout_logs_one_in_progress ON stokeform.workout_logs (user_id) WHERE status = 'in-progress';
+CREATE INDEX workout_logs_history ON stokeform.workout_logs (user_id, completed_at DESC) WHERE status = 'completed';
 
-CREATE TABLE pulseform.workout_log_exercises (
+CREATE TABLE stokeform.workout_log_exercises (
   user_id          text NOT NULL,
   log_id           text NOT NULL,
   position         integer NOT NULL CHECK (position >= 1),          -- the exercise's order
@@ -58,14 +58,14 @@ CREATE TABLE pulseform.workout_log_exercises (
   rest_seconds     integer NOT NULL CHECK (rest_seconds >= 0),
   per_side         boolean NOT NULL DEFAULT false,
   PRIMARY KEY (user_id, log_id, position),
-  FOREIGN KEY (user_id, log_id) REFERENCES pulseform.workout_logs (user_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id, log_id) REFERENCES stokeform.workout_logs (user_id, id) ON DELETE CASCADE,
   CONSTRAINT target_matches_kind CHECK (
     (target_kind = 'reps' AND target_min_reps IS NOT NULL AND target_max_reps IS NOT NULL AND target_seconds IS NULL)
     OR (target_kind = 'time' AND target_seconds IS NOT NULL AND target_min_reps IS NULL AND target_max_reps IS NULL)
   )
 );
 
-CREATE TABLE pulseform.workout_log_sets (
+CREATE TABLE stokeform.workout_log_sets (
   user_id            text NOT NULL,
   log_id             text NOT NULL,
   exercise_position  integer NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE pulseform.workout_log_sets (
   completed_at       timestamptz,
   PRIMARY KEY (user_id, log_id, exercise_position, set_number),
   FOREIGN KEY (user_id, log_id, exercise_position)
-    REFERENCES pulseform.workout_log_exercises (user_id, log_id, position) ON DELETE CASCADE,
+    REFERENCES stokeform.workout_log_exercises (user_id, log_id, position) ON DELETE CASCADE,
   -- Set status is explicit: values and a completion time exist only on completed sets.
   CONSTRAINT values_only_when_completed CHECK (
     CASE WHEN status = 'completed'

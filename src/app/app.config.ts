@@ -1,8 +1,9 @@
 import { ApplicationConfig, inject, provideAppInitializer } from '@angular/core';
-import { PreloadAllModules, RouteReuseStrategy, provideRouter, withComponentInputBinding, withPreloading } from '@angular/router';
+import { PreloadAllModules, RouteReuseStrategy, TitleStrategy, provideRouter, withComponentInputBinding, withPreloading } from '@angular/router';
 import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
 
 import { routes } from './app.routes';
+import { BrandTitleStrategy } from './core/brand-title.strategy';
 import { registerAppIcons } from './core/icons/register-icons';
 import { AuthService } from './core/auth/auth.service';
 import { trackTextScale } from './core/text-scale/text-scale';
@@ -29,6 +30,7 @@ const ionicConfig: Parameters<typeof provideIonicAngular>[0] = {
 export const appConfig: ApplicationConfig = {
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    { provide: TitleStrategy, useExisting: BrandTitleStrategy },
     provideIonicAngular(ionicConfig),
     provideRouter(routes, withPreloading(PreloadAllModules), withComponentInputBinding()),
     provideAppInitializer(() => {

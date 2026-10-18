@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { UserIdentityService } from '../../../core/identity/user-identity.service';
+import { FirstRunOfferService } from '../../../core/entitlements/first-run-offer.service';
 import { FitnessProfileService } from '../../../core/profile/fitness-profile.service';
 import { UserFitnessProfile } from '../../../domain/fitness-profile';
 import { firstIncompleteStep, validateStep } from '../validation/onboarding-validation';
@@ -36,7 +36,7 @@ const EDIT_FOLLOW_UPS: Partial<Record<OnboardingStepId, OnboardingStepId>> = {
 export class OnboardingFlow {
   private readonly store = inject(OnboardingProgressStore);
   private readonly profiles = inject(FitnessProfileService);
-  private readonly identity = inject(UserIdentityService);
+  private readonly offer = inject(FirstRunOfferService);
 
   private readonly state = signal<OnboardingProgress>(INITIAL_PROGRESS);
 
@@ -58,7 +58,7 @@ export class OnboardingFlow {
 
   readonly canGoBack = computed(() => {
     const kind = this.step().kind;
-    return (kind === 'question' || kind === 'review') && this.saveStatus() !== 'saving';
+    return (kind === 'question' || kind === 'review' || kind === 'account') && this.saveStatus() !== 'saving';
   });
 
   /** Loads saved progress once. */
@@ -131,6 +131,20 @@ export class OnboardingFlow {
     }
   }
 
+  /**
+   * First run: from the summary to the account gate, once every answer is complete. Nothing is saved
+   * yet: the profile (and so the assessment and plan) is created only from the account step.
+   */
+  continueToAccount(): boolean {
+    const incomplete = firstIncompleteStep(this.draft());
+    if (incomplete) {
+      this.goTo(incomplete, true);
+      return false;
+    }
+    this.goTo('account', false);
+    return true;
+  }
+
   /** Opens a section from the summary for editing. */
   edit(stepId: OnboardingStepId): void {
     this.goTo(stepId, true);
@@ -161,28 +175,15 @@ export class OnboardingFlow {
       return false;
     }
     this.saveStatus.set('idle');
-    await this.saveName(draft.name);
+    // The name is the account's (set at the account step) or edited in You: never written from here.
     await this.store.clear().catch(() => undefined);
     if (this.mode() === 'new') {
+      // A new user sees the plan offer once, after their assessment (the profile editor never does).
+      await this.offer.markPending();
       // Not persisted: progress was just cleared and the profile now exists.
       this.state.set({ ...this.state(), stepId: 'finish', editingFromSummary: false });
     }
     return true;
-  }
-
-  /**
-   * Saves the name for Home's greeting, keeping any photo. Cosmetic: a failed
-   * write never undoes the saved profile (the name can be set again in You).
-   */
-  private async saveName(name: string | null): Promise<void> {
-    try {
-      const current = await this.identity.load();
-      if (current.name !== name) {
-        await this.identity.save({ name, photo: current.photo });
-      }
-    } catch {
-      // Not critical.
-    }
   }
 
   private goTo(stepId: OnboardingStepId, editingFromSummary: boolean): void {

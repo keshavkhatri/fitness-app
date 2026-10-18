@@ -1,0 +1,65 @@
+@use 'mixins' as fx;
+@use 'step';
+
+:host {
+  @include step.host;
+}
+
+.header {
+  @include step.header;
+}
+
+.title {
+  @include step.title;
+}
+
+.helper {
+  @include step.helper;
+}
+
+.local-data {
+  @include fx.text(body-sm);
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+
+  ion-icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--color-primary-text);
+    font-size: var(--icon-size-md);
+  }
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pending {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.switch {
+  @include fx.text(body);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.link {
+  @include fx.focus-ring;
+  padding: var(--space-2) var(--space-1);
+  border: 0;
+  background: none;
+  color: var(--color-primary-text);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}

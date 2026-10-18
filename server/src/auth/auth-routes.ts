@@ -290,13 +290,13 @@ const GOOGLE_FAILURES: Readonly<Record<string, string>> = {
 function emailVerifiedPage(errorCode: string | null): Response {
   const [title, message] =
     errorCode === null
-      ? ['Email confirmed', 'Your email address is confirmed. Go back to the Pulseform app and sign in with your email and password.']
+      ? ['Email confirmed', 'Your email address is confirmed. Go back to the StokeForm app and sign in with your email and password.']
       : errorCode === 'TOKEN_EXPIRED'
-        ? ['This link has expired', 'Open the Pulseform app and sign in with your email and password: we will email you a new link.']
-        : ["This link isn't valid", 'It may be incomplete or already replaced. Open the Pulseform app and sign in to get a new link.'];
+        ? ['This link has expired', 'Open the StokeForm app and sign in with your email and password: we will email you a new link.']
+        : ["This link isn't valid", 'It may be incomplete or already replaced. Open the StokeForm app and sign in to get a new link.'];
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title} · Pulseform</title>
+<title>${title} · StokeForm</title>
 <style>body{margin:0;font-family:system-ui,sans-serif;background:#f4f3ef;color:#1a1a1a}main{max-width:28rem;margin:0 auto;padding:3rem 1rem}h1{font-size:1.6rem}p{line-height:1.5}
 @media (prefers-color-scheme:dark){body{background:#111;color:#eee}}</style></head>
 <body><main><h1>${title}</h1><p>${message}</p></main></body></html>`;
@@ -322,7 +322,7 @@ function resetPasswordPage(): Response {
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer"><meta name="robots" content="noindex">
-<title>Choose a new password · Pulseform</title>
+<title>Choose a new password · StokeForm</title>
 <style nonce="${nonce}">
 :root{color-scheme:light dark}
 body{margin:0;font-family:system-ui,sans-serif;background:#f4f3ef;color:#1a1a1a}
@@ -341,7 +341,7 @@ button[disabled]{opacity:.6;cursor:default}
 <body><main>
 <h1 id="title">Choose a new password</h1>
 <div id="form-area">
-<p>Choose a new password for your Pulseform account. You will be signed out of your other devices.</p>
+<p>Choose a new password for your StokeForm account. You will be signed out of your other devices.</p>
 <form id="form" novalidate>
 <label for="password">New password</label>
 <input id="password" type="password" autocomplete="new-password" minlength="${MIN_PASSWORD_LENGTH}" maxlength="${MAX_PASSWORD_LENGTH}">
@@ -352,9 +352,9 @@ button[disabled]{opacity:.6;cursor:default}
 <button id="submit" type="submit">Change password</button>
 </form>
 </div>
-<p id="done" hidden>Your password was changed. Go back to the Pulseform app and sign in with your new password.</p>
+<p id="done" hidden>Your password was changed. Go back to the StokeForm app and sign in with your new password.</p>
 <div id="invalid" hidden>
-<p>This link has expired, was already used, or isn't valid. Open the Pulseform app, choose Sign in, then "Forgot your password?" to get a new link. Links work once, for ${PASSWORD_RESET_MINUTES} minutes.</p>
+<p>This link has expired, was already used, or isn't valid. Open the StokeForm app, choose Sign in, then "Forgot your password?" to get a new link. Links work once, for ${PASSWORD_RESET_MINUTES} minutes.</p>
 </div>
 <script nonce="${nonce}">
 (function () {
@@ -383,7 +383,7 @@ button[disabled]{opacity:.6;cursor:default}
           else { fail("Something went wrong. Try again in a moment."); }
         });
       })
-      .catch(function () { fail("Couldn't reach Pulseform. Check your connection and try again."); })
+      .catch(function () { fail("Couldn't reach StokeForm. Check your connection and try again."); })
       .then(function () { $('submit').disabled = false; $('submit').textContent = 'Change password'; });
   });
 })();

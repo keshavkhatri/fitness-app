@@ -15,6 +15,7 @@ export const ONBOARDING_STEP_IDS = [
   'location',
   'equipment',
   'summary',
+  'account',
   'finish',
 ] as const;
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];
@@ -25,9 +26,11 @@ export const isOnboardingStepId = (value: unknown): value is OnboardingStepId =>
 /**
  * - intro/done: no progress indicator, no back navigation into them.
  * - question: counted in progress, validated before continuing.
- * - review: the summary; its primary action creates the profile.
+ * - review: the summary; its primary action moves on to the account (first run) or saves (profile editor).
+ * - account: the account gate. The profile is created only from here, once signed in, so personalised
+ *   results and the plan are never shown without an account. Not counted in progress.
  */
-export type OnboardingStepKind = 'intro' | 'question' | 'review' | 'done';
+export type OnboardingStepKind = 'intro' | 'question' | 'review' | 'account' | 'done';
 
 export interface OnboardingStep {
   readonly id: OnboardingStepId;
@@ -46,7 +49,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
     // Only for users who chose to upload a report; manual entry never sees it.
     isApplicable: (draft) => draft.setupMethod === 'report',
   },
-  // Name (for Home's greeting, saved apart from the profile), sex and date of birth.
+  // Sex and date of birth (the name comes from the account, after the questionnaire).
   { id: 'basics', kind: 'question', primaryAction: 'Continue' },
   { id: 'height', kind: 'question', primaryAction: 'Continue' },
   { id: 'weight', kind: 'question', primaryAction: 'Continue' },
@@ -63,7 +66,8 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   { id: 'frequency', kind: 'question', primaryAction: 'Continue' },
   { id: 'location', kind: 'question', primaryAction: 'Continue' },
   { id: 'equipment', kind: 'question', primaryAction: 'Continue' },
-  { id: 'summary', kind: 'review', primaryAction: 'Create my profile' },
+  { id: 'summary', kind: 'review', primaryAction: 'Continue' },
+  { id: 'account', kind: 'account', primaryAction: 'Create my profile' },
   { id: 'finish', kind: 'done', primaryAction: 'See my starting point' },
 ];
 

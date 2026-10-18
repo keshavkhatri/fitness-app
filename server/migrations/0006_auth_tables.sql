@@ -6,7 +6,7 @@
 -- if it would want anything more: a Better Auth upgrade that changes its schema needs a new
 -- migration here, never `npx auth migrate` against a shared database.
 --
--- Column names are Better Auth's (camelCase, quoted). Its ids are text, like pulseform's user_id.
+-- Column names are Better Auth's (camelCase, quoted). Its ids are text, like stokeform's user_id.
 -- Passwords are stored by Better Auth as salted scrypt hashes in account.password, never plain.
 
 CREATE SCHEMA IF NOT EXISTS auth;

@@ -10,7 +10,7 @@ import type { SqlClient } from '../db/migrations';
  *  - its only sign-in method is a password (a `credential` account, and no Google or other provider);
  *  - it has no session, ever (an account that was used is not a leftover);
  *  - it has no unexpired verification row (a password reset or confirmation in progress);
- *  - no row in any table that references `auth."user"` outside the `auth` schema (every Pulseform data
+ *  - no row in any table that references `auth."user"` outside the `auth` schema (every StokeForm data
  *    table). These tables are discovered from the database's own foreign keys, so a table added later is
  *    protected without touching this file. If none can be found the job refuses to delete anything.
  *

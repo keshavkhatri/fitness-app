@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img" aria-label="StokeForm">
+  <title>StokeForm</title>
+  <!-- The app icon: the mark on the app's ink (#151714) tile. Generated rasters come from scripts/generate-brand-assets.mjs. -->
+  <rect width="108" height="108" rx="24" fill="#151714"/>
+  <g transform="translate(-7 3)">
+    <path d="M68 34C61 25 38 26 38 41C38 57 68 52 68 69C68 86 44 87 35 77" fill="none" stroke="#C5F36B" stroke-width="13.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M83 15l3.2 8.3 8.3 3.2-8.3 3.2L83 38l-3.2-8.3-8.3-3.2 8.3-3.2z" fill="#C5F36B"/>
+  </g>
+</svg>

@@ -726,6 +726,38 @@ Shared chrome lives in `src/theme/_tracking.scss` and is applied by host class:
   body changes) / Trends (training, nutrition) / Insights (focus actions) over the existing
   review view model, plus **View detailed progress** (Progress).
 
+## Brand: StokeForm
+
+The product name is **StokeForm** (one word, capital S and F). Concept: energy, strength, personal transformation and measurable progress. Scope: workout planning and
+logging, nutrition and calorie tracking, InBody/body-composition analysis, assessments and progress tracking.
+
+**The mark** is an "S" (to *stoke*, to feed a fire) with a spark (energy): a thick round-capped lime stroke plus a
+four-point star, on the app's ink tile. Colours come from the existing palette, nothing new: ink `#151714`, lime
+`#C5F36B` (the warm theme's `primary`), warm background `#F5F4EE`. The in-app wordmark stays plain text in the
+existing header style (`APP_BRAND`, shown on Home and the welcome step).
+
+| Where the name lives | File |
+| --- | --- |
+| In-app wordmark and tab title | `src/app/core/brand.ts` (`APP_BRAND`), `core/brand-title.strategy.ts` ("<screen> · StokeForm"), `src/index.html` |
+| Capacitor and Android launcher name | `capacitor.config.ts` (`appName`), `android/app/src/main/res/values/strings.xml` (`app_name`, `title_activity_main`) |
+| Server emails, confirmation and reset pages, Better Auth app name | `server/src/auth/email.ts`, `auth-routes.ts`, `auth.ts` |
+| Google sign-in consent screen | Google Cloud Console (named "StokeForm") |
+
+**Assets.** The sources are `src/assets/brand/stokeform-mark.svg` (the artwork) and `stokeform-icon.svg` (mark on
+the tile); `src/assets/icon/favicon.svg` is a copy. Run `npm run brand:assets` to regenerate every raster from the
+mark: the favicon, the Android launcher icons (legacy square, round and adaptive foreground, in all five
+densities), the adaptive-icon background colour and vector files, and the splash images (portrait and landscape,
+all densities). It needs only Chrome (set `CHROME_PATH` if it isn't in a standard location). The adaptive
+foreground keeps the mark inside the 66 dp safe zone so no launcher mask crops it. After regenerating: `npx cap
+sync android` and rebuild the APK.
+
+**Not named after the brand, on purpose:** the Android `applicationId` `com.fitnessapp.app` (it is the installed
+app's identity, its signing lineage, and the Google sign-in deep link `com.fitnessapp.app://auth/callback`) and
+the root npm package name `fitness-app`. Everything else that carried a placeholder name (the Postgres schema
+`stokeform`, the server package `stokeform-server`, the secure-storage key prefix `stokeform.auth.`) was renamed
+before launch. A future move to a new application id would be a separate migration: Android treats it as a
+different app, so it means a new store listing.
+
 ## Open design decisions
 
 - Domain hues (ember for training, teal for body) stay alongside lime
@@ -740,14 +772,14 @@ Shared chrome lives in `src/theme/_tracking.scss` and is applied by host class:
 
 ## First-run onboarding
 
-`/onboarding` (`features/onboarding`): twelve screens on the warm (lime) dashboard theme, with a
+`/onboarding` (`features/onboarding`): thirteen screens on the warm (lime) dashboard theme, with a
 dark welcome. Progress is the slim bar and `n/total` in the header (question and review screens
 only); Continue sits in the footer above the safe area. Copy states only what the app does.
 
 - **Welcome**: dark backdrop (a placeholder until a photo ships; `onboarding-media.ts`), the brand
   from `APP_BRAND`, four benefits, *Get started*; *Set up from an InBody report instead* when the
   build can read reports.
-- **About you**: name, sex as three cards (generic symbols until avatar artwork ships), date of birth
+- **About you**: sex as three cards (generic symbols until avatar artwork ships), date of birth
   from the platform date picker (18+).
 - **Height**: vertical `fit-ruler` (26 px per cm or inch, higher is up) beside a placeholder
   figure; *cm / ft in* switch; *Enter manually* opens typed fields that stay in step with the ruler.
@@ -756,8 +788,14 @@ only); Continue sits in the footer above the safe area. Copy states only what th
   picture (`media`; placeholders today). **Days per week**: `circles` layout, 2–6 (the domain's
   `TRAINING_DAYS_PER_WEEK`), with a tip. **Equipment**: 3-column icon tiles (multiple).
 - **Review**: grouped rows (icon, label, value, chevron); each opens its screen and returns.
-- **Complete**: says the plan is ready only after `WorkoutPlanService` made it; continues to the
-  assessment.
+- **Account**: the gate before the profile exists (no progress bar). Signed out: a note that data stays
+  on the device, *Continue with Google*, *Create account with email* and *Sign in* (the existing
+  account screens, returning with `next=/onboarding`); the footer button is hidden. Signed in: the
+  account's name (or one field asking for it, once) and *Create my profile*. Accounts off: an info
+  notice and *Continue without an account*.
+- **Complete**: says the plan is ready only after `WorkoutPlanService` made it, shows the real
+  training week (a row per planned day), and continues to the assessment. The plan offer (`/offer`)
+  follows the assessment once.
 
 Not built (no data behind it): a nutrition-preference screen and the BMI "visual reference" under
 the weight ruler.
@@ -941,3 +979,24 @@ screen's own specification above, and the other screens.
   History's list view; Weight / Measurement *new* in light.
 - Exercise demonstration photos (they load from a CDN on request), screen reader
   output, reduced motion, large text and keyboard-only navigation.
+
+## First-run journey QA (18 Oct 2026)
+
+Headless Chrome over the DevTools protocol against the dev server, with the account endpoints mocked
+in the page (no request reached the real backend). Not saved in the repo; screenshots were looked at
+for the account step, finish, offer and pending-email screens.
+
+- **Widths:** 320, 360, 390 and 430 CSS px, light; 320 and 390 also dark; 320 with a 340 px-tall
+  (keyboard-sized) viewport for the sign-in, sign-up and name fields.
+- **Screens:** welcome; every question; review; account (signed out, signed in, signed in without a
+  name); email sign-in, sign-up, pending-confirmation and forgot-password; finish with the plan
+  preview; assessment; offer; You; Home.
+- **Result:** no horizontal page overflow, no clipped labels, the footer button inside the viewport
+  and every tap target at least 40 px at every width, except Home's two section-title links
+  (*Nutrition*, *This week*; 32 px high, not part of the first-run screens). The only measured overshoot is the welcome
+  backdrop's decorative placeholder icon (7–10 px past the edge, clipped by its own container, hidden
+  from assistive tech). Inputs stay visible when the viewport is keyboard-sized.
+- **Left alone:** the offer's Free card lists all thirteen free features, so Premium sits below the
+  first screen at 320 px (scrolls). A design call, not a defect.
+- **Not covered:** a real device (safe-area insets, the real keyboard, Android Back), Ionic `ios` and
+  `md` modes, and tablet layouts.

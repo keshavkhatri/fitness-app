@@ -164,6 +164,28 @@ export class AuthService {
     }
   }
 
+  /**
+   * Gives the signed-in account a display name (asked once when the account has none). Updates the
+   * server first; the stored copy and state change only if it accepted.
+   */
+  async updateName(name: string): Promise<AuthResult<AccountUser>> {
+    const session = await this.readSession();
+    if (!session) {
+      return { ok: false, error: 'invalid-credentials' };
+    }
+    const result = await this.api.updateName(session.token, name);
+    if (!result.ok) {
+      return result;
+    }
+    const user: AccountUser = { ...session.user, name };
+    await this.store.set(SESSION_KEY, JSON.stringify({ token: session.token, user }));
+    const state = this.current();
+    if (state.status === 'signed-in') {
+      this.current.set({ ...state, user });
+    }
+    return { ok: true, value: user };
+  }
+
   /** Opens Google sign-in: Custom Tabs on Android (the answer returns through the deep link), a redirect on the web. */
   async startGoogle(): Promise<AuthResult<void>> {
     const verifier = createVerifier();

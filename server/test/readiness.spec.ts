@@ -22,13 +22,13 @@ describe('GET /ready (database readiness)', () => {
 
   it('answers 503 and leaks nothing when the check throws', async () => {
     const throwing = async () => {
-      throw new Error('connect ECONNREFUSED 10.1.2.3:5432 for user app_user password=s3cret relation "pulseform.user_profiles"');
+      throw new Error('connect ECONNREFUSED 10.1.2.3:5432 for user app_user password=s3cret relation "stokeform.user_profiles"');
     };
     const response = await get(handler(throwing), '/ready');
     const text = await response.text();
     expect(response.status).toBe(503);
     expect(text).toBe('{"status":"unavailable"}');
-    expect(text).not.toMatch(/ECONNREFUSED|10\.1\.2\.3|s3cret|app_user|pulseform/);
+    expect(text).not.toMatch(/ECONNREFUSED|10\.1\.2\.3|s3cret|app_user|stokeform/);
   });
 
   it('is unavailable, not an error, when no database is configured', async () => {

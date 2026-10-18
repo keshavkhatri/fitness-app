@@ -1,8 +1,8 @@
 {
-  "name": "pulseform-inbody-server",
+  "name": "stokeform-server",
   "version": "0.0.1",
   "private": true,
-  "description": "InBody extraction and (later) Pulseform data server. Its own manifest keeps the container build reproducible; the repository root scripts (server:*) drive local runs.",
+  "description": "InBody extraction and (later) StokeForm data server. Its own manifest keeps the container build reproducible; the repository root scripts (server:*) drive local runs.",
   "scripts": {
     "build": "node build.mjs"
   },

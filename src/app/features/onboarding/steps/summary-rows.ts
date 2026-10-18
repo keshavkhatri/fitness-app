@@ -35,7 +35,6 @@ export function buildSummaryRows(draft: OnboardingDraft, now: Date = new Date())
 
   // In the order the questions are asked.
   const rows: SummaryRow[] = [
-    { id: 'name', label: 'Name', value: draft.name ?? MISSING, editStep: 'basics', icon: 'person-outline' },
     { id: 'age', label: 'Age', value: age !== null ? `${age} years` : MISSING, editStep: 'basics', icon: 'calendar-outline' },
     { id: 'sex', label: 'Sex', value: basics.sex ? labelFor(SEX_OPTIONS, basics.sex) : MISSING, editStep: 'basics', icon: 'body-outline' },
     {
@@ -121,7 +120,6 @@ export interface SummaryGroup {
 }
 
 const GROUP_OF: Readonly<Record<string, SummaryGroup['id']>> = {
-  name: 'personal',
   age: 'personal',
   sex: 'personal',
   height: 'personal',

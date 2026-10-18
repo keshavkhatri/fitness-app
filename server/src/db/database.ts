@@ -21,7 +21,7 @@ export function clientConfig(config: DatabaseConfig): ClientConfig {
     connectionTimeoutMillis: config.connectTimeoutMs,
     statement_timeout: config.statementTimeoutMs,
     query_timeout: config.statementTimeoutMs + 5_000,
-    application_name: 'pulseform-api',
+    application_name: 'stokeform-api',
     keepAlive: true,
     ...(config.options ? { options: config.options } : {}),
   };

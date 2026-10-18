@@ -72,6 +72,17 @@ describe('YouPage', () => {
     });
   });
 
+  it('shows the plan (Free until the store confirms Premium) and opens the plan screen, returning to You', () => {
+    TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
+    const forward = vi.spyOn(TestBed.inject(NavController), 'navigateForward').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(YouPage);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(clean(el.querySelector('[data-testid=plan-name]')!)).toBe('Free');
+    el.querySelector<HTMLElement>('[data-testid=plan-entry]')!.click();
+    expect(forward).toHaveBeenCalledExactlyOnceWith('/offer', { queryParams: { next: '/you' } });
+  });
+
   it('Quick add (moved from the tab bar) opens the Quick Add sheet', () => {
     TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
     const fixture = TestBed.createComponent(YouPage);

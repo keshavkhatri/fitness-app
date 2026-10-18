@@ -105,3 +105,66 @@
     font-weight: var(--font-weight-semibold);
   }
 }
+
+// The real plan, one row per planned day.
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-5);
+  text-align: start;
+}
+
+.preview-title {
+  @include fx.text(h3, bold);
+  margin: 0;
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.day-index {
+  @include fx.text(body-sm, bold);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+.day-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.day-name {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.day-detail,
+.preview-note {
+  @include fx.text(body-sm);
+  margin: 0;
+  color: var(--color-text-secondary);
+}

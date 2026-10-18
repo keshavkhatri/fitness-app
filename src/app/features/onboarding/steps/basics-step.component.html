@@ -37,17 +37,6 @@
 }
 
 <div class="fields">
-  <fit-text-field
-    #nameField
-    label="Your name"
-    autocomplete="given-name"
-    hint="We'll use it to greet you."
-    [maxLength]="nameMaxLength"
-    [value]="f.name"
-    (valueChange)="patch({ name: $event })"
-    [error]="e.name"
-  />
-
   <div class="field-group">
     <span class="group-label" id="sex-label">Sex</span>
     <fit-choice-group

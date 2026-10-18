@@ -14,6 +14,8 @@ export abstract class OnboardingStepForm {
   readonly primaryLabel?: Signal<string | null>;
   /** True while the step is working (e.g. uploading): the primary action is disabled. */
   readonly busy?: Signal<boolean>;
+  /** True when the step offers its own choices instead (the account gate while signed out): the primary action is hidden. */
+  readonly primaryHidden?: Signal<boolean>;
 
   /** Returns true when the step's answers are valid and committed. */
   abstract submit(): boolean;

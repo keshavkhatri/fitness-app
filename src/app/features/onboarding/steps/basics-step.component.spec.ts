@@ -41,50 +41,48 @@ function setup() {
 }
 
 describe('BasicsStepComponent (about you)', () => {
-  it('asks for name, sex (as cards) and date of birth (date picker, no later than today)', () => {
+  it('asks for sex (as cards) and date of birth (date picker, no later than today), not a name', () => {
     const { el, field } = setup();
+    // The name comes from the account after the questionnaire.
+    expect(el.querySelectorAll('fit-text-field')).toHaveLength(1);
+    expect(el.textContent).not.toContain('Your name');
     expect(el.querySelector('h1')?.textContent).toContain("Let's get to know you");
     expect([...el.querySelectorAll('fit-choice-group .title')].map((t) => t.textContent?.trim())).toEqual(['Male', 'Female', 'Prefer not to say']);
     expect(field('Date of birth').type).toBe('date');
     expect(field('Date of birth').max).toBe('2026-10-07');
   });
 
-  it('shows inline, accessible errors only after the first submit, and focuses the first problem', () => {
+  it('shows inline, accessible errors only after the first submit', () => {
     const { el, field, submit } = setup();
-    expect(el.textContent).not.toContain('Add your name');
+    expect(el.textContent).not.toContain('Choose an option.');
 
     expect(submit()).toBe(false);
 
-    const name = field('Your name');
-    expect(name.getAttribute('aria-invalid')).toBe('true');
-    expect(document.activeElement).toBe(name);
-    expect(el.textContent).toContain('Add your name to continue.');
     expect(el.textContent).toContain('Choose an option.');
     expect(el.textContent).toContain('Enter your date of birth.');
+    expect(field('Date of birth').getAttribute('aria-invalid')).toBe('true');
   });
 
   it('clears an error as soon as the field is fixed', () => {
     const { el, type, submit } = setup();
     submit();
-    type('Your name', 'Alex');
-    expect(el.textContent).not.toContain('Add your name to continue.');
+    type('Date of birth', '1994-01-12');
+    expect(el.textContent).not.toContain('Enter your date of birth.');
   });
 
   it('commits valid answers, keeping height and weight answered elsewhere', () => {
     const { type, choose, submit, flow } = setup();
     flow.update({ basics: { ...flow.draft().basics, height: { centimeters: 180 } } });
-    type('Your name', '  Alex ');
     choose('Male');
     type('Date of birth', '1994-01-12');
 
     expect(submit()).toBe(true);
-    expect(flow.draft().name).toBe('Alex');
+    expect(flow.draft().name).toBeNull();
     expect(flow.draft().basics).toEqual({ dateOfBirth: '1994-01-12', sex: 'male', height: { centimeters: 180 }, weight: null });
   });
 
   it('rejects an under-18 date of birth and commits nothing', () => {
     const { el, type, choose, submit, flow } = setup();
-    type('Your name', 'Alex');
     choose('Female');
     type('Date of birth', '2010-03-01');
 
@@ -95,25 +93,23 @@ describe('BasicsStepComponent (about you)', () => {
 
   it('keeps valid answers when the user leaves without continuing (Back)', () => {
     const { fixture, type, choose, flow } = setup();
-    type('Your name', 'Sam');
     choose('Female');
     type('Date of birth', '2010-03-01'); // too young: not kept
 
     fixture.destroy();
 
-    expect(flow.draft().name).toBe('Sam');
     expect(flow.draft().basics).toMatchObject({ sex: 'female', dateOfBirth: null });
   });
 
   it('starts from saved answers', () => {
     TestBed.configureTestingModule({ providers: [OnboardingFlow, { provide: KeyValueStorage, useValue: new MemoryKeyValueStorage() }] });
     const flow = TestBed.inject(OnboardingFlow);
-    flow.update({ name: 'Kim', basics: { dateOfBirth: '1980-02-29', sex: 'prefer-not-to-say', height: null, weight: null } });
+    flow.update({ basics: { dateOfBirth: '1980-02-29', sex: 'prefer-not-to-say', height: null, weight: null } });
     const fixture = TestBed.createComponent(BasicsStepComponent);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const inputs = [...el.querySelectorAll<HTMLInputElement>('fit-text-field input')];
-    expect(inputs.map((i) => i.value)).toEqual(['Kim', '1980-02-29']);
+    expect(inputs.map((i) => i.value)).toEqual(['1980-02-29']);
     expect(el.querySelector('fit-choice-group .selected')?.textContent).toContain('Prefer not to say');
   });
 });

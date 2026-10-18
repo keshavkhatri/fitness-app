@@ -1,6 +1,6 @@
 -- Daily self-reported check-ins (domain: DailyCheckIn): at most one value per day for each of steps
 -- and recovery, a new entry replacing that day's value. The streak is derived, never stored.
-CREATE TABLE pulseform.daily_check_ins (
+CREATE TABLE stokeform.daily_check_ins (
   user_id     text NOT NULL,
   date        date NOT NULL,
   steps       integer CHECK (steps BETWEEN 0 AND 100000),
@@ -12,7 +12,7 @@ CREATE TABLE pulseform.daily_check_ins (
 
 -- In-app reminders are rebuilt from the user's data each day; only which day-stable ids were read
 -- is remembered (the app keeps the newest 200). Nothing is pushed or scheduled by the server.
-CREATE TABLE pulseform.notification_reads (
+CREATE TABLE stokeform.notification_reads (
   user_id          text NOT NULL,
   notification_id  text NOT NULL CHECK (char_length(notification_id) BETWEEN 1 AND 200),
   read_at          timestamptz NOT NULL DEFAULT now(),

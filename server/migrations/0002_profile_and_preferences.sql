@@ -2,7 +2,7 @@
 -- recomputed deterministically from the profile; only the "reviewed" marker is kept.
 -- user_id has no foreign key yet: the auth tables do not exist until Better Auth is added, and a
 -- later migration will add `REFERENCES auth."user"(id) ON DELETE CASCADE` to every user_id.
-CREATE TABLE pulseform.user_profiles (
+CREATE TABLE stokeform.user_profiles (
   user_id                 text PRIMARY KEY,
   primary_goal            text NOT NULL CHECK (primary_goal IN ('lose-fat', 'build-muscle', 'recomposition', 'get-stronger', 'improve-fitness')),
   date_of_birth           date NOT NULL,                       -- age is never stored; it is derived
@@ -35,7 +35,7 @@ CREATE TABLE pulseform.user_profiles (
 
 -- How the app addresses the user, and per-user settings. The avatar image is NOT stored here:
 -- only the key of a private Cloudflare R2 object (a later phase), never bytes or a data URL.
-CREATE TABLE pulseform.user_preferences (
+CREATE TABLE stokeform.user_preferences (
   user_id            text PRIMARY KEY,
   display_name       text CHECK (char_length(display_name) BETWEEN 1 AND 40),
   avatar_object_key  text CHECK (char_length(avatar_object_key) BETWEEN 1 AND 512),

@@ -1,4 +1,4 @@
-# The Pulseform API on Google Cloud Run
+# The StokeForm API on Google Cloud Run
 
 The service **already exists** and is serving the InBody extraction endpoint, `/health` and `/ready`. This
 guide covers updating it, turning on accounts later, and the cleanup job. Nothing in the accounts sections has
@@ -85,13 +85,13 @@ that is the real cost cap.
 Docker Desktop must be running.
 
 ```powershell
-docker build -t pulseform-api:local .
+docker build -t stokeform-api:local .
 
 # Placeholder values: the key is fake, so extraction reaches OpenAI and is refused (a 502),
 # which still proves the whole path. Omit both OPENAI_ variables to get 503 not-configured.
 docker run --rm -p 8080:8080 `
   -e OPENAI_MODEL=placeholder-model -e OPENAI_API_KEY=sk-placeholder `
-  -e ALLOWED_ORIGINS=https://localhost pulseform-api:local
+  -e ALLOWED_ORIGINS=https://localhost stokeform-api:local
 ```
 
 In a second terminal:
@@ -159,7 +159,7 @@ foreach ($n in 'BETTER_AUTH_SECRET','RESEND_API_KEY','GOOGLE_CLIENT_SECRET') {
 #    EMAIL_FROM contains '@' and spaces. Secrets keep their upper-case names, like the existing two.
 gcloud run services update $S --project $P --region $R --max-instances 1 `
   --update-secrets "BETTER_AUTH_SECRET=BETTER_AUTH_SECRET:latest,RESEND_API_KEY=RESEND_API_KEY:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest" `
-  --update-env-vars "^#^BETTER_AUTH_URL=https://deploy-fitness-app-backend-893557393361.europe-west1.run.app#EMAIL_DELIVERY=resend#EMAIL_FROM=Pulseform <no-reply@YOUR-DOMAIN>#GOOGLE_CLIENT_ID=YOUR-CLIENT-ID"
+  --update-env-vars "^#^BETTER_AUTH_URL=https://deploy-fitness-app-backend-893557393361.europe-west1.run.app#EMAIL_DELIVERY=resend#EMAIL_FROM=StokeForm <no-reply@YOUR-DOMAIN>#GOOGLE_CLIENT_ID=YOUR-CLIENT-ID"
 ```
 
 `gcloud run services update` creates a new revision and shifts traffic to it, so this is the moment accounts
@@ -200,33 +200,33 @@ $IMAGE = gcloud run services describe deploy-fitness-app-backend --project $P --
 gcloud services enable cloudscheduler.googleapis.com --project $P
 
 # 1. The job, from the SAME image as the service, in PREVIEW mode (no --apply): it only logs what it would delete.
-gcloud run jobs create pulseform-cleanup --project $P --region $R --image $IMAGE `
+gcloud run jobs create stokeform-cleanup --project $P --region $R --image $IMAGE `
   --command node --args cleanup.mjs `
   --set-secrets "DATABASE_URL=DATABASE_URL:latest" `
   --max-retries 0 --task-timeout 120s
 
 # 2. Run it once and read the log: "would delete ..." lines (masked) and an auth.cleanup summary line.
-gcloud run jobs execute pulseform-cleanup --project $P --region $R --wait
-# Logs: Cloud Console > Cloud Run > Jobs > pulseform-cleanup > Logs. Read them before going further.
+gcloud run jobs execute stokeform-cleanup --project $P --region $R --wait
+# Logs: Cloud Console > Cloud Run > Jobs > stokeform-cleanup > Logs. Read them before going further.
 
 # 3. Only when the preview lists nothing you would miss, and you have a Neon backup/branch, switch to delete:
-gcloud run jobs update pulseform-cleanup --project $P --region $R --args cleanup.mjs,--apply
+gcloud run jobs update stokeform-cleanup --project $P --region $R --args cleanup.mjs,--apply
 
 # 4. A service account that may only start this job, and a weekly schedule (Mondays 04:00).
-gcloud iam service-accounts create pulseform-scheduler --project $P --display-name "Runs the cleanup job"
-gcloud run jobs add-iam-policy-binding pulseform-cleanup --project $P --region $R `
-  --member "serviceAccount:pulseform-scheduler@$P.iam.gserviceaccount.com" --role roles/run.invoker
-gcloud scheduler jobs create http pulseform-cleanup-weekly --project $P --location $R --schedule "0 4 * * 1" `
-  --uri "https://run.googleapis.com/v2/projects/$P/locations/$R/jobs/pulseform-cleanup:run" --http-method POST `
-  --oauth-service-account-email "pulseform-scheduler@$P.iam.gserviceaccount.com"
+gcloud iam service-accounts create stokeform-scheduler --project $P --display-name "Runs the cleanup job"
+gcloud run jobs add-iam-policy-binding stokeform-cleanup --project $P --region $R `
+  --member "serviceAccount:stokeform-scheduler@$P.iam.gserviceaccount.com" --role roles/run.invoker
+gcloud scheduler jobs create http stokeform-cleanup-weekly --project $P --location $R --schedule "0 4 * * 1" `
+  --uri "https://run.googleapis.com/v2/projects/$P/locations/$R/jobs/stokeform-cleanup:run" --http-method POST `
+  --oauth-service-account-email "stokeform-scheduler@$P.iam.gserviceaccount.com"
 ```
 
 Notes: the job uses the default compute account, which can already read `DATABASE_URL`. **After every service
-deploy, update the job to the new image** (`gcloud run jobs update pulseform-cleanup --project $P --region $R
+deploy, update the job to the new image** (`gcloud run jobs update stokeform-cleanup --project $P --region $R
 --image $IMAGE`) or it keeps running the old cleanup rules. These commands are written from the gcloud
 documentation and have **not been run**: check the flags with `gcloud run jobs create --help` and
 `gcloud scheduler jobs create http --help` for your CLI. To stop it: `gcloud scheduler jobs pause
-pulseform-cleanup-weekly --location europe-west1 --project fitness-app-511714`. Nothing else triggers deletion.
+stokeform-cleanup-weekly --location europe-west1 --project fitness-app-511714`. Nothing else triggers deletion.
 
 ## Key rotation
 

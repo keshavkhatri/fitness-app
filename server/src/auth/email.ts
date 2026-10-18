@@ -73,7 +73,7 @@ export function loadEmailConfig(env: Env, { localOnly }: { localOnly: boolean })
       throw new ConfigError('EMAIL_DELIVERY=resend needs RESEND_API_KEY and EMAIL_FROM.');
     }
     if (!FROM_PATTERN.test(from)) {
-      throw new ConfigError('EMAIL_FROM must be an address such as "Pulseform <no-reply@example.com>".');
+      throw new ConfigError('EMAIL_FROM must be an address such as "StokeForm <no-reply@example.com>".');
     }
     return { kind, apiKey, from };
   }
@@ -98,22 +98,22 @@ interface EmailCopy {
 /** The wording of each email. No user-supplied text (such as the account name) goes into any of them. */
 const COPY = {
   verification: {
-    subject: 'Confirm your email for Pulseform',
-    intro: 'Confirm your email address to finish creating your Pulseform account:',
+    subject: 'Confirm your email for StokeForm',
+    intro: 'Confirm your email address to finish creating your StokeForm account:',
     button: 'Confirm email',
     validity: 'The link works for 24 hours. After confirming, go back to the app and sign in.',
-    ignore: "If you didn't create a Pulseform account, ignore this email and don't open the link: nothing happens without it.",
+    ignore: "If you didn't create a StokeForm account, ignore this email and don't open the link: nothing happens without it.",
   },
   'password-reset': {
-    subject: 'Reset your Pulseform password',
-    intro: 'Someone asked to reset the password of the Pulseform account for this email address. To choose a new password, open this link:',
+    subject: 'Reset your StokeForm password',
+    intro: 'Someone asked to reset the password of the StokeForm account for this email address. To choose a new password, open this link:',
     button: 'Choose a new password',
     validity: 'The link works once, for 1 hour. Afterwards, sign in to the app with the new password; you will be signed out of your other devices.',
     ignore: "If you didn't ask for this, ignore this email and don't open the link: your password stays exactly as it is.",
   },
   test: {
-    subject: 'Pulseform email test',
-    intro: 'This is a test message from your Pulseform server. If you can read it, email delivery works.',
+    subject: 'StokeForm email test',
+    intro: 'This is a test message from your StokeForm server. If you can read it, email delivery works.',
     validity: 'There is nothing to open or confirm.',
     ignore: 'It was sent by the email test command; no account was created or changed.',
   },
