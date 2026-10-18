@@ -2,19 +2,24 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, resou
 import { Router } from '@angular/router';
 import { NavController } from '@ionic/angular';
 
+import { canAccess } from '../../core/entitlements/access-policy';
+import { EntitlementService } from '../../core/entitlements/entitlement.service';
 import { ONBOARDING_PATH, ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
 import { CLOCK } from '../../core/time/clock';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
 import {
+  BottomSheetComponent,
   EmptyStateComponent,
+  FitnessChipComponent,
   FitnessButtonComponent,
   FitnessCardComponent,
   LoadingSkeletonComponent,
   NoticeComponent,
   PageLayoutComponent,
 } from '../../shared/ui';
+import { CUSTOM_PLAN_COPY } from './custom-plan/custom-plan-content';
 import { PlanSummaryComponent } from './components/plan-summary.component';
 import { PlanDateStripComponent } from './plan/plan-date-strip.component';
 import { PlanTodayCardComponent } from './plan/plan-today-card.component';
@@ -22,7 +27,7 @@ import { toPlanTab } from './plan/plan-view-model';
 import { PlanWeekListComponent } from './plan/plan-week-list.component';
 import { WORKOUT_COPY } from './workout-content';
 import { WorkoutScreen, toWorkoutScreen } from './workout-view-model';
-import { activeWorkoutPath, historyDetailPath, workoutSessionPath } from './workout-paths';
+import { CUSTOM_PLAN_EDIT_PATH, EXERCISE_LIBRARY_PATH, activeWorkoutPath, historyDetailPath, workoutSessionPath } from './workout-paths';
 
 /** Workout Detail route for a plan session id. */
 export { workoutSessionPath } from './workout-paths';
@@ -40,7 +45,9 @@ export { workoutSessionPath } from './workout-paths';
   styleUrl: './workout.page.scss',
   host: { class: 'fit-theme-dashboard' },
   imports: [
+    BottomSheetComponent,
     EmptyStateComponent,
+    FitnessChipComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
     LoadingSkeletonComponent,
@@ -60,8 +67,15 @@ export class WorkoutPage {
   private readonly router = inject(Router);
   private readonly logs = inject(WorkoutLogService);
   private readonly history = inject(WorkoutHistoryService);
+  private readonly entitlements = inject(EntitlementService);
 
   protected readonly copy = WORKOUT_COPY;
+  protected readonly customCopy = CUSTOM_PLAN_COPY;
+  /** Whether the access policy lets this person build and edit a custom plan (Premium). */
+  protected readonly canCustomize = computed(() => canAccess('custom-workout-plan', this.entitlements.plan()));
+  protected readonly switchOpen = signal(false);
+  protected readonly switching = signal(false);
+  protected readonly switchMessage = signal('');
   protected readonly tab = WORKOUT_COPY.planTab;
   private readonly state = resource({
     loader: async () => {
@@ -98,6 +112,10 @@ export class WorkoutPage {
   private readonly weekHeading = viewChild<ElementRef<HTMLElement>>('weekHeading');
 
   private entered = false;
+
+  constructor() {
+    void this.entitlements.refresh();
+  }
 
   /** Ionic tab re-entry: re-check the plan (the profile may have changed elsewhere) and history. */
   ionViewWillEnter(): void {
@@ -151,6 +169,35 @@ export class WorkoutPage {
 
   protected openWorkoutLog(id: string): void {
     void this.nav.navigateForward(historyDetailPath(id));
+  }
+
+  /** Build (Free plan) or edit (custom plan). The route's guard sends anyone without access to the offer. */
+  protected editPlan(): void {
+    void this.nav.navigateForward(CUSTOM_PLAN_EDIT_PATH);
+  }
+
+  protected browseExercises(): void {
+    void this.nav.navigateForward(EXERCISE_LIBRARY_PATH);
+  }
+
+  /** The explicit way back from a custom plan: confirmed, then a new plan is generated from the profile. */
+  protected async switchToGenerated(): Promise<void> {
+    if (this.switching()) {
+      return;
+    }
+    this.switching.set(true);
+    this.switchMessage.set('');
+    try {
+      const result = await this.plans.useGeneratedPlan();
+      if (result === 'switched') {
+        this.switchOpen.set(false);
+        this.state.reload();
+      } else {
+        this.switchMessage.set(CUSTOM_PLAN_COPY.switchBack.failed);
+      }
+    } finally {
+      this.switching.set(false);
+    }
   }
 
   /** Rest day: move to the week's sessions. */

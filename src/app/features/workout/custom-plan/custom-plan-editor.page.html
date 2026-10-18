@@ -1,0 +1,147 @@
+<ion-content>
+  <main class="body">
+    <div class="topbar">
+      <button type="button" class="round" [attr.aria-label]="copy.editor.cancel" data-testid="editor-cancel" (click)="cancel()">
+        <ion-icon name="close" aria-hidden="true" />
+      </button>
+      <h1 class="bar-title" data-testid="editor-title">{{ editing() ? copy.editor.editTitle : copy.editor.buildTitle }}</h1>
+      <span class="round-spacer" aria-hidden="true"></span>
+    </div>
+
+    @switch (status()) {
+      @case ('loading') {
+        <div class="loading" aria-busy="true">
+          <span class="visually-hidden" role="status">{{ copy.editor.loading }}</span>
+          <fit-skeleton height="120px" radius="card" />
+          <fit-skeleton height="120px" radius="card" />
+        </div>
+      }
+      @case ('unavailable') {
+        <fit-empty-state icon="alert-circle-outline" [title]="copy.editor.unavailable" data-testid="editor-unavailable">
+          <button fit-button type="button" (click)="backToWorkout()">{{ copy.editor.back }}</button>
+        </fit-empty-state>
+      }
+      @default {
+        @let v = view();
+        @if (v) {
+          <p class="intro">{{ copy.editor.intro }}</p>
+
+          @for (day of v.days; track day.sessionId) {
+            <section class="day" [attr.aria-labelledby]="'day-' + day.sessionId" data-testid="editor-day">
+              <header class="day-header">
+                <h2 class="day-title" [id]="'day-' + day.sessionId">{{ day.heading }}</h2>
+                <span class="day-count">{{ day.countLabel }}</span>
+              </header>
+
+              @if (day.exercises.length > 0) {
+                <ol class="exercises">
+                  @for (exercise of day.exercises; track exercise.exerciseId) {
+                    @let expanded = isOpen(day.sessionId, exercise.exerciseId);
+                    <li class="exercise" data-testid="editor-exercise">
+                      <div class="row">
+                        <span class="order" aria-hidden="true">{{ exercise.order }}</span>
+                        <button
+                          type="button"
+                          class="info"
+                          [attr.aria-expanded]="expanded"
+                          [attr.aria-label]="copy.editor.editSets(exercise.name)"
+                          data-testid="editor-exercise-toggle"
+                          (click)="toggle(day.sessionId, exercise.exerciseId)"
+                        >
+                          <span class="name">{{ exercise.name }}</span>
+                          <span class="summary" [class.invalid]="exercise.errors.sets || exercise.errors.repsMin || exercise.errors.repsMax || exercise.errors.seconds || exercise.errors.rest">{{ exercise.summary }}</span>
+                          @if (exercise.metadata; as metadata) {
+                            <span class="meta">{{ metadata }}</span>
+                          }
+                        </button>
+                        <div class="actions">
+                          <button fit-icon-button type="button" icon="arrow-up" [disabled]="exercise.first" [attr.aria-label]="copy.editor.moveUp(exercise.name)" data-testid="editor-up" (click)="move(day.sessionId, exercise.exerciseId, -1)"></button>
+                          <button fit-icon-button type="button" icon="arrow-down" [disabled]="exercise.last" [attr.aria-label]="copy.editor.moveDown(exercise.name)" data-testid="editor-down" (click)="move(day.sessionId, exercise.exerciseId, 1)"></button>
+                          <button fit-icon-button type="button" icon="trash-outline" [attr.aria-label]="copy.editor.remove(exercise.name)" data-testid="editor-remove" (click)="remove(day.sessionId, exercise.exerciseId)"></button>
+                        </div>
+                      </div>
+
+                      @if (expanded) {
+                        <div class="fields" data-testid="editor-fields">
+                          <fit-text-field [label]="copy.editor.sets" inputMode="numeric" [maxLength]="2" [value]="fieldValue(day.sessionId, exercise.exerciseId, 'sets')" [error]="exercise.errors.sets ?? null" data-testid="field-sets" (valueChange)="edit(day.sessionId, exercise.exerciseId, 'sets', $event)" />
+                          @if (exercise.timed) {
+                            <fit-text-field [label]="copy.editor.seconds" [suffix]="copy.editor.unitSeconds" inputMode="numeric" [maxLength]="3" [value]="fieldValue(day.sessionId, exercise.exerciseId, 'seconds')" [error]="exercise.errors.seconds ?? null" data-testid="field-seconds" (valueChange)="edit(day.sessionId, exercise.exerciseId, 'seconds', $event)" />
+                          } @else {
+                            <fit-text-field [label]="copy.editor.repsMin" inputMode="numeric" [maxLength]="3" [value]="fieldValue(day.sessionId, exercise.exerciseId, 'repsMin')" [error]="exercise.errors.repsMin ?? null" data-testid="field-reps-min" (valueChange)="edit(day.sessionId, exercise.exerciseId, 'repsMin', $event)" />
+                            <fit-text-field [label]="copy.editor.repsMax" inputMode="numeric" [maxLength]="3" [value]="fieldValue(day.sessionId, exercise.exerciseId, 'repsMax')" [error]="exercise.errors.repsMax ?? null" data-testid="field-reps-max" (valueChange)="edit(day.sessionId, exercise.exerciseId, 'repsMax', $event)" />
+                          }
+                          <fit-text-field [label]="copy.editor.rest" [suffix]="copy.editor.unitSeconds" inputMode="numeric" enterKeyHint="done" [maxLength]="3" [value]="fieldValue(day.sessionId, exercise.exerciseId, 'rest')" [error]="exercise.errors.rest ?? null" data-testid="field-rest" (valueChange)="edit(day.sessionId, exercise.exerciseId, 'rest', $event)" />
+                        </div>
+                      }
+                    </li>
+                  }
+                </ol>
+              }
+
+              @if (day.problem; as problem) {
+                <p class="problem" role="alert" data-testid="editor-day-problem">{{ problem }}</p>
+              }
+              <button fit-button type="button" variant="outline" icon="add" block data-testid="editor-add" (click)="addExercises(day.sessionId)">
+                {{ copy.editor.add }}
+              </button>
+            </section>
+          }
+          <p class="note">{{ copy.editor.activityNote }}</p>
+        }
+      }
+    }
+  </main>
+</ion-content>
+
+@if (status() === 'ready') {
+  <ion-footer class="ion-no-border">
+    <div class="footer">
+      <button fit-button type="button" size="lg" block data-testid="editor-review" (click)="review()">{{ copy.editor.review }}</button>
+    </div>
+  </ion-footer>
+}
+
+<fit-bottom-sheet screenTheme="dashboard" [title]="copy.review.title" [(open)]="reviewOpen">
+  @let rv = view();
+  @if (rv) {
+    <div class="review" data-testid="review">
+      @if (rv.canSave) {
+        <p class="review-lead">{{ copy.review.lead }} {{ copy.review.totals(rv.exerciseCount, rv.setCount) }}</p>
+        @for (day of rv.days; track day.sessionId) {
+          <section class="review-day">
+            <h3 class="review-day-title">{{ day.heading }}</h3>
+            <ol class="review-list">
+              @for (exercise of day.exercises; track exercise.exerciseId) {
+                <li><span class="review-name">{{ exercise.name }}</span> <span class="review-detail">{{ exercise.summary }}</span></li>
+              }
+            </ol>
+          </section>
+        }
+      } @else {
+        <fit-notice tone="warning" [title]="copy.review.problems" data-testid="review-problems">
+          <ul class="problems">
+            @for (problem of rv.problems; track $index) {
+              <li>{{ problem }}</li>
+            }
+          </ul>
+        </fit-notice>
+      }
+      @if (saveMessage(); as message) {
+        <p class="problem" role="alert" data-testid="review-message">{{ message }}</p>
+      }
+      <div class="review-actions">
+        <button fit-button type="button" block [disabled]="!rv.canSave || saving()" [loading]="saving()" data-testid="review-save" (click)="save()">
+          {{ saving() ? copy.review.saving : copy.review.save }}
+        </button>
+        <button fit-button type="button" variant="ghost" block [disabled]="saving()" data-testid="review-back" (click)="reviewOpen.set(false)">{{ copy.review.keepEditing }}</button>
+      </div>
+    </div>
+  }
+</fit-bottom-sheet>
+
+<fit-bottom-sheet screenTheme="dashboard" [title]="copy.discard.title" [description]="copy.discard.message" [(open)]="discardOpen">
+  <div class="review-actions">
+    <button fit-button type="button" variant="danger" block data-testid="discard-confirm" (click)="discard()">{{ copy.discard.confirm }}</button>
+    <button fit-button type="button" variant="ghost" block data-testid="discard-keep" (click)="discardOpen.set(false)">{{ copy.discard.keep }}</button>
+  </div>
+</fit-bottom-sheet>

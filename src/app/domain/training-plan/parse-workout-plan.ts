@@ -3,6 +3,7 @@ import {
   ActivitySession,
   ChainPosition,
   CoverageReason,
+  CustomPlanMark,
   CoverageStatus,
   EXERCISE_LIBRARY,
   ExerciseTarget,
@@ -202,7 +203,17 @@ function readPlan(value: unknown, known: ReadonlySet<string>): WorkoutPlan {
     explanation: readExplanation(p['explanation']),
     assumptions: list(p['assumptions'], member(isPlanAssumption)),
     warnings: list(p['warnings'], (w) => readWarning(w, exerciseId)),
+    ...readCustomMark(p['custom']),
   };
+}
+
+/** Absent for generated plans; a malformed mark invalidates the plan rather than silently becoming "generated". */
+function readCustomMark(value: unknown): { custom?: CustomPlanMark } {
+  if (value === undefined) {
+    return {};
+  }
+  const editedAt = text(fields(value)['editedAt']);
+  return parseIsoCalendarDate(editedAt) ? { custom: { editedAt } } : invalid();
 }
 
 function readSession(value: unknown, exerciseId: (id: unknown) => string): PlanSession {

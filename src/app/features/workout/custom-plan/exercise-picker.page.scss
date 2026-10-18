@@ -1,0 +1,244 @@
+@use 'mixins' as fx;
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-8);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bar-title {
+  @include fx.text(body, bold);
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.round,
+.round-spacer {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+.round {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 22px;
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-3);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+
+  &:focus-within {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  ion-icon {
+    flex: none;
+    color: var(--color-text-secondary);
+  }
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  outline: none;
+}
+
+.selects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.select-label {
+  @include fx.text(caption, semibold);
+  color: var(--color-text-secondary);
+}
+
+select {
+  width: 100%;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-2);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.count-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.count,
+.full {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-2);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+}
+
+.empty {
+  @include fx.text(body);
+  padding: var(--space-6) 0;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-hairline) solid transparent;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+
+  &.selected {
+    border-color: var(--color-primary);
+  }
+}
+
+.open {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: var(--tap-target-min);
+  text-align: start;
+}
+
+.thumb {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  @include fx.text(body, semibold);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.toggle {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: 22px;
+
+  &.on {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+  }
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.detail-meta {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+.footer {
+  padding: var(--space-3) var(--space-4) calc(var(--ion-safe-area-bottom, 0px) + var(--space-3));
+  background: var(--color-bg);
+}

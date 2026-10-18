@@ -168,3 +168,61 @@
   margin: 0;
   color: var(--color-text-secondary);
 }
+
+// Generated plan (default) or build your own (Premium).
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-5);
+  text-align: start;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid transparent;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+
+  > ion-icon:first-child {
+    flex: none;
+    font-size: 24px;
+    color: var(--color-primary-text);
+  }
+
+  &.selected {
+    border-color: var(--color-primary);
+  }
+
+  &.action {
+    @include fx.button-reset;
+    @include fx.focus-ring;
+    @include fx.pressable;
+
+    width: 100%;
+    min-height: var(--tap-target-min);
+    background: var(--color-surface);
+  }
+
+  .chevron {
+    flex: none;
+    margin-inline-start: auto;
+  }
+}
+
+.badge {
+  @include fx.text(caption, semibold);
+  display: inline-block;
+  margin-inline-start: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}

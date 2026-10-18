@@ -1,0 +1,127 @@
+<ion-content>
+  <main class="body">
+    <div class="topbar">
+      <button type="button" class="round" [attr.aria-label]="copy.back" data-testid="picker-back" (click)="done()">
+        <ion-icon name="chevron-back" aria-hidden="true" />
+      </button>
+      <h1 class="bar-title" data-testid="picker-title">{{ title() }}</h1>
+      <span class="round-spacer" aria-hidden="true"></span>
+    </div>
+
+    <div class="filters" role="search">
+      <label class="search">
+        <ion-icon name="search-outline" aria-hidden="true" />
+        <span class="visually-hidden">{{ copy.search }}</span>
+        <input
+          type="search"
+          class="search-input"
+          [placeholder]="copy.search"
+          [value]="query().text"
+          enterkeyhint="search"
+          autocomplete="off"
+          data-testid="picker-search"
+          (input)="setText($any($event.target).value)"
+        />
+      </label>
+      <div class="selects">
+        <label class="select">
+          <span class="select-label">{{ copy.muscle }}</span>
+          <select data-testid="picker-muscle" [value]="query().muscle ?? ''" (change)="setMuscle($any($event.target).value)">
+            <option value="">{{ copy.any }}</option>
+            @for (option of muscles; track option.value) {
+              <option [value]="option.value" [selected]="query().muscle === option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="select">
+          <span class="select-label">{{ copy.equipment }}</span>
+          <select data-testid="picker-equipment" [value]="query().equipment ?? ''" (change)="setEquipment($any($event.target).value)">
+            <option value="">{{ copy.any }}</option>
+            @for (option of equipment; track option.value) {
+              <option [value]="option.value" [selected]="query().equipment === option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <div class="count-row">
+        <p class="count" role="status" data-testid="picker-count">{{ copy.results(results().length) }}</p>
+        @if (filtered()) {
+          <button type="button" class="link" data-testid="picker-clear" (click)="clear()">{{ copy.clear }}</button>
+        }
+      </div>
+      @if (selecting() && dayFull()) {
+        <p class="full" role="status">{{ copy.full }}</p>
+      }
+    </div>
+
+    @if (results().length === 0) {
+      <p class="empty" data-testid="picker-empty">{{ copy.none }}</p>
+    } @else {
+      <ul class="list">
+        @for (exercise of results(); track exercise.id) {
+          @let isSelected = selected(exercise);
+          <li class="item" [class.selected]="isSelected" data-testid="picker-item">
+            <button type="button" class="open" [attr.aria-label]="copy.details(exercise.name)" data-testid="picker-details" (click)="showDetails(exercise)">
+              <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.id" /></span>
+              <span class="text">
+                <span class="name">{{ exercise.name }}</span>
+                @if (metadata(exercise); as meta) {
+                  <span class="meta">{{ meta }}</span>
+                }
+                @if (exercise.measurement === 'time') {
+                  <fit-chip>{{ copy.timed }}</fit-chip>
+                }
+              </span>
+            </button>
+            @if (selecting()) {
+              <button
+                type="button"
+                class="toggle"
+                [class.on]="isSelected"
+                [disabled]="!canToggle(exercise)"
+                [attr.aria-pressed]="isSelected"
+                [attr.aria-label]="isSelected ? copy.added(exercise.name) : copy.add(exercise.name)"
+                data-testid="picker-toggle"
+                (click)="toggle(exercise)"
+              >
+                <ion-icon [name]="isSelected ? 'checkmark' : 'add'" aria-hidden="true" />
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </main>
+</ion-content>
+
+@if (selecting()) {
+  <ion-footer class="ion-no-border">
+    <div class="footer">
+      <button fit-button type="button" size="lg" block data-testid="picker-done" (click)="done()">{{ copy.done(inDayCount()) }}</button>
+    </div>
+  </ion-footer>
+}
+
+<fit-bottom-sheet screenTheme="dashboard" [title]="detail()?.name ?? ''" [open]="detailOpen()" (openChange)="closeDetails($event)">
+  @if (detail(); as exercise) {
+    <div class="details" data-testid="picker-detail">
+      @if (metadata(exercise); as meta) {
+        <p class="detail-meta">{{ meta }}</p>
+      }
+      <app-exercise-demo [exerciseId]="exercise.id" [name]="exercise.name" />
+      @if (selecting()) {
+        <button
+          fit-button
+          type="button"
+          [variant]="selected(exercise) ? 'outline' : 'primary'"
+          block
+          [disabled]="!canToggle(exercise)"
+          data-testid="picker-detail-toggle"
+          (click)="toggle(exercise)"
+        >
+          {{ selected(exercise) ? copy.added(exercise.name) : copy.add(exercise.name) }}
+        </button>
+      }
+    </div>
+  }
+</fit-bottom-sheet>

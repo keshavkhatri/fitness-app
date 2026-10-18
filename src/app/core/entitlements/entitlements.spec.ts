@@ -109,17 +109,25 @@ describe('EntitlementService', () => {
 });
 
 describe('access policy (feature matrix)', () => {
-  it('every feature the app has today is Free and usable', () => {
-    for (const rule of FEATURE_MATRIX.filter((r) => r.available)) {
+  it('every feature that existed before Premium is Free and usable; exercise browsing included', () => {
+    for (const rule of FEATURE_MATRIX.filter((r) => r.available && r.id !== 'custom-workout-plan')) {
       expect(rule.tier).toBe('free');
       expect(canAccess(rule.id, 'free')).toBe(true);
     }
+    expect(canAccess('exercise-library', 'free')).toBe(true);
     expect(FREE_FEATURES.length).toBeGreaterThan(0);
   });
 
-  it('Premium candidates are not built, so nobody can use them yet, Premium included', () => {
-    expect(PREMIUM_FEATURES.map((r) => r.id)).toEqual(['cloud-backup', 'progress-photos', 'health-app-sync']);
-    for (const rule of PREMIUM_FEATURES) {
+  it('the custom workout plan is Premium only: Free cannot use it, Premium can', () => {
+    expect(FEATURE_MATRIX.find((r) => r.id === 'custom-workout-plan')).toMatchObject({ tier: 'premium', available: true });
+    expect(canAccess('custom-workout-plan', 'free')).toBe(false);
+    expect(canAccess('custom-workout-plan', 'premium')).toBe(true);
+  });
+
+  it('the other Premium candidates are not built, so nobody can use them yet, Premium included', () => {
+    const candidates = PREMIUM_FEATURES.filter((r) => r.id !== 'custom-workout-plan');
+    expect(candidates.map((r) => r.id)).toEqual(['cloud-backup', 'progress-photos', 'health-app-sync']);
+    for (const rule of candidates) {
       expect(canAccess(rule.id, 'free')).toBe(false);
       expect(canAccess(rule.id, 'premium')).toBe(false);
     }

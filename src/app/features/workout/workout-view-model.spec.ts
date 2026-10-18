@@ -193,7 +193,17 @@ describe('workout view model', () => {
         { label: 'Training days', value: '4 days a week', detail: null },
         { label: 'Experience', value: 'Intermediate', detail: null },
         { label: 'Location', value: 'Gym', detail: null },
+        { label: 'Plan', value: 'Generated plan', detail: 'Built from your goal, experience and equipment.' },
       ]);
+    });
+
+    it('says when the plan is the user’s own, and notes a profile change without touching the plan', () => {
+      const custom = { ...planFor(), custom: { editedAt: '2026-10-08' } };
+      const screen = readyScreen(toWorkoutScreen({ kind: 'ready', plan: custom, origin: 'stored', saved: true, profileChanged: true }, THURSDAY));
+      expect(screen.planKind).toBe('custom');
+      expect(screen.plan.at(-1)).toMatchObject({ label: 'Plan', value: 'Custom plan' });
+      expect(screen.notices.map((n) => n.title)).toEqual(['Your profile has changed']);
+      expect(readyScreen(toWorkoutScreen(ready(), THURSDAY)).planKind).toBe('generated');
     });
 
     it('distinguishes requested days from workouts and activity days', () => {

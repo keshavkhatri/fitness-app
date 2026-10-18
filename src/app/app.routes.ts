@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
-import { requireAppReady, requireOnboardingComplete } from './core/profile/onboarding.guards';
+import { requireAppReady, requireOnboardingComplete, requireProfile } from './core/profile/onboarding.guards';
+import { requireCustomPlanAccess } from './features/workout/custom-plan/custom-plan.guard';
 
 /**
  * Top-level routes.
@@ -33,6 +34,21 @@ export const routes: Routes = [
     title: 'Workout',
     canActivate: [requireOnboardingComplete],
     loadComponent: () => import('./features/workout/active/active-workout.page').then((m) => m.ActiveWorkoutPage),
+  },
+  // Custom workout plan (Premium): the editor and its exercise picker. The guard sends anyone the access
+  // policy doesn't allow to the plan offer. They need a profile (and so a plan) but not a reviewed assessment,
+  // because first-run setup offers them right after the plan is made.
+  {
+    path: 'workout/plan/edit',
+    title: 'Edit plan',
+    canActivate: [requireProfile, requireCustomPlanAccess],
+    loadComponent: () => import('./features/workout/custom-plan/custom-plan-editor.page').then((m) => m.CustomPlanEditorPage),
+  },
+  {
+    path: 'workout/plan/edit/:sessionId/add',
+    title: 'Add exercises',
+    canActivate: [requireProfile, requireCustomPlanAccess],
+    loadComponent: () => import('./features/workout/custom-plan/exercise-picker.page').then((m) => m.ExercisePickerPage),
   },
   {
     path: 'workout/summary/:workoutId',
