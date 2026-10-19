@@ -74,6 +74,16 @@ async function view<T>(component: new () => T, inputs: Record<string, unknown> =
   return { fixture, el, all, one, click, type, settle };
 }
 
+/** Presses Android's hardware Back: Ionic hands every registered handler to the one with the top priority. */
+function pressHardwareBack(priority?: number) {
+  const handlers: [number, (next: () => void) => void][] = [];
+  const next = vi.fn();
+  document.dispatchEvent(new CustomEvent('ionBackButton', { detail: { register: (p: number, handler: (next: () => void) => void) => handlers.push([p, handler]) } }));
+  const chosen = priority === undefined ? handlers.sort((x, y) => y[0] - x[0])[0] : handlers.find(([p]) => p === priority);
+  chosen?.[1](next);
+  return next;
+}
+
 describe('Custom plan editor', () => {
   const names = (el: HTMLElement) => [...el.querySelectorAll('[data-testid="editor-exercise"] .name')].map((n) => clean(n));
 
@@ -217,6 +227,37 @@ describe('Custom plan editor', () => {
     expect(storedPlan(storage).custom).toBeUndefined();
   });
 
+  it('Android Back is Cancel: it leaves at once when nothing changed, and asks before dropping edits', async () => {
+    const { storage, back } = configure();
+    const clean1 = await view(CustomPlanEditorPage);
+    pressHardwareBack();
+    expect(back).toHaveBeenCalledWith('/workout');
+    clean1.fixture.destroy();
+    back.mockClear();
+
+    const edited = await view(CustomPlanEditorPage);
+    await edited.click(edited.all('editor-remove')[0]);
+    const before = storage.values.get(PLAN_KEY);
+    pressHardwareBack();
+    await edited.settle();
+    expect(back).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="discard-confirm"]')).not.toBeNull();
+    expect(TestBed.inject(CustomPlanDraftService).dirty()).toBe(true);
+    expect(storage.values.get(PLAN_KEY)).toBe(before);
+  });
+
+  it('Android Back is left to the exercise picker while it is on top of the editor', async () => {
+    const { back } = configure();
+    const editor = await view(CustomPlanEditorPage);
+    await editor.click(editor.all('editor-remove')[0]);
+    (editor.fixture.nativeElement as HTMLElement).classList.add('ion-page-hidden');
+    // The editor's own handler (priority 10) passes Back along instead of acting.
+    const next = pressHardwareBack(10);
+    expect(next).toHaveBeenCalledOnce();
+    expect(back).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-testid="discard-confirm"]')).toBeNull();
+  });
+
   it('a failed write keeps the editor open with the draft and an honest message; the active plan is unchanged', async () => {
     const { storage, back } = configure();
     const { all, one, click, settle } = await view(CustomPlanEditorPage);
@@ -246,6 +287,9 @@ describe('Exercise picker and library', () => {
     expect(one('picker-done')).toBeNull();
     expect(clean(one('picker-count'))).toMatch(/^\d+ exercises$/);
     expect(items(el)).toContain('Bench Press');
+    // Every exercise says what it needs, including none.
+    const pushUp = all('picker-item').find((r) => clean(r.querySelector('.name')) === 'Push-Up')!;
+    expect(clean(pushUp)).toContain('Equipment: Bodyweight');
   });
 
   it('opens an exercise’s details: muscles, equipment and the existing demonstration', async () => {
@@ -256,7 +300,10 @@ describe('Exercise picker and library', () => {
     await settle();
     const detail = document.querySelector('[data-testid="picker-detail"]')!;
     expect(clean(detail)).toContain('Chest');
-    expect(clean(detail)).toContain('Barbell');
+    // Equipment is its own labelled line, not mixed into the muscles.
+    expect(clean(detail)).toContain('Equipment: Barbell, bench, rack');
+    expect(clean(row)).toContain('Equipment: Barbell, bench, rack');
+    expect(clean(row.querySelectorAll('.meta')[0])).toBe('Chest');
     expect(detail.querySelector('app-exercise-demo [data-testid="demo-toggle"]')).not.toBeNull();
   });
 
@@ -395,6 +442,23 @@ describe('Workout tab: generated or custom plan', () => {
     expect(forward).toHaveBeenCalledWith('/workout/exercises');
     await click(one('plan-build'));
     expect(forward).toHaveBeenCalledWith('/workout/plan/edit');
+  });
+
+  it('shows a plan saved in the editor when the tab is shown again, without switching tabs', async () => {
+    configure({ premium: true });
+    const plans = TestBed.inject(WorkoutPlanService);
+    const state = await plans.load();
+    const { one, all } = await view(WorkoutPage);
+    await vi.waitFor(async () => expect(all('plan-actions')).toHaveLength(1));
+    expect(one('plan-build')).not.toBeNull();
+    expect(one('plan-edit')).toBeNull();
+
+    // The editor (a full-screen route on top of this tab) saves; Ionic doesn't re-enter the tab's page.
+    const spec = (await import('../../../domain/training-plan')).customSpecFromPlan((state as { plan: WorkoutPlan }).plan);
+    expect((await plans.saveCustomPlan(spec)).kind).toBe('saved');
+    await vi.waitFor(() => expect(one('plan-edit')).not.toBeNull());
+    expect(one('plan-build')).toBeNull();
+    expect(clean(document.body)).toContain('Custom plan');
   });
 
   it('Premium: no Premium note; a saved custom plan is labelled and offers Edit and a confirmed way back', async () => {

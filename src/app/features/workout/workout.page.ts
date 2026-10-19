@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, resource, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, resource, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavController } from '@ionic/angular';
 
@@ -9,6 +9,7 @@ import { CLOCK } from '../../core/time/clock';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
+import { WorkoutPlan } from '../../domain/workout-programming';
 import {
   BottomSheetComponent,
   EmptyStateComponent,
@@ -82,6 +83,7 @@ export class WorkoutPage {
       // An interrupted workout is offered for resuming (it never changes with the plan).
       await this.logs.loadActive();
       const plan = await this.plans.load();
+      this.shownPlan = plan.kind === 'ready' ? plan.plan : null;
       return { screen: toWorkoutScreen(plan, this.clock()), sessions: plan.kind === 'ready' ? plan.plan.sessions : [] };
     },
   });
@@ -112,9 +114,19 @@ export class WorkoutPage {
   private readonly weekHeading = viewChild<ElementRef<HTMLElement>>('weekHeading');
 
   private entered = false;
+  /** The plan this screen was last built from. */
+  private shownPlan: WorkoutPlan | null = null;
 
   constructor() {
     void this.entitlements.refresh();
+    // The plan can change while this tab waits under a full-screen route (saving a custom plan in the
+    // editor, switching back to a generated one), and Ionic doesn't re-enter a tab's page then.
+    effect(() => {
+      const plan = this.plans.plan();
+      if (plan && this.shownPlan && plan !== this.shownPlan) {
+        this.state.reload();
+      }
+    });
   }
 
   /** Ionic tab re-entry: re-check the plan (the profile may have changed elsewhere) and history. */

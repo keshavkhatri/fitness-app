@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, resource, 
 import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
 
 import { Exercise, MuscleGroup, WorkoutPlan } from '../../../domain/workout-programming';
-import { BottomSheetComponent, FitnessButtonComponent, FitnessChipComponent } from '../../../shared/ui';
+import { BottomSheetComponent, FitnessButtonComponent, FitnessChipComponent, FitnessIconButtonComponent } from '../../../shared/ui';
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { ExerciseDemoComponent } from '../components/exercise-demo.component';
-import { exerciseMetadata, sessionTitle } from '../workout-formatting';
+import { exerciseEquipment, exerciseMuscles, sessionTitle } from '../workout-formatting';
 import { WORKOUT_PATH } from '../workout-paths';
 import { CUSTOM_PLAN_COPY } from './custom-plan-content';
 import { CUSTOM_PLAN_LIMITS } from '../../../domain/training-plan';
@@ -24,7 +24,7 @@ import { EQUIPMENT_OPTIONS, EquipmentFilter, ExerciseQuery, MUSCLE_OPTIONS, NO_Q
   templateUrl: './exercise-picker.page.html',
   styleUrl: './exercise-picker.page.scss',
   host: { class: 'fit-theme-dashboard' },
-  imports: [IonContent, IonFooter, IonIcon, BottomSheetComponent, ExerciseDemoComponent, FitnessButtonComponent, FitnessChipComponent, WorkoutArtComponent],
+  imports: [IonContent, IonFooter, IonIcon, BottomSheetComponent, ExerciseDemoComponent, FitnessButtonComponent, FitnessChipComponent, FitnessIconButtonComponent, WorkoutArtComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExercisePickerPage {
@@ -83,8 +83,13 @@ export class ExercisePickerPage {
     this.query.set(NO_QUERY);
   }
 
-  protected metadata(exercise: Exercise): string | null {
-    return exerciseMetadata(exercise);
+  protected musclesOf(exercise: Exercise): string {
+    return exerciseMuscles(exercise).join(' · ');
+  }
+
+  /** What the exercise needs, e.g. "Barbell, bench, rack" or "Bodyweight". */
+  protected equipmentOf(exercise: Exercise): string {
+    return exerciseEquipment(exercise) ?? '';
   }
 
   protected selected(exercise: Exercise): boolean {

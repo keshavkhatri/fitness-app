@@ -77,6 +77,7 @@ export const CUSTOM_PLAN_COPY = {
     muscle: 'Muscle',
     equipment: 'Equipment',
     any: 'Any',
+    equipmentLine: (needs: string) => `Equipment: ${needs}`,
     results: (n: number) => (n === 1 ? '1 exercise' : `${n} exercises`),
     none: 'No exercises match. Try a different search or clear a filter.',
     clear: 'Clear filters',

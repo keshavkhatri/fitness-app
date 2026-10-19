@@ -58,7 +58,7 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
         <h2 class="preview-title" id="plan-choice-title">Choose how to train</h2>
         <div class="option selected" data-testid="choice-generated">
           <ion-icon name="checkmark-circle" aria-hidden="true" />
-          <span class="item"><strong>Use generated plan</strong> Free. Tap Continue to start with the plan above.</span>
+          <span class="item"><strong>Use generated plan</strong> Free. You'll start with the plan above.</span>
         </div>
         @if (canBuild()) {
           <button type="button" class="option action" data-testid="choice-build" (click)="build()">
@@ -106,7 +106,7 @@ export class FinishStepComponent {
     void this.entitlements.refresh();
   }
 
-  /** The editor works on the plan just made; leaving it returns here, which continues to the assessment. */
+  /** The editor works on the plan just made. Leaving it goes to the workout tab, which sends first-run users on to the assessment. */
   protected build(): void {
     void this.nav.navigateForward(CUSTOM_PLAN_EDIT_PATH);
   }

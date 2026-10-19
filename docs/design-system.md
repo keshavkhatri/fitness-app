@@ -743,13 +743,17 @@ existing header style (`APP_BRAND`, shown on Home and the welcome step).
 | Server emails, confirmation and reset pages, Better Auth app name | `server/src/auth/email.ts`, `auth-routes.ts`, `auth.ts` |
 | Google sign-in consent screen | Google Cloud Console (named "StokeForm") |
 
-**Assets.** The sources are `src/assets/brand/stokeform-mark.svg` (the artwork) and `stokeform-icon.svg` (mark on
-the tile); `src/assets/icon/favicon.svg` is a copy. Run `npm run brand:assets` to regenerate every raster from the
-mark: the favicon, the Android launcher icons (legacy square, round and adaptive foreground, in all five
-densities), the adaptive-icon background colour and vector files, and the splash images (portrait and landscape,
-all densities). It needs only Chrome (set `CHROME_PATH` if it isn't in a standard location). The adaptive
-foreground keeps the mark inside the 66 dp safe zone so no launcher mask crops it. After regenerating: `npx cap
-sync android` and rebuild the APK.
+**Assets.** The app icon and launch screen are the neon artwork in `scripts/brand-source/`
+(`stokeform-icon.png`, 1254 x 1254; `stokeform-splash.png`, 887 x 1774). Run `npm run brand:assets` to regenerate
+every raster from them, with no dependencies (`scripts/lib/raster.mjs` decodes, resamples and encodes the PNGs): the
+favicon (PNG, and an SVG that embeds it), the Android launcher icons (legacy rounded square, round and adaptive
+foreground, in all five densities), the adaptive-icon background colour and the splash images (portrait and
+landscape, all densities). The adaptive foreground scales the whole artwork, wordmark included, so its widest points
+stay inside the 66 dp safe zone. The splash is 1:2 in portrait (Android stretches a plain bitmap to the screen, so
+this sits between 16:9 and 20:9 phones) and, in landscape, the logo band of the artwork blended into the splash's
+edge colour. Android 12 and later ignore the splash image: they show the launcher icon on `splash_background`
+(`windowSplashScreenBackground`). The in-app SVG marks in `src/assets/brand/` are the older lime mark and aren't
+used for the launcher. After regenerating: `npx cap sync android` and rebuild the APK.
 
 **Not named after the brand, on purpose:** the Android `applicationId` `com.fitnessapp.app` (it is the installed
 app's identity, its signing lineage, and the Google sign-in deep link `com.fitnessapp.app://auth/callback`) and

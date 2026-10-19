@@ -64,14 +64,8 @@
 }
 
 .next {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
-  margin: var(--space-5) 0 0;
   padding: 0;
   list-style: none;
-  text-align: start;
 
   li {
     display: flex;
@@ -83,15 +77,19 @@
   }
 }
 
-.icon {
+.icon,
+.day-index {
   display: grid;
-  flex-shrink: 0;
+  flex: none;
   place-items: center;
-  width: 40px;
-  height: 40px;
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   color: var(--color-primary-text);
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
   font-size: 20px;
 }
 
@@ -106,13 +104,15 @@
   }
 }
 
-// The real plan, one row per planned day.
-.preview {
+// Stacked sections: what comes next, the real plan (one row per planned day), then generated or build-your-own (Premium).
+.next,
+.preview,
+.choice {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   width: 100%;
-  margin-top: var(--space-5);
+  margin: var(--space-5) 0 0;
   text-align: start;
 }
 
@@ -130,7 +130,8 @@
   list-style: none;
 }
 
-.day {
+.day,
+.option {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -141,14 +142,8 @@
 
 .day-index {
   @include fx.text(body-sm, bold);
-  display: grid;
-  flex: none;
-  place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
 }
 
 .day-text {
@@ -169,24 +164,8 @@
   color: var(--color-text-secondary);
 }
 
-// Generated plan (default) or build your own (Premium).
-.choice {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
-  margin-top: var(--space-5);
-  text-align: start;
-}
-
 .option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
   border: var(--border-hairline) solid transparent;
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
   text-align: start;
@@ -208,6 +187,7 @@
 
     width: 100%;
     min-height: var(--tap-target-min);
+    padding: var(--space-3) var(--space-4);
     background: var(--color-surface);
   }
 

@@ -28,23 +28,14 @@ ion-content {
   text-align: center;
 }
 
-.round,
-.round-spacer {
-  flex: none;
-  width: 44px;
-  height: 44px;
+// The back / close button is a fit-icon-button on a surface-coloured disc; the spacer balances the title.
+.round {
+  background: var(--color-surface);
 }
 
-.round {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-  @include fx.pressable;
-
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  font-size: 22px;
+.round-spacer {
+  flex: none;
+  width: var(--tap-target-min);
 }
 
 .intro,
@@ -82,10 +73,6 @@ ion-content {
   min-width: 0;
 }
 
-.day-count {
-  @include fx.text(caption);
-  color: var(--color-text-secondary);
-}
 
 .exercises {
   display: flex;
@@ -150,6 +137,7 @@ ion-content {
   }
 }
 
+.day-count,
 .meta {
   @include fx.text(caption);
   color: var(--color-text-secondary);

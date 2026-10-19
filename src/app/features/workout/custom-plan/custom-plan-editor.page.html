@@ -1,9 +1,7 @@
 <ion-content>
   <main class="body">
     <div class="topbar">
-      <button type="button" class="round" [attr.aria-label]="copy.editor.cancel" data-testid="editor-cancel" (click)="cancel()">
-        <ion-icon name="close" aria-hidden="true" />
-      </button>
+      <button fit-icon-button type="button" class="round" icon="close" [attr.aria-label]="copy.editor.cancel" data-testid="editor-cancel" (click)="cancel()"></button>
       <h1 class="bar-title" data-testid="editor-title">{{ editing() ? copy.editor.editTitle : copy.editor.buildTitle }}</h1>
       <span class="round-spacer" aria-hidden="true"></span>
     </div>

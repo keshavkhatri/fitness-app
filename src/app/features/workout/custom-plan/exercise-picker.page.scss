@@ -26,23 +26,14 @@ ion-content {
   text-align: center;
 }
 
-.round,
-.round-spacer {
-  flex: none;
-  width: 44px;
-  height: 44px;
+// The back / close button is a fit-icon-button on a surface-coloured disc; the spacer balances the title.
+.round {
+  background: var(--color-surface);
 }
 
-.round {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-  @include fx.pressable;
-
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  font-size: 22px;
+.round-spacer {
+  flex: none;
+  width: var(--tap-target-min);
 }
 
 .filters {
@@ -178,6 +169,7 @@ select {
 }
 
 .thumb {
+  position: relative; // the artwork fills its nearest positioned ancestor
   flex: none;
   width: 48px;
   height: 48px;
@@ -201,30 +193,6 @@ select {
 .meta {
   @include fx.text(caption);
   color: var(--color-text-secondary);
-}
-
-.toggle {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border: var(--border-hairline) solid var(--color-border);
-  border-radius: var(--radius-pill);
-  font-size: 22px;
-
-  &.on {
-    border-color: var(--color-primary);
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-  }
 }
 
 .details {

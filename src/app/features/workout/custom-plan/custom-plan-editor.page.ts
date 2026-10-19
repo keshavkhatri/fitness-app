@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, resource, signal } from '@angular/core';
-import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, resource, signal } from '@angular/core';
+import { IonContent, IonFooter, NavController, Platform } from '@ionic/angular';
 
 import { WorkoutPlanService } from '../../../core/workout/workout-plan.service';
 import {
@@ -30,7 +30,6 @@ import { toEditorView } from './custom-plan-editor-view-model';
   imports: [
     IonContent,
     IonFooter,
-    IonIcon,
     BottomSheetComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
@@ -45,6 +44,7 @@ export class CustomPlanEditorPage {
   private readonly drafts = inject(CustomPlanDraftService);
   private readonly plans = inject(WorkoutPlanService);
   private readonly nav = inject(NavController);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly copy = CUSTOM_PLAN_COPY;
   /** True when the active plan is already a custom one (edit) rather than a generated one (build). */
@@ -71,6 +71,19 @@ export class CustomPlanEditorPage {
   protected readonly discardOpen = signal(false);
   protected readonly saving = signal(false);
   protected readonly saveMessage = signal('');
+
+  constructor() {
+    // Android Back is Cancel: unsaved changes are confirmed first. An open sheet closes itself on Back
+    // (Ionic's overlay handler outranks this one); while the exercise picker is on top, Back is its own.
+    const backButton = inject(Platform).backButton.subscribeWithPriority(10, (processNextHandler) => {
+      if (this.host.nativeElement.classList.contains('ion-page-hidden')) {
+        processNextHandler();
+      } else {
+        this.cancel();
+      }
+    });
+    inject(DestroyRef).onDestroy(() => backButton.unsubscribe());
+  }
 
   protected isOpen(sessionId: string, exerciseId: string): boolean {
     return this.open().has(`${sessionId}:${exerciseId}`);
