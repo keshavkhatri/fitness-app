@@ -7,7 +7,8 @@
 // No dependencies: scripts/lib/raster.mjs decodes, resamples (Lanczos) and encodes the PNGs itself.
 // Writes the web favicon, the Android launcher icons (legacy square, round, adaptive foreground), the adaptive
 // background colour and the Android splash images in every density and orientation. It overwrites only those
-// files. The application ID, signing and manifest are not touched.
+// files, and the website's icons and social preview image (website/assets/img). The application ID, signing and
+// manifest are not touched.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -117,4 +118,22 @@ const SPLASH_SIZES = {
 for (const [folder, [w, h]] of Object.entries(SPLASH_SIZES)) {
   png(`${RES}/${folder}/splash.png`, w > h ? landscape(w, h) : portrait(w, h));
 }
+console.log('Website');
+const SITE_IMG = 'website/assets/img';
+png(`${SITE_IMG}/favicon-64.png`, tile(64));
+png(`${SITE_IMG}/icon-192.png`, tile(192));
+png(`${SITE_IMG}/icon-512.png`, tile(512));
+// iOS rounds the corners itself and wants an opaque square.
+png(`${SITE_IMG}/apple-touch-icon.png`, resize(icon, 180, 180, artRect(0.03)));
+// Social preview (1200 x 630): the logo and wordmark from the splash, blended into its background colour.
+const preview = createImage(1200, 630, [...SPLASH_BACKGROUND, 255]);
+const previewArt = resize(splash, 887, 540, { x: 0, y: 535, width: splash.width, height: 545 }); // logo and wordmark, not the loading bar
+applyMask(previewArt, (x, y) => {
+  const smooth = (t) => (t >= 1 ? 1 : t * t * (3 - 2 * t));
+  return smooth(Math.min(x, 887 - x) / 200) * smooth(Math.min(y, 540 - y) / 60);
+});
+png(`${SITE_IMG}/og-image.png`, compose(preview, previewArt, 156, 45));
+write(`${SITE_IMG}/favicon.svg`, readFileSync(join(ROOT, 'src/assets/icon/favicon.svg')));
+console.log(`  ${SITE_IMG}/favicon.svg`);
+
 console.log('Done. Review the images, then `npx cap sync android` and rebuild the APK.');

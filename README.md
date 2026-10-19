@@ -58,6 +58,8 @@ debug build and keeps its data. iOS has not been added yet (`npx cap add ios`).
 
 ## Structure
 
+`website/` is the stokeform.com site (home, terms, privacy, contact): static files for Vercel, separate from the app. See [website/README.md](website/README.md).
+
 ```
 src/
   theme/                    Design tokens: the ONLY place colors/type/spacing are defined (contract: docs/design-system.md)
