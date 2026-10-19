@@ -10,6 +10,11 @@ import { NORMAL_PROFILE } from '../assessment/testing/assessment-fixtures';
 import { By } from '@angular/platform-browser';
 
 import { UserIdentityService } from '../../core/identity/user-identity.service';
+import { BILLING_PROVIDER, NO_BILLING } from '../../core/entitlements/billing';
+import { EntitlementService } from '../../core/entitlements/entitlement.service';
+import { PRIVATE_TESTING_CONFIG } from '../../core/entitlements/private-testing/private-testing.config';
+import { PrivateTestingService } from '../../core/entitlements/private-testing/private-testing.service';
+import { PREMIUM_TEST_BILLING } from '../../core/entitlements/testing/premium-billing';
 import { QuickAddLauncher } from '../../shell/quick-add/quick-add-launcher.service';
 import { IdentitySheetComponent } from './identity-sheet.component';
 import { YouPage } from './you.page';
@@ -81,6 +86,72 @@ describe('YouPage', () => {
     expect(clean(el.querySelector('[data-testid=plan-name]')!)).toBe('Free');
     el.querySelector<HTMLElement>('[data-testid=plan-entry]')!.click();
     expect(forward).toHaveBeenCalledExactlyOnceWith('/offer', { queryParams: { next: '/you' } });
+  });
+
+  describe('Your plan row', () => {
+    const plan = (el: HTMLElement) => ({ name: clean(el.querySelector('[data-testid=plan-name]')!), hint: clean(el.querySelector('[data-testid=plan-hint]')!) });
+
+    it('Free, with billing not set up: says Pro cannot be bought yet', async () => {
+      TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
+      const fixture = TestBed.createComponent(YouPage);
+      fixture.detectChanges();
+      await TestBed.inject(EntitlementService).refresh();
+      fixture.detectChanges();
+      expect(plan(fixture.nativeElement)).toEqual({ name: 'Free', hint: "Pro isn't available to buy yet" });
+      expect(fixture.nativeElement.querySelector('[data-testid=plan-badge]')).toBeNull();
+    });
+
+    it('Free, with billing set up: says what Pro adds; while checking, says so', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideIonicAngular(), provideRouter([]), { provide: BILLING_PROVIDER, useValue: { ...NO_BILLING, id: 'fake' } }],
+      });
+      const fixture = TestBed.createComponent(YouPage);
+      fixture.detectChanges();
+      expect(plan(fixture.nativeElement).hint).toBe('Checking your plan…');
+      await TestBed.inject(EntitlementService).refresh();
+      fixture.detectChanges();
+      expect(plan(fixture.nativeElement)).toEqual({ name: 'Free', hint: 'See what Pro adds' });
+    });
+
+    it("couldn't check the subscription (offline): Free, and says so", async () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideIonicAngular(),
+          provideRouter([]),
+          { provide: BILLING_PROVIDER, useValue: { ...NO_BILLING, id: 'fake', activeSubscription: () => Promise.reject(new Error('offline')) } },
+        ],
+      });
+      const fixture = TestBed.createComponent(YouPage);
+      await TestBed.inject(EntitlementService).refresh();
+      fixture.detectChanges();
+      expect(plan(fixture.nativeElement)).toEqual({ name: 'Free', hint: "Couldn't check your subscription. Tap to try again." });
+    });
+
+    it('a confirmed subscription is Pro, confirmed by the store', async () => {
+      TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([]), { provide: BILLING_PROVIDER, useValue: PREMIUM_TEST_BILLING }] });
+      await TestBed.inject(EntitlementService).refresh();
+      const fixture = TestBed.createComponent(YouPage);
+      fixture.detectChanges();
+      expect(plan(fixture.nativeElement)).toEqual({ name: 'Pro', hint: 'Confirmed by the store' });
+    });
+
+    it('private-testing access is Pro but is labelled test access, not a subscription', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideIonicAngular(), provideRouter([]), { provide: PRIVATE_TESTING_CONFIG, useValue: { enabled: true, promoCode: 'STOKEFORMLAB' } }],
+      });
+      await TestBed.inject(PrivateTestingService).redeem('stokeformlab');
+      const fixture = TestBed.createComponent(YouPage);
+      fixture.detectChanges();
+      expect(plan(fixture.nativeElement)).toEqual({ name: 'Pro', hint: 'Test access, not a subscription' });
+      expect(clean(fixture.nativeElement.querySelector('[data-testid=plan-badge]'))).toBe('Test access');
+
+      // Turning it off here returns to the real state (Free), and never touches a subscription.
+      fixture.nativeElement.querySelector('[data-testid=plan-test-off]').click();
+      await vi.waitFor(() => expect(TestBed.inject(PrivateTestingService).active()).toBe(false));
+      fixture.detectChanges();
+      expect(plan(fixture.nativeElement).name).toBe('Free');
+      expect(fixture.nativeElement.querySelector('[data-testid=plan-test-off]')).toBeNull();
+    });
   });
 
   it('Quick add (moved from the tab bar) opens the Quick Add sheet', () => {

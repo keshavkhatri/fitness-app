@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { IonIcon, NavController } from '@ionic/angular';
-import { EntitlementService } from '../../core/entitlements/entitlement.service';
 import { OFFER_PATH } from '../../core/profile/onboarding.guards';
 
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
@@ -19,6 +18,7 @@ import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { QuickAddLauncher } from '../../shell/quick-add/quick-add-launcher.service';
 import { AccountCardComponent } from './account-card.component';
 import { IdentitySheetComponent } from './identity-sheet.component';
+import { PlanStatusComponent } from './plan-status.component';
 import { YouHeaderComponent } from './you-header.component';
 import { YOU_TILES, YouDestination, toGoal, toYouHeader } from './you-view-model';
 import {
@@ -71,6 +71,7 @@ const TEST_IDS: Readonly<Record<YouDestination, string>> = {
     IonIcon,
     AccountCardComponent,
     IdentitySheetComponent,
+    PlanStatusComponent,
     LinkCardComponent,
     YouHeaderComponent,
     FitnessChipComponent,
@@ -83,8 +84,6 @@ export class YouPage {
   protected readonly theme = inject(ThemeService);
   protected readonly themeOptions = THEME_OPTIONS;
   protected readonly upcomingSettings = UPCOMING_SETTINGS;
-  /** Free or Premium, as the entitlement service decides (never assumed). */
-  protected readonly plan = inject(EntitlementService).plan;
   protected readonly copy = COPY;
   protected readonly tiles = YOU_TILES;
   protected readonly testIds = TEST_IDS;

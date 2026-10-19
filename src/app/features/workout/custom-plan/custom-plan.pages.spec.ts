@@ -11,6 +11,7 @@ import { WorkoutPlanService } from '../../../core/workout/workout-plan.service';
 import { WorkoutPlan, WorkoutSession } from '../../../domain/workout-programming';
 import { PROFILE, THURSDAY } from '../testing/workout-fixtures';
 import { WorkoutPage } from '../workout.page';
+import { PrivateTestingService } from '../../../core/entitlements/private-testing/private-testing.service';
 import { CustomPlanDraftService } from './custom-plan-draft.service';
 import { requireCustomPlanAccess } from './custom-plan.guard';
 import { CustomPlanEditorPage } from './custom-plan-editor.page';
@@ -96,6 +97,8 @@ describe('Custom plan editor', () => {
     expect(all('editor-day')).toHaveLength(days.length);
     expect(names(el)).toHaveLength(days.reduce((n, s) => n + s.exercises.length, 0));
     expect(clean(all('editor-day')[0].querySelector('h2'))).toMatch(/^Day 1 · /);
+    const total = days.reduce((n, s) => n + s.exercises.length, 0);
+    expect(clean(one('editor-overview'))).toBe(`${days.length} training days · ${total} exercises`);
     expect(storedPlan(storage).custom).toBeUndefined();
   });
 
@@ -300,8 +303,13 @@ describe('Exercise picker and library', () => {
     await settle();
     const detail = document.querySelector('[data-testid="picker-detail"]')!;
     expect(clean(detail)).toContain('Chest');
-    // Equipment is its own labelled line, not mixed into the muscles.
-    expect(clean(detail)).toContain('Equipment: Barbell, bench, rack');
+    // Labelled facts from the catalog only (no invented instructions): equipment on its own row.
+    const facts = [...detail.querySelectorAll('[data-testid="exercise-facts"] .fact')].map((f) => [clean(f.querySelector('dt')), clean(f.querySelector('dd'))]);
+    expect(facts).toContainEqual(['Equipment', 'Barbell, bench, rack']);
+    expect(facts).toContainEqual(['Muscles', 'Chest']);
+    expect(facts.map(([label]) => label)).toContain('Movement');
+    // Browsing (no plan day): no sets or reps are suggested.
+    expect(detail.querySelector('[data-testid="exercise-prescription"]')).toBeNull();
     expect(clean(row)).toContain('Equipment: Barbell, bench, rack');
     expect(clean(row.querySelectorAll('.meta')[0])).toBe('Chest');
     expect(detail.querySelector('app-exercise-demo [data-testid="demo-toggle"]')).not.toBeNull();
@@ -357,7 +365,8 @@ describe('Exercise picker and library', () => {
     await click(toggle());
     expect(inDay()).toContain('hammer-curl');
     expect(toggle().getAttribute('aria-pressed')).toBe('true');
-    expect(clean(one('picker-done'))).toBe(`Done · ${count + 1} in this day`);
+    expect(clean(one('picker-selected-count'))).toBe(`${count + 1} exercises in this day`);
+    expect(clean(one('picker-done'))).toBe('Done');
 
     // Leave for the editor and come back: the pick is still there.
     await click(one('picker-done'));
@@ -371,6 +380,47 @@ describe('Exercise picker and library', () => {
     await again.click(again.all('picker-item').find((r) => clean(r.querySelector('.name')) === 'Hammer Curl')!.querySelector('[data-testid="picker-toggle"]'));
     expect(inDay()).not.toContain('hammer-curl');
     expect(inDay()).toHaveLength(count);
+  });
+
+  it('for a plan day: "In this day" lists the day\'s exercises in order, and removing one there updates the draft', async () => {
+    configure();
+    const drafts = TestBed.inject(CustomPlanDraftService);
+    await drafts.begin();
+    const day = drafts.draft()![0];
+    const { el, all, one, click, settle } = await view(ExercisePickerPage, { sessionId: day.sessionId });
+    expect(one('picker-view')).not.toBeNull();
+    expect(clean(one('picker-view'))).toContain(`In this day (${day.exercises.length})`);
+
+    const dayTab = el.querySelectorAll<HTMLInputElement>('[data-testid="picker-view"] input')[1];
+    dayTab.click();
+    await settle();
+    const names = all('picker-item').map((r) => clean(r.querySelector('.name')));
+    expect(names).toEqual(day.exercises.map((e) => drafts.catalog.get(e.exerciseId)!.name));
+    expect(one('picker-search')).toBeNull(); // the library filters belong to the library view
+
+    await click(all('picker-item')[0].querySelector('[data-testid="picker-toggle"]'));
+    expect(drafts.draft()![0].exercises).toHaveLength(day.exercises.length - 1);
+    expect(clean(one('picker-selected-count'))).toBe(`${day.exercises.length - 1} exercises in this day`);
+  });
+
+  it('for a plan day: details show the sets, reps and rest it would be added with, then the ones it has', async () => {
+    configure();
+    const drafts = TestBed.inject(CustomPlanDraftService);
+    await drafts.begin();
+    const day = drafts.draft()![0];
+    const { all, click, settle } = await view(ExercisePickerPage, { sessionId: day.sessionId });
+    const row = all('picker-item').find((r) => !r.classList.contains('selected') && clean(r.querySelector('.name')) === 'Hammer Curl')!;
+    await click(row.querySelector('[data-testid="picker-details"]'));
+    await settle();
+    const prescription = () => document.querySelector('[data-testid="exercise-prescription"]')!;
+    expect(clean(prescription().querySelector('dt'))).toBe('When added');
+    expect(clean(prescription().querySelector('dd'))).toMatch(/^\d+ sets · \d+(–\d+)? reps/);
+
+    (document.querySelector('[data-testid="picker-detail-toggle"]') as HTMLButtonElement).click();
+    await settle();
+    expect(drafts.has(day.sessionId, 'hammer-curl')).toBe(true);
+    expect(clean(prescription().querySelector('dt'))).toBe('In this day');
+    expect(row.classList.contains('selected')).toBe(true);
   });
 
   it('a full day stops accepting exercises', async () => {
@@ -430,16 +480,31 @@ describe('Premium gating', () => {
 });
 
 describe('Workout tab: generated or custom plan', () => {
-  it('Free default: a generated plan, "Build my own" labelled Premium with an honest note; the library is one tap away', async () => {
+  it('Free default: a generated plan, "Build my own" labelled Pro with an honest note; the library is one tap away', async () => {
     const { forward } = configure({ premium: false });
     const { one, click, all } = await view(WorkoutPage);
     await vi.waitFor(async () => expect(all('plan-actions')).toHaveLength(1));
     expect(clean(document.body)).toContain('Generated plan');
-    expect(clean(one('plan-premium-note'))).toContain('Premium: choose your own exercises and edit your plan.');
+    expect(clean(one('plan-premium-note'))).toContain('Pro Choose your own exercises and edit your plan.');
     expect(clean(one('plan-build'))).toBe('Build my own');
 
     await click(one('plan-browse'));
     expect(forward).toHaveBeenCalledWith('/workout/exercises');
+    // "Build my own" explains the Pro feature first; it never opens the editor without access.
+    await click(one('plan-build'));
+    expect(forward).not.toHaveBeenCalledWith('/workout/plan/edit');
+    const gate = document.querySelector('[data-testid="pro-gate"]')!;
+    expect(clean(gate)).toContain('Choose your own exercises for each training day');
+    (document.querySelector('[data-testid="pro-gate-see"]') as HTMLButtonElement).click();
+    expect(forward).toHaveBeenCalledWith('/offer', { queryParams: { next: '/workout' } });
+  });
+
+  it('with Pro test access, "Build my own" opens the editor directly', async () => {
+    const { forward } = configure({ premium: false });
+    await TestBed.inject(PrivateTestingService).redeem('STOKEFORMLAB');
+    const { one, click, all } = await view(WorkoutPage);
+    await vi.waitFor(async () => expect(all('plan-actions')).toHaveLength(1));
+    expect(one('plan-premium-note')).toBeNull();
     await click(one('plan-build'));
     expect(forward).toHaveBeenCalledWith('/workout/plan/edit');
   });

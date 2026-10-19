@@ -2,7 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, resource, 
 import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
 
 import { Exercise, MuscleGroup, WorkoutPlan } from '../../../domain/workout-programming';
-import { BottomSheetComponent, FitnessButtonComponent, FitnessChipComponent, FitnessIconButtonComponent } from '../../../shared/ui';
+import {
+  BottomSheetComponent,
+  FitnessButtonComponent,
+  FitnessChipComponent,
+  FitnessIconButtonComponent,
+  SegmentOption,
+  SegmentedControlComponent,
+} from '../../../shared/ui';
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { ExerciseDemoComponent } from '../components/exercise-demo.component';
 import { exerciseEquipment, exerciseMuscles, sessionTitle } from '../workout-formatting';
@@ -10,6 +17,8 @@ import { WORKOUT_PATH } from '../workout-paths';
 import { CUSTOM_PLAN_COPY } from './custom-plan-content';
 import { CUSTOM_PLAN_LIMITS } from '../../../domain/training-plan';
 import { CustomPlanDraftService } from './custom-plan-draft.service';
+import { summarize } from './custom-plan-editor-view-model';
+import { ExerciseFactsComponent } from './exercise-facts.component';
 import { EQUIPMENT_OPTIONS, EquipmentFilter, ExerciseQuery, MUSCLE_OPTIONS, NO_QUERY, filterExercises } from './exercise-filter';
 
 /**
@@ -24,7 +33,19 @@ import { EQUIPMENT_OPTIONS, EquipmentFilter, ExerciseQuery, MUSCLE_OPTIONS, NO_Q
   templateUrl: './exercise-picker.page.html',
   styleUrl: './exercise-picker.page.scss',
   host: { class: 'fit-theme-dashboard' },
-  imports: [IonContent, IonFooter, IonIcon, BottomSheetComponent, ExerciseDemoComponent, FitnessButtonComponent, FitnessChipComponent, FitnessIconButtonComponent, WorkoutArtComponent],
+  imports: [
+    IonContent,
+    IonFooter,
+    IonIcon,
+    BottomSheetComponent,
+    ExerciseDemoComponent,
+    ExerciseFactsComponent,
+    FitnessButtonComponent,
+    FitnessChipComponent,
+    FitnessIconButtonComponent,
+    SegmentedControlComponent,
+    WorkoutArtComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExercisePickerPage {
@@ -64,6 +85,19 @@ export class ExercisePickerPage {
   protected readonly inDayCount = computed(() => this.day()?.exercises.length ?? 0);
   protected readonly dayFull = computed(() => this.inDayCount() >= this.maxPerDay);
 
+  /** In a plan day: the whole library, or only what is in the day already. */
+  protected readonly view = signal<'library' | 'day'>('library');
+  protected readonly viewOptions = computed<readonly SegmentOption<'library' | 'day'>[]>(() => [
+    { value: 'library', label: this.copy.libraryTab },
+    { value: 'day', label: this.copy.dayTab(this.inDayCount()) },
+  ]);
+  protected readonly showingDay = computed(() => this.selecting() && this.view() === 'day');
+  /** The day's exercises, in its order. */
+  protected readonly dayExercises = computed(() =>
+    (this.day()?.exercises ?? []).map((e) => this.drafts.catalog.get(e.exerciseId)).filter((e): e is Exercise => e !== undefined),
+  );
+  protected readonly shown = computed(() => (this.showingDay() ? this.dayExercises() : this.results()));
+
   protected readonly detail = signal<Exercise | null>(null);
   protected readonly detailOpen = computed(() => this.detail() !== null);
 
@@ -90,6 +124,13 @@ export class ExercisePickerPage {
   /** What the exercise needs, e.g. "Barbell, bench, rack" or "Bodyweight". */
   protected equipmentOf(exercise: Exercise): string {
     return exerciseEquipment(exercise) ?? '';
+  }
+
+  /** The sets, reps and rest it has in this day, or would be added with; null when just browsing. */
+  protected prescriptionOf(exercise: Exercise): { readonly text: string; readonly inDay: boolean } | null {
+    const id = this.sessionId();
+    const found = id && this.selecting() ? this.drafts.prescriptionFor(id, exercise) : null;
+    return found ? { text: summarize(found.exercise, exercise.measurement === 'time'), inDay: found.inDay } : null;
   }
 
   protected selected(exercise: Exercise): boolean {

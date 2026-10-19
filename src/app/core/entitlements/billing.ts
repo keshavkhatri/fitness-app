@@ -67,6 +67,11 @@ export interface BillingProvider {
   restore(): Promise<void>;
   /** The authoritative entitlement check. null when there is no subscription. */
   activeSubscription(): Promise<ActiveSubscription | null>;
+  /**
+   * Optional: calls the listener when the provider learns the customer's subscription changed (a renewal, an
+   * expiry, a refund or a restore). The listener only asks EntitlementService to read activeSubscription() again.
+   */
+  watch?(listener: () => void): void;
 }
 
 /** The default until a provider is integrated: nothing can be bought, and nothing is ever Premium. */

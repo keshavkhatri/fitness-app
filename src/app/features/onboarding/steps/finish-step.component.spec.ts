@@ -42,13 +42,15 @@ describe('first-run plan presentation: generated plan or build my own', () => {
     expect(JSON.parse(storage.values.get('fitness.workout-plan')!).plan.custom).toBeUndefined();
   });
 
-  it('without billing, "Build my own" is explained as Premium and not available: no button, no purchase claim', async () => {
+  it('for Free users, "Build my own" is a Pro option explained in words: no button, no purchase claim', async () => {
     const { q, forward } = await render(false);
     expect(q('choice-build')).toBeNull();
     const note = q('choice-build-unavailable')!;
     expect(note.textContent).toContain('Build my own');
-    expect(note.textContent).toContain('Premium users can choose their own exercises and edit their plan.');
-    expect(note.textContent).toContain("Premium isn't available yet");
+    expect(note.textContent).toContain('Pro');
+    expect(note.textContent).toContain('Choose your own exercises and edit your plan with Pro.');
+    expect(note.textContent).toContain('Your plan');
+    expect(note.textContent).not.toContain('Premium');
     expect(note.tagName).not.toBe('BUTTON');
     expect(forward).not.toHaveBeenCalled();
   });

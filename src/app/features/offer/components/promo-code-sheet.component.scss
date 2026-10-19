@@ -1,0 +1,45 @@
+@use 'mixins' as fx;
+
+.form,
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.done {
+  align-items: center;
+  text-align: center;
+
+  button {
+    align-self: stretch;
+  }
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 34px;
+
+  &.soft {
+    align-self: center;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-text);
+  }
+}
+
+.headline {
+  @include fx.text(h2, bold);
+  margin: 0;
+}
+
+.text {
+  @include fx.text(body-sm);
+  margin: 0;
+  color: var(--color-text-secondary);
+}

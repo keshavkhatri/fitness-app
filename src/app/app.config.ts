@@ -6,6 +6,8 @@ import { routes } from './app.routes';
 import { BrandTitleStrategy } from './core/brand-title.strategy';
 import { registerAppIcons } from './core/icons/register-icons';
 import { AuthService } from './core/auth/auth.service';
+import { BILLING_PROVIDER } from './core/entitlements/billing';
+import { billingProviderFactory } from './core/entitlements/revenuecat/revenuecat-billing.provider';
 import { trackTextScale } from './core/text-scale/text-scale';
 import { ThemeService } from './core/theme/theme.service';
 
@@ -32,6 +34,9 @@ export const appConfig: ApplicationConfig = {
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     { provide: TitleStrategy, useExisting: BrandTitleStrategy },
     provideIonicAngular(ionicConfig),
+    // Pro subscriptions go through RevenueCat once a public SDK key is configured (environments/billing.ts);
+    // until then nothing can be bought and everyone is on Free.
+    { provide: BILLING_PROVIDER, useFactory: billingProviderFactory },
     provideRouter(routes, withPreloading(PreloadAllModules), withComponentInputBinding()),
     provideAppInitializer(() => {
       registerAppIcons();

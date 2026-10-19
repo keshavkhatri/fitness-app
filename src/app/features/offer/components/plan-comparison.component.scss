@@ -1,0 +1,87 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.compare {
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.head,
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px 44px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.head {
+  padding-bottom: var(--space-2);
+}
+
+.title {
+  @include fx.text(h3, bold);
+  margin: 0;
+}
+
+.col {
+  @include fx.text(caption, bold);
+  justify-self: center;
+  color: var(--color-text-secondary);
+
+  &.pro {
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  padding: var(--space-2) 0;
+  border-top: var(--border-hairline) solid var(--color-border);
+
+  &.highlight {
+    margin-inline: calc(-1 * var(--space-2));
+    padding-inline: var(--space-2);
+    border-top: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-primary-soft);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.feature {
+  @include fx.text(body-sm);
+  min-width: 0;
+}
+
+.mark {
+  justify-self: center;
+  font-size: var(--icon-size-sm);
+
+  &.yes {
+    color: var(--color-primary-text);
+  }
+
+  &.no {
+    color: var(--color-text-tertiary, var(--color-text-secondary));
+  }
+}
+
+.more summary {
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+  padding: var(--space-3) 0 var(--space-1);
+  color: var(--color-primary-text);
+  cursor: pointer;
+}

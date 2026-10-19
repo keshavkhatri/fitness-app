@@ -79,3 +79,5 @@ export function canAccess(id: FeatureId, plan: Plan): boolean {
 
 export const FREE_FEATURES = FEATURE_MATRIX.filter((r) => r.tier === 'free' && r.available);
 export const PREMIUM_FEATURES = FEATURE_MATRIX.filter((r) => r.tier === 'premium');
+/** What Pro includes today: the paid features that are built. Unbuilt candidates are never promised. */
+export const PRO_FEATURES = FEATURE_MATRIX.filter((r) => r.tier === 'premium' && r.available);

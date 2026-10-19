@@ -23,6 +23,7 @@
         @let v = view();
         @if (v) {
           <p class="intro">{{ copy.editor.intro }}</p>
+          <p class="day-count" data-testid="editor-overview">{{ copy.editor.overview(v.days.length, v.exerciseCount) }}</p>
 
           @for (day of v.days; track day.sessionId) {
             <section class="day" [attr.aria-labelledby]="'day-' + day.sessionId" data-testid="editor-day">

@@ -1,6 +1,6 @@
 @use 'mixins' as fx;
 
-// Warm dashboard page; the Premium card is the screen's one ink surface. Single column: works at 320 px.
+// Ink brand header, then the warm dashboard page. Single column: works at 320 px.
 
 ion-content {
   --background: var(--color-bg);
@@ -12,80 +12,33 @@ ion-content {
   gap: var(--space-4);
   max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-8)) var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-4) var(--space-6);
 }
 
-.intro {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.title {
-  @include fx.text(h1, bold);
-}
-
-.caption {
-  @include fx.text(body);
-  color: var(--color-text-secondary);
-}
-
-.plan {
+.pro {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-5) var(--space-4);
+  border: 2px solid var(--color-primary);
   border-radius: var(--radius-card);
-}
-
-.free {
   background: var(--color-surface);
 }
 
-.premium {
-  background: var(--color-ink);
-  color: var(--color-on-ink);
-}
-
-.plan-name {
-  @include fx.text(h2, bold);
-}
-
-.plan-lead {
-  @include fx.text(body, medium);
-}
-
-.premium .plan-lead,
-.premium .terms,
-.premium .status {
-  color: var(--color-on-ink-secondary);
-}
-
-.features {
+.pro-head {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    @include fx.text(body-sm);
-    display: flex;
-    gap: var(--space-2);
-    align-items: flex-start;
-  }
+  align-items: center;
+  justify-content: space-between;
 
   ion-icon {
-    flex: none;
-    margin-top: 2px;
-    font-size: var(--icon-size-sm);
+    font-size: 22px;
     color: var(--color-primary-text);
   }
 }
 
-.premium .features ion-icon {
-  color: var(--color-primary);
+.pro-name {
+  @include fx.text(h2, bold);
+  margin: 0;
 }
 
 .product {
@@ -95,28 +48,79 @@ ion-content {
 }
 
 .price {
-  @include fx.text(body);
+  @include fx.text(h2, bold);
+  margin: 0;
+
+  .period {
+    @include fx.text(body);
+    margin-inline-start: var(--space-1);
+    color: var(--color-text-secondary);
+  }
 }
 
 .terms,
 .status {
   @include fx.text(body-sm);
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 
 .link {
+  @include fx.button-reset;
   @include fx.focus-ring;
   align-self: center;
-  padding: var(--space-2);
-  border: 0;
-  background: none;
-  font: inherit;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-2);
   font-weight: var(--font-weight-semibold);
   text-decoration: underline;
-  cursor: pointer;
+}
 
-  &.on-ink {
-    color: var(--color-on-ink);
+.promo-row {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  text-align: start;
+
+  .chevron {
+    flex: none;
+    margin-inline-start: auto;
+    color: var(--color-text-secondary);
   }
+}
+
+.promo-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 20px;
+}
+
+.promo-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.promo-title {
+  @include fx.text(body, semibold);
+}
+
+.promo-hint {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
 }
 
 .footer {

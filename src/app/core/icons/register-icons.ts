@@ -100,6 +100,7 @@ import {
   logOutOutline,
   phonePortraitOutline,
   lockClosedOutline,
+  ticketOutline,
 } from 'ionicons/icons';
 
 /**
@@ -208,5 +209,6 @@ export function registerAppIcons(): void {
     optionsOutline,
     rocketOutline,
     layersOutline,
-});
+    ticketOutline,
+  });
 }

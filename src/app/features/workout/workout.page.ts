@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, resource, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { NavController } from '@ionic/angular';
+import { IonIcon, NavController } from '@ionic/angular';
 
 import { canAccess } from '../../core/entitlements/access-policy';
 import { EntitlementService } from '../../core/entitlements/entitlement.service';
-import { ONBOARDING_PATH, ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
+import { OFFER_PATH, ONBOARDING_PATH, ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
 import { CLOCK } from '../../core/time/clock';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
@@ -28,7 +28,7 @@ import { toPlanTab } from './plan/plan-view-model';
 import { PlanWeekListComponent } from './plan/plan-week-list.component';
 import { WORKOUT_COPY } from './workout-content';
 import { WorkoutScreen, toWorkoutScreen } from './workout-view-model';
-import { CUSTOM_PLAN_EDIT_PATH, EXERCISE_LIBRARY_PATH, activeWorkoutPath, historyDetailPath, workoutSessionPath } from './workout-paths';
+import { CUSTOM_PLAN_EDIT_PATH, EXERCISE_LIBRARY_PATH, WORKOUT_PATH, activeWorkoutPath, historyDetailPath, workoutSessionPath } from './workout-paths';
 
 /** Workout Detail route for a plan session id. */
 export { workoutSessionPath } from './workout-paths';
@@ -46,6 +46,7 @@ export { workoutSessionPath } from './workout-paths';
   styleUrl: './workout.page.scss',
   host: { class: 'fit-theme-dashboard' },
   imports: [
+    IonIcon,
     BottomSheetComponent,
     EmptyStateComponent,
     FitnessChipComponent,
@@ -75,6 +76,8 @@ export class WorkoutPage {
   /** Whether the access policy lets this person build and edit a custom plan (Premium). */
   protected readonly canCustomize = computed(() => canAccess('custom-workout-plan', this.entitlements.plan()));
   protected readonly switchOpen = signal(false);
+  /** The Pro gate for Free users who tap "Build my own". */
+  protected readonly gateOpen = signal(false);
   protected readonly switching = signal(false);
   protected readonly switchMessage = signal('');
   protected readonly tab = WORKOUT_COPY.planTab;
@@ -183,9 +186,22 @@ export class WorkoutPage {
     void this.nav.navigateForward(historyDetailPath(id));
   }
 
-  /** Build (Free plan) or edit (custom plan). The route's guard sends anyone without access to the offer. */
+  /**
+   * Build or edit the custom plan. Without Pro access this explains the Pro feature first (the gate) instead of
+   * opening the editor; the editor route's guard still checks access on its own.
+   */
   protected editPlan(): void {
-    void this.nav.navigateForward(CUSTOM_PLAN_EDIT_PATH);
+    if (this.canCustomize()) {
+      void this.nav.navigateForward(CUSTOM_PLAN_EDIT_PATH);
+    } else {
+      this.gateOpen.set(true);
+    }
+  }
+
+  /** From the Pro gate to the plan screen, which comes back to this tab. */
+  protected seePro(): void {
+    this.gateOpen.set(false);
+    void this.nav.navigateForward(OFFER_PATH, { queryParams: { next: WORKOUT_PATH } });
   }
 
   protected browseExercises(): void {

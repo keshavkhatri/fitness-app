@@ -1,0 +1,35 @@
+@use 'mixins' as fx;
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-hairline) solid var(--color-border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+dt {
+  @include fx.text(body-sm, semibold);
+  color: var(--color-text-secondary);
+}
+
+dd {
+  @include fx.text(body-sm);
+  margin: 0;
+}
+
+.note {
+  @include fx.text(caption);
+  display: block;
+  color: var(--color-text-secondary);
+}

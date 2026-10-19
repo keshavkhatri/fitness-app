@@ -53,7 +53,7 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
     }
 
     @if (preview()) {
-      <!-- Free by default: the generated plan above. Building your own is Premium. -->
+      <!-- Free by default: the generated plan above. Building your own is Pro. -->
       <section class="choice" aria-labelledby="plan-choice-title" data-testid="plan-choice">
         <h2 class="preview-title" id="plan-choice-title">Choose how to train</h2>
         <div class="option selected" data-testid="choice-generated">
@@ -63,13 +63,13 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
         @if (canBuild()) {
           <button type="button" class="option action" data-testid="choice-build" (click)="build()">
             <ion-icon name="create-outline" aria-hidden="true" />
-            <span class="item"><strong>Build my own <span class="badge">Premium</span></strong> Choose your own exercises, and edit your plan any time.</span>
+            <span class="item"><strong>Build my own <span class="badge">Pro</span></strong> Choose your own exercises, and edit your plan any time.</span>
             <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
           </button>
         } @else {
           <div class="option unavailable" data-testid="choice-build-unavailable">
             <ion-icon name="create-outline" aria-hidden="true" />
-            <span class="item"><strong>Build my own <span class="badge">Premium</span></strong> Premium users can choose their own exercises and edit their plan. Premium isn't available yet.</span>
+            <span class="item"><strong>Build my own <span class="badge">Pro</span></strong> Choose your own exercises and edit your plan with Pro. You can find it any time in You, under Your plan.</span>
           </div>
         }
       </section>
@@ -99,7 +99,7 @@ export class FinishStepComponent {
   private readonly entitlements = inject(EntitlementService);
   private readonly nav = inject(NavController);
 
-  /** Only a verified Premium subscription (the access policy) opens the editor; nobody is Premium without billing. */
+  /** Only Pro access (a confirmed subscription, or private-testing access) per the access policy opens the editor. */
   protected readonly canBuild = computed(() => canAccess('custom-workout-plan', this.entitlements.plan()));
 
   constructor() {

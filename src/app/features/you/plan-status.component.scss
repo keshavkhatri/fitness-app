@@ -1,0 +1,49 @@
+@use 'mixins' as fx;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.plan-row {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) 0;
+  text-align: start;
+
+  > ion-icon {
+    flex: none;
+    color: var(--color-text-secondary);
+  }
+}
+
+.plan-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plan-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.plan-name {
+  @include fx.text(body, bold);
+}
+
+.hint {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}

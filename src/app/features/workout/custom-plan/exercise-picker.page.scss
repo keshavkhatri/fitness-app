@@ -201,9 +201,15 @@ select {
   gap: var(--space-3);
 }
 
-.detail-meta {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
+
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.selection-bar .count {
+  flex: 1;
 }
 
 .footer {

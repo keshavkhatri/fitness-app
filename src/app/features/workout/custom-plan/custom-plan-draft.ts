@@ -62,6 +62,15 @@ export function draftFromSpec(spec: CustomPlanSpec): PlanDraft {
   return spec.days.map((day) => ({ sessionId: day.sessionId, exercises: day.exercises.map(fromSpec) }));
 }
 
+/** The prescription an exercise starts with when it is added to a day (exactly what `addExercise` adds). */
+export function startingExercise(
+  exercise: Exercise,
+  plan: Pick<WorkoutPlan, 'programStyle' | 'experience'>,
+  config: WorkoutProgrammingConfig,
+): DraftExercise {
+  return fromSpec(defaultCustomExercise(exercise, plan, config));
+}
+
 export function addExercise(
   draft: PlanDraft,
   sessionId: string,

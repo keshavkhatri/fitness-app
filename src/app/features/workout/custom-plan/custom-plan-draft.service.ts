@@ -7,6 +7,7 @@ import { Exercise, WorkoutPlan } from '../../../domain/workout-programming';
 import { CATALOG } from '../workout-view-model';
 import {
   PlanDraft,
+  DraftExercise,
   PrescriptionField,
   addExercise,
   draftFromSpec,
@@ -14,6 +15,7 @@ import {
   removeExercise,
   sameDraft,
   setField,
+  startingExercise,
 } from './custom-plan-draft';
 
 /**
@@ -83,6 +85,20 @@ export class CustomPlanDraftService {
   }
 
   readonly catalog: ReadonlyMap<string, Exercise> = CATALOG;
+
+  /**
+   * The sets, reps and rest an exercise has in that day: its current values if it is already there, otherwise
+   * the ones it would be added with. Null without a draft or for an unknown day.
+   */
+  prescriptionFor(sessionId: string, exercise: Exercise): { readonly inDay: boolean; readonly exercise: DraftExercise } | null {
+    const s = this.state();
+    const day = s?.draft.find((d) => d.sessionId === sessionId);
+    if (!s || !day) {
+      return null;
+    }
+    const current = day.exercises.find((e) => e.exerciseId === exercise.id);
+    return current ? { inDay: true, exercise: current } : { inDay: false, exercise: startingExercise(exercise, s.base, this.config) };
+  }
 
   private change(next: (s: { base: WorkoutPlan; draft: PlanDraft }) => PlanDraft): void {
     this.state.update((s) => (s ? { ...s, draft: next(s) } : s));

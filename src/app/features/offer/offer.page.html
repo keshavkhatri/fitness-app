@@ -1,74 +1,70 @@
 <ion-content>
-  <main class="body">
-    <header class="intro">
-      <h1 class="title" data-testid="offer-title">Choose your plan</h1>
-      <p class="caption">You can change your mind any time from You.</p>
-    </header>
+  <app-offer-hero [status]="subscribed() ? 'Pro active' : testActive() ? 'Pro test access' : null" />
 
-    @if (premiumActive()) {
-      <fit-notice tone="info" [headingLevel]="2" title="You have Premium" data-testid="offer-premium-active">
+  <main class="body">
+    @if (subscribed()) {
+      <fit-notice tone="info" [headingLevel]="2" title="You have Pro" data-testid="offer-premium-active">
         Your subscription is confirmed by the store.
       </fit-notice>
     }
 
-    <section class="plan free" aria-labelledby="offer-free" data-testid="offer-free">
-      <h2 class="plan-name" id="offer-free">Free</h2>
-      <p class="plan-lead">Everything in StokeForm today is included.</p>
-      <ul class="features">
-        @for (feature of freeFeatures; track feature.id) {
-          <li><ion-icon name="checkmark" aria-hidden="true" /><span>{{ feature.label }}</span></li>
-        }
-      </ul>
-    </section>
+    @if (testActive()) {
+      <fit-notice tone="warning" [headingLevel]="2" title="Test access is on" data-testid="offer-test-active">
+        You are using Pro with a private-testing code. This is not a subscription and nothing was charged.
+        <button fit-button type="button" variant="outline" block data-testid="offer-test-off" (click)="stopTestAccess()">Turn off test access</button>
+      </fit-notice>
+    }
 
-    <section class="plan premium" aria-labelledby="offer-premium" data-testid="offer-premium">
-      <h2 class="plan-name" id="offer-premium">Premium</h2>
+    <app-plan-comparison />
+
+    <section class="pro" aria-labelledby="offer-premium" data-testid="offer-premium">
+      <div class="pro-head">
+        <h2 class="pro-name" id="offer-premium">Pro</h2>
+        <ion-icon name="sparkles-outline" aria-hidden="true" />
+      </div>
 
       @if (billing.isLoading()) {
-        <fit-skeleton height="44px" radius="md" />
+        <fit-skeleton height="48px" radius="md" />
       } @else if (products(); as items) {
-        <p class="plan-lead">Adds, when they become available:</p>
-        <ul class="features">
-          @for (feature of premiumFeatures; track feature.id) {
-            <li><ion-icon name="sparkles-outline" aria-hidden="true" /><span>{{ feature.label }}</span></li>
-          }
-        </ul>
         @for (product of items; track product.id) {
           <div class="product" [attr.data-testid]="'offer-product-' + product.id">
-            <p class="price"><strong>{{ product.price }}</strong> / {{ product.period }}</p>
+            <p class="price">
+              <strong>{{ product.price }}</strong>@if (product.period) {
+                <span class="period">/ {{ product.period }}</span>
+              }
+            </p>
             @if (product.trial; as trial) {
-              <p class="terms" data-testid="offer-trial-terms">
-                Free for {{ trial.length }}, then {{ trial.renewalPrice }}. {{ trial.cancellationTerms }}
-              </p>
+              <p class="terms" data-testid="offer-trial-terms">Free for {{ trial.length }}, then {{ trial.renewalPrice }}. {{ trial.cancellationTerms }}</p>
             }
             <button
               fit-button
               type="button"
-              variant="on-ink"
               block
               [loading]="entitlements.purchase().status === 'pending'"
-              [disabled]="entitlements.purchase().status === 'pending' || leaving()"
+              [disabled]="entitlements.purchase().status === 'pending' || leaving() || hasPro()"
               (click)="subscribe(product)"
               [attr.data-testid]="'offer-buy-' + product.id"
             >
-              {{ product.trial ? 'Start ' + product.trial.length + ' free trial' : 'Subscribe for ' + product.price + ' / ' + product.period }}
+              {{ product.trial ? 'Start ' + product.trial.length + ' free trial' : 'Subscribe for ' + product.price + (product.period ? ' / ' + product.period : '') }}
             </button>
           </div>
         }
-        <button type="button" class="link on-ink" (click)="restore()" data-testid="offer-restore">Restore purchases</button>
+        <p class="terms">Billed by Google Play. Manage or cancel your subscription there.</p>
       } @else {
-        <p class="plan-lead">Planned, not available yet:</p>
-        <ul class="features planned">
-          @for (feature of premiumFeatures; track feature.id) {
-            <li><ion-icon name="time-outline" aria-hidden="true" /><span>{{ feature.label }}</span></li>
+        @switch (unavailableReason()) {
+          @case ('store-error') {
+            <p class="terms" role="alert" data-testid="offer-store-error">We couldn't load the subscription options. Check your connection and try again.</p>
+            <button fit-button type="button" variant="outline" block icon="refresh-outline" data-testid="offer-retry" (click)="retry()">Try again</button>
           }
-        </ul>
-        <button fit-button type="button" variant="on-ink" block disabled aria-describedby="offer-premium-unavailable" data-testid="offer-premium-unavailable">
-          Premium isn't available yet
-        </button>
-        <p class="terms" id="offer-premium-unavailable">
-          Subscriptions aren't set up in this version of the app, so there is nothing to buy and nothing will be charged.
-        </p>
+          @case ('platform-unsupported') {
+            <button fit-button type="button" block disabled aria-describedby="offer-premium-unavailable" data-testid="offer-premium-unavailable">Pro isn't available here</button>
+            <p class="terms" id="offer-premium-unavailable">Pro subscriptions are available in the Android app.</p>
+          }
+          @default {
+            <button fit-button type="button" block disabled aria-describedby="offer-premium-unavailable" data-testid="offer-premium-unavailable">Pro isn't available yet</button>
+            <p class="terms" id="offer-premium-unavailable">Subscriptions aren't set up in this version of the app, so there is nothing to buy and nothing will be charged.</p>
+          }
+        }
       }
 
       @switch (entitlements.purchase().status) {
@@ -82,14 +78,34 @@
           <p class="status" role="alert" data-testid="offer-purchase-failed">The purchase didn't go through, so nothing was charged and you're on Free. Try again later.</p>
         }
       }
+
+      <button type="button" class="link" data-testid="offer-restore" (click)="restoreOpen.set(true)">Restore purchases</button>
     </section>
+
+    @if (testing.available) {
+      <div data-testid="offer-promo">
+        <button type="button" class="promo-row" aria-haspopup="dialog" data-testid="offer-promo-toggle" (click)="promoOpen.set(true)">
+          <span class="promo-icon" aria-hidden="true"><ion-icon name="ticket-outline" /></span>
+          <span class="promo-text">
+            <span class="promo-title">Have a promo code?</span>
+            <span class="promo-hint">For private testers. Unlocks Pro as test access.</span>
+          </span>
+          <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+        </button>
+      </div>
+    }
   </main>
 </ion-content>
 
 <ion-footer class="ion-no-border">
   <div class="footer">
     <button fit-button type="button" size="lg" block [loading]="leaving()" [disabled]="leaving()" (click)="continueFree()" data-testid="offer-continue-free">
-      {{ premiumActive() ? 'Continue' : 'Continue with Free' }}
+      {{ hasPro() ? 'Continue' : 'Continue with Free' }}
     </button>
   </div>
 </ion-footer>
+
+@if (testing.available) {
+  <app-promo-code-sheet [(open)]="promoOpen" />
+}
+<app-restore-sheet [(open)]="restoreOpen" />

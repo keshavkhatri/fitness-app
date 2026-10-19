@@ -65,7 +65,7 @@
           </button>
           @if (!canCustomize()) {
             <p class="premium-note" data-testid="plan-premium-note">
-              <fit-chip icon="sparkles-outline">Premium</fit-chip>
+              <fit-chip icon="sparkles-outline">Pro</fit-chip>
               {{ customCopy.entry.buildPremium }}
             </p>
           }
@@ -111,5 +111,17 @@
     <button fit-button type="button" variant="ghost" block [disabled]="switching()" data-testid="switch-keep" (click)="switchOpen.set(false)">
       {{ customCopy.switchBack.keep }}
     </button>
+  </div>
+</fit-bottom-sheet>
+
+<fit-bottom-sheet screenTheme="dashboard" [title]="customCopy.gate.title" [(open)]="gateOpen">
+  <div class="gate" data-testid="pro-gate">
+    <span class="gate-icon" aria-hidden="true"><ion-icon name="lock-closed-outline" /></span>
+    <p class="gate-text">{{ customCopy.gate.message }}</p>
+    <fit-chip icon="sparkles-outline">Pro</fit-chip>
+    <div class="switch-actions">
+      <button fit-button type="button" block data-testid="pro-gate-see" (click)="seePro()">{{ customCopy.gate.cta }}</button>
+      <button fit-button type="button" variant="ghost" block data-testid="pro-gate-later" (click)="gateOpen.set(false)">{{ customCopy.gate.later }}</button>
+    </div>
   </div>
 </fit-bottom-sheet>

@@ -16,7 +16,8 @@ website/
 
 1. In Vercel, **Add New > Project** and import this repository.
 2. Set **Root Directory** to `website`. Framework Preset: **Other**. Leave Build Command and Output Directory empty (static files are served as they are).
-3. **Settings > Domains**: add `stokeform.com` (primary) and `www.stokeform.com` (`vercel.json` redirects it to the apex). Follow Vercel's DNS instructions at the domain registrar.
+3. **Settings > Domains**: add `stokeform.com` (primary, serving the Production deployment) and `www.stokeform.com` (redirecting to `stokeform.com`; `vercel.json` also does this). Follow Vercel's DNS instructions at the domain registrar.
+   **Do not redirect `stokeform.com` to `www.stokeform.com`** in the dashboard: together with the rule in `vercel.json` that is a redirect loop (`ERR_TOO_MANY_REDIRECTS`). Vercel sets the apex-to-www redirect by default when `www` is added first, so check it.
 4. Every push to the production branch redeploys. Pull requests get preview URLs.
 
 Pages are served without `.html` (`/terms`, `/privacy`, `/contact`). A `Content-Security-Policy` allows only same-origin images, styles and fonts, so **do not add inline `<script>` or `style=""`**: put styles in `site.css`.

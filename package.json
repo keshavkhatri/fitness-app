@@ -18,7 +18,7 @@
     "server:install": "npm --prefix server ci",
     "server:migrate": "npm run server:build && node --env-file-if-exists=server/.env server/dist/migrate.mjs up",
     "server:email:test": "npm run server:build && node --env-file-if-exists=server/.env server/dist/email-test.mjs",
-    "server:cleanup":"npm run server:build && node --env-file-if-exists=server/.env server/dist/cleanup.mjs",
+    "server:cleanup": "npm run server:build && node --env-file-if-exists=server/.env server/dist/cleanup.mjs",
     "server:cleanup:apply": "npm run server:build && node --env-file-if-exists=server/.env server/dist/cleanup.mjs --apply",
     "server:migrate:status": "npm run server:build && node --env-file-if-exists=server/.env server/dist/migrate.mjs status"
   },
@@ -40,6 +40,7 @@
     "@capacitor/status-bar": "8.0.4",
     "@fontsource-variable/inter": "^5.3.0",
     "@ionic/angular": "^9.0.0",
+    "@revenuecat/purchases-capacitor": "13.7.4",
     "ionicons": "^8.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

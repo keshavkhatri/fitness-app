@@ -45,7 +45,8 @@ const FIELD_LABEL: Record<PrescriptionField, string> = {
   rest: COPY.editor.rest,
 };
 
-function summarize(exercise: PlanDraft[number]['exercises'][number], timed: boolean): string {
+/** "4 sets · 6–10 reps · 120 sec rest" (or seconds of work for a timed exercise), as the editor writes it. */
+export function summarize(exercise: PlanDraft[number]['exercises'][number], timed: boolean): string {
   const sets = `${exercise.sets || '–'} ${exercise.sets === '1' ? 'set' : 'sets'}`;
   const work = timed
     ? `${exercise.seconds || '–'} ${COPY.editor.unitSeconds}`

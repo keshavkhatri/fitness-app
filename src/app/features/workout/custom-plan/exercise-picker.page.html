@@ -6,6 +6,15 @@
       <span class="round-spacer" aria-hidden="true"></span>
     </div>
 
+    @if (selecting()) {
+      <fit-segmented-control name="picker-view" legend="Show" [options]="viewOptions()" [(value)]="view" data-testid="picker-view" />
+    }
+
+    @if (showingDay()) {
+      @if (dayExercises().length === 0) {
+        <p class="empty" data-testid="picker-day-empty">{{ copy.dayEmpty }}</p>
+      }
+    } @else {
     <div class="filters" role="search">
       <label class="search">
         <ion-icon name="search-outline" aria-hidden="true" />
@@ -54,9 +63,11 @@
 
     @if (results().length === 0) {
       <p class="empty" data-testid="picker-empty">{{ copy.none }}</p>
-    } @else {
+    }
+    }
+    @if (shown().length > 0) {
       <ul class="list">
-        @for (exercise of results(); track exercise.id) {
+        @for (exercise of shown(); track exercise.id) {
           @let isSelected = selected(exercise);
           <li class="item" [class.selected]="isSelected" data-testid="picker-item">
             <button type="button" class="open" [attr.aria-label]="copy.details(exercise.name)" data-testid="picker-details" (click)="showDetails(exercise)">
@@ -92,8 +103,9 @@
 
 @if (selecting()) {
   <ion-footer class="ion-no-border">
-    <div class="footer">
-      <button fit-button type="button" size="lg" block data-testid="picker-done" (click)="done()">{{ copy.done(inDayCount()) }}</button>
+    <div class="footer selection-bar">
+      <p class="count" role="status" data-testid="picker-selected-count">{{ copy.selectedCount(inDayCount()) }}</p>
+      <button fit-button type="button" size="lg" data-testid="picker-done" (click)="done()">{{ copy.doneShort }}</button>
     </div>
   </ion-footer>
 }
@@ -101,8 +113,8 @@
 <fit-bottom-sheet screenTheme="dashboard" [title]="detail()?.name ?? ''" [open]="detailOpen()" (openChange)="closeDetails($event)">
   @if (detail(); as exercise) {
     <div class="details" data-testid="picker-detail">
-      <p class="detail-meta">{{ musclesOf(exercise) }}</p>
-      <p class="detail-meta">{{ copy.equipmentLine(equipmentOf(exercise)) }}</p>
+      @let p = prescriptionOf(exercise);
+      <app-exercise-facts [exercise]="exercise" [prescription]="p?.text ?? null" [inDay]="p?.inDay ?? false" />
       <app-exercise-demo [exerciseId]="exercise.id" [name]="exercise.name" />
       @if (selecting()) {
         <button

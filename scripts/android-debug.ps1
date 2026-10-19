@@ -5,7 +5,8 @@
 .PARAMETER Api
   Local: the app talks to the API server on this computer (http://localhost:8787, environment.ts),
          reached from a USB-connected phone through `adb reverse tcp:8787 tcp:8787`.
-  Cloud: the app talks to the deployed Cloud Run service (environment.prod.ts).
+  Cloud: the app talks to the deployed Cloud Run service (environment.prod.ts), the live build. While testing is
+         private it includes the promo-code test access (environment.prod.ts, privateTesting.enabled).
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts/android-debug.ps1 -Api Local

@@ -1,4 +1,6 @@
-# Access model: accounts, setup and Free / Premium
+# Access model: accounts, setup and Free / Pro
+
+The paid tier is called **Pro** in the app. The code still says `premium` internally (`Plan`, the feature matrix tier), unchanged on purpose.
 
 How StokeForm decides what a person sees and may use. Four states are kept separate, and none implies another.
 
@@ -11,7 +13,7 @@ How StokeForm decides what a person sees and may use. Four states are kept separ
 
 Rules:
 
-- Only a verified subscription is Premium. `loading`, an error, an expired subscription and "no provider" are all Free.
+- Pro comes from exactly two places, kept apart in `EntitlementService.source`: a **verified subscription** (`subscription`, from RevenueCat) and **private-testing access** (`test`, a promo code, on in the live build while testing is private; not a subscription). `loading`, an error, an expired subscription and "no provider" are all Free. See [billing-revenuecat.md](billing-revenuecat.md).
 - Signing in or out never changes the entitlement or the setup state. Signing out never deletes local data.
 - A purchase attempt (`PurchaseState`: idle / pending / cancelled / failed) is separate from the entitlement. A store's "completed" counts only after `activeSubscription()` confirms it.
 
@@ -77,11 +79,11 @@ A Premium user can replace their generated plan with one they build from the exe
 
 To activate: finish the "Billing: not integrated" steps below, then verify on a device with a real sandbox subscription. No change to the feature itself is needed. If the feature should later be offered to Free users in any form (for example a limited trial), that is a change to the matrix row's `tier`, decided as a product question.
 
-## Billing: not integrated
+## Billing: RevenueCat (set-up pending)
 
-`core/entitlements/billing.ts` defines a provider-neutral `BillingProvider` (availability, purchase, restore and the authoritative `activeSubscription`). The default `NO_BILLING` sells nothing and never reports a subscription, so the offer page shows Premium as "not available yet", with no price, no trial and no buy button.
+`core/entitlements/billing.ts` defines a provider-neutral `BillingProvider` (availability, purchase, restore and the authoritative `activeSubscription`). A RevenueCat provider (`core/entitlements/revenuecat/`) is integrated for Google Play. It is used only once a public SDK key is put in `src/environments/billing.ts`; until then the default `NO_BILLING` sells nothing and never reports a subscription, so the offer page says Pro "isn't available yet", with no price, no trial and no buy button. Real purchases additionally need the RevenueCat dashboard and Google Play Console set-up in [billing-revenuecat.md](billing-revenuecat.md) and have not been tested against real products.
 
-Before real billing:
+Still to do for real billing (the provider choice is made: RevenueCat):
 
 1. **Choose a provider.** Google Play Billing (and the App Store for iOS), directly or through a cross-platform service. That choice is a product and legal decision, so it isn't made in code.
 2. **Create products in the store.** Prices, periods and trial terms come only from the store, already localized. The app never hard-codes them.
