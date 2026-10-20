@@ -3,6 +3,7 @@ import { IonIcon } from '@ionic/angular';
 
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { WORKOUT_COPY } from '../workout-content';
+import { exercisePhoto } from '../workout-photos';
 import { HistoryExerciseView } from './history-view-model';
 
 /**
@@ -19,7 +20,7 @@ import { HistoryExerciseView } from './history-view-model';
           <h3 class="heading">
             <!-- The whole head row opens the exercise's performance over time. -->
             <button type="button" class="head" data-testid="history-exercise-open" (click)="openExercise.emit(exercise.exerciseId)">
-              <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" /></span>
+              <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" [photo]="photo(exercise.exerciseId)" /></span>
               <span class="identity">
                 <span class="name">{{ exercise.name }}</span>&ngsp;
                 <span class="count">{{ exercise.setsLabel }}<span class="visually-hidden">, {{ exercise.progress }}</span></span>
@@ -82,4 +83,5 @@ export class HistoryExerciseListComponent {
   readonly openExercise = output<string>();
 
   protected readonly copy = WORKOUT_COPY.history;
+  protected readonly photo = exercisePhoto;
 }

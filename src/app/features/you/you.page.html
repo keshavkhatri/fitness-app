@@ -1,6 +1,11 @@
 <fit-page title="You" customHeader>
   <header class="header" fitPageHeader>
-    <h1 class="heading">You</h1>
+    <div class="title-row">
+      <h1 class="heading">You</h1>
+      <button type="button" class="gear" aria-label="Settings" data-testid="settings-gear" (click)="openSettings()">
+        <ion-icon name="settings-outline" aria-hidden="true" />
+      </button>
+    </div>
     <app-you-header [name]="identity.identity().name" [photo]="identity.identity().photo" [header]="header()" (edit)="openIdentity()" />
   </header>
 
@@ -32,51 +37,8 @@
     }
   </nav>
 
-  <app-link-card icon="trending-up" [title]="copy.progress.title" [detail]="copy.progress.detail" data-testid="progress-entry" (open)="openProgress()" />
 
-  <app-account-card />
-
-  <section class="settings" aria-labelledby="you-settings">
-    <h2 class="section-title" id="you-settings">{{ copy.settings }}</h2>
-    <div class="settings-card">
-      <section aria-labelledby="you-appearance">
-        <h3 class="setting-title" id="you-appearance">{{ copy.appearance }}</h3>
-        <fit-segmented-control
-          name="theme-preference"
-          legend="Theme"
-          [options]="themeOptions"
-          [value]="theme.preference()"
-          (valueChange)="theme.setPreference($event)"
-        />
-        <p class="hint">System follows your device's light or dark setting.</p>
-      </section>
-
-      @if (unitSystem(); as units) {
-        <section aria-labelledby="you-units">
-          <h3 class="setting-title" id="you-units">{{ copy.units }}</h3>
-          <fit-segmented-control name="unit-system" legend="Units" [options]="unitOptions" [value]="units" (valueChange)="setUnits($event)" />
-          <p class="hint">Weights and measurements are shown in kg and cm, or lb and in. Your recorded values stay the same.</p>
-          @if (unitsError()) {
-            <p class="error" role="alert" data-testid="units-error">Couldn't change your units. Try again.</p>
-          }
-        </section>
-      }
-
-      <section aria-labelledby="you-plan">
-        <h3 class="setting-title" id="you-plan">{{ copy.plan }}</h3>
-        <app-plan-status (openPlans)="openPlans()" />
-      </section>
-
-      <ul class="settings-list" [attr.aria-label]="copy.upcoming">
-        @for (setting of upcomingSettings; track setting) {
-          <li>
-            <span>{{ setting }}</span>
-            <fit-chip>Coming soon</fit-chip>
-          </li>
-        }
-      </ul>
-    </div>
-  </section>
+  <app-link-card icon="settings-outline" title="Settings" detail="Account, plan, units and appearance" data-testid="settings-entry" (open)="openSettings()" />
 
   <app-identity-sheet
     [(open)]="identityOpen"

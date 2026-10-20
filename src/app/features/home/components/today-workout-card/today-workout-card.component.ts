@@ -3,6 +3,7 @@ import { IonIcon } from '@ionic/angular';
 
 import { FitnessButtonComponent, FitnessCardComponent, FitnessProgressComponent } from '../../../../shared/ui';
 import { WORKOUT_COPY } from '../../../workout/workout-content';
+import { sessionIdPhoto } from '../../../workout/workout-photos';
 import { FEATURED_WORKOUT_PHOTO } from '../../home-media';
 import { HomeWorkoutView } from '../../home-training';
 import { WorkoutArtComponent } from '../workout-art/workout-art.component';
@@ -22,7 +23,7 @@ import { WorkoutArtComponent } from '../workout-art/workout-art.component';
         @if (photo; as src) {
           <img class="photo" [src]="src" alt="" />
         } @else {
-          <app-workout-art [seed]="seed()" />
+          <app-workout-art [seed]="seed()" [photo]="sessionPhoto()" />
         }
         <div class="scrim"></div>
       </div>
@@ -136,6 +137,11 @@ export class TodayWorkoutCardComponent {
 
   /** A photo when one is configured, else the generated placeholder. */
   protected readonly photo = FEATURED_WORKOUT_PHOTO;
+  /** The session's photo (by its type); the generated art without one. */
+  protected readonly sessionPhoto = computed(() => {
+    const w = this.workout();
+    return 'sessionId' in w ? sessionIdPhoto(w.sessionId) : null;
+  });
   protected readonly seed = computed(() => {
     const w = this.workout();
     return 'sessionId' in w ? w.sessionId : w.kind;

@@ -1,10 +1,12 @@
 import { TRAINING_EXPERIENCE_LEVELS } from '../fitness-profile';
 import { Exercise, ProgressionChain } from './exercise.model';
 import {
+  ExerciseCategory,
   MovementPattern,
   MuscleGroup,
   PROGRAM_STYLES,
   WorkoutLocation,
+  isExerciseCategory,
   isExerciseTier,
   isFatigueCost,
   isMovementClass,
@@ -31,6 +33,11 @@ type ExerciseSpec = Partial<Omit<Exercise, 'id' | 'name' | 'pattern' | 'primaryM
  * free-weight compound for reps that fully trains its pattern. Isolation
  * exercises default to low fatigue, compounds to moderate.
  */
+/** The library tag a pattern implies: conditioning is cardio, trunk work is core, the rest is strength. */
+const CORE_PATTERNS: ReadonlySet<MovementPattern> = new Set(['core-flexion', 'anti-extension', 'anti-rotation']);
+const categoriesFor = (pattern: MovementPattern): readonly ExerciseCategory[] =>
+  pattern === 'conditioning' ? ['cardio'] : CORE_PATTERNS.has(pattern) ? ['core'] : ['strength'];
+
 function exercise(
   id: string,
   name: string,
@@ -57,6 +64,7 @@ function exercise(
     tier: 'standard',
     fatigue: mechanics === 'compound' ? 'moderate' : 'low',
     preferredFor: [],
+    categories: categoriesFor(pattern),
     ...spec,
   };
 }
@@ -175,11 +183,13 @@ export const EXERCISE_LIBRARY: readonly Exercise[] = [
     stability: 'supported',
   }),
   exercise('band-pull-apart', 'Band Pull-Apart', 'shoulder-horizontal-abduction', ['rear-delts'], {
+    categories: ['strength', 'mobility'],
     ...isolation,
     ...band,
     secondaryMuscles: ['upper-back'],
   }),
   exercise('reverse-snow-angel', 'Reverse Snow Angel', 'shoulder-horizontal-abduction', ['rear-delts', 'upper-back'], {
+    categories: ['strength', 'mobility'],
     ...isolation,
     movementClass: 'scapular',
     loadability: 'low',
@@ -244,6 +254,7 @@ export const EXERCISE_LIBRARY: readonly Exercise[] = [
   exercise('band-row', 'Band Row', 'horizontal-pull', ['upper-back', 'lats'], { ...band, secondaryMuscles: ['biceps'] }),
   // Scapular work only: never a full replacement for a row or pull-up.
   exercise('prone-y-raise', 'Prone Y Raise', 'horizontal-pull', ['upper-back'], {
+    categories: ['strength', 'mobility'],
     ...isolation,
     movementClass: 'scapular',
     secondaryMuscles: ['rear-delts'],
@@ -433,7 +444,7 @@ export const EXERCISE_LIBRARY: readonly Exercise[] = [
   }),
 
   // --- Core ----------------------------------------------------------------------
-  exercise('dead-bug', 'Dead Bug', 'anti-extension', ['abs'], { ...isolation, laterality: 'unilateral', loadability: 'low' }),
+  exercise('dead-bug', 'Dead Bug', 'anti-extension', ['abs'], { categories: ['core', 'mobility'], ...isolation, laterality: 'unilateral', loadability: 'low' }),
   exercise('plank', 'Plank', 'anti-extension', ['abs'], { ...isolation, ...timed, loadability: 'low' }),
   exercise('ab-wheel-rollout', 'Ab Wheel', 'anti-extension', ['abs'], {
     ...isolation,
@@ -474,6 +485,7 @@ export const EXERCISE_LIBRARY: readonly Exercise[] = [
     loadability: 'low',
   }),
   exercise('bird-dog', 'Bird Dog', 'anti-rotation', ['abs', 'lower-back'], {
+    categories: ['core', 'mobility'],
     ...isolation,
     laterality: 'unilateral',
     loadability: 'low',
@@ -573,6 +585,9 @@ export function validateExerciseCatalog(catalog: readonly Exercise[]): string[] 
     }
     if (!isExerciseTier(e.tier) || !isFatigueCost(e.fatigue)) {
       problems.push(`${where}: unknown tier or fatigue cost.`);
+    }
+    if (e.categories.length === 0 || !e.categories.every(isExerciseCategory)) {
+      problems.push(`${where}: needs at least one known category.`);
     }
     if (!e.preferredFor.every((style) => (PROGRAM_STYLES as readonly string[]).includes(style))) {
       problems.push(`${where}: unknown program style in preferredFor.`);

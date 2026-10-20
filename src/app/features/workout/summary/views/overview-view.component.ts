@@ -29,7 +29,12 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
     </header>
 
     <section class="workout" aria-labelledby="summary-workout-name">
+      <img class="workout-photo" [src]="v.photo" alt="" decoding="async" />
+      <span class="workout-scrim" aria-hidden="true"></span>
       <h2 class="workout-name" id="summary-workout-name" data-testid="summary-name">{{ v.workoutName }}</h2>
+      @if (v.areas) {
+        <p class="workout-areas" data-testid="summary-areas">{{ v.areas }}</p>
+      }
       <p class="workout-when">
         <ion-icon name="calendar-outline" aria-hidden="true" />
         <span><span class="visually-hidden">Finished </span>{{ v.finishedAt }}</span>

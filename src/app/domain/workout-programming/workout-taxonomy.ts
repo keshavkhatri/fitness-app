@@ -68,6 +68,10 @@ export const EXERCISE_TIERS = ['staple', 'standard', 'fallback'] as const;
 export type ExerciseTier = (typeof EXERCISE_TIERS)[number];
 
 /** Systemic fatigue cost; used to avoid stacking heavy lifts in one session. */
+/** Library browsing tags (the exercise picker's chips). Not used by plan generation. */
+export const EXERCISE_CATEGORIES = ['strength', 'core', 'mobility', 'cardio'] as const;
+export type ExerciseCategory = (typeof EXERCISE_CATEGORIES)[number];
+
 export const FATIGUE_COSTS = ['low', 'moderate', 'high'] as const;
 export type FatigueCost = (typeof FATIGUE_COSTS)[number];
 
@@ -199,6 +203,7 @@ export const isMuscleGroup = isMember(MUSCLE_GROUPS);
 export const isMovementClass = isMember(MOVEMENT_CLASSES);
 export const isExerciseTier = isMember(EXERCISE_TIERS);
 export const isFatigueCost = isMember(FATIGUE_COSTS);
+export const isExerciseCategory = isMember(EXERCISE_CATEGORIES);
 export const isWorkoutEquipment = isMember(WORKOUT_EQUIPMENT);
 export const isWorkoutLocation = isMember(WORKOUT_LOCATIONS);
 export const isWorkoutFrequency = isMember(WORKOUT_FREQUENCIES);

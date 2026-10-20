@@ -4,9 +4,18 @@
   display: block;
   background: var(--color-ink);
 }
-svg {
+svg,
+.photo {
   width: 100%;
   height: 100%;
+}
+.photo {
+  display: block;
+  object-fit: cover;
+  object-position: var(--workout-photo-position, center);
+  // Thumbnails can zoom in on the subject (about the same point).
+  transform: scale(var(--workout-photo-zoom, 1));
+  transform-origin: var(--workout-photo-position, center);
 }
 .base {
   fill: var(--color-ink);

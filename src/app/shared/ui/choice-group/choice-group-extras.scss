@@ -86,3 +86,15 @@
     box-shadow: 0 0 0 2px var(--color-surface);
   }
 }
+
+// Grid cards (e.g. the sex picker's avatars): a square picture above the label.
+[data-layout='grid'] .option:has(.media) {
+  padding: var(--space-3) var(--space-2);
+}
+
+[data-layout='grid'] .media {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}

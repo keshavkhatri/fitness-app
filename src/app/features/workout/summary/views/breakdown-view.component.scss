@@ -42,6 +42,8 @@ button.exercise {
   @include fx.focus-ring;
   @include fx.pressable;
   @include view.card;
+  // The resets above clear padding; restore the row's own.
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
 }
 
 .thumb {
@@ -99,6 +101,7 @@ button.exercise {
 
 .chevron {
   flex-shrink: 0;
+  margin-inline-start: calc(-1 * var(--space-1));
   color: var(--color-text-secondary);
 }
 

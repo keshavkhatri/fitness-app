@@ -65,8 +65,28 @@
   color: var(--color-text);
 }
 
-#workout-today {
-  justify-content: flex-start;
+.today-heading {
+  @include fx.text(body-sm);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+// "View week >": a quiet text link to the week's rows below.
+.link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(caption, medium);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--tap-target-min);
+  color: var(--color-text);
+
+  ion-icon {
+    font-size: 14px;
+  }
 }
 
 .strong {
@@ -125,12 +145,25 @@ h2[tabindex='-1']:focus {
 .gate-icon {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
+  border: 3px solid var(--color-ink-accent);
   border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-text);
-  font-size: 26px;
+  color: var(--color-ink-accent);
+  font-size: 28px;
+}
+
+.gate-heading {
+  @include fx.text(h3, bold);
+  margin: 0;
+}
+
+.gate-link {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  min-height: var(--tap-target-min);
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .gate-text {
@@ -141,3 +174,4 @@ h2[tabindex='-1']:focus {
 .gate .switch-actions {
   align-self: stretch;
 }
+

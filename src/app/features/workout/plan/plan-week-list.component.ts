@@ -23,7 +23,7 @@ import { PlanWeekRowView } from './plan-view-model';
             data-testid="plan-week-row"
             (click)="openSession.emit(row.sessionId)"
           >
-            <span class="thumb" aria-hidden="true"><app-workout-art [seed]="row.sessionId" /></span>
+            <span class="thumb" aria-hidden="true"><app-workout-art [seed]="row.sessionId" [photo]="row.photo" /></span>
             <span class="text" aria-hidden="true">
               <span class="title">{{ row.title }}</span>
               <span class="meta">{{ row.meta }}</span>

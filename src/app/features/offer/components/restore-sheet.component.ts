@@ -30,11 +30,15 @@ const RESULTS: Record<RestoreResult, { readonly title: string; readonly text: st
   template: `
     <fit-bottom-sheet
       screenTheme="dashboard"
-      title="Restore purchases"
-      description="Bought Pro before, on another phone or before reinstalling? Restore it here."
+      title="Restore Purchases"
       [(open)]="open"
     >
       <div class="body" data-testid="restore-sheet">
+        <div class="intro">
+          <span class="ring" aria-hidden="true"><ion-icon name="sync-outline" /></span>
+          <h3 class="intro-title">Restore Purchases</h3>
+          <p class="intro-text">Restore your Pro subscription if you've purchased it on another device or reinstalled the app.</p>
+        </div>
         @let result = outcome();
         @if (result) {
           <div class="result" [class.ok]="step() === 'restored'" role="status" [attr.data-testid]="'restore-' + step()">
@@ -48,10 +52,11 @@ const RESULTS: Record<RestoreResult, { readonly title: string; readonly text: st
         @if (step() === 'restored' || step() === 'unavailable') {
           <button fit-button type="button" block data-testid="restore-done" (click)="open.set(false)">Done</button>
         } @else {
-          <button fit-button type="button" block icon="refresh-outline" [loading]="step() === 'working'" [disabled]="step() === 'working'" data-testid="restore-run" (click)="restore()">
+          <button fit-button type="button" block [loading]="step() === 'working'" [disabled]="step() === 'working'" data-testid="restore-run" (click)="restore()">
             {{ step() === 'failed' || step() === 'none' ? 'Try again' : 'Restore' }}
           </button>
         }
+        <p class="footnote">This will update your subscription status from the app store.</p>
       </div>
     </fit-bottom-sheet>
   `,

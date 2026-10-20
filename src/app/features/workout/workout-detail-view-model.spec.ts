@@ -67,6 +67,7 @@ describe('workout detail view model', () => {
       expect(detailOf(toWorkoutDetailScreen(ready(), restSessionId('wed'), THURSDAY))).toEqual({
         kind: 'rest',
         dayLabel: 'Wednesday',
+        photo: null,
         title: 'Rest day',
         message: 'Recovery is part of your plan. There is no workout scheduled for this day.',
       });
@@ -100,6 +101,7 @@ describe('workout detail view model', () => {
         order: 1,
         exerciseId: 'barbell-bench-press',
         name: 'Bench Press',
+        photo: 'assets/images/workouts/exercises/barbell-bench-press.webp',
         stats: [
           { value: '4', label: 'sets', spokenLabel: 'sets' },
           { value: '6–10', label: 'reps', spokenLabel: 'reps' },
@@ -167,6 +169,7 @@ describe('workout detail view model', () => {
         kind: 'activity',
         dayLabel: 'Thursday · Today',
         title: 'Light Activity',
+        photo: 'assets/images/workouts/session-light-activity.webp',
         typeLabel: 'Recovery',
         durationLabel: '20–30 min',
         intensityLabel: 'Easy pace',

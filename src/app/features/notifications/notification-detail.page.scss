@@ -83,6 +83,15 @@ ion-content {
   color: var(--color-text-secondary);
 }
 
+.photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+  object-position: 70% 40%;
+}
+
 .message {
   @include fx.text(body);
   margin: 0;

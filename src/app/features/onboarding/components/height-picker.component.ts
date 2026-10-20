@@ -56,9 +56,8 @@ const UNIT_OPTIONS: readonly SegmentOption<UnitSystem>[] = [
         </p>
       </fit-ruler>
 
-      <!-- Placeholder figure until artwork ships (no photo or illustration yet). -->
       <div class="figure" aria-hidden="true">
-        <ion-icon name="body" />
+        <img class="figure-art" src="assets/images/onboarding/height-figure.webp" alt="" decoding="async" />
         <span class="tag">{{ readout().number }}{{ readout().unit ? ' ' + readout().unit : '' }}</span>
       </div>
     </div>

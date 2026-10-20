@@ -23,6 +23,7 @@ import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../../core/workout/workout-plan.service';
+import { FitnessProfileService } from '../../../core/profile/fitness-profile.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
 import { NUTRITION_PATH } from '../../nutrition/nutrition-paths';
 import { WORKOUT_COPY } from '../workout-content';
@@ -90,6 +91,7 @@ export class WorkoutSummaryPage {
   private readonly logs = inject(WorkoutLogService);
   private readonly history = inject(WorkoutHistoryService);
   private readonly plans = inject(WorkoutPlanService);
+  private readonly profiles = inject(FitnessProfileService);
   private readonly clock = inject(CLOCK);
   private readonly nav = inject(NavController);
   private readonly router = inject(Router);
@@ -108,8 +110,8 @@ export class WorkoutSummaryPage {
       if (!log || log.status !== 'completed') {
         return null;
       }
-      const history = await this.history.list();
-      return toWorkoutSummaryScreen(log, history.ok ? history.workouts : null);
+      const [history, profile] = await Promise.all([this.history.list(), this.profiles.load().catch(() => null)]);
+      return toWorkoutSummaryScreen(log, history.ok ? history.workouts : null, profile?.weight.kilograms ?? null);
     },
   });
   protected readonly summary = computed(() => (this.state.hasValue() ? this.state.value() : null));

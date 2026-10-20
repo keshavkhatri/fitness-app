@@ -141,7 +141,9 @@ export function generateWorkoutPlan(
   const { sessions, warnings, volume, targets } = week.value;
 
   // --- Identity ----------------------------------------------------------------
-  const id = `wp-${config.version}-${fnv1a32(canonicalJson({ version: config.version, input: normalized, config, catalog, chains }))}`;
+  // Browsing tags (`categories`) never shape a plan, so they are left out of its identity.
+  const shaping = catalog.map(({ categories: _tags, ...exercise }) => exercise);
+  const id = `wp-${config.version}-${fnv1a32(canonicalJson({ version: config.version, input: normalized, config, catalog: shaping, chains }))}`;
 
   const weeklyVolume = Object.fromEntries(
     VOLUME_GROUPS.map((g): [VolumeGroup, WeeklyVolumeEntry] => [

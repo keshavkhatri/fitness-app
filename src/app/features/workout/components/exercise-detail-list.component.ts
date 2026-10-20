@@ -28,7 +28,7 @@ import { ExerciseDemoComponent } from './exercise-demo.component';
               (click)="toggle(exercise.order)"
             >
               <span class="order" aria-hidden="true">{{ exercise.order }}</span>
-              <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" /></span>
+              <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" [photo]="exercise.photo" /></span>
               <span class="text">
                 <span class="name"><span class="visually-hidden">{{ exercise.order }}. </span>{{ exercise.name }}</span>&ngsp;
                 <span class="brief">{{ exercise.brief }}</span>

@@ -12,6 +12,8 @@ import { MemoryKeyValueStorage } from '../storage/testing/memory-key-value-stora
 import { CLOCK } from '../time/clock';
 import { WorkoutHistoryService } from './workout-history.service';
 import { WorkoutLogService } from './workout-log.service';
+import { PRIVATE_TESTING_CONFIG } from '../entitlements/private-testing/private-testing.config';
+import { PrivateTestingService } from '../entitlements/private-testing/private-testing.service';
 import { WorkoutPlanService, WorkoutPlanState } from './workout-plan.service';
 
 const PROFILE: UserFitnessProfile = {
@@ -102,6 +104,59 @@ describe('custom workout plan: service, persistence, execution and history', () 
     });
   });
 
+  describe('when Pro ends and comes back', () => {
+    it('on Free the custom plan is set aside (not deleted) and the generated plan is active; with Pro again it is restored', async () => {
+      const { plans } = setup(true);
+      const generated = ready(await plans.load()).plan;
+      expect((await plans.saveCustomPlan(spec(generated))).kind).toBe('saved');
+      const custom = storedPlan();
+
+      const free = relaunch(false);
+      const onFree = ready(await free.plans.load()).plan;
+      expect(onFree.custom).toBeUndefined();
+      expect(onFree.id).toBe(generated.id);
+      expect(storedPlan().custom).toBeUndefined();
+      expect(JSON.parse(storage.values.get('fitness.workout-plan-parked')!).plan).toEqual(custom);
+
+      const pro = relaunch(true);
+      expect(ready(await pro.plans.load()).plan).toEqual(custom);
+      expect(storedPlan()).toEqual(custom);
+      expect(storage.values.has('fitness.workout-plan-parked')).toBe(false);
+    });
+
+    it('turning test access off while the app is open switches to the generated plan at once', async () => {
+      const { plans } = setup(false);
+      const testing = TestBed.inject(PrivateTestingService);
+      expect(TestBed.inject(PRIVATE_TESTING_CONFIG).enabled).toBe(true);
+      expect(await testing.redeem(TestBed.inject(PRIVATE_TESTING_CONFIG).promoCode!)).toBe('activated');
+      const generated = ready(await plans.load()).plan;
+      expect((await plans.saveCustomPlan(spec(generated))).kind).toBe('saved');
+      TestBed.tick();
+      expect(plans.plan()?.custom).toBeDefined();
+
+      await testing.deactivate();
+      await vi.waitFor(() => {
+        TestBed.tick(); // effects in root services run on change detection
+        expect(plans.plan()?.custom).toBeUndefined();
+        expect(plans.plan()).not.toBeNull();
+      });
+      expect(plans.plan()?.id).toBe(generated.id);
+    });
+
+    it('if the custom plan cannot be set aside, the generated plan is used without overwriting it', async () => {
+      const { plans } = setup(true);
+      const generated = ready(await plans.load()).plan;
+      expect((await plans.saveCustomPlan(spec(generated))).kind).toBe('saved');
+      const custom = storage.values.get(PLAN_KEY);
+
+      const free = relaunch(false);
+      storage.failWrites = true;
+      expect(ready(await free.plans.load()).plan.custom).toBeUndefined();
+      storage.failWrites = false;
+      expect(storage.values.get(PLAN_KEY)).toBe(custom);
+    });
+  });
+
   describe('saving and editing', () => {
     it('saves a validated custom plan as the active plan, in the existing plan storage, marked custom', async () => {
       const { plans } = setup(true);
@@ -153,18 +208,16 @@ describe('custom workout plan: service, persistence, execution and history', () 
   });
 
   describe('persistence across app restarts', () => {
-    it('the custom plan is still the active plan after a relaunch, even without Premium', async () => {
+    it('after a relaunch without Pro the generated plan is active and changing a custom plan is refused', async () => {
       const { plans } = setup(true);
       await plans.saveCustomPlan(spec(ready(await plans.load()).plan));
       const saved = storedPlan();
 
       const next = relaunch(false);
       const state = ready(await next.plans.load());
-      expect(state.plan).toEqual(saved);
-      expect(state.origin).toBe('stored');
-      // Using the plan is not gated; only changing it is.
+      expect(state.plan.custom).toBeUndefined();
       expect(await next.plans.saveCustomPlan(spec(state.plan, ['deadlift']))).toEqual({ kind: 'not-allowed' });
-      expect(storedPlan()).toEqual(saved);
+      expect(JSON.parse(storage.values.get('fitness.workout-plan-parked')!).plan).toEqual(saved);
     });
 
     it('a stored custom plan that no longer parses is replaced by a generated one rather than breaking the app', async () => {

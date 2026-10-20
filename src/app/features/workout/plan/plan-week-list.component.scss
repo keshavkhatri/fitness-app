@@ -32,6 +32,10 @@
 }
 
 .thumb {
+  // Session photos put the athlete on the right (text sits on the left of the hero); crop the thumbnail onto him.
+  --workout-photo-position: 72% 45%;
+  --workout-photo-zoom: 1.6;
+
   position: relative;
   width: 48px;
   height: 48px;

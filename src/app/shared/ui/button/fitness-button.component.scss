@@ -42,6 +42,11 @@ ion-icon {
   }
 }
 
+:host([data-variant='ink']) {
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+}
+
 :host([data-variant='secondary']) {
   background: var(--color-primary-soft);
   color: var(--color-primary-text);

@@ -1,0 +1,40 @@
+@use 'mixins' as fx;
+
+// The one-time "Build my own" reminder from setup.
+.intent {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--color-primary);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.intent-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 20px;
+}
+
+.intent-title {
+  @include fx.text(body, bold);
+  margin: 0;
+}
+
+.intent-message {
+  @include fx.text(body-sm);
+  margin: 2px 0 var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.intent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

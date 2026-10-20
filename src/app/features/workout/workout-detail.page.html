@@ -12,7 +12,7 @@
       @let d = s.detail;
       <header class="hero">
         <div class="hero-art" aria-hidden="true">
-          <app-workout-art [seed]="sessionId()" />
+          <app-workout-art [seed]="sessionId()" [photo]="d.photo" />
           <span class="fade"></span>
         </div>
         <div class="hero-text">
@@ -32,6 +32,7 @@
                   }
                 </ul>
               }
+              <p class="summary" data-testid="session-summary">{{ d.summary }}</p>
             }
             @case ('activity') {
               <ul class="meta" data-testid="session-meta">

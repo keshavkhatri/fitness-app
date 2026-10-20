@@ -1,102 +1,124 @@
 <ion-content>
-  <main class="body">
-    <div class="topbar">
-      <button fit-icon-button type="button" class="round" icon="chevron-back" [attr.aria-label]="copy.back" data-testid="picker-back" (click)="done()"></button>
-      <h1 class="bar-title" data-testid="picker-title">{{ title() }}</h1>
-      <span class="round-spacer" aria-hidden="true"></span>
-    </div>
+  @if (selecting()) {
+    <app-custom-plan-header step="workout" [saveDisabled]="false" (back)="backToBasics()" (save)="saveFromHeader()" />
+  }
 
+  <main class="body" [class.in-plan]="selecting()">
     @if (selecting()) {
+      <h2 class="heading" data-testid="picker-title">{{ copy.addExercises }}</h2>
+      <div class="days" role="radiogroup" [attr.aria-label]="copy.daysLabel" data-testid="picker-days">
+        @for (d of days(); track d.sessionId) {
+          <button
+            type="button"
+            class="day-chip"
+            role="radio"
+            [attr.aria-checked]="d.sessionId === activeId()"
+            [attr.aria-label]="copy.dayChip(d.heading, d.exercises.length)"
+            [attr.data-testid]="'picker-day-' + $index"
+            (click)="showDay(d.sessionId)"
+          >
+            <span class="day-chip-name">{{ d.heading.split(' – ')[0] }}</span>
+            <span class="day-chip-meta">{{ d.heading.split(' – ')[1] }} · {{ d.exercises.length }}</span>
+          </button>
+        }
+      </div>
+      <p class="day-name" data-testid="picker-day"><span>{{ copy.addingTo }}</span>&ngsp;<strong>{{ dayHeading() }}</strong></p>
       <fit-segmented-control name="picker-view" legend="Show" [options]="viewOptions()" [(value)]="view" data-testid="picker-view" />
+    } @else {
+      <div class="topbar">
+        <button fit-icon-button type="button" class="round" icon="chevron-back" [attr.aria-label]="copy.back" data-testid="picker-back" (click)="done()"></button>
+        <h1 class="bar-title" data-testid="picker-title">{{ copy.libraryTitle }}</h1>
+        <span class="round-spacer" aria-hidden="true"></span>
+      </div>
     }
 
     @if (showingDay()) {
-      @if (dayExercises().length === 0) {
-        <p class="empty" data-testid="picker-day-empty">{{ copy.dayEmpty }}</p>
+      @if (dayView(); as dv) {
+        @if (dv.exercises.length === 0) {
+          <p class="empty" data-testid="picker-day-empty">{{ copy.dayEmpty }}</p>
+        } @else {
+          <app-plan-day-exercises class="card" [day]="dv" />
+        }
+        @if (dv.problem; as problem) {
+          <p class="problem" role="alert" data-testid="editor-day-problem">{{ problem }}</p>
+        }
       }
     } @else {
-    <div class="filters" role="search">
-      <label class="search">
-        <ion-icon name="search-outline" aria-hidden="true" />
-        <span class="visually-hidden">{{ copy.search }}</span>
-        <input
-          type="search"
-          class="search-input"
-          [placeholder]="copy.search"
-          [value]="query().text"
-          enterkeyhint="search"
-          autocomplete="off"
-          data-testid="picker-search"
-          (input)="setText($any($event.target).value)"
-        />
-      </label>
-      <div class="selects">
-        <label class="select">
-          <span class="select-label">{{ copy.muscle }}</span>
-          <select data-testid="picker-muscle" [value]="query().muscle ?? ''" (change)="setMuscle($any($event.target).value)">
-            <option value="">{{ copy.any }}</option>
-            @for (option of muscles; track option.value) {
-              <option [value]="option.value" [selected]="query().muscle === option.value">{{ option.label }}</option>
-            }
-          </select>
+      <div class="filters" role="search">
+        <label class="search">
+          <ion-icon name="search-outline" aria-hidden="true" />
+          <span class="visually-hidden">{{ copy.search }}</span>
+          <input
+            type="search"
+            class="search-input"
+            [placeholder]="copy.search"
+            [value]="query().text"
+            enterkeyhint="search"
+            autocomplete="off"
+            data-testid="picker-search"
+            (input)="setText($any($event.target).value)"
+          />
         </label>
-        <label class="select">
-          <span class="select-label">{{ copy.equipment }}</span>
-          <select data-testid="picker-equipment" [value]="query().equipment ?? ''" (change)="setEquipment($any($event.target).value)">
-            <option value="">{{ copy.any }}</option>
-            @for (option of equipment; track option.value) {
-              <option [value]="option.value" [selected]="query().equipment === option.value">{{ option.label }}</option>
-            }
-          </select>
-        </label>
-      </div>
-      <div class="count-row">
-        <p class="count" role="status" data-testid="picker-count">{{ copy.results(results().length) }}</p>
-        @if (filtered()) {
-          <button type="button" class="link" data-testid="picker-clear" (click)="clear()">{{ copy.clear }}</button>
-        }
-      </div>
-      @if (selecting() && dayFull()) {
-        <p class="full" role="status">{{ copy.full }}</p>
-      }
-    </div>
-
-    @if (results().length === 0) {
-      <p class="empty" data-testid="picker-empty">{{ copy.none }}</p>
-    }
-    }
-    @if (shown().length > 0) {
-      <ul class="list">
-        @for (exercise of shown(); track exercise.id) {
-          @let isSelected = selected(exercise);
-          <li class="item" [class.selected]="isSelected" data-testid="picker-item">
-            <button type="button" class="open" [attr.aria-label]="copy.details(exercise.name)" data-testid="picker-details" (click)="showDetails(exercise)">
-              <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.id" /></span>
-              <span class="text">
-                <span class="name">{{ exercise.name }}</span>
-                <span class="meta">{{ musclesOf(exercise) }}</span>
-                <span class="meta">{{ copy.equipmentLine(equipmentOf(exercise)) }}</span>
-                @if (exercise.measurement === 'time') {
-                  <fit-chip>{{ copy.timed }}</fit-chip>
-                }
-              </span>
+        <div class="chips" role="radiogroup" [attr.aria-label]="copy.categoriesLabel" data-testid="picker-categories">
+          <button type="button" class="chip" role="radio" [attr.aria-checked]="query().category === null" data-testid="picker-category-all" (click)="setCategory(null)">
+            {{ copy.all }}
+          </button>
+          @for (category of categories; track category) {
+            <button
+              type="button"
+              class="chip"
+              role="radio"
+              [attr.aria-checked]="query().category === category"
+              [attr.data-testid]="'picker-category-' + category"
+              (click)="setCategory(category)"
+            >
+              {{ copy.categories[category] }}
             </button>
-            @if (selecting()) {
-              <button
-                fit-icon-button
-                type="button"
-                [variant]="isSelected ? 'primary' : 'tonal'"
-                [icon]="isSelected ? 'checkmark' : 'add'"
-                [disabled]="!canToggle(exercise)"
-                [attr.aria-pressed]="isSelected"
-                [attr.aria-label]="isSelected ? copy.added(exercise.name) : copy.add(exercise.name)"
-                data-testid="picker-toggle"
-                (click)="toggle(exercise)"
-              ></button>
-            }
-          </li>
+          }
+        </div>
+        <div class="count-row">
+          <p class="count" role="status" data-testid="picker-count">{{ copy.results(results().length) }}</p>
+          @if (filtered()) {
+            <button type="button" class="link" data-testid="picker-clear" (click)="clear()">{{ copy.clear }}</button>
+          }
+        </div>
+        @if (selecting() && dayFull()) {
+          <p class="full" role="status">{{ copy.full }}</p>
         }
-      </ul>
+      </div>
+
+      @if (results().length === 0) {
+        <p class="empty" data-testid="picker-empty">{{ copy.none }}</p>
+      } @else {
+        <ul class="list">
+          @for (exercise of results(); track exercise.id) {
+            @let isSelected = selected(exercise);
+            <li class="item" [class.selected]="isSelected" data-testid="picker-item">
+              <button type="button" class="open" [attr.aria-label]="copy.details(exercise.name)" data-testid="picker-details" (click)="showDetails(exercise)">
+                <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.id" [photo]="photo(exercise.id)" /></span>
+                <span class="text">
+                  <span class="name">{{ exercise.name }}</span>
+                  <span class="meta">{{ lineOf(exercise) }}</span>
+                </span>
+              </button>
+              @if (selecting()) {
+                <button
+                  type="button"
+                  class="toggle"
+                  [class.on]="isSelected"
+                  [disabled]="!canToggle(exercise)"
+                  [attr.aria-pressed]="isSelected"
+                  [attr.aria-label]="isSelected ? copy.added(exercise.name) : copy.add(exercise.name)"
+                  data-testid="picker-toggle"
+                  (click)="toggle(exercise)"
+                >
+                  <ion-icon [name]="isSelected ? 'checkmark-circle' : 'add-circle-outline'" aria-hidden="true" />
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      }
     }
   </main>
 </ion-content>
@@ -104,8 +126,8 @@
 @if (selecting()) {
   <ion-footer class="ion-no-border">
     <div class="footer selection-bar">
-      <p class="count" role="status" data-testid="picker-selected-count">{{ copy.selectedCount(inDayCount()) }}</p>
-      <button fit-button type="button" size="lg" data-testid="picker-done" (click)="done()">{{ copy.doneShort }}</button>
+      <p class="count" role="status" data-testid="picker-selected-count">{{ copy.selected(inDayCount()) }}</p>
+      <button fit-button type="button" data-testid="picker-done" (click)="next()">{{ nextLabel() }}</button>
     </div>
   </ion-footer>
 }
@@ -113,10 +135,32 @@
 <fit-bottom-sheet screenTheme="dashboard" [title]="detail()?.name ?? ''" [open]="detailOpen()" (openChange)="closeDetails($event)">
   @if (detail(); as exercise) {
     <div class="details" data-testid="picker-detail">
+      <div class="detail-hero" aria-hidden="true">
+        <app-workout-art [seed]="exercise.id" [photo]="photo(exercise.id)" />
+        <span class="detail-scrim"></span>
+        <span class="detail-tags">{{ tagsOf(exercise) }}</span>
+      </div>
       @let p = prescriptionOf(exercise);
       <app-exercise-facts [exercise]="exercise" [prescription]="p?.text ?? null" [inDay]="p?.inDay ?? false" />
       <app-exercise-demo [exerciseId]="exercise.id" [name]="exercise.name" />
       @if (selecting()) {
+        <section class="add-days" aria-labelledby="picker-add-days" data-testid="picker-add-days">
+          <h3 class="add-days-title" id="picker-add-days">{{ copy.alsoAddTo }}</h3>
+          @for (d of days(); track d.sessionId) {
+            @let on = inDay(d.sessionId, exercise);
+            <button
+              type="button"
+              class="add-day"
+              role="checkbox"
+              [attr.aria-checked]="on"
+              [attr.data-testid]="'picker-add-day-' + $index"
+              (click)="toggleIn(d.sessionId, exercise)"
+            >
+              <ion-icon [name]="on ? 'checkmark-circle' : 'add-circle-outline'" aria-hidden="true" />
+              <span>{{ d.heading }}</span>
+            </button>
+          }
+        </section>
         <button
           fit-button
           type="button"
@@ -126,7 +170,7 @@
           data-testid="picker-detail-toggle"
           (click)="toggle(exercise)"
         >
-          {{ selected(exercise) ? copy.added(exercise.name) : copy.add(exercise.name) }}
+          {{ selected(exercise) ? copy.removeFromPlan : copy.addToPlan }}
         </button>
       }
     </div>

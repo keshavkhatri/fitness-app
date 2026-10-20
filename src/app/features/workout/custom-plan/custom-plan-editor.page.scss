@@ -1,47 +1,32 @@
 @use 'mixins' as fx;
 
-// Warm dashboard page (follows light/dark). One column: works at 320 px with no horizontal scroll.
+// Dark header (steps) over a warm dashboard body with rounded top corners. Works at 320 px.
 
 ion-content {
-  --background: var(--color-bg);
+  --background: var(--color-ink);
 }
 
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-8);
+  gap: var(--space-3);
+  min-height: 100%;
+  margin-top: calc(-1 * var(--space-3));
+  padding: var(--space-5) var(--space-4) var(--space-8);
+  border-radius: 24px 24px 0 0;
+  background: var(--color-bg);
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.bar-title {
-  @include fx.text(body, bold);
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-}
-
-// The back / close button is a fit-icon-button on a surface-coloured disc; the spacer balances the title.
-.round {
-  background: var(--color-surface);
-}
-
-.round-spacer {
-  flex: none;
-  width: var(--tap-target-min);
+.heading {
+  @include fx.text(h3, bold);
+  margin: 0;
 }
 
 .intro,
 .note,
-.review-lead {
+.day-count {
   @include fx.text(body-sm);
+  margin: 0;
   color: var(--color-text-secondary);
 }
 
@@ -51,133 +36,101 @@ ion-content {
   gap: var(--space-3);
 }
 
-.day {
+.days {
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  list-style: none;
+
+  li + li {
+    border-top: var(--border-hairline) solid var(--color-border);
+  }
+}
+
+.day {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-3) var(--space-4);
+  text-align: start;
+}
+
+.day-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft, var(--color-surface-muted));
+  color: var(--color-primary-text);
+  font-size: 20px;
+}
+
+.day-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.day-title {
+  @include fx.text(body-sm, semibold);
+}
+
+.day-meta {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.sep {
+  margin: 0 6px;
+}
+
+.chevron {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.problem {
+  @include fx.text(caption, semibold);
+  color: var(--color-danger-text, var(--color-text));
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) calc(var(--ion-safe-area-bottom, 0px) + var(--space-3));
+  background: var(--color-bg);
+}
+
+// --- Review ---------------------------------------------------------------------------------
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.review-day {
   padding: var(--space-4);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
 
-.day-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
-}
-
-.day-title {
-  @include fx.text(h3, bold);
-  min-width: 0;
-}
-
-
-.exercises {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.exercise {
-  padding: var(--space-3) 0;
-  border-top: var(--border-hairline) solid var(--color-border);
-
-  &:first-child {
-    border-top: 0;
-  }
-}
-
-.row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-2) var(--space-3);
-  align-items: start;
-}
-
-.order {
-  @include fx.text(caption, bold);
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  margin-top: var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-muted);
-  color: var(--color-text-on-muted);
-}
-
-// The name and prescription open the fields; a full-width target.
-.info {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-height: var(--tap-target-min);
-  text-align: start;
-}
-
-.name {
-  @include fx.text(body, semibold);
-  overflow-wrap: anywhere;
-}
-
-.summary {
-  @include fx.text(body-sm);
-  color: var(--color-text-secondary);
-
-  &.invalid {
-    color: var(--color-danger-text, var(--color-text));
-    font-weight: var(--font-weight-semibold);
-  }
-}
-
-.day-count,
-.meta {
-  @include fx.text(caption);
-  color: var(--color-text-secondary);
-}
-
-.actions {
-  display: flex;
-  grid-column: 2;
-  gap: var(--space-1);
-}
-
-.fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-  padding-inline-start: calc(24px + var(--space-3));
-}
-
-.problem {
-  @include fx.text(body-sm, semibold);
-  color: var(--color-danger-text, var(--color-text));
-}
-
-.footer {
-  padding: var(--space-3) var(--space-4) calc(var(--ion-safe-area-bottom, 0px) + var(--space-3));
-  background: var(--color-bg);
-}
-
-// --- Review sheet ---------------------------------------------------------------------------
-.review {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
 .review-day-title {
   @include fx.text(body, bold);
+  margin: 0;
 }
 
 .review-list {

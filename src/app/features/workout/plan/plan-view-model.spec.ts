@@ -68,6 +68,7 @@ describe('plan tab view model', () => {
     expect(toPlanTab(screen, plan.sessions, [], null, THURSDAY).feature).toEqual({
       kind: 'start',
       sessionId: 'day-3-upper',
+      photo: 'assets/images/workouts/session-upper.webp',
       title: 'Upper Body B',
       minutes: 50,
       countLabel: '7 exercises',

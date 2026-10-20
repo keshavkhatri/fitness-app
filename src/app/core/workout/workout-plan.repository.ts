@@ -19,9 +19,14 @@ export abstract class WorkoutPlanRepository {
   abstract load(): Promise<WorkoutPlan | null>;
   /** Rejects if the plan could not be saved. */
   abstract save(plan: WorkoutPlan): Promise<void>;
+  /** A custom plan set aside while Pro is off (restored when Pro is back); null when there is none. */
+  abstract loadParked(): Promise<WorkoutPlan | null>;
+  /** Sets a custom plan aside (or, with null, forgets it). Rejects if it could not be written. */
+  abstract saveParked(plan: WorkoutPlan | null): Promise<void>;
 }
 
 const STORAGE_KEY = 'fitness.workout-plan';
+const PARKED_KEY = 'fitness.workout-plan-parked';
 /**
  * Storage envelope version (independent of `workoutProgrammingVersion`, which
  * the plan carries itself). Future envelope versions add a migration step.
@@ -41,8 +46,24 @@ interface StoredWorkoutPlan {
 export class LocalWorkoutPlanRepository implements WorkoutPlanRepository {
   constructor(private readonly storage: KeyValueStorage) {}
 
-  async load(): Promise<WorkoutPlan | null> {
-    const raw = await this.storage.get(STORAGE_KEY);
+  load(): Promise<WorkoutPlan | null> {
+    return this.read(STORAGE_KEY);
+  }
+
+  loadParked(): Promise<WorkoutPlan | null> {
+    return this.read(PARKED_KEY);
+  }
+
+  async saveParked(plan: WorkoutPlan | null): Promise<void> {
+    if (plan) {
+      await this.storage.set(PARKED_KEY, JSON.stringify({ version: SCHEMA_VERSION, plan } satisfies StoredWorkoutPlan));
+    } else {
+      await this.storage.remove(PARKED_KEY);
+    }
+  }
+
+  private async read(key: string): Promise<WorkoutPlan | null> {
+    const raw = await this.storage.get(key);
     if (!raw) {
       return null;
     }

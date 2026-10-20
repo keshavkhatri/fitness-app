@@ -55,6 +55,8 @@ button.card {
   @include fx.focus-ring;
   @include fx.pressable;
   @include view.card;
+  // The resets above clear padding; restore the card's own.
+  padding: var(--space-3) var(--space-4);
   border: var(--border-hairline) solid var(--color-border);
 
   &:disabled {

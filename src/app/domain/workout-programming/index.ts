@@ -4,6 +4,7 @@ export * from './workout-taxonomy';
 export * from './exercise.model';
 export * from './exercise-library';
 export * from './exercise-demonstrations';
+export * from './exercise-guidance';
 export * from './workout-input.model';
 export * from './session-templates';
 export * from './workout-config';

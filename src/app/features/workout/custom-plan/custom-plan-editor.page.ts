@@ -1,26 +1,28 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, resource, signal } from '@angular/core';
-import { IonContent, IonFooter, NavController, Platform } from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, resource, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { IonContent, IonFooter, IonIcon, NavController, Platform } from '@ionic/angular';
 
 import { WorkoutPlanService } from '../../../core/workout/workout-plan.service';
 import {
   BottomSheetComponent,
   EmptyStateComponent,
   FitnessButtonComponent,
-  FitnessIconButtonComponent,
   LoadingSkeletonComponent,
   NoticeComponent,
-  TextFieldComponent,
 } from '../../../shared/ui';
 import { WORKOUT_PATH, customPlanPickerPath } from '../workout-paths';
 import { CUSTOM_PLAN_COPY } from './custom-plan-content';
-import { PrescriptionField, toSpec } from './custom-plan-draft';
+import { toSpec } from './custom-plan-draft';
 import { CustomPlanDraftService } from './custom-plan-draft.service';
 import { toEditorView } from './custom-plan-editor-view-model';
+import { CustomPlanHeaderComponent } from './custom-plan-header.component';
 
 /**
- * The custom plan editor (Premium; see requireCustomPlanAccess): for each training day, the exercises
- * with their sets, reps (or time) and rest, in order. Edits only change the shared draft; the active plan
- * is replaced when the user reviews and saves, and left alone on Cancel or Back.
+ * The custom plan editor (Premium; see requireCustomPlanAccess), steps 1 and 3 of the flow: Basics lists
+ * the training days (each opens step 2, the exercise picker for that day, where its exercises are chosen
+ * and edited) and Review shows the whole plan before saving. Edits only change the shared draft; the active
+ * plan is replaced when the user saves, and left alone on Cancel or Back. `?step=review` opens the review.
  */
 @Component({
   selector: 'app-custom-plan-editor',
@@ -30,13 +32,13 @@ import { toEditorView } from './custom-plan-editor-view-model';
   imports: [
     IonContent,
     IonFooter,
+    IonIcon,
     BottomSheetComponent,
+    CustomPlanHeaderComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
-    FitnessIconButtonComponent,
     LoadingSkeletonComponent,
     NoticeComponent,
-    TextFieldComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -65,14 +67,17 @@ export class CustomPlanEditorPage {
     return plan && draft ? toEditorView(plan, draft, this.drafts.catalog) : null;
   });
 
-  /** Exercises whose prescription fields are open (`sessionId:exerciseId`). UI state only. */
-  private readonly open = signal<ReadonlySet<string>>(new Set());
-  protected readonly reviewOpen = signal(false);
+  protected readonly step = signal<'basics' | 'review'>('basics');
   protected readonly discardOpen = signal(false);
+  private readonly discardSheet = viewChild<BottomSheetComponent>('discardSheet');
   protected readonly saving = signal(false);
   protected readonly saveMessage = signal('');
 
   constructor() {
+    // The page stays alive under the picker (Ionic keeps it in the stack), so follow `?step=` as it changes.
+    inject(ActivatedRoute)
+      .queryParamMap.pipe(takeUntilDestroyed())
+      .subscribe((params) => this.step.set(params.get('step') === 'review' ? 'review' : 'basics'));
     // Android Back is Cancel: unsaved changes are confirmed first. An open sheet closes itself on Back
     // (Ionic's overlay handler outranks this one); while the exercise picker is on top, Back is its own.
     const backButton = inject(Platform).backButton.subscribeWithPriority(10, (processNextHandler) => {
@@ -85,45 +90,34 @@ export class CustomPlanEditorPage {
     inject(DestroyRef).onDestroy(() => backButton.unsubscribe());
   }
 
-  protected isOpen(sessionId: string, exerciseId: string): boolean {
-    return this.open().has(`${sessionId}:${exerciseId}`);
-  }
-
-  protected toggle(sessionId: string, exerciseId: string): void {
-    const key = `${sessionId}:${exerciseId}`;
-    this.open.update((set) => {
-      const next = new Set(set);
-      if (!next.delete(key)) {
-        next.add(key);
-      }
-      return next;
-    });
-  }
-
-  protected fieldValue(sessionId: string, exerciseId: string, field: PrescriptionField): string {
-    const exercise = this.drafts.draft()?.find((d) => d.sessionId === sessionId)?.exercises.find((e) => e.exerciseId === exerciseId);
-    return exercise?.[field] ?? '';
-  }
-
-  protected edit(sessionId: string, exerciseId: string, field: PrescriptionField, value: string): void {
-    this.drafts.edit(sessionId, exerciseId, field, value);
-  }
-
-  protected move(sessionId: string, exerciseId: string, direction: -1 | 1): void {
-    this.drafts.move(sessionId, exerciseId, direction);
-  }
-
-  protected remove(sessionId: string, exerciseId: string): void {
-    this.drafts.remove(sessionId, exerciseId);
-  }
-
   protected addExercises(sessionId: string): void {
     void this.nav.navigateForward(customPlanPickerPath(sessionId));
   }
 
-  protected review(): void {
+  /** Basics → the first training day's exercises. */
+  protected next(): void {
+    const first = this.view()?.days[0];
+    if (first) {
+      this.addExercises(first.sessionId);
+    }
+  }
+
+  /** Header Back: Review returns to Basics; Basics is Cancel. */
+  protected back(): void {
+    if (this.step() === 'review') {
+      this.step.set('basics');
+    } else {
+      this.cancel();
+    }
+  }
+
+  /** Header Save: saves straight away when the plan is valid, otherwise shows the review with what to fix. */
+  protected saveFromHeader(): void {
     this.saveMessage.set('');
-    this.reviewOpen.set(true);
+    this.step.set('review');
+    if (this.view()?.canSave) {
+      void this.save();
+    }
   }
 
   /** Cancel: nothing to lose leaves at once; unsaved changes are confirmed first. */
@@ -135,7 +129,9 @@ export class CustomPlanEditorPage {
     }
   }
 
-  protected discard(): void {
+  protected async discard(): Promise<void> {
+    // Close the sheet before leaving: navigating while it animates out can leave it showing.
+    await this.discardSheet()?.dismiss().catch(() => false);
     this.discardOpen.set(false);
     this.leave();
   }
@@ -157,7 +153,6 @@ export class CustomPlanEditorPage {
       const result = await this.plans.saveCustomPlan(spec);
       switch (result.kind) {
         case 'saved':
-          this.reviewOpen.set(false);
           this.leave();
           return;
         case 'invalid':

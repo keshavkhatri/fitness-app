@@ -1,5 +1,6 @@
 import { HEIGHT_CM, WEIGHT_KG } from '../../../domain/fitness-profile';
 import {
+  bmiReference,
   feetInchesLabel,
   heightFromScale,
   heightOnScale,
@@ -63,5 +64,19 @@ describe('body scales', () => {
     expect(spokenHeight(179, 'metric')).toBe('179 centimeters');
     expect(spokenWeight(94.5, 'metric')).toBe('94.5 kilograms');
     expect(spokenWeight(208.3, 'imperial')).toBe('208.3 pounds');
+  });
+});
+
+describe('bmiReference', () => {
+  it('shows the BMI bands as weights for the height, marking the current one', () => {
+    const bands = bmiReference({ centimeters: 180 }, { kilograms: 94.5 }, 'metric');
+    expect(bands.map((b) => b.range)).toEqual(['< 60', '60 – 81', '81 – 97', '> 97']);
+    expect(bands.find((b) => b.current)?.key).toBe('over');
+  });
+
+  it('uses pounds for imperial', () => {
+    const bands = bmiReference({ centimeters: 180 }, { kilograms: 70 }, 'imperial');
+    expect(bands[0].range).toBe('< 132');
+    expect(bands.find((b) => b.current)?.key).toBe('normal');
   });
 });

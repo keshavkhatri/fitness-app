@@ -5,6 +5,7 @@ import { ThemeService } from '../../../core/theme/theme.service';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
+import { sessionTypePhoto } from '../workout-photos';
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { HistoryFilter, HistoryScreen, filterHistory, toHistoryScreen } from './history-view-model';
 
@@ -35,6 +36,7 @@ export class WorkoutHistoryPage {
   private readonly nav = inject(NavController);
 
   protected readonly copy = WORKOUT_COPY.history;
+  protected readonly sessionPhoto = sessionTypePhoto;
   private readonly state = resource({
     loader: async () => {
       return toHistoryScreen(await this.history.list());

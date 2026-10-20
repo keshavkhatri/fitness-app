@@ -1,4 +1,5 @@
-<ion-header class="ion-no-border">
+<!-- The welcome photo runs to the top edge: its (empty) toolbar is hidden. -->
+<ion-header class="ion-no-border" [class.over-photo]="flow.stepId() === 'welcome'">
   <ion-toolbar>
     <div class="toolbar">
       @if (flow.canGoBack()) {

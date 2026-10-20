@@ -9,6 +9,7 @@ import { CLOCK } from '../../core/time/clock';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
+import { PlanIntentService } from '../../core/workout/plan-intent.service';
 import { WorkoutPlan } from '../../domain/workout-programming';
 import {
   BottomSheetComponent,
@@ -43,7 +44,7 @@ export { workoutSessionPath } from './workout-paths';
 @Component({
   selector: 'app-workout',
   templateUrl: './workout.page.html',
-  styleUrl: './workout.page.scss',
+  styleUrls: ['./workout.page.scss', './workout-intent.scss'],
   host: { class: 'fit-theme-dashboard' },
   imports: [
     IonIcon,
@@ -78,6 +79,8 @@ export class WorkoutPage {
   protected readonly switchOpen = signal(false);
   /** The Pro gate for Free users who tap "Build my own". */
   protected readonly gateOpen = signal(false);
+  private readonly gateSheet = viewChild<BottomSheetComponent>('gateSheet');
+  protected readonly intents = inject(PlanIntentService);
   protected readonly switching = signal(false);
   protected readonly switchMessage = signal('');
   protected readonly tab = WORKOUT_COPY.planTab;
@@ -122,6 +125,7 @@ export class WorkoutPage {
 
   constructor() {
     void this.entitlements.refresh();
+    void this.intents.load();
     // The plan can change while this tab waits under a full-screen route (saving a custom plan in the
     // editor, switching back to a generated one), and Ionic doesn't re-enter a tab's page then.
     effect(() => {
@@ -190,6 +194,17 @@ export class WorkoutPage {
    * Build or edit the custom plan. Without Pro access this explains the Pro feature first (the gate) instead of
    * opening the editor; the editor route's guard still checks access on its own.
    */
+  /** The setup choice, acted on: the editor (the choice is used up). */
+  protected buildFromIntent(): void {
+    void this.intents.clear();
+    void this.nav.navigateForward(CUSTOM_PLAN_EDIT_PATH);
+  }
+
+  /** The setup choice on Free: what Pro adds (the card stays until Build or Not now). */
+  protected seeProFromIntent(): void {
+    this.seePro('pro');
+  }
+
   protected editPlan(): void {
     if (this.canCustomize()) {
       void this.nav.navigateForward(CUSTOM_PLAN_EDIT_PATH);
@@ -199,9 +214,14 @@ export class WorkoutPage {
   }
 
   /** From the Pro gate to the plan screen, which comes back to this tab. */
-  protected seePro(): void {
-    this.gateOpen.set(false);
-    void this.nav.navigateForward(OFFER_PATH, { queryParams: { next: WORKOUT_PATH } });
+  /** The plan screen; "Learn more" opens it on what Pro adds. */
+  protected async seePro(view?: 'pro'): Promise<void> {
+    // Close the sheet first: navigating while it animates out leaves it open on this page.
+    if (this.gateOpen()) {
+      await this.gateSheet()?.dismiss().catch(() => false);
+      this.gateOpen.set(false);
+    }
+    void this.nav.navigateForward(OFFER_PATH, { queryParams: { next: WORKOUT_PATH, ...(view ? { start: view } : {}) } });
   }
 
   protected browseExercises(): void {

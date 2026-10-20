@@ -6,6 +6,11 @@ export default [
     title: 'You',
     loadComponent: () => import('./you.page').then((m) => m.YouPage),
   },
+  {
+    path: 'settings',
+    title: 'Settings',
+    loadComponent: () => import('./settings.page').then((m) => m.SettingsPage),
+  },
   { path: 'progress', loadChildren: () => import('../workout/progress/progress.routes') },
   { path: 'weight-history', loadChildren: () => import('../body-weight/weight-history.routes') },
   { path: 'measurements', loadChildren: () => import('../body-measurements/measurements.routes') },

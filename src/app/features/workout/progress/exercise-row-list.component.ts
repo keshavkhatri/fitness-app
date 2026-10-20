@@ -3,6 +3,7 @@ import { IonIcon } from '@ionic/angular';
 
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { ExerciseRowView } from './exercise-list-view-model';
+import { exercisePhoto } from '../workout-photos';
 
 /**
  * Performed exercises as compact rows: thumbnail, name and body area, a mini
@@ -17,7 +18,7 @@ import { ExerciseRowView } from './exercise-list-view-model';
       @for (row of rows(); track row.exerciseId) {
         <li>
           <button type="button" class="row" [attr.aria-label]="row.accessibleLabel" data-testid="exercise-row" (click)="openExercise.emit(row.exerciseId)">
-            <span class="thumb" aria-hidden="true"><app-workout-art [seed]="row.exerciseId" /></span>
+            <span class="thumb" aria-hidden="true"><app-workout-art [seed]="row.exerciseId" [photo]="photo(row.exerciseId)" /></span>
             <span class="text" aria-hidden="true">
               <span class="name">{{ row.name }}</span>
               <span class="area">{{ row.area ?? row.lastLabel }}</span>
@@ -56,6 +57,7 @@ import { ExerciseRowView } from './exercise-list-view-model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExerciseRowListComponent {
+  protected readonly photo = exercisePhoto;
   readonly rows = input.required<readonly ExerciseRowView[]>();
   readonly openExercise = output<string>();
 }

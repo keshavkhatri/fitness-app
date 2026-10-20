@@ -4,6 +4,7 @@ import { IonIcon } from '@ionic/angular';
 
 import { WorkoutArtComponent } from '../../../home/components/workout-art/workout-art.component';
 import { WORKOUT_COPY } from '../../workout-content';
+import { exercisePhoto } from '../../workout-photos';
 import { SummaryExerciseView } from '../workout-summary-view-model';
 
 const STATUS_ICONS: Readonly<Record<string, string>> = { complete: 'checkmark', partial: 'remove', skipped: 'close' };
@@ -45,7 +46,7 @@ const STATUS_ICONS: Readonly<Record<string, string>> = { complete: 'checkmark', 
     }
 
     <ng-template #row let-exercise>
-      <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" /></span>
+      <span class="thumb" aria-hidden="true"><app-workout-art [seed]="exercise.exerciseId" [photo]="photo(exercise.exerciseId)" /></span>
       <span class="text">
         <span class="name">{{ exercise.name }}</span>&ngsp;
         <span class="detail">
@@ -79,6 +80,7 @@ export class SummaryBreakdownComponent {
   readonly open = output<string>();
 
   protected readonly copy = WORKOUT_COPY.summary.breakdown;
+  protected readonly photo = exercisePhoto;
   protected readonly icons = STATUS_ICONS;
   protected readonly doneText = computed(() => {
     const all = this.exercises();

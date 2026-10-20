@@ -14,6 +14,7 @@ import {
   prescriptionStats,
   sessionTitle,
 } from './workout-formatting';
+import { exercisePhoto, sessionPhoto } from './workout-photos';
 import { CATALOG, scheduleWeek, weekdayIndexOf } from './workout-view-model';
 
 /**
@@ -32,11 +33,15 @@ interface DetailHeader {
   /** e.g. "Thursday · Today" */
   readonly dayLabel: string;
   readonly title: string;
+  /** The hero photo, or null (drawn art). */
+  readonly photo: string | null;
 }
 
 export interface ResistanceDetailView extends DetailHeader {
   readonly kind: 'resistance';
   readonly descriptor: string;
+  /** "Build upper body strength with …" */
+  readonly summary: string;
   readonly countLabel: string;
   readonly durationLabel: string;
   /** Broad body areas in session order, e.g. "Chest · Back · Shoulders · Arms"; null when unknown. */
@@ -55,6 +60,8 @@ export interface DetailExerciseView {
   readonly order: number;
   readonly exerciseId: string;
   readonly name: string;
+  /** Thumbnail photo, or null (drawn art). */
+  readonly photo: string | null;
   readonly stats: readonly PrescriptionStat[];
   /** Full sentence form, e.g. "4 sets · 6–10 reps · 120 sec rest". */
   readonly prescription: string;
@@ -116,7 +123,7 @@ export function toWorkoutDetailScreen(
     return week[index] === null
       ? {
           kind: 'ready',
-          detail: { kind: 'rest', dayLabel: dayLabel(index), title: WORKOUT_COPY.today.restTitle, message: WORKOUT_COPY.detail.restMessage },
+          detail: { kind: 'rest', dayLabel: dayLabel(index), photo: null, title: WORKOUT_COPY.today.restTitle, message: WORKOUT_COPY.detail.restMessage },
         }
       : { kind: 'not-found' };
   }
@@ -147,7 +154,9 @@ function toResistanceDetail(
     kind: 'resistance',
     dayLabel,
     title: sessionTitle(session),
+    photo: sessionPhoto(session),
     descriptor: STYLE_DESCRIPTORS[plan.programStyle],
+    summary: WORKOUT_COPY.detail.sessionSummary[session.sessionType],
     countLabel: plural(session.exercises.length, 'exercise', 'exercises'),
     durationLabel: `About ${session.estimatedDurationMinutes} min`,
     focus: focus.length > 0 ? focus.join(' · ') : null,
@@ -171,6 +180,7 @@ function toDetailExercise(planned: PlannedExercise, catalog: ReadonlyMap<string,
     order: planned.order,
     exerciseId: planned.exerciseId,
     name: exercise?.name ?? planned.exerciseId,
+    photo: exercisePhoto(planned.exerciseId),
     stats: prescriptionStats(planned),
     prescription: formatPrescription(planned),
     brief: formatPrescription({ ...prescriptionOf(planned), restSeconds: 0 }),
@@ -216,6 +226,7 @@ function toActivityDetail(session: ActivitySession, dayLabel: string): ActivityD
     kind: 'activity',
     dayLabel,
     title: activityTitle(session),
+    photo: sessionPhoto(session),
     typeLabel: session.optional ? WORKOUT_COPY.activity.optionalLabel : WORKOUT_COPY.activity.recoveryLabel,
     durationLabel: formatMinuteRange(session.durationMinutes),
     intensityLabel: WORKOUT_COPY.detail.easyPace,

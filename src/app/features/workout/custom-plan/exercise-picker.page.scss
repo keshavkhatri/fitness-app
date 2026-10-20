@@ -7,10 +7,23 @@ ion-content {
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: calc(var(--ion-safe-area-top, 0px) + var(--space-2)) var(--space-4) var(--space-8);
+}
+
+// In the plan flow the body sits under the dark step header, with rounded top corners.
+.body.in-plan {
+  min-height: 100%;
+  background: var(--color-bg);
+  margin-top: calc(-1 * var(--space-3));
+  padding-top: var(--space-5);
+  border-radius: 24px 24px 0 0;
+}
+
+:host:has(.in-plan) ion-content {
+  --background: var(--color-ink);
 }
 
 .topbar {
@@ -22,18 +35,33 @@ ion-content {
 .bar-title {
   @include fx.text(body, bold);
   flex: 1;
-  min-width: 0;
   text-align: center;
 }
 
-// The back / close button is a fit-icon-button on a surface-coloured disc; the spacer balances the title.
 .round {
   background: var(--color-surface);
 }
 
 .round-spacer {
-  flex: none;
   width: var(--tap-target-min);
+}
+
+.heading {
+  @include fx.text(h3, bold);
+  margin: 0;
+}
+
+.day-name strong {
+  color: var(--color-text);
+}
+
+.day-name,
+.count,
+.full,
+.meta {
+  @include fx.text(caption);
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 
 .filters {
@@ -47,9 +75,9 @@ ion-content {
   align-items: center;
   gap: var(--space-2);
   min-height: var(--tap-target-min);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-4);
   border: var(--border-hairline) solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
 
   &:focus-within {
@@ -58,7 +86,6 @@ ion-content {
   }
 
   ion-icon {
-    flex: none;
     color: var(--color-text-secondary);
   }
 }
@@ -73,46 +100,36 @@ ion-content {
   outline: none;
 }
 
-.selects {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.select {
+.chips {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.select-label {
-  @include fx.text(caption, semibold);
-  color: var(--color-text-secondary);
-}
+.chip {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(caption, medium);
 
-select {
-  width: 100%;
-  min-height: var(--tap-target-min);
-  padding: 0 var(--space-2);
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--space-4);
   border: var(--border-hairline) solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
+
+  &[aria-checked='true'] {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
 }
 
 .count-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.count,
-.full {
-  @include fx.text(caption);
-  color: var(--color-text-secondary);
 }
 
 .link {
@@ -120,99 +137,18 @@ select {
   @include fx.focus-ring;
 
   min-height: var(--tap-target-min);
-  padding: 0 var(--space-2);
   font-weight: var(--font-weight-semibold);
   text-decoration: underline;
 }
 
 .empty {
-  @include fx.text(body);
   padding: var(--space-6) 0;
   color: var(--color-text-secondary);
   text-align: center;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.problem {
+  @include fx.text(caption, semibold);
+  color: var(--color-danger-text, var(--color-text));
 }
 
-.item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border: var(--border-hairline) solid transparent;
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-
-  &.selected {
-    border-color: var(--color-primary);
-  }
-}
-
-.open {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-  min-height: var(--tap-target-min);
-  text-align: start;
-}
-
-.thumb {
-  position: relative; // the artwork fills its nearest positioned ancestor
-  flex: none;
-  width: 48px;
-  height: 48px;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-}
-
-.text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
-}
-
-.name {
-  @include fx.text(body, semibold);
-  overflow-wrap: anywhere;
-}
-
-.meta {
-  @include fx.text(caption);
-  color: var(--color-text-secondary);
-}
-
-.details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-
-.selection-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.selection-bar .count {
-  flex: 1;
-}
-
-.footer {
-  padding: var(--space-3) var(--space-4) calc(var(--ion-safe-area-bottom, 0px) + var(--space-3));
-  background: var(--color-bg);
-}

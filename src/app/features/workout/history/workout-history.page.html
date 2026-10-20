@@ -33,7 +33,7 @@
                   [attr.aria-label]="item.accessibleLabel"
                   (click)="open(item.id)"
                 >
-                  <span class="thumb" aria-hidden="true"><app-workout-art [seed]="item.id" /></span>
+                  <span class="thumb" aria-hidden="true"><app-workout-art [seed]="item.id" [photo]="sessionPhoto(item.sessionType)" /></span>
                   <span class="text" aria-hidden="true">
                     <span class="item-title">{{ item.title }}</span>
                     <span class="item-meta">{{ item.meta }}</span>

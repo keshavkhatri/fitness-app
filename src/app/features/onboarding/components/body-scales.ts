@@ -95,3 +95,37 @@ export function spokenWeight(value: number, unitSystem: UnitSystem): string {
  */
 export const DEFAULT_HEIGHT: BodyHeight = { centimeters: 170 };
 export const DEFAULT_WEIGHT: BodyWeight = { kilograms: 70 };
+
+/** The four standard adult BMI bands (WHO): under 18.5, 18.5–24.9, 25–29.9, 30 and over. */
+export const BMI_BANDS = [
+  { key: 'under', label: 'Underweight', min: 0, max: 18.5 },
+  { key: 'normal', label: 'Normal', min: 18.5, max: 25 },
+  { key: 'over', label: 'Overweight', min: 25, max: 30 },
+  { key: 'obese', label: 'Obese', min: 30, max: Infinity },
+] as const;
+
+export type BmiBandKey = (typeof BMI_BANDS)[number]['key'];
+
+export interface BmiBandView {
+  readonly key: BmiBandKey;
+  readonly label: string;
+  /** "< 60", "60 – 80", "> 100" in the user's unit, for this height. */
+  readonly range: string;
+  readonly current: boolean;
+}
+
+/**
+ * The weight steps' "visual reference": the BMI bands as weights for this height (weight = BMI × m²), in the
+ * user's unit, with the band the weight falls in marked. Rounded to whole units. A rough population guide.
+ */
+export function bmiReference(height: BodyHeight, weight: BodyWeight, unitSystem: UnitSystem): readonly BmiBandView[] {
+  const m2 = (height.centimeters / 100) ** 2;
+  const bmi = weight.kilograms / m2;
+  const shown = (bmiValue: number) => Math.round(weightOnScale({ kilograms: bmiValue * m2 }, unitSystem));
+  return BMI_BANDS.map((band) => ({
+    key: band.key,
+    label: band.label,
+    range: band.min === 0 ? `< ${shown(band.max)}` : band.max === Infinity ? `> ${shown(band.min)}` : `${shown(band.min)} – ${shown(band.max)}`,
+    current: bmi >= band.min && bmi < band.max,
+  }));
+}

@@ -5,3 +5,4 @@ export * from './workout-log';
 export * from './parse-workout-log';
 export * from './workout-history';
 export * from './workout-progress';
+export * from './workout-energy';

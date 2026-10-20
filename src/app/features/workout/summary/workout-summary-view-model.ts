@@ -3,21 +3,25 @@ import {
   ExercisePerformanceSession,
   WorkoutLog,
   completedWorkouts,
+  estimateWorkoutCalories,
   isTrainingWorkout,
   sessionVolume,
   summarizeWorkoutLog,
   workoutVolume,
 } from '../../../domain/workout-session';
-import { WORKOUT_COPY } from '../workout-content';
+import { MUSCLE_AREAS, WORKOUT_COPY } from '../workout-content';
 import { plural, titleFor } from '../workout-formatting';
+import { WORKOUT_COMPLETE_PHOTO } from '../workout-photos';
+import { CATALOG } from '../workout-view-model';
 
 /**
  * Presentation model for the Workout Summary: one finished workout, as
  * recorded, and how it compares with earlier workouts of the same kind.
  * Pure: everything comes from the log and the history passed in, through the
  * domain's own counts (summarizeWorkoutLog) and volume (workoutVolume /
- * sessionVolume). Nothing is estimated: no calories, no records beyond what
- * the compared logs show.
+ * sessionVolume). The one estimate is calories (estimateWorkoutCalories, from the
+ * body weight passed in), labelled "Est."; no records beyond what the compared
+ * logs show.
  */
 
 /** "Under 1 min", "42 min", "1 h 5 min" */
@@ -40,7 +44,7 @@ const timeFormat = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '
 const shortDateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 
 export interface SummaryStat {
-  readonly key: 'duration' | 'exercises' | 'sets' | 'volume' | 'completion';
+  readonly key: 'duration' | 'exercises' | 'sets' | 'volume' | 'calories' | 'completion';
   readonly icon: string;
   readonly label: string;
   readonly value: string;
@@ -52,6 +56,10 @@ export interface WorkoutOverviewView {
   readonly heading: string;
   readonly message: string;
   readonly workoutName: string;
+  /** Broad body areas the logged exercises train, at most three: "Chest, Back, Shoulders" ("" when unknown). */
+  readonly areas: string;
+  /** The card's photo. */
+  readonly photo: string;
   /** "8 Oct 2026 · 7:05 AM" (when it was finished). */
   readonly finishedAt: string;
   readonly stats: readonly SummaryStat[];
@@ -81,7 +89,7 @@ export interface SummaryExerciseView {
 }
 
 export interface InsightMetric {
-  readonly key: 'volume' | 'sets' | 'duration';
+  readonly key: 'volume' | 'sets' | 'duration' | 'calories';
   readonly icon: string;
   readonly label: string;
   readonly value: string;
@@ -121,18 +129,22 @@ export interface WorkoutSummaryScreen {
 /** How many same-kind workouts the volume trend shows (including this one). */
 export const TREND_WORKOUTS = 5;
 
-export function toWorkoutSummaryScreen(log: WorkoutLog, history: readonly WorkoutLog[] | null): WorkoutSummaryScreen {
+export function toWorkoutSummaryScreen(
+  log: WorkoutLog,
+  history: readonly WorkoutLog[] | null,
+  bodyWeightKg: number | null = null,
+): WorkoutSummaryScreen {
   return {
     workoutId: log.id,
-    overview: toOverview(log),
+    overview: toOverview(log, bodyWeightKg),
     exercises: log.exercises.map((exercise, index) => toExercise(exercise, index, log.weightUnit)),
-    insights: history === null ? null : toInsights(log, history),
+    insights: history === null ? null : toInsights(log, history, bodyWeightKg),
   };
 }
 
 // --- Overview ---------------------------------------------------------------------------------
 
-function toOverview(log: WorkoutLog): WorkoutOverviewView {
+function toOverview(log: WorkoutLog, bodyWeightKg: number | null): WorkoutOverviewView {
   const copy = WORKOUT_COPY.summary;
   const s = summarizeWorkoutLog(log);
   const name = titleFor(log.sessionType, log.variant);
@@ -147,6 +159,10 @@ function toOverview(log: WorkoutLog): WorkoutOverviewView {
   if (volume !== null) {
     stats.push({ key: 'volume', icon: 'stats-chart', label: copy.volume, value: formatNumber(volume), unit: log.weightUnit });
   }
+  const calories = estimateWorkoutCalories(log, bodyWeightKg);
+  if (calories !== null) {
+    stats.push({ key: 'calories', icon: 'flame-outline', label: copy.calories, value: formatNumber(calories) });
+  }
   if (s.totalSets > 0) {
     stats.push({ key: 'completion', icon: 'trophy-outline', label: copy.completion, value: `${Math.round((s.setsCompleted / s.totalSets) * 100)}%` });
   }
@@ -157,6 +173,8 @@ function toOverview(log: WorkoutLog): WorkoutOverviewView {
     heading: s.fullyCompleted ? copy.completeHeading : copy.partialHeading,
     message: s.fullyCompleted ? copy.completeMessage(name) : copy.partialMessage(name),
     workoutName: name,
+    areas: [...new Set(log.exercises.flatMap((e) => CATALOG.get(e.exerciseId)?.primaryMuscles.map((m) => MUSCLE_AREAS[m]) ?? []))].slice(0, 3).join(', '),
+    photo: WORKOUT_COMPLETE_PHOTO,
     finishedAt: `${dateFormat.format(finished)} · ${timeFormat.format(finished)}`,
     stats,
     highlight: s.fullyCompleted
@@ -252,7 +270,7 @@ function change(current: number, previous: number, format: (n: number) => string
   };
 }
 
-function toInsights(log: WorkoutLog, history: readonly WorkoutLog[]): InsightsView {
+function toInsights(log: WorkoutLog, history: readonly WorkoutLog[], bodyWeightKg: number | null): InsightsView {
   const copy = WORKOUT_COPY.summary.insights;
   const earlier = comparableWorkouts(log, history);
   const previous = earlier[0] ?? null;
@@ -288,6 +306,19 @@ function toInsights(log: WorkoutLog, history: readonly WorkoutLog[]): InsightsVi
       ? change(Math.round(s.durationSeconds / 60), Math.round(previousSummary.durationSeconds / 60), String, ' min')
       : null,
   });
+
+  const calories = estimateWorkoutCalories(log, bodyWeightKg);
+  if (calories !== null) {
+    // Same body weight for both, so the change follows the duration.
+    const before = previous ? estimateWorkoutCalories(previous, bodyWeightKg) : null;
+    metrics.push({
+      key: 'calories',
+      icon: 'flame-outline',
+      label: copy.calories,
+      value: `${formatNumber(calories)} kcal`,
+      change: before === null ? null : change(calories, before, formatNumber, ' kcal'),
+    });
+  }
 
   // Trend: this and the latest earlier same-kind workouts with a volume in this unit.
   const withVolume = [log, ...earlier]

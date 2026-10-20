@@ -40,3 +40,39 @@
   margin: 0;
   color: var(--color-text-secondary);
 }
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.ring {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft, var(--color-surface-muted));
+  color: var(--color-text);
+  font-size: 42px;
+}
+
+.intro-title {
+  @include fx.text(h3, bold);
+  margin: var(--space-2) 0 0;
+}
+
+.intro-text,
+.footnote {
+  @include fx.text(body-sm);
+  margin: 0;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.footnote {
+  @include fx.text(caption);
+}

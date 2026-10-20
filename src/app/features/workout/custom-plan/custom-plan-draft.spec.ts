@@ -13,7 +13,7 @@ import {
   setField,
   toSpec,
 } from './custom-plan-draft';
-import { EQUIPMENT_OPTIONS, MUSCLE_OPTIONS, NO_QUERY, filterExercises } from './exercise-filter';
+import { CATEGORY_OPTIONS, EQUIPMENT_OPTIONS, MUSCLE_OPTIONS, NO_QUERY, filterExercises } from './exercise-filter';
 
 const plan = planFor(ACTIVITY_PROFILE);
 const ex = (id: string) => EXERCISE_LIBRARY.find((e) => e.id === id) as Exercise;
@@ -142,9 +142,23 @@ describe('exercise filter', () => {
   });
 
   it('combines text, muscle and equipment', () => {
-    const result = filterExercises({ text: 'press', muscle: 'chest', equipment: 'dumbbells' });
+    const result = filterExercises({ ...NO_QUERY, text: 'press', muscle: 'chest', equipment: 'dumbbells' });
     expect(result.map((e) => e.id)).toContain('dumbbell-bench-press');
     expect(result.every((e) => e.requires.includes('dumbbells') && /press/i.test(e.name))).toBe(true);
+  });
+
+  it('search also matches muscle and equipment words', () => {
+    expect(ids({ text: 'hamstrings' })).toContain('romanian-deadlift');
+    expect(ids({ text: 'bodyweight' })).toContain('push-up');
+  });
+
+  it('filters by type tag; every exercise has one', () => {
+    expect(EXERCISE_LIBRARY.every((e) => e.categories.length > 0)).toBe(true);
+    expect(ids({ category: 'cardio' })).toEqual(expect.arrayContaining(['burpees', 'bike-intervals']));
+    expect(ids({ category: 'cardio' })).not.toContain('back-squat');
+    expect(ids({ category: 'mobility' })).toEqual(expect.arrayContaining(['bird-dog', 'dead-bug']));
+    expect(ids({ category: 'core' })).toContain('plank');
+    expect(CATEGORY_OPTIONS).toEqual(['strength', 'core', 'mobility', 'cardio']);
   });
 
   it('offers only muscles and equipment the catalog uses', () => {

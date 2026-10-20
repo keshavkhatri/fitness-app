@@ -9,7 +9,7 @@
     @if (view(); as v) {
       <header class="hero" data-testid="history-detail">
         <div class="hero-art" aria-hidden="true">
-          <app-workout-art [seed]="workoutId()" />
+          <app-workout-art [seed]="workoutId()" [photo]="photo(v.exercises[0]?.exerciseId ?? '')" />
           <span class="fade"></span>
         </div>
         <div class="hero-text">

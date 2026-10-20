@@ -3,14 +3,15 @@ import { IonIcon } from '@ionic/angular';
 
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { WORKOUT_COPY } from '../workout-content';
+import { exercisePhoto } from '../workout-photos';
 import { NextExerciseView } from './active-workout-view-model';
 
 /**
  * "Next up": the exercise after this one (thumbnail, name, first muscle), or
  * on the last exercise a reminder that finishing is next. The whole card is
  * one button that does what the footer's next button does (confirming first
- * when sets are left). No exercise photography ships yet, so the thumbnail is
- * the same generated stand-in Home uses, seeded by the exercise.
+ * when sets are left). The thumbnail is the exercise's photo, or the generated
+ * stand-in Home uses (seeded by the exercise) when it has none.
  */
 @Component({
   selector: 'app-next-exercise-card',
@@ -19,7 +20,7 @@ import { NextExerciseView } from './active-workout-view-model';
       <button type="button" class="card" data-testid="next-up" [attr.aria-label]="copy.nextUpLabel(n.name)" (click)="open.emit()">
         <span class="eyebrow">{{ copy.nextUp }}<ion-icon name="chevron-forward" aria-hidden="true" /></span>&ngsp;
         <span class="body">
-          <span class="thumb" aria-hidden="true"><app-workout-art [seed]="n.exerciseId" /></span>
+          <span class="thumb" aria-hidden="true"><app-workout-art [seed]="n.exerciseId" [photo]="photo(n.exerciseId)" /></span>
           <span class="text">
             <span class="name">{{ n.name }}</span>&ngsp;
             @if (n.muscles[0]; as muscle) {
@@ -51,4 +52,5 @@ export class NextExerciseCardComponent {
   readonly open = output<void>();
 
   protected readonly copy = WORKOUT_COPY.active;
+  protected readonly photo = exercisePhoto;
 }

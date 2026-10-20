@@ -5,7 +5,8 @@ import { IonIcon } from '@ionic/angular';
  * `on-ink`: the main action on an ink (hero) surface. `danger`: the action that deletes or
  * discards, in a confirmation (solid red); `ghost-danger`: the control that opens one (red text).
  */
-export type FitnessButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'ghost-danger' | 'on-ink' | 'ghost-ink';
+/** `ink`: a dark (ink) button on a light page, e.g. the plan screen's Continue. */
+export type FitnessButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'ghost-danger' | 'on-ink' | 'ghost-ink' | 'ink';
 export type FitnessButtonSize = 'md' | 'lg';
 
 /**

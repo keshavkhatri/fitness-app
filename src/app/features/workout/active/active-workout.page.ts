@@ -16,6 +16,7 @@ import {
   NoticeComponent,
 } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
+import { exercisePhoto } from '../workout-photos';
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { ExerciseDemoComponent } from '../components/exercise-demo.component';
 import { ActiveFooterComponent } from './active-footer.component';
@@ -99,6 +100,7 @@ export class ActiveWorkoutPage {
   protected readonly timer = inject(RestTimer);
 
   protected readonly copy = WORKOUT_COPY.active;
+  protected readonly photo = exercisePhoto;
   protected readonly backLabel = WORKOUT_COPY.detail.backToWorkout;
   private readonly loaded = resource({ loader: () => this.logs.loadActive() });
   /** Finished workouts, to prefill sets with last time's values (none if history can't be read). */

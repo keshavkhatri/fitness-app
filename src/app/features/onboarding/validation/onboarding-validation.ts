@@ -275,7 +275,7 @@ function parseInches(text: string): InchesInput {
   }
 }
 
-function parseWeightInput(text: string, unitSystem: UnitSystem): BodyWeight | null {
+export function parseWeightInput(text: string, unitSystem: UnitSystem): BodyWeight | null {
   const value = parseDecimal(text);
   return value === null ? null : weightFromUnit(value, unitSystem);
 }

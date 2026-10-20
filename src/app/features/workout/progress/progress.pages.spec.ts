@@ -11,7 +11,6 @@ import { BodyCompositionAssessment, MANUAL_INBODY_SOURCE, createBodyCompositionA
 import { WeightEntry, createWeightEntry } from '../../../domain/body-measurements';
 import { WorkoutLog } from '../../../domain/workout-session';
 import { BODYWEIGHT_PROFILE, GYM_PROFILE, finishedLog, planFor } from '../../../domain/workout-session/testing/workout-log-fixtures';
-import { YouPage } from '../../you/you.page';
 import { ExercisePerformancePage } from './exercise-performance.page';
 import { ProgressExercisesPage } from './progress-exercises.page';
 import { ProgressPage } from './progress.page';
@@ -92,17 +91,6 @@ const assess = (id: string, date: string, fat: number): BodyCompositionAssessmen
 };
 
 describe('Progress', () => {
-  describe('You entry', () => {
-    it('opens Progress from You (no new tab)', async () => {
-      const { el, forward, settle } = await render(YouPage, []);
-      const entry = el.querySelector<HTMLButtonElement>('[data-testid="progress-entry"] button')!;
-      expect(clean(entry)).toBe('Progress Training activity and performance');
-      entry.click();
-      await settle();
-      expect(forward).toHaveBeenCalledWith(['/you', 'progress']);
-    });
-  });
-
   describe('progress overview', () => {
     const BODY = { weights: [weigh('w1', '2026-06-01', 80), weigh('w2', '2026-10-01', 79), weigh('w3', '2026-10-07', 78.4)], assessments: [assess('a1', '2026-09-01', 21.7), assess('a2', '2026-10-01', 18.5)] };
 

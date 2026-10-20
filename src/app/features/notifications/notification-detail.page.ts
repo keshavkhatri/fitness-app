@@ -5,6 +5,7 @@ import { CLOCK, localIsoDate } from '../../core/time/clock';
 import { FitnessButtonComponent, LoadingSkeletonComponent } from '../../shared/ui';
 import { NOTIFICATIONS_PATH, runNotificationAction } from './notification-actions';
 import { NotificationInboxService } from './notification-inbox.service';
+import { sessionIdPhoto } from '../workout/workout-photos';
 import { ACTION_LABELS, AppNotification, CATEGORY_LABELS, notificationDayLabel } from './notifications';
 
 /**
@@ -36,6 +37,10 @@ import { ACTION_LABELS, AppNotification, CATEGORY_LABELS, notificationDayLabel }
             <h1 class="title" data-testid="notification-title">{{ n.title }}</h1>
             <p class="when" data-testid="notification-when">{{ dayLabel() }}</p>
           </header>
+
+          @if (photo(); as src) {
+            <img class="photo" [src]="src" alt="" decoding="async" data-testid="notification-photo" />
+          }
 
           <p class="message" data-testid="notification-message">{{ n.message }}</p>
 
@@ -91,6 +96,11 @@ export class NotificationDetailPage implements OnInit {
   protected readonly actionLabels = ACTION_LABELS;
   protected readonly loading = signal(true);
   protected readonly notification = computed(() => (this.loading() ? null : this.inbox.find(this.notificationId())));
+  /** A workout reminder shows its session's photo. */
+  protected readonly photo = computed(() => {
+    const action = this.notification()?.action;
+    return action && 'sessionId' in action ? sessionIdPhoto(action.sessionId) : null;
+  });
   protected readonly dayLabel = computed(() => {
     const n = this.notification();
     return n ? notificationDayLabel(n.date, localIsoDate(this.clock())) : '';

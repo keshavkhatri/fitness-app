@@ -142,6 +142,7 @@ export const WORKOUT_COPY = {
     done: 'Done',
     restDay: 'Rest day',
     weekTitle: 'This week',
+    viewWeek: 'View week',
     weekProgress: (done: number, total: number) => `${done} of ${total} done`,
     status: { done: 'Done', 'in-progress': 'In progress', upcoming: 'Planned', missed: 'Not done' } as const,
     todayEyebrow: "Today's workout",
@@ -187,6 +188,15 @@ export const WORKOUT_COPY = {
   },
 
   detail: {
+    /** One line under the session's chips (by session type). */
+    sessionSummary: {
+      'full-body': 'Train your whole body with a balanced mix of compound and isolation exercises.',
+      upper: 'Build upper body strength with a balanced mix of compound and isolation exercises.',
+      lower: 'Build lower body strength with squats, hinges and single-leg work.',
+      push: 'Build your chest, shoulders and triceps with pressing movements.',
+      pull: 'Build your back and biceps with rows, pulls and curls.',
+      legs: 'Build stronger legs and glutes with squats, hinges and lunges.',
+    } satisfies Record<string, string>,
     pageTitle: 'Workout',
     back: 'Back',
     today: 'Today',
@@ -530,6 +540,7 @@ export const WORKOUT_COPY = {
     sets: 'Sets',
     volume: 'Total volume',
     completion: 'Sets completed',
+    calories: 'Est. calories',
     exercisesValue: (done: number, total: number) => `${done} of ${total}`,
     allDone: { title: 'Every set completed', text: 'You completed all the sets in this workout.' },
     partly: {
@@ -568,6 +579,7 @@ export const WORKOUT_COPY = {
       volume: 'Total volume',
       sets: 'Sets completed',
       duration: 'Duration',
+      calories: 'Est. calories',
       vsLast: 'vs last time',
       same: 'Same as last time',
       noHistory: {

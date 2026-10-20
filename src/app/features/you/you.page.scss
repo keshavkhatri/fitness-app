@@ -102,55 +102,19 @@
   @include fx.text(body-sm, bold);
 }
 
-// --- Settings ---------------------------------------------------------------------------------
-.settings {
+.title-row {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
 }
 
-.section-title {
-  @include fx.text(h3, bold);
+.gear {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  display: grid;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  font-size: 24px;
 }
-
-.settings-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-
-.setting-title {
-  @include fx.text(body-sm, semibold);
-  margin-bottom: var(--space-2);
-}
-
-.hint {
-  @include fx.text(body-sm);
-  margin-top: var(--space-2);
-  color: var(--color-text-secondary);
-}
-
-.error {
-  @include fx.text(body-sm, medium);
-  margin-top: var(--space-2);
-  color: var(--color-danger-text);
-}
-
-.settings-list {
-  @include fx.text(body-sm);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: var(--tap-target-min);
-    border-top: var(--border-hairline) solid var(--color-border);
-  }
-}
-

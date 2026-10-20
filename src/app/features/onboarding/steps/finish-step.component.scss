@@ -191,10 +191,15 @@
     background: var(--color-surface);
   }
 
-  .chevron {
-    flex: none;
-    margin-inline-start: auto;
+  &:not(.selected) > ion-icon:first-child {
+    color: var(--color-border-strong);
   }
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .badge {

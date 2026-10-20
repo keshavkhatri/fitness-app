@@ -1,5 +1,6 @@
 import { TrainingExperience } from '../fitness-profile';
 import {
+  ExerciseCategory,
   ExerciseTier,
   FatigueCost,
   MovementClass,
@@ -45,6 +46,8 @@ export interface Exercise {
   readonly fatigue: FatigueCost;
   /** Curated staple for these program styles specifically. */
   readonly preferredFor: readonly ProgramStyle[];
+  /** Browsing tags for the library (strength, core, mobility, cardio); at least one. Not used by generation. */
+  readonly categories: readonly ExerciseCategory[];
 }
 
 export type ExerciseLoadability = Exercise['loadability'];

@@ -15,6 +15,7 @@ import {
 } from '../../../shared/ui';
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { WORKOUT_COPY } from '../workout-content';
+import { exercisePhoto } from '../workout-photos';
 import { HistoryExerciseListComponent } from './history-exercise-list.component';
 import { HistorySummaryComponent } from './history-summary.component';
 import { HistoryMetricView, toHistoryDetail } from './history-view-model';
@@ -55,6 +56,7 @@ export class WorkoutHistoryDetailPage {
   private readonly route = inject(ActivatedRoute);
 
   protected readonly copy = WORKOUT_COPY.history;
+  protected readonly photo = exercisePhoto;
   protected readonly state = resource({
     params: () => ({ id: this.workoutId() }),
     loader: ({ params }) => this.history.get(params.id),

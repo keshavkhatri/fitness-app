@@ -53,6 +53,10 @@ export const SEX_OPTIONS: readonly ChoiceOption<Sex>[] = [
 export const SEX_CARD_OPTIONS: readonly ChoiceOption<Sex>[] = SEX_OPTIONS.map((option) => ({
   ...option,
   icon: { male: 'male', female: 'female', 'prefer-not-to-say': 'person-outline' }[option.value],
+  media: {
+    src: `assets/images/onboarding/avatar-${{ male: 'male', female: 'female', 'prefer-not-to-say': 'neutral' }[option.value]}.webp`,
+    icon: { male: 'male', female: 'female', 'prefer-not-to-say': 'person-outline' }[option.value],
+  },
 }));
 
 export const UNIT_SYSTEM_OPTIONS: readonly SegmentOption<UnitSystem>[] = [

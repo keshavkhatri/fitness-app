@@ -17,6 +17,7 @@ import { PrivateTestingService } from '../../core/entitlements/private-testing/p
 import { PREMIUM_TEST_BILLING } from '../../core/entitlements/testing/premium-billing';
 import { QuickAddLauncher } from '../../shell/quick-add/quick-add-launcher.service';
 import { IdentitySheetComponent } from './identity-sheet.component';
+import { SettingsPage } from './settings.page';
 import { YouPage } from './you.page';
 import { CLOCK } from '../../core/time/clock';
 import { currentAge, formatHeight } from '../../domain/fitness-profile';
@@ -77,23 +78,23 @@ describe('YouPage', () => {
     });
   });
 
-  it('shows the plan (Free until the store confirms Premium) and opens the plan screen, returning to You', () => {
+  it('Settings shows the plan (Free until the store confirms Premium) and opens the plan screen, returning to Settings', () => {
     TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
     const forward = vi.spyOn(TestBed.inject(NavController), 'navigateForward').mockResolvedValue(true);
-    const fixture = TestBed.createComponent(YouPage);
+    const fixture = TestBed.createComponent(SettingsPage);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(clean(el.querySelector('[data-testid=plan-name]')!)).toBe('Free');
     el.querySelector<HTMLElement>('[data-testid=plan-entry]')!.click();
-    expect(forward).toHaveBeenCalledExactlyOnceWith('/offer', { queryParams: { next: '/you' } });
+    expect(forward).toHaveBeenCalledExactlyOnceWith('/offer', { queryParams: { next: '/you/settings' } });
   });
 
-  describe('Your plan row', () => {
+  describe('Your plan row (in Settings)', () => {
     const plan = (el: HTMLElement) => ({ name: clean(el.querySelector('[data-testid=plan-name]')!), hint: clean(el.querySelector('[data-testid=plan-hint]')!) });
 
     it('Free, with billing not set up: says Pro cannot be bought yet', async () => {
       TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
-      const fixture = TestBed.createComponent(YouPage);
+      const fixture = TestBed.createComponent(SettingsPage);
       fixture.detectChanges();
       await TestBed.inject(EntitlementService).refresh();
       fixture.detectChanges();
@@ -105,7 +106,7 @@ describe('YouPage', () => {
       TestBed.configureTestingModule({
         providers: [provideIonicAngular(), provideRouter([]), { provide: BILLING_PROVIDER, useValue: { ...NO_BILLING, id: 'fake' } }],
       });
-      const fixture = TestBed.createComponent(YouPage);
+      const fixture = TestBed.createComponent(SettingsPage);
       fixture.detectChanges();
       expect(plan(fixture.nativeElement).hint).toBe('Checking your plan…');
       await TestBed.inject(EntitlementService).refresh();
@@ -121,7 +122,7 @@ describe('YouPage', () => {
           { provide: BILLING_PROVIDER, useValue: { ...NO_BILLING, id: 'fake', activeSubscription: () => Promise.reject(new Error('offline')) } },
         ],
       });
-      const fixture = TestBed.createComponent(YouPage);
+      const fixture = TestBed.createComponent(SettingsPage);
       await TestBed.inject(EntitlementService).refresh();
       fixture.detectChanges();
       expect(plan(fixture.nativeElement)).toEqual({ name: 'Free', hint: "Couldn't check your subscription. Tap to try again." });
@@ -130,7 +131,7 @@ describe('YouPage', () => {
     it('a confirmed subscription is Pro, confirmed by the store', async () => {
       TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([]), { provide: BILLING_PROVIDER, useValue: PREMIUM_TEST_BILLING }] });
       await TestBed.inject(EntitlementService).refresh();
-      const fixture = TestBed.createComponent(YouPage);
+      const fixture = TestBed.createComponent(SettingsPage);
       fixture.detectChanges();
       expect(plan(fixture.nativeElement)).toEqual({ name: 'Pro', hint: 'Confirmed by the store' });
     });
@@ -140,7 +141,7 @@ describe('YouPage', () => {
         providers: [provideIonicAngular(), provideRouter([]), { provide: PRIVATE_TESTING_CONFIG, useValue: { enabled: true, promoCode: 'STOKEFORMLAB' } }],
       });
       await TestBed.inject(PrivateTestingService).redeem('stokeformlab');
-      const fixture = TestBed.createComponent(YouPage);
+      const fixture = TestBed.createComponent(SettingsPage);
       fixture.detectChanges();
       expect(plan(fixture.nativeElement)).toEqual({ name: 'Pro', hint: 'Test access, not a subscription' });
       expect(clean(fixture.nativeElement.querySelector('[data-testid=plan-badge]'))).toBe('Test access');
@@ -152,6 +153,18 @@ describe('YouPage', () => {
       expect(plan(fixture.nativeElement).name).toBe('Free');
       expect(fixture.nativeElement.querySelector('[data-testid=plan-test-off]')).toBeNull();
     });
+  });
+
+  it('You has no account or plan sections (they are in Settings); the gear and the Settings row open Settings', () => {
+    TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
+    const forward = vi.spyOn(TestBed.inject(NavController), 'navigateForward').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(YouPage);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-account-card')).toBeNull();
+    expect(el.querySelector('[data-testid=plan-entry]')).toBeNull();
+    el.querySelector<HTMLElement>('[data-testid=settings-gear]')!.click();
+    expect(forward).toHaveBeenCalledWith('/you/settings');
   });
 
   it('Quick add (moved from the tab bar) opens the Quick Add sheet', () => {
@@ -191,8 +204,13 @@ describe('YouPage', () => {
     expect(forward).toHaveBeenLastCalledWith('/you/body-composition');
     click('review-entry');
     expect(forward).toHaveBeenLastCalledWith('/you/review');
-    el.querySelector<HTMLButtonElement>('[data-testid=progress-entry] button')!.click();
-    expect(forward).toHaveBeenLastCalledWith(['/you', 'progress']);
+  });
+
+  it('has no Progress row (Progress is its own tab)', () => {
+    TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
+    const fixture = TestBed.createComponent(YouPage);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid=progress-entry]')).toBeNull();
   });
 
   it('without a profile: no age, height or goal (nothing made up)', async () => {
@@ -205,7 +223,7 @@ describe('YouPage', () => {
     expect(el.querySelector('[data-testid=goal-entry]')).toBeNull();
   });
 
-  describe('Units', () => {
+  describe('Units (in Settings)', () => {
     async function render(withProfile: boolean) {
       const storage = new MemoryKeyValueStorage();
       TestBed.configureTestingModule({
@@ -214,7 +232,7 @@ describe('YouPage', () => {
       if (withProfile) {
         await TestBed.inject(FitnessProfileRepository).save(NORMAL_PROFILE);
       }
-      const fixture = TestBed.createComponent(YouPage);
+      const fixture = TestBed.createComponent(SettingsPage);
       await fixture.whenStable();
       fixture.detectChanges();
       return { fixture, el: fixture.nativeElement as HTMLElement };
@@ -228,7 +246,7 @@ describe('YouPage', () => {
 
       expect(radio(el, 'metric').checked).toBe(true);
       expect(radio(el, 'imperial').checked).toBe(false);
-      const upcoming = [...el.querySelectorAll('.settings-list li')].map(clean);
+      const upcoming = [...el.querySelectorAll('.upcoming')].map(clean);
       expect(upcoming.some((text) => text?.startsWith('Units'))).toBe(false);
     });
 

@@ -26,6 +26,7 @@ import { reportNotesWithIcons } from './report-notes';
     <app-weight-picker
       [weight]="weight()"
       [unitSystem]="unitSystem()"
+      [height]="height()"
       [describedBy]="note() ? 'weight-report-note' : null"
       (weightChange)="change($event)"
       (unitSystemChange)="setUnitSystem($event)"
@@ -48,6 +49,7 @@ export class WeightStepComponent implements OnboardingStepForm {
 
   protected readonly headingId = STEP_HEADING_ID;
   protected readonly unitSystem = computed(() => this.flow.draft().unitSystem);
+  protected readonly height = computed(() => this.flow.draft().basics.height);
 
   private readonly reading = computed(() =>
     this.flow.draft().setupMethod === 'report' ? (this.report?.reading() ?? null) : null,

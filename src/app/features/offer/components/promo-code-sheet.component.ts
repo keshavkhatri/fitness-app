@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, inject, model, signal } from '@angu
 import { IonIcon } from '@ionic/angular';
 
 import { PrivateTestingService, PromoResult } from '../../../core/entitlements/private-testing/private-testing.service';
+import { PRIVATE_TESTING_CONFIG } from '../../../core/entitlements/private-testing/private-testing.config';
 import { BottomSheetComponent, FitnessButtonComponent, TextFieldComponent } from '../../../shared/ui';
+import { environment } from '../../../../environments/environment';
 
 /** Feedback for a code that didn't work (the success state has its own screen). */
 const PROBLEMS: Partial<Record<PromoResult, string>> = {
@@ -19,7 +21,7 @@ const PROBLEMS: Partial<Record<PromoResult, string>> = {
 @Component({
   selector: 'app-promo-code-sheet',
   template: `
-    <fit-bottom-sheet screenTheme="dashboard" [title]="active() ? 'Pro test access' : 'Have a promo code?'" [(open)]="open">
+    <fit-bottom-sheet screenTheme="dashboard" [title]="active() ? 'Pro test access' : 'Enter Promo Code'" [(open)]="open">
       @if (active()) {
         <div class="done" data-testid="promo-success">
           <span class="badge" aria-hidden="true"><ion-icon name="checkmark-circle" /></span>
@@ -30,8 +32,9 @@ const PROBLEMS: Partial<Record<PromoResult, string>> = {
         </div>
       } @else {
         <div class="form" data-testid="promo-form">
-          <span class="badge soft" aria-hidden="true"><ion-icon name="ticket-outline" /></span>
-          <p class="text">A promo code unlocks Pro on this device for private testing. It is not a subscription, and nothing is charged.</p>
+          <span class="badge gift" aria-hidden="true"><ion-icon name="gift-outline" /></span>
+          <h3 class="headline">Have a promo code?</h3>
+          <p class="text">Enter the code below to get Pro access for free (private testing). It is not a subscription, and nothing is charged.</p>
           <fit-text-field
             label="Promo code"
             autocomplete="off"
@@ -42,7 +45,16 @@ const PROBLEMS: Partial<Record<PromoResult, string>> = {
             [error]="problem()"
             data-testid="offer-promo-input"
           />
-          <button fit-button type="button" block [loading]="busy()" [disabled]="busy()" data-testid="offer-promo-apply" (click)="apply()">Apply code</button>
+          <button fit-button type="button" block [loading]="busy()" [disabled]="busy()" data-testid="offer-promo-apply" (click)="apply()">Apply</button>
+          @if (demoCode; as demo) {
+            <div class="demo" data-testid="promo-demo">
+              <ion-icon name="information-circle-outline" aria-hidden="true" />
+              <span class="demo-text"><span class="demo-label">Demo code (development builds only)</span><span class="demo-code">{{ demo }}</span></span>
+              <button type="button" class="copy" aria-label="Use the demo code" (click)="code.set(demo); problem.set(null)">
+                <ion-icon name="copy-outline" aria-hidden="true" />
+              </button>
+            </div>
+          }
         </div>
       }
     </fit-bottom-sheet>
@@ -53,6 +65,8 @@ const PROBLEMS: Partial<Record<PromoResult, string>> = {
 })
 export class PromoCodeSheetComponent {
   private readonly testing = inject(PrivateTestingService);
+  /** Shown to fill in only in development builds; the store build never displays the code. */
+  protected readonly demoCode = environment.production ? null : inject(PRIVATE_TESTING_CONFIG).promoCode;
 
   readonly open = model(false);
   protected readonly active = this.testing.active;

@@ -1,6 +1,10 @@
 import { addIcons } from 'ionicons';
 import {
   add,
+  copyOutline,
+  giftOutline,
+  settingsOutline,
+  addCircleOutline,
   alertCircleOutline,
   barbell,
   barbellOutline,
@@ -115,6 +119,10 @@ export function registerAppIcons(): void {
     phonePortraitOutline,
     lockClosedOutline,
     add,
+    copyOutline,
+    giftOutline,
+    settingsOutline,
+    addCircleOutline,
     alertCircleOutline,
     barbell,
     barbellOutline,

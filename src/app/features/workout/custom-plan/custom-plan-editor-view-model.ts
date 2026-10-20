@@ -1,5 +1,6 @@
 import { CustomPlanIssue, validateCustomPlan } from '../../../domain/training-plan';
 import { Exercise, WorkoutPlan, WorkoutSession } from '../../../domain/workout-programming';
+import { MUSCLE_AREAS } from '../workout-content';
 import { exerciseMetadata, sessionTitle } from '../workout-formatting';
 import { CUSTOM_PLAN_COPY } from './custom-plan-content';
 import { ExerciseFieldErrors, PlanDraft, PrescriptionField, exerciseErrors, toSpec } from './custom-plan-draft';
@@ -22,6 +23,8 @@ export interface EditorExerciseView {
 export interface EditorDayView {
   readonly sessionId: string;
   readonly heading: string;
+  /** Broad areas its exercises train, in order: "Chest, Back, Shoulders" ("" when empty). */
+  readonly areas: string;
   readonly countLabel: string;
   readonly exercises: readonly EditorExerciseView[];
   /** Set when the day cannot be saved as it is (e.g. empty). */
@@ -95,7 +98,10 @@ export function toEditorView(plan: WorkoutPlan, draft: PlanDraft, catalog: Reado
         last: index === day.exercises.length - 1,
       };
     });
-    return { sessionId: day.sessionId, heading, countLabel: COPY.editor.count(exercises.length), exercises, problem };
+    const areas = [...new Set(day.exercises.flatMap((e) => catalog.get(e.exerciseId)?.primaryMuscles.map((m) => MUSCLE_AREAS[m]) ?? []))]
+      .slice(0, 3)
+      .join(', ');
+    return { sessionId: day.sessionId, heading, areas, countLabel: COPY.editor.count(exercises.length), exercises, problem };
   });
 
   // Rules for other issue kinds (e.g. unknown exercise) that have no day-level line yet.

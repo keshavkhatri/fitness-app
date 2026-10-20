@@ -17,13 +17,39 @@
       </fit-notice>
     }
 
+    @if (intents.intent() === 'custom' && s.planKind !== 'custom') {
+      <!-- "Build my own" was chosen during setup: once, here. -->
+      <section class="intent" aria-labelledby="intent-title" data-testid="plan-intent">
+        <span class="intent-icon" aria-hidden="true"><ion-icon name="create-outline" /></span>
+        <div class="intent-text">
+          <h2 class="intent-title" id="intent-title">{{ canCustomize() ? customCopy.intent.proTitle : customCopy.intent.freeTitle }}</h2>
+          <p class="intent-message">{{ canCustomize() ? customCopy.intent.proMessage : customCopy.intent.freeMessage }}</p>
+          <div class="intent-actions">
+            @if (canCustomize()) {
+              <button fit-button type="button" data-testid="plan-intent-build" (click)="buildFromIntent()">{{ customCopy.intent.build }}</button>
+            } @else {
+              <button fit-button type="button" data-testid="plan-intent-pro" (click)="seeProFromIntent()">{{ customCopy.intent.seePro }}</button>
+            }
+            <button fit-button type="button" variant="ghost" data-testid="plan-intent-dismiss" (click)="intents.clear()">{{ customCopy.intent.notNow }}</button>
+          </div>
+        </div>
+      </section>
+    }
+
     @if (v) {
       <app-plan-date-strip [days]="v.days" [label]="tab.weekLabel" (selectDay)="openSession($event)" />
 
       <section class="today" aria-labelledby="workout-today">
-        <h2 class="row-heading" id="workout-today">
-          <span class="strong">{{ tab.today }}</span><span class="dot" aria-hidden="true">•</span>{{ v.todayLabel }}
-        </h2>
+        <div class="row-heading">
+          <h2 class="today-heading" id="workout-today">
+            <span class="strong">{{ tab.today }}</span><span class="dot" aria-hidden="true">•</span>{{ v.todayLabel }}
+          </h2>
+          @if (v.rows.length > 0) {
+            <button type="button" class="link" data-testid="plan-view-week" (click)="focusWeek()">
+              {{ tab.viewWeek }}<ion-icon name="chevron-forward" aria-hidden="true" />
+            </button>
+          }
+        </div>
         <app-plan-today-card
           [feature]="v.feature"
           [starting]="starting()"
@@ -52,7 +78,7 @@
       <app-plan-summary [facts]="s.plan" />
 
       <div class="plan-actions" data-testid="plan-actions">
-        @if (s.planKind === 'custom') {
+        @if (s.planKind === 'custom' && canCustomize()) {
           <button fit-button type="button" variant="outline" block icon="create-outline" data-testid="plan-edit" (click)="editPlan()">
             {{ customCopy.entry.edit }}
           </button>
@@ -114,13 +140,14 @@
   </div>
 </fit-bottom-sheet>
 
-<fit-bottom-sheet screenTheme="dashboard" [title]="customCopy.gate.title" [(open)]="gateOpen">
+<fit-bottom-sheet #gateSheet screenTheme="immersive" [title]="customCopy.gate.title" [(open)]="gateOpen">
   <div class="gate" data-testid="pro-gate">
     <span class="gate-icon" aria-hidden="true"><ion-icon name="lock-closed-outline" /></span>
+    <p class="gate-heading">{{ customCopy.gate.heading }}</p>
     <p class="gate-text">{{ customCopy.gate.message }}</p>
-    <fit-chip icon="sparkles-outline">Pro</fit-chip>
     <div class="switch-actions">
       <button fit-button type="button" block data-testid="pro-gate-see" (click)="seePro()">{{ customCopy.gate.cta }}</button>
+      <button type="button" class="gate-link" data-testid="pro-gate-learn" (click)="seePro('pro')">{{ customCopy.gate.learnMore }}</button>
       <button fit-button type="button" variant="ghost" block data-testid="pro-gate-later" (click)="gateOpen.set(false)">{{ customCopy.gate.later }}</button>
     </div>
   </div>

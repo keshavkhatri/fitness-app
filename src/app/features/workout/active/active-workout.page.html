@@ -53,7 +53,7 @@
         </div>
 
         <app-exercise-demo class="hero" variant="stage" [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name">
-          <app-workout-art class="hero-art" [seed]="v.exercise.exerciseId" />
+          <app-workout-art class="hero-art" [seed]="v.exercise.exerciseId" [photo]="photo(v.exercise.exerciseId)" />
           <span class="hero-fade"></span>
           <app-muscle-figure class="hero-figure" [muscles]="v.exercise.muscleIds" />
         </app-exercise-demo>

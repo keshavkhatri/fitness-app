@@ -4,6 +4,7 @@ import { WorkoutLog, addDays, completedWorkouts, isTrainingWorkout, startOfWeek 
 import { toResumeCard } from '../active/active-workout-view-model';
 import { sessionFocusAreas } from '../workout-detail-view-model';
 import { WORKOUT_COPY } from '../workout-content';
+import { sessionPhoto } from '../workout-photos';
 import { CATALOG, DayView, WorkoutScreen } from '../workout-view-model';
 
 /**
@@ -35,6 +36,8 @@ export type PlanFeatureView =
   | {
       readonly kind: 'resume';
       readonly sessionId: string;
+      /** The session's hero photo, or null (drawn art). */
+      readonly photo: string | null;
       readonly title: string;
       readonly progress: string;
       readonly setsDone: number;
@@ -43,6 +46,7 @@ export type PlanFeatureView =
   | {
       readonly kind: 'start';
       readonly sessionId: string;
+      readonly photo: string | null;
       readonly title: string;
       /** The plan's estimate. */
       readonly minutes: number;
@@ -54,19 +58,22 @@ export type PlanFeatureView =
   | {
       readonly kind: 'done';
       readonly sessionId: string;
+      readonly photo: string | null;
       readonly workoutId: string;
       readonly title: string;
       readonly minutes: number;
       readonly countLabel: string;
       readonly areas: readonly string[];
     }
-  | { readonly kind: 'activity'; readonly sessionId: string; readonly title: string; readonly summary: string }
+  | { readonly kind: 'activity'; readonly sessionId: string; readonly photo: string | null; readonly title: string; readonly summary: string }
   | { readonly kind: 'rest'; readonly upNext: string | null };
 
 export type PlanRowStatus = 'done' | 'in-progress' | 'upcoming' | 'missed';
 
 export interface PlanWeekRowView {
   readonly sessionId: string;
+  /** The session's photo (thumbnail), or null (drawn art). */
+  readonly photo: string | null;
   readonly title: string;
   /** "50 min · 6 exercises" */
   readonly meta: string;
@@ -114,6 +121,7 @@ export function toPlanTab(
     .filter((log) => compareCalendarDates(localDateOf(log.completedAt as string), monday) >= 0);
   const doneOn = (date: CalendarDate) => thisWeek.some((log) => sameDay(localDateOf(log.completedAt as string), date));
   const finishedFor = (sessionId: string) => thisWeek.find((log) => log.source.sessionId === sessionId) ?? null;
+  const photoFor = (sessionId: string | null) => sessionPhoto(sessions.find((s) => s.id === sessionId));
   const areasFor = (sessionId: string | null) => {
     const planned = sessions.find((s) => s.id === sessionId);
     return planned?.kind === 'resistance' ? sessionFocusAreas(planned, catalog).slice(0, MAX_AREAS) : [];
@@ -153,6 +161,7 @@ export function toPlanTab(
     return [
       {
         sessionId: day.sessionId,
+        photo: photoFor(day.sessionId),
         title: day.session.title,
         meta,
         dateLabel,
@@ -168,7 +177,7 @@ export function toPlanTab(
   return {
     todayLabel: `${screen.today.weekday}, ${today.day} ${MONTHS[today.month - 1]}`,
     days,
-    feature: toFeature(screen, active, finishedFor, areasFor),
+    feature: toFeature(screen, active, finishedFor, areasFor, photoFor),
     rows,
     weekProgress: copy.weekProgress(done, rows.length),
   };
@@ -181,12 +190,14 @@ function toFeature(
   active: WorkoutLog | null,
   finishedFor: (sessionId: string) => WorkoutLog | null,
   areasFor: (sessionId: string | null) => string[],
+  photoFor: (sessionId: string | null) => string | null,
 ): PlanFeatureView {
   if (active) {
     const sets = active.exercises.flatMap((e) => e.sets);
     return {
       kind: 'resume',
       ...toResumeCard(active),
+      photo: photoFor(active.source.sessionId),
       setsDone: sets.filter((set) => set.status === 'completed').length,
       setsTotal: sets.length,
     };
@@ -196,6 +207,7 @@ function toFeature(
   if (s.kind === 'resistance' && today.sessionId) {
     const base = {
       sessionId: today.sessionId,
+      photo: photoFor(today.sessionId),
       title: s.title,
       minutes: s.estimatedMinutes,
       countLabel: s.countLabel,
@@ -205,7 +217,7 @@ function toFeature(
     return finished ? { kind: 'done', workoutId: finished.id, ...base } : { kind: 'start', ...base };
   }
   if (s.kind === 'activity' && today.sessionId) {
-    return { kind: 'activity', sessionId: today.sessionId, title: s.title, summary: s.summary };
+    return { kind: 'activity', sessionId: today.sessionId, photo: photoFor(today.sessionId), title: s.title, summary: s.summary };
   }
   return { kind: 'rest', upNext: upNext ? WORKOUT_COPY.today.upNext(upNext.session.title, upNext.weekday) : null };
 }

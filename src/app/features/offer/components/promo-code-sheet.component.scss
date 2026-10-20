@@ -43,3 +43,48 @@
   margin: 0;
   color: var(--color-text-secondary);
 }
+
+.gift {
+  align-self: center;
+  width: 84px;
+  height: 84px;
+  background: var(--color-primary-soft, var(--color-surface-muted));
+  color: var(--color-text);
+  font-size: 40px;
+}
+
+.demo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  text-align: start;
+}
+
+.demo-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.demo-label {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.demo-code {
+  @include fx.text(body-sm, semibold);
+  letter-spacing: 0.04em;
+}
+
+.copy {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  display: grid;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  font-size: 20px;
+}

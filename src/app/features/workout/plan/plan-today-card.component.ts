@@ -18,7 +18,7 @@ import { PlanFeatureView } from './plan-view-model';
     @let f = feature();
     <fit-card tone="ink" padding="none" [attr.data-kind]="f.kind" data-testid="plan-today">
       <div class="media" aria-hidden="true">
-        <app-workout-art [seed]="seed()" />
+        <app-workout-art [seed]="seed()" [photo]="photo()" />
         <div class="scrim"></div>
       </div>
 
@@ -113,6 +113,10 @@ export class PlanTodayCardComponent {
   protected readonly copy = WORKOUT_COPY.planTab;
   protected readonly todayCopy = WORKOUT_COPY.today;
   protected readonly resumeCopy = WORKOUT_COPY.resume;
+  protected readonly photo = computed(() => {
+    const f = this.feature();
+    return 'photo' in f ? f.photo : null;
+  });
   protected readonly seed = computed(() => {
     const f = this.feature();
     return 'sessionId' in f ? f.sessionId : f.kind;
