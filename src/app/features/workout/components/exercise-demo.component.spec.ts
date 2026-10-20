@@ -1,13 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { provideIonicAngular } from '@ionic/angular';
 
-import { EXERCISE_MEDIA_BASE_URL } from '../../../core/exercise-media/exercise-media';
+import { EXERCISE_ARTWORK_LOOKUP, EXERCISE_MEDIA_BASE_URL } from '../../../core/exercise-media/exercise-media';
 import { ExerciseDemoComponent } from './exercise-demo.component';
 
+// Artwork coverage grows over time: pin it here so these tests stay about the component (only back-squat has a guide).
+const ARTWORK = { provide: EXERCISE_ARTWORK_LOOKUP, useValue: (id: string) => (id === 'back-squat' ? 'back-squat-guide.webp' : null) };
 const BASE = 'https://media.example.test/exercises/';
 
 function render(exerciseId: string, base: string | null = BASE) {
-  TestBed.configureTestingModule({ providers: [provideIonicAngular(), { provide: EXERCISE_MEDIA_BASE_URL, useValue: base }] });
+  TestBed.configureTestingModule({ providers: [provideIonicAngular(), { provide: EXERCISE_MEDIA_BASE_URL, useValue: base }, ARTWORK] });
   const fixture = TestBed.createComponent(ExerciseDemoComponent);
   fixture.componentRef.setInput('exerciseId', exerciseId);
   fixture.componentRef.setInput('name', 'Push-Up');
@@ -44,6 +46,17 @@ describe('ExerciseDemoComponent', () => {
     expect(el.textContent).toContain('public domain');
   });
 
+  it('prefers the bundled guide sheet: one static image, no playback, even with media off', () => {
+    const { el, q, click } = render('back-squat', null);
+    click('demo-toggle');
+    const imgs = [...el.querySelectorAll('img')];
+    expect(imgs.map((i) => i.getAttribute('src'))).toEqual(['assets/exercise-art/back-squat-guide.webp']);
+    expect(imgs[0].alt).toBe('Push-Up: instructional guide with start, midpoint and finish positions');
+    expect(q('demo-play')).toBeNull();
+    expect(el.textContent).toContain('Illustration: StokeForm');
+    expect(el.textContent).not.toContain('public domain');
+  });
+
   it('offers a retry when the photos fail to load', () => {
     const { el, q, click, fixture } = render('push-up');
     click('demo-toggle');
@@ -63,7 +76,7 @@ describe('ExerciseDemoComponent', () => {
 
   describe('stage layout (active workout)', () => {
     function stage(exerciseId: string, base: string | null = BASE) {
-      TestBed.configureTestingModule({ providers: [provideIonicAngular(), { provide: EXERCISE_MEDIA_BASE_URL, useValue: base }] });
+      TestBed.configureTestingModule({ providers: [provideIonicAngular(), { provide: EXERCISE_MEDIA_BASE_URL, useValue: base }, ARTWORK] });
       const fixture = TestBed.createComponent(ExerciseDemoComponent);
       fixture.componentRef.setInput('exerciseId', exerciseId);
       fixture.componentRef.setInput('name', 'Push-Up');

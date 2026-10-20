@@ -164,6 +164,15 @@ ion-toolbar {
   margin-top: -2px;
 }
 
+// An open guide sheet is shown whole (3:2) with a control band under it, so it sets the height; the panel
+// then starts below it instead of overlapping.
+.hero.art-open {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  margin-bottom: 24px;
+}
+
 .hero-art {
   position: absolute;
   inset: 0;

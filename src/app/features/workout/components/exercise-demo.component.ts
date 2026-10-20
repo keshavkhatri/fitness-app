@@ -25,7 +25,7 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
   template: `
     @if (variant() === 'stage') {
       @let d = demo();
-      <div class="stage" data-testid="demo-stage" [class.showing]="open() && !!d">
+      <div class="stage" data-testid="demo-stage" [class.showing]="open() && !!d" [class.art-stage]="artOpen()">
         @if (open() && d) {
           @if (failed()) {
             <div class="failed stage-failed" data-testid="demo-failed">
@@ -33,11 +33,11 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
               <button fit-button type="button" variant="outline" (click)="retry()">{{ copy.retry }}</button>
             </div>
           } @else {
-            <div class="frames stage-frames" data-testid="demo">
+            <div class="frames stage-frames" [class.art]="d.artwork" data-testid="demo">
               @for (src of d.frames; track $index) {
                 <img
                   [src]="src + attemptQuery()"
-                  [alt]="$index === 0 ? copy.alt(name()) : ''"
+                  [alt]="$index === 0 ? (d.artwork ? copy.altArt(name()) : copy.alt(name())) : ''"
                   [attr.aria-hidden]="$index === 0 ? null : 'true'"
                   [class.shown]="frame() === $index"
                   decoding="async"
@@ -45,7 +45,7 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
                 />
               }
             </div>
-            <span class="stage-credit">{{ d.credit }}</span>
+            <span class="stage-credit" [class.art]="d.artwork">{{ d.credit }}</span>
           }
         } @else {
           <!-- The page's stand-in imagery (decorative). -->
@@ -57,7 +57,7 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
             <button type="button" class="pill" [attr.aria-expanded]="open()" data-testid="demo-toggle" (click)="toggle()">
               <span class="pill-face"><ion-icon [name]="open() ? 'close' : 'play'" aria-hidden="true" />{{ open() ? copy.hide : howTo }}</span>
             </button>
-            @if (open() && !failed()) {
+            @if (open() && !failed() && d.frames.length > 1) {
               <button type="button" class="pill" data-testid="demo-play" (click)="togglePlay()">
                 <span class="pill-face"><ion-icon [name]="playing() ? 'pause' : 'play'" aria-hidden="true" />{{ playing() ? copy.pause : copy.play }}</span>
               </button>
@@ -85,11 +85,11 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
               <button fit-button type="button" variant="outline" (click)="retry()">{{ copy.retry }}</button>
             </div>
           } @else {
-            <div class="frames">
+            <div class="frames" [class.art]="d.artwork">
               @for (src of d.frames; track $index) {
                 <img
                   [src]="src + attemptQuery()"
-                  [alt]="$index === 0 ? copy.alt(name()) : ''"
+                  [alt]="$index === 0 ? (d.artwork ? copy.altArt(name()) : copy.alt(name())) : ''"
                   [attr.aria-hidden]="$index === 0 ? null : 'true'"
                   [class.shown]="frame() === $index"
                   decoding="async"
@@ -99,7 +99,7 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
             </div>
           }
           <figcaption class="caption">
-            @if (!failed()) {
+            @if (!failed() && d.frames.length > 1) {
               <button fit-button type="button" variant="ghost" [icon]="playing() ? 'pause-outline' : 'play-outline'" data-testid="demo-play" (click)="togglePlay()">
                 {{ playing() ? copy.pause : copy.play }}
               </button>
@@ -178,6 +178,39 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
       }
     }
 
+    // The guide sheet is a 3:2 composition: shown whole (never cropped), on its own background.
+    .frames.art {
+      aspect-ratio: 3 / 2;
+      background: #f5f4ee;
+
+      img {
+        transition: none;
+      }
+    }
+
+    // A guide sheet in the stage: the whole 3:2 sheet, with a band underneath for the controls and credit
+    // (so nothing covers the sheet's text).
+    .stage.art-stage {
+      --stage-bottom: var(--space-2);
+
+      height: auto;
+      padding-bottom: 52px;
+      background: var(--color-bg);
+    }
+
+    .frames.stage-frames.art {
+      height: auto;
+      aspect-ratio: 3 / 2;
+    }
+
+    .stage-credit.art {
+      top: auto;
+      bottom: 18px;
+      inset-inline-end: var(--space-3);
+      background: transparent;
+      color: var(--color-text-secondary);
+    }
+
     .stage-credit {
       @include fx.text(caption);
       position: absolute;
@@ -249,6 +282,8 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
   `,
   imports: [IonIcon, FitnessButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // The page sizes the stage; an open guide sheet needs its own (taller) height, see .art-open in the page styles.
+  host: { '[class.art-open]': 'artOpen()' },
 })
 export class ExerciseDemoComponent {
   readonly exerciseId = input.required<string>();
@@ -260,16 +295,18 @@ export class ExerciseDemoComponent {
   protected readonly howTo = WORKOUT_COPY.active.howTo;
   protected readonly demo = computed(() => this.demonstrationFor(this.exerciseId()));
   protected readonly open = signal(false);
+  protected readonly failed = signal(false);
+  /** The stage is showing a guide sheet (not collapsed, not failed). */
+  protected readonly artOpen = computed(() => this.variant() === 'stage' && this.open() && !this.failed() && !!this.demo()?.artwork);
   protected readonly playing = signal(false);
   protected readonly frame = signal(0);
-  protected readonly failed = signal(false);
   /** Changes the image URLs on retry so the browser asks again. */
   private readonly attempt = signal(0);
   protected readonly attemptQuery = computed(() => (this.attempt() === 0 ? '' : `?retry=${this.attempt()}`));
 
   constructor() {
     effect((onCleanup) => {
-      if (!this.open() || !this.playing() || this.failed()) {
+      if (!this.open() || !this.playing() || this.failed() || (this.demo()?.frames.length ?? 0) < 2) {
         return;
       }
       const timer = setInterval(() => this.frame.update((f) => 1 - f), FRAME_MS);

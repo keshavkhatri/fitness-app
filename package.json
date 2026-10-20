@@ -9,6 +9,7 @@
     "test": "ng test",
     "lint": "ng lint",
     "brand:assets": "node scripts/generate-brand-assets.mjs",
+    "exercise-art": "node --env-file-if-exists=server/.env scripts/generate-exercise-art.mjs",
     "android:debug:local": "powershell -ExecutionPolicy Bypass -File scripts/android-debug.ps1 -Api Local",
     "android:debug:cloud": "powershell -ExecutionPolicy Bypass -File scripts/android-debug.ps1 -Api Cloud",
     "server:build": "npm --prefix server run build",

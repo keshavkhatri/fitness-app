@@ -415,6 +415,7 @@ export const WORKOUT_COPY = {
     play: 'Play',
     pause: 'Pause',
     alt: (name: string) => `${name}: start and end positions, shown in turn`,
+    altArt: (name: string) => `${name}: instructional guide with start, midpoint and finish positions`,
     failed: "The demonstration couldn't be loaded. Check your connection and try again.",
     retry: 'Try again',
   },
