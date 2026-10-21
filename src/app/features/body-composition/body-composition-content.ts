@@ -108,16 +108,40 @@ export const BODY_COMPOSITION_COPY = {
   upload: {
     title: 'Upload your InBody report',
     intro: 'We’ll read the values from a photo of your InBody results sheet. You’ll check every value before anything is saved.',
-    notice: {
-      title: 'Your image is sent to an AI service',
-      message: 'To read your report, the image is sent to our server and processed by OpenAI, an external AI service. The app doesn’t save the image. Only upload your own report.',
+    /** The full-screen wait while the report is read: the messages come up in a random order, ending on "closing". */
+    analysis: {
+      title: 'Reading your report',
+      messages: [
+        'Reading your report…',
+        'Analysing your body composition…',
+        'Checking muscle and fat values…',
+        'Finding your test date…',
+        'Looking through your earlier results…',
+        'Double-checking every number…',
+      ],
+      closing: 'Almost there…',
+      hint: 'This can take up to a minute.',
+      cancel: 'Cancel',
+    },
+    /** The earlier tests printed in the history chart at the bottom of the report. */
+    history: {
+      title: 'Earlier results on this report',
+      intro: (count: number) =>
+        count === 1
+          ? 'The report also lists 1 earlier test. Add it to your history too?'
+          : `The report also lists ${count} earlier tests. Choose the ones to add to your history.`,
+      alreadySaved: 'Already in your history',
+      check: 'Check these values',
+      include: (date: string) => `Add the result from ${date}`,
+      /** Said after Save, when some earlier results were added. */
+      added: (count: number) => (count === 1 ? '1 earlier result was added to your history.' : `${count} earlier results were added to your history.`),
+      partlyFailed: (saved: number, total: number) => `Your new assessment was saved, but only ${saved} of ${total} earlier results could be added.`,
     },
     takePhoto: 'Take photo',
     choose: 'Choose from files',
     chooseAnother: 'Choose a different image',
     read: 'Read report',
     retry: 'Try again',
-    reading: 'Reading your report… This can take up to a minute.',
     noImage: 'No image chosen',
     fileHint: (megabytes: number) => `Supported formats: JPG, PNG or WebP image, up to ${megabytes} MB`,
     manualInstead: 'Or type the values in below.',

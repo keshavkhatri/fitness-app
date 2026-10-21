@@ -71,9 +71,7 @@
             }
 
             <div class="upload-status" aria-live="polite" data-testid="report-status">
-              @if (r.status === 'reading') {
-                <p class="reading"><span class="spinner" aria-hidden="true"></span>{{ uploadCopy.reading }}</p>
-              } @else if (reportFailure(); as failure) {
+              @if (reportFailure(); as failure) {
                 <fit-notice tone="danger" [title]="failure.title">
                   <p>{{ failure.message }}</p>
                   @if (failure.issues.length) {
@@ -97,7 +95,6 @@
                 </fit-notice>
               }
             </div>
-            <fit-notice [title]="uploadCopy.notice.title">{{ uploadCopy.notice.message }}</fit-notice>
             @if (r.status !== 'read') {
               <p class="note">{{ uploadCopy.manualInstead }}</p>
             }
@@ -176,6 +173,38 @@
           (valueChange)="update('date', $event)"
         />
       </form>
+      @if (historyChoices().length) {
+        <section class="earlier" aria-labelledby="body-composition-earlier" data-testid="earlier-results">
+          <h2 class="earlier-title" id="body-composition-earlier">{{ historyCopy.title }}</h2>
+          <p class="note">{{ historyCopy.intro(historyChoices().length) }}</p>
+          <ul class="earlier-list">
+            @for (choice of historyChoices(); track choice.date) {
+              <li class="earlier-item" [attr.data-testid]="'earlier-' + choice.date">
+                <label class="earlier-row" [class.disabled]="choice.alreadySaved">
+                  <input
+                    type="checkbox"
+                    class="earlier-check"
+                    [checked]="choice.selected"
+                    [disabled]="choice.alreadySaved || saving()"
+                    [attr.aria-label]="historyCopy.include(choice.label)"
+                    (change)="toggleEarlier(choice.date)"
+                  />
+                  <span class="earlier-text">
+                    <span class="earlier-date">{{ choice.label }}</span>&ngsp;
+                    <span class="earlier-values">{{ choice.summary }}</span>&ngsp;
+                    @if (choice.alreadySaved) {
+                      <span class="earlier-flag">{{ historyCopy.alreadySaved }}</span>
+                    } @else if (choice.needsReview) {
+                      <span class="earlier-flag warn">{{ historyCopy.check }}</span>
+                    }
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
     } @else if (l?.kind === 'not-found') {
       <h1 class="visually-hidden">{{ title() }}</h1>
       <fit-card data-testid="not-found">
@@ -203,6 +232,17 @@
     }
   </main>
 </ion-content>
+
+@if (reportState().status === 'reading') {
+  <fit-analysis-overlay
+    [title]="analysisCopy.title"
+    [messages]="analysisCopy.messages"
+    [closingMessage]="analysisCopy.closing"
+    [hint]="analysisCopy.hint"
+    [cancelLabel]="analysisCopy.cancel"
+    (cancelled)="cancelReading()"
+  />
+}
 
 @if (editable()) {
   <ion-footer class="ion-no-border">

@@ -19,3 +19,4 @@ export * from './skeleton/loading-skeleton.component';
 export * from './text-field/text-field.component';
 export * from './ruler/ruler.component';
 export * from './ruler/ruler-math';
+export * from './analysis-overlay/analysis-overlay.component';

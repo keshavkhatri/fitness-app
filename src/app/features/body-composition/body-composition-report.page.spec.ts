@@ -38,8 +38,16 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 const reportImage = () => new File([new Uint8Array(32)], 'my-inbody.png', { type: 'image/png' });
 const clean = (node: Element | null | undefined) => node?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 const byTestId = (root: Element, id: string) => root.querySelector(`[data-testid="${id}"]`);
+/** The full-screen reading overlay lives on <body>, over the tab bar. */
+const overlay = (id = 'analysis-overlay') => byTestId(document.body, id);
 
-function configure(answer: () => Promise<Response>) {
+/** 'new-1', then a different id for each further assessment (the store refuses a repeated id). */
+const sequentialIds = () => {
+  let n = 0;
+  return () => (n++ === 0 ? 'new-1' : `new-${n}`);
+};
+
+function configure(answer: () => Promise<Response>, newId: () => string = sequentialIds()) {
   const storage = new MemoryKeyValueStorage();
   storage.values.set(KEY, JSON.stringify({ version: 1, assessments: [EARLIER] }));
   storage.values.set(WEIGHT_KEY, WEIGHTS);
@@ -51,7 +59,7 @@ function configure(answer: () => Promise<Response>) {
       provideRouter([]),
       { provide: KeyValueStorage, useValue: storage },
       { provide: CLOCK, useValue: () => NOW },
-      { provide: BODY_COMPOSITION_ASSESSMENT_ID, useValue: () => 'new-1' },
+      { provide: BODY_COMPOSITION_ASSESSMENT_ID, useValue: newId },
       { provide: INBODY_EXTRACTION_ENDPOINT, useValue: 'https://api.example.test/x' },
       { provide: INBODY_EXTRACTION_FETCH, useValue: fetch },
     ],
@@ -69,8 +77,8 @@ async function settle(fixture: ComponentFixture<unknown>) {
   }
 }
 
-async function renderEntry(answer: () => Promise<Response>) {
-  const spies = configure(answer);
+async function renderEntry(answer: () => Promise<Response>, newId?: () => string) {
+  const spies = configure(answer, newId);
   const fixture = TestBed.createComponent(BodyCompositionEntryPage);
   await settle(fixture);
   const el = fixture.nativeElement as HTMLElement;
@@ -110,7 +118,8 @@ describe('Body composition: add an assessment from a report', () => {
 
     await submit();
     const saved = storedAssessments(storage);
-    expect(saved).toHaveLength(2);
+    // The earlier one, this one, and the three earlier tests from the report's history chart.
+    expect(saved).toHaveLength(5);
     const added = saved.find((a: { id: string }) => a.id === 'new-1');
     expect(added.source).toEqual(INBODY_AI_PROVENANCE);
     expect(added.reported['fat-free-mass']).toEqual({ value: 47.3, unit: 'kg' });
@@ -178,7 +187,7 @@ describe('Body composition: add an assessment from a report', () => {
     await upload();
     await submit();
     await submit();
-    expect(storedAssessments(storage)).toHaveLength(2); // the earlier one and this one
+    expect(storedAssessments(storage)).toHaveLength(5); // the earlier one, this one and the report's 3 earlier tests, once each
   });
 
   it('a corrected reading is saved as the user’s own entry, not as read from the report', async () => {
@@ -191,6 +200,106 @@ describe('Body composition: add an assessment from a report', () => {
     const added = storedAssessments(storage).find((a: { id: string }) => a.id === 'new-1');
     expect(added.source).toEqual({ device: 'inbody', entryMethod: 'manual' });
     expect(added.reported.weight).toEqual({ value: 94.2, unit: 'kg' });
+  });
+
+  describe('earlier results from the report’s history chart', () => {
+    const ids = sequentialIds;
+    const rowsOf = (el: HTMLElement) => [...el.querySelectorAll('[data-testid^="earlier-2"]')];
+
+    it('lists the earlier tests, oldest first, all switched on, leaving out the current test', async () => {
+      const { el, upload } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION), ids());
+      expect(byTestId(el, 'earlier-results')).toBeNull();
+      await upload();
+      expect(clean(byTestId(el, 'earlier-results'))).toContain('The report also lists 3 earlier tests');
+      expect(rowsOf(el).map((r) => clean(r))).toEqual([
+        'Mar 14 71.9 kg · 25.4 kg muscle · 33.6% body fat',
+        'May 9 70.6 kg · 25.7 kg muscle · 32.4% body fat',
+        'Jul 18 69.3 kg · 26 kg muscle · 31.5% body fat',
+      ]);
+      expect(rowsOf(el).every((r) => r.querySelector<HTMLInputElement>('input')!.checked)).toBe(true);
+    });
+
+    it('saves each chosen earlier test as its own assessment read from the report, after the main one', async () => {
+      const { upload, submit, storage } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION), ids());
+      await upload();
+      await submit();
+      const saved = storedAssessments(storage) as { id: string; date: string; source: unknown; reported: Record<string, unknown> }[];
+      expect(saved.map((a) => a.date).sort()).toEqual(['2026-03-14', '2026-05-09', '2026-07-18', '2026-09-01', '2026-09-14']);
+      const march = saved.find((a) => a.date === '2026-03-14')!;
+      expect(march.source).toEqual(INBODY_AI_PROVENANCE);
+      expect(march.reported).toEqual({
+        weight: { value: 71.9, unit: 'kg' },
+        'skeletal-muscle-mass': { value: 25.4, unit: 'kg' },
+        'body-fat-percentage': { value: 33.6, unit: '%' },
+      });
+    });
+
+    it('leaves out an earlier test the user switched off', async () => {
+      const { el, fixture, upload, submit, storage } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION), ids());
+      await upload();
+      const may = byTestId(el, 'earlier-2026-05-09')!.querySelector<HTMLInputElement>('input')!;
+      may.click();
+      fixture.detectChanges();
+      expect(may.checked).toBe(false);
+      await submit();
+      expect((storedAssessments(storage) as { date: string }[]).map((a) => a.date)).not.toContain('2026-05-09');
+      expect(storedAssessments(storage)).toHaveLength(4);
+    });
+
+    it('never adds a date that is already in the history again', async () => {
+      const dated = { ...SAMPLE_INBODY380_EXTRACTION, history: [...SAMPLE_INBODY380_EXTRACTION.history.slice(0, 1), { ...SAMPLE_INBODY380_EXTRACTION.history[0], 'test-date-time': { ...SAMPLE_INBODY380_EXTRACTION.history[0]['test-date-time'], text: '2026.09.01' } }] };
+      const { el, upload, submit, storage } = await renderEntry(async () => json(200, dated), ids());
+      await upload();
+      const existing = byTestId(el, 'earlier-2026-09-01')!;
+      expect(clean(existing)).toContain('Already in your history');
+      expect(existing.querySelector<HTMLInputElement>('input')!.disabled).toBe(true);
+      await submit();
+      expect((storedAssessments(storage) as { date: string }[]).filter((a) => a.date === '2026-09-01')).toHaveLength(1);
+      expect(storedAssessments(storage)).toHaveLength(3); // the one already there, the main one, March
+    });
+
+    it('offers nothing when the report has no history chart (or an older server did not send one)', async () => {
+      const { history: _history, ...older } = SAMPLE_INBODY380_EXTRACTION;
+      const { el, upload } = await renderEntry(async () => json(200, older), ids());
+      await upload();
+      expect(byTestId(el, 'earlier-results')).toBeNull();
+    });
+  });
+
+  it('shows a full-screen reading overlay while the report is read, with a way to cancel, and no AI notice', async () => {
+    let answer!: (response: Response) => void;
+    const { el, fixture, upload, input } = await renderEntry(() => new Promise<Response>((resolve) => (answer = resolve)));
+    expect(el.textContent).not.toMatch(/AI service|OpenAI/);
+    expect(overlay()).toBeNull();
+
+    const fileInput = el.querySelector<HTMLInputElement>('input[type=file]')!;
+    Object.defineProperty(fileInput, 'files', { value: [reportImage()], configurable: true });
+    fileInput.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    expect(overlay()).not.toBeNull();
+    expect(overlay()?.getAttribute('aria-label')).toBe('Reading your report');
+    expect(clean(overlay('analysis-message'))).not.toBe('');
+
+    answer(json(200, SAMPLE_INBODY380_EXTRACTION));
+    await settle(fixture);
+    expect(overlay()).toBeNull();
+    expect(input('weight').value).toBe('68.4');
+    void upload;
+  });
+
+  it('cancelling the reading closes the overlay and drops a late answer', async () => {
+    let answer!: (response: Response) => void;
+    const { el, fixture, input } = await renderEntry(() => new Promise<Response>((resolve) => (answer = resolve)));
+    const fileInput = el.querySelector<HTMLInputElement>('input[type=file]')!;
+    Object.defineProperty(fileInput, 'files', { value: [reportImage()], configurable: true });
+    fileInput.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    (overlay('analysis-cancel') as HTMLButtonElement).click();
+    await settle(fixture);
+    expect(overlay()).toBeNull();
+    answer(json(200, SAMPLE_INBODY380_EXTRACTION));
+    await settle(fixture);
+    expect(input('weight').value).toBe('');
   });
 
   it('a failed upload explains itself and keeps manual entry available', async () => {

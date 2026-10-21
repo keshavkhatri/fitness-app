@@ -66,9 +66,7 @@
   </fit-card>
 
   <div class="status" aria-live="polite">
-    @if (s.status === 'reading') {
-      <p class="message">Reading your report… This can take up to a minute.</p>
-    } @else if (failure(); as failure) {
+    @if (failure(); as failure) {
       <fit-notice tone="danger" [title]="failure.title">
         <p>{{ failure.message }}</p>
         @if (failure.issues.length) {
@@ -89,6 +87,17 @@
   <button fit-button type="button" variant="ghost" block (click)="useManualEntry()">
     Enter my details manually instead
   </button>
+
+  @if (s.status === 'reading') {
+    <fit-analysis-overlay
+      [title]="analysis.title"
+      [messages]="analysis.messages"
+      [closingMessage]="analysis.closing"
+      [hint]="analysis.hint"
+      [cancelLabel]="analysis.cancel"
+      (cancelled)="cancelReading()"
+    />
+  }
 } @else {
   <fit-notice tone="warning" title="Report upload isn't available">
     This version of the app can't read reports. Enter your details manually instead.

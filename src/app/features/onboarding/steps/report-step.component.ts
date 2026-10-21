@@ -3,7 +3,8 @@ import { IonIcon } from '@ionic/angular';
 
 import { MAX_REPORT_BYTES } from '../../../core/inbody/inbody-extraction.client';
 import { INBODY_REPORT_MEDIA_TYPES } from '../../../domain/inbody-extraction';
-import { FitnessButtonComponent, FitnessCardComponent, NoticeComponent } from '../../../shared/ui';
+import { AnalysisOverlayComponent, FitnessButtonComponent, FitnessCardComponent, NoticeComponent } from '../../../shared/ui';
+import { BODY_COMPOSITION_COPY } from '../../body-composition/body-composition-content';
 import { OnboardingFlow } from '../state/onboarding-flow.service';
 import { ReportImport } from '../state/report-import.service';
 import { REPORT_FAILURE_COPY, reportIssueText, reportReviewSummary } from '../state/report-review';
@@ -21,7 +22,7 @@ const MIB = 1024 * 1024;
   selector: 'app-report-step',
   templateUrl: './report-step.component.html',
   styleUrl: './report-step.component.scss',
-  imports: [IonIcon, FitnessButtonComponent, FitnessCardComponent, NoticeComponent],
+  imports: [IonIcon, AnalysisOverlayComponent, FitnessButtonComponent, FitnessCardComponent, NoticeComponent],
   providers: [{ provide: OnboardingStepForm, useExisting: ReportStepComponent }],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,6 +34,8 @@ export class ReportStepComponent implements OnboardingStepForm {
   protected readonly accept = INBODY_REPORT_MEDIA_TYPES.join(',');
   protected readonly maxMegabytes = MAX_REPORT_BYTES / MIB;
   protected readonly state = this.report.current;
+  /** The full-screen wait while the report is read (shared with the body-composition upload). */
+  protected readonly analysis = BODY_COMPOSITION_COPY.upload.analysis;
   /** Shown when the user asks to read a report before choosing one. */
   protected readonly prompt = signal<string | null>(null);
 
@@ -50,6 +53,11 @@ export class ReportStepComponent implements OnboardingStepForm {
     const reading = this.report.reading();
     return reading ? reportReviewSummary(reading) : null;
   });
+
+  /** Leaves the full-screen wait: the reading is abandoned (a late answer is dropped). */
+  protected cancelReading(): void {
+    this.report.reset();
+  }
 
   readonly busy = computed(() => this.state().status === 'reading');
   readonly primaryLabel = computed(() => {

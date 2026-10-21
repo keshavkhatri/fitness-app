@@ -35,7 +35,8 @@ export const INBODY_EXTRACTION_INSTRUCTIONS = [
   'You transcribe one InBody body-composition result sheet into the given JSON schema. You never interpret, advise or diagnose.',
   'Use outcome "unsupported-report" if the image is not an InBody result sheet, and "insufficient-readable-information" if it is one but no value can be read; then every field is "not-on-report".',
   'For each field, copy the current test\'s value exactly as printed: the digits as text without the unit, and the unit as printed. Never convert, round, calculate or complete a value.',
-  'Ignore reference ranges in parentheses, history charts, segmental analysis, evaluations and targets.',
+  'Ignore reference ranges in parentheses, segmental analysis, evaluations and targets.',
+  'At the bottom of the sheet there is a history chart or table of earlier tests (weight, SMM and PBF per test date). Put every printed point in "history", oldest first, each with its date label exactly as printed and the weight, SMM and PBF printed for that date (status "not-on-report" for any not printed), including the current test if it is plotted. If there is no history, history is an empty array. Never invent, estimate or interpolate a point or a value.',
   'If a field is not printed, use status "not-on-report". If it is printed but you cannot read it reliably, use "unreadable" and no value. If you can read it but are not sure, use "uncertain". Never guess.',
   'sourceLabel is the label printed next to the value. Report whole-image problems in reportIssues.',
 ].join('\n');

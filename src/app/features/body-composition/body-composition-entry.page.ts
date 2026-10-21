@@ -29,8 +29,9 @@ import {
   validateBodyCompositionInput,
 } from '../../domain/body-composition';
 import { UnitSystem } from '../../domain/fitness-profile';
-import { INBODY_REPORT_MEDIA_TYPES } from '../../domain/inbody-extraction';
+import { INBODY_AI_PROVENANCE, INBODY_REPORT_MEDIA_TYPES } from '../../domain/inbody-extraction';
 import {
+  AnalysisOverlayComponent,
   EmptyStateComponent,
   FitnessButtonComponent,
   FitnessCardComponent,
@@ -44,6 +45,7 @@ import { ReportThumbComponent } from './components/report-thumb.component';
 import { ReportImport } from '../onboarding/state/report-import.service';
 import { REPORT_FAILURE_COPY, reportIssueText, reportReviewSummary } from '../onboarding/state/report-review';
 import { BODY_COMPOSITION_COPY } from './body-composition-content';
+import { formatReportedValue, shortDateOf } from './body-composition-history-view-model';
 import {
   BodyCompositionFormErrors,
   BodyCompositionFormValues,
@@ -70,6 +72,19 @@ const MASS_UNIT_OPTIONS: readonly SegmentOption<MassUnit>[] = [
   { value: 'kg', label: 'kg' },
   { value: 'lb', label: 'lb' },
 ];
+
+/** An earlier test from the report's history chart, offered for adding to the history. */
+interface EarlierChoice {
+  readonly date: string;
+  /** "Mar 14" */
+  readonly label: string;
+  /** "71.9 kg · 25.4 kg muscle · 33.6% body fat" */
+  readonly summary: string;
+  readonly needsReview: boolean;
+  /** An assessment for this date exists already: never added a second time. */
+  readonly alreadySaved: boolean;
+  readonly selected: boolean;
+}
 
 type Loaded =
   /** `unitSystem` only picks the default mass unit (null without a readable profile). */
@@ -101,6 +116,7 @@ type Loaded =
   styleUrl: './body-composition-entry.page.scss',
   host: { class: 'fit-theme-immersive fit-tracking-form' },
   imports: [
+    AnalysisOverlayComponent,
     IonContent,
     ReportThumbComponent,
     IonFooter,
@@ -127,6 +143,8 @@ export class BodyCompositionEntryPage {
 
   protected readonly copy = BODY_COMPOSITION_COPY.form;
   protected readonly uploadCopy = BODY_COMPOSITION_COPY.upload;
+  protected readonly analysisCopy = BODY_COMPOSITION_COPY.upload.analysis;
+  protected readonly historyCopy = BODY_COMPOSITION_COPY.upload.history;
   protected readonly metricLabels = BODY_COMPOSITION_COPY.metrics;
   protected readonly keyMetrics = BODY_COMPOSITION_METRICS.filter(isKeyMetric);
   protected readonly moreMetrics = BODY_COMPOSITION_METRICS.filter((metric) => !isKeyMetric(metric));
@@ -214,6 +232,32 @@ export class BodyCompositionEntryPage {
   /** Kept open while one of its fields shows an error, so the error can be seen and focused. */
   protected readonly hasMoreError = computed(() => this.moreMetrics.some((metric) => this.errors()[metric]));
 
+  /** Dates of the earlier results the user has switched off (every new reading starts with all on). */
+  private readonly skippedEarlier = signal<ReadonlySet<string>>(new Set());
+  /** The earlier tests the report's history chart lists, as choices to add to the history. */
+  protected readonly historyChoices = computed<readonly EarlierChoice[]>(() => {
+    const suggestions = this.report.reading()?.prefill.history ?? [];
+    const state = this.history.state();
+    const saved = new Set(state.status === 'ready' ? state.assessments.map((a) => a.date) : []);
+    return suggestions.map((s) => {
+      const alreadySaved = saved.has(s.date);
+      return {
+        date: s.date,
+        label: shortDateOf(s.date, this.today),
+        summary: [
+          s.values.weight && formatReportedValue(s.values.weight),
+          s.values['skeletal-muscle-mass'] && `${formatReportedValue(s.values['skeletal-muscle-mass'])} muscle`,
+          s.values['body-fat-percentage'] && `${formatReportedValue(s.values['body-fat-percentage'])} body fat`,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        needsReview: s.needsReview,
+        alreadySaved,
+        selected: !alreadySaved && !this.skippedEarlier().has(s.date),
+      };
+    });
+  });
+
   protected readonly reportState = this.report.current;
   protected readonly reportFile = computed(() => {
     const state = this.reportState();
@@ -245,6 +289,7 @@ export class BodyCompositionEntryPage {
         this.errors.set({});
         this.status.set('');
         this.reviewMessage.set(this.uploadCopy.review.message(filled, toCheck));
+        this.skippedEarlier.set(new Set());
       });
     });
   }
@@ -279,6 +324,21 @@ export class BodyCompositionEntryPage {
 
   protected retryRead(): void {
     void this.report.read();
+  }
+
+  /** Leaves the full-screen wait: the reading is abandoned (a late answer is dropped). */
+  protected cancelReading(): void {
+    this.report.reset();
+  }
+
+  protected toggleEarlier(date: string): void {
+    this.skippedEarlier.update((skipped) => {
+      const next = new Set(skipped);
+      if (!next.delete(date)) {
+        next.add(date);
+      }
+      return next;
+    });
   }
 
   protected fileSize(file: File): string {
@@ -323,7 +383,14 @@ export class BodyCompositionEntryPage {
       if (result.ok) {
         this.saved.set(true);
         this.errors.set({});
+        // The earlier tests from the report's history chart, once the main assessment is safely saved.
+        const earlier = l.kind === 'new' ? await this.saveEarlier() : { total: 0, saved: 0 };
         this.report.reset();
+        if (earlier.saved < earlier.total) {
+          // Stay: the assessment itself is saved, so Save is off and the message explains the rest.
+          this.status.set(this.historyCopy.partlyFailed(earlier.saved, earlier.total));
+          return;
+        }
         void this.nav.navigateBack(l.kind === 'edit' ? bodyCompositionDetailPath(l.assessment.id) : BODY_COMPOSITION_RETURN_PATH);
       } else if (result.kind === 'invalid') {
         this.showErrors(bodyCompositionFormErrorsOf(result.errors, form.massUnit));
@@ -333,6 +400,24 @@ export class BodyCompositionEntryPage {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  /** Adds each chosen earlier test as its own assessment, as read from the report. */
+  private async saveEarlier(): Promise<{ readonly total: number; readonly saved: number }> {
+    const chosen = this.historyChoices().filter((choice) => choice.selected);
+    const suggestions = new Map((this.report.reading()?.prefill.history ?? []).map((s) => [s.date, s]));
+    let saved = 0;
+    for (const choice of chosen) {
+      const suggestion = suggestions.get(choice.date);
+      if (!suggestion) {
+        continue;
+      }
+      const result = await this.history.add({ date: suggestion.date, source: INBODY_AI_PROVENANCE, values: suggestion.values });
+      if (result.ok) {
+        saved++;
+      }
+    }
+    return { total: chosen.length, saved };
   }
 
   protected cancel(): void {

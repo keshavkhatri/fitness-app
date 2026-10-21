@@ -23,6 +23,8 @@ import {
 import {
   EXTRACTION_FIELD_IDS,
   ExtractedField,
+  HistoryFieldId,
+  HistoryPoint,
   INBODY_EXTRACTION_SCHEMA_VERSION,
   ExtractionFieldId,
   ExtractionOutcome,
@@ -45,6 +47,9 @@ import {
  * - Test Date / Time → assessment date; every measurement → the assessment
  *   metric of the same quantity, as reported (PBF → `body-fat-percentage`,
  *   unitless values in unit `none`).
+ *
+ * - The history chart at the bottom of the sheet → `InBodyPrefill.history`: one suggested
+ *   assessment per earlier test date (weight, skeletal muscle mass, body-fat percentage only).
  *
  * Not mapped:
  * - Age: the profile stores a date of birth, which an age can't give;
@@ -140,8 +145,22 @@ export interface InBodyPrefill {
     readonly date: Prefill<IsoCalendarDate>;
     readonly values: Readonly<Partial<Record<BodyCompositionMetric, Prefill<ReportedValue>>>>;
   };
+  /**
+   * Earlier tests from the sheet's history chart, oldest first: only points with a usable date before the current
+   * test (the current test itself is the assessment above) and at least one usable value, one per date.
+   * Each is a suggestion for the user to review, like everything else here.
+   */
+  readonly history: readonly HistorySuggestion[];
   /** Fields with a value that nothing above uses (shown for reference, never saved). */
   readonly unmapped: readonly ExtractionFieldId[];
+}
+
+/** An earlier test from the history chart, as a suggested assessment. */
+export interface HistorySuggestion {
+  readonly date: IsoCalendarDate;
+  readonly values: Readonly<Partial<Record<BodyCompositionMetric, ReportedValue>>>;
+  /** The model was unsure of the date or a value: the user should look at this one closely. */
+  readonly needsReview: boolean;
 }
 
 /** The model rejected the report: nothing to prefill, manual entry only. */
@@ -209,6 +228,65 @@ function readDate(today: IsoCalendarDate) {
   };
 }
 
+/**
+ * A history label. Year first like the main date ("2026.03.14"); a two-digit year ("26.03.14", "'26.03.14") is read
+ * only because the current test's date is printed year first, and then as 20yy. Day-first or month-first labels and
+ * labels without a year are never guessed.
+ */
+const HISTORY_DATE = /^['’]?(\d{4}|\d{2})\.(\d{2})\.(\d{2})\.?(?:\s+\d{2}:\d{2})?$/;
+
+function readHistoryDate(today: IsoCalendarDate, yearFirst: boolean) {
+  return ({ text }: PrintedValue): Reading<IsoCalendarDate> => {
+    const match = HISTORY_DATE.exec(text.trim());
+    if (!match || (match[1].length === 2 && !yearFirst)) {
+      return problem('unrecognised');
+    }
+    const year = match[1].length === 2 ? 2000 + Number(match[1]) : Number(match[1]);
+    const date = toIsoCalendarDate({ year, month: Number(match[2]), day: Number(match[3]) });
+    if (!date) {
+      return problem('unrecognised');
+    }
+    return date > today ? problem('out-of-range') : { value: date };
+  };
+}
+
+const HISTORY_METRICS: readonly (readonly [BodyCompositionMetric, HistoryFieldId])[] = [
+  ['weight', 'weight'],
+  ['skeletal-muscle-mass', 'skeletal-muscle-mass'],
+  ['body-fat-percentage', 'percent-body-fat'],
+];
+
+function historySuggestions(history: readonly HistoryPoint[], currentDate: IsoCalendarDate | null, today: IsoCalendarDate): HistorySuggestion[] {
+  const yearFirst = currentDate !== null;
+  const limit = currentDate ?? today;
+  const byDate = new Map<IsoCalendarDate, HistorySuggestion>();
+  for (const point of history) {
+    const dateField = point['test-date-time'];
+    const date = hasValue(dateField) && dateField.text !== null ? readHistoryDate(today, yearFirst)({ text: dateField.text, unit: null }) : null;
+    // The current test (same date, or later than it) is the main assessment, not an earlier one.
+    if (!date || 'problem' in date || date.value >= limit || byDate.has(date.value)) {
+      continue;
+    }
+    const values: Partial<Record<BodyCompositionMetric, ReportedValue>> = {};
+    let uncertain = dateField.status === 'uncertain';
+    for (const [metric, id] of HISTORY_METRICS) {
+      const field = point[id];
+      if (!hasValue(field) || field.text === null) {
+        continue;
+      }
+      const reading = readReported(metric, today)({ text: field.text, unit: field.unit });
+      if (!('problem' in reading)) {
+        values[metric] = reading.value;
+        uncertain ||= field.status === 'uncertain';
+      }
+    }
+    if (Object.keys(values).length > 0) {
+      byDate.set(date.value, { date: date.value, values, needsReview: uncertain });
+    }
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
 /** As reported (no conversion), and only if manual entry would accept it. */
 function readReported(metric: BodyCompositionMetric, today: IsoCalendarDate) {
   return ({ text, unit }: PrintedValue): Reading<ReportedValue> => {
@@ -240,6 +318,7 @@ export function inBodyPrefill(extraction: InBodyExtraction, today: IsoCalendarDa
   }
   const used = new Set<ExtractionFieldId>([...PROFILE_FIELDS, 'test-date-time', 'report-model', ...Object.values(ASSESSMENT_FIELDS)]);
   const model = extractedField(extraction, 'report-model');
+  const assessmentDate = prefill(extraction, 'test-date-time', readDate(today));
   return {
     kind: 'prefill',
     reportIssues: extraction.reportIssues,
@@ -249,7 +328,8 @@ export function inBodyPrefill(extraction: InBodyExtraction, today: IsoCalendarDa
       height: prefill(extraction, 'height', readHeight),
       weight: prefill(extraction, 'weight', readProfileWeight),
     },
-    assessment: { date: prefill(extraction, 'test-date-time', readDate(today)), values },
+    assessment: { date: assessmentDate, values },
+    history: historySuggestions(extraction.history, assessmentDate.kind === 'prefilled' ? assessmentDate.value : null, today),
     unmapped: EXTRACTION_FIELD_IDS.filter((id) => !used.has(id) && hasValue(extractedField(extraction, id))),
   };
 }

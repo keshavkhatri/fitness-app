@@ -1,0 +1,213 @@
+@use 'mixins' as fx;
+
+:host {
+  display: contents;
+}
+
+// Always dark, whatever the Appearance, and lifted to <body> (outside the page theme): the brand lime is fixed here.
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--page-gutter);
+  background: rgba(10, 11, 10, 0.88);
+  color: #ffffff;
+  text-align: center;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: appear 260ms ease both;
+}
+
+// The report sheet in a soft lime glow.
+.stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 180px;
+  height: 220px;
+}
+
+.glow {
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(197, 243, 107, 0.34), transparent 72%);
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 132px;
+  height: 172px;
+  padding: 14px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f6f6f1;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.brand {
+  width: 44%;
+  height: 11px;
+  border-radius: 2px;
+  background: #3b5bdb;
+}
+
+.line {
+  height: 7px;
+  border-radius: 2px;
+  background: #cfd2d8;
+}
+
+.w80 {
+  width: 80%;
+}
+
+.w70 {
+  width: 70%;
+}
+
+.w60 {
+  width: 60%;
+}
+
+.w50 {
+  width: 50%;
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 4px 0;
+
+  span {
+    display: block;
+    height: 9px;
+    border-radius: 2px;
+    background: #9aa1ad;
+  }
+
+  span:nth-child(1) {
+    width: 92%;
+  }
+
+  span:nth-child(2) {
+    width: 56%;
+  }
+
+  span:nth-child(3) {
+    width: 74%;
+  }
+}
+
+// The scanner: a soft band with a bright leading edge, sweeping down and back.
+.scan {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 46px;
+  background: linear-gradient(to bottom, rgba(197, 243, 107, 0), rgba(197, 243, 107, 0.55));
+  border-bottom: 2px solid rgb(197, 243, 107);
+  box-shadow: 0 6px 18px rgba(197, 243, 107, 0.55);
+  animation: scan 2.4s ease-in-out infinite;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 320px;
+  min-height: 72px;
+}
+
+.message {
+  @include fx.text(h3, semibold);
+  min-height: 28px;
+}
+
+.swap {
+  display: block;
+  animation: swap 480ms ease both;
+}
+
+.hint {
+  @include fx.text(body-sm);
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.cancel {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-5);
+  border: var(--border-hairline) solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-pill);
+  color: #ffffff;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-46px);
+  }
+
+  50% {
+    transform: translateY(172px);
+  }
+
+  100% {
+    transform: translateY(-46px);
+  }
+}
+
+@keyframes swap {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .glow,
+  .swap {
+    animation: none;
+  }
+
+  // Still, but visibly "scanning": the band rests across the middle of the sheet.
+  .scan {
+    animation: none;
+    top: 40%;
+  }
+}

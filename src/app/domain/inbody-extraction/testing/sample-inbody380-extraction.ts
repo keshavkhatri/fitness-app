@@ -10,6 +10,14 @@ import { ExtractedField, INBODY_EXTRACTION_SCHEMA_VERSION } from '../inbody-extr
  */
 const read = (text: string, unit: string | null, sourceLabel: string): ExtractedField => ({ status: 'read', text, unit, sourceLabel });
 
+/** One printed point of the history chart (all fictional). */
+const point = (date: string, weight: string, smm: string, pbf: string) => ({
+  'test-date-time': read(date, null, 'History date'),
+  weight: read(weight, 'kg', 'Weight'),
+  'skeletal-muscle-mass': read(smm, 'kg', 'SMM'),
+  'percent-body-fat': read(pbf, '%', 'PBF'),
+});
+
 export const SAMPLE_INBODY380_EXTRACTION = {
   schemaVersion: INBODY_EXTRACTION_SCHEMA_VERSION,
   outcome: 'extracted',
@@ -46,4 +54,11 @@ export const SAMPLE_INBODY380_EXTRACTION = {
     'bone-mineral-content': read('2.62', 'kg', 'Bone Mineral Content'),
     'body-cell-mass': read('31.0', 'kg', 'Body Cell Mass'),
   },
+  // Oldest first; the last point is the current test, as the chart plots it.
+  history: [
+    point('2026.03.14', '71.9', '25.4', '33.6'),
+    point('2026.05.09', '70.6', '25.7', '32.4'),
+    point('2026.07.18', '69.3', '26.0', '31.5'),
+    point('2026.09.14', '68.4', '26.2', '30.8'),
+  ],
 } as const;

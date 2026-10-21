@@ -17,9 +17,12 @@ import { isOneOf } from '../fitness-profile';
  *   reliably is `unreadable`: never a guess. `uncertain` is a reading the
  *   user must check;
  * - fields are grouped as report metadata, profile details and measurements;
- * - only the scalar results of the current test are extracted. Reference
- *   ranges, history, segmental analysis, impedance, evaluations, the InBody
- *   score, weight-control advice and the device's member ID are not.
+ * - the scalar results of the current test are extracted, plus the dated
+ *   points of the "history" chart printed at the bottom of the sheet (weight,
+ *   skeletal muscle mass and body-fat percentage of earlier tests, see
+ *   `HISTORY_FIELDS`). Reference ranges, segmental analysis, impedance,
+ *   evaluations, the InBody score, weight-control advice and the device's
+ *   member ID are not.
  *
  * The catalogue is based on an InBody380 result sheet (English, template
  * "BR-English-R6-A-230522"). Other InBody models print other layouts;
@@ -105,6 +108,15 @@ export type FieldsOfGroup<G extends ExtractionGroup> = {
   [K in ExtractionFieldId]: (typeof EXTRACTION_FIELDS)[K]['group'] extends G ? K : never;
 }[ExtractionFieldId];
 
+/**
+ * The fields of one history point: the chart at the bottom of an InBody sheet plots weight, SMM and PBF for the
+ * last few tests. Each uses the spec of the field of the same id above; the date is the label under the point.
+ */
+export const HISTORY_FIELDS = ['test-date-time', 'weight', 'skeletal-muscle-mass', 'percent-body-fat'] as const satisfies readonly ExtractionFieldId[];
+export type HistoryFieldId = (typeof HISTORY_FIELDS)[number];
+/** More points than any sheet prints (about eight). */
+export const MAX_HISTORY_POINTS = 12;
+
 export const EXTRACTION_FIELD_IDS = Object.keys(EXTRACTION_FIELDS) as ExtractionFieldId[];
 export const fieldsOfGroup = <G extends ExtractionGroup>(group: G): FieldsOfGroup<G>[] =>
   EXTRACTION_FIELD_IDS.filter((id): id is FieldsOfGroup<G> => EXTRACTION_FIELDS[id].group === group);
@@ -127,7 +139,12 @@ export interface InBodyExtraction {
   readonly metadata: Readonly<Record<FieldsOfGroup<'metadata'>, ExtractedField>>;
   readonly profile: Readonly<Record<FieldsOfGroup<'profile'>, ExtractedField>>;
   readonly measurements: Readonly<Record<FieldsOfGroup<'measurements'>, ExtractedField>>;
+  /** Earlier tests from the history chart, as printed (empty when the sheet has none, or an older server answered). */
+  readonly history: readonly HistoryPoint[];
 }
+
+/** One earlier test from the history chart. */
+export type HistoryPoint = Readonly<Record<HistoryFieldId, ExtractedField>>;
 
 export const extractedField = (extraction: InBodyExtraction, id: ExtractionFieldId): ExtractedField =>
   (extraction[EXTRACTION_FIELDS[id].group] as Readonly<Record<ExtractionFieldId, ExtractedField>>)[id];
@@ -260,6 +277,38 @@ function parseGroup(
 }
 
 const TOP_LEVEL_KEYS = ['schemaVersion', 'outcome', 'reportIssues', ...EXTRACTION_GROUPS] as const;
+/** `history` is required of the model but optional when reading, so an answer from a server that predates it still reads. */
+const RESPONSE_KEYS = [...TOP_LEVEL_KEYS, 'history'] as const;
+
+function parseHistory(raw: unknown, errors: ExtractionError[]): HistoryPoint[] {
+  if (!Array.isArray(raw) || raw.length > MAX_HISTORY_POINTS) {
+    errors.push({ path: 'history', problem: 'invalid-value' });
+    return [];
+  }
+  const points: HistoryPoint[] = [];
+  raw.forEach((item, index) => {
+    const path = `history.${index}`;
+    if (!isRecord(item)) {
+      errors.push({ path, problem: 'not-an-object' });
+      return;
+    }
+    const before = errors.length;
+    checkKeys(item, HISTORY_FIELDS, `${path}.`, errors);
+    const fields: Partial<Record<HistoryFieldId, ExtractedField>> = {};
+    for (const id of HISTORY_FIELDS) {
+      if (id in item) {
+        const field = parseField(id, item[id], `${path}.${id}`, errors);
+        if (field) {
+          fields[id] = field;
+        }
+      }
+    }
+    if (errors.length === before) {
+      points.push(fields as HistoryPoint);
+    }
+  });
+  return points;
+}
 
 /**
  * Strict check of a model response (already JSON-decoded). Every problem is
@@ -274,7 +323,7 @@ export function parseInBodyExtraction(value: unknown): ExtractionParseResult {
     return { ok: false, errors: [{ path: '', problem: 'not-an-object' }] };
   }
   const errors: ExtractionError[] = [];
-  checkKeys(value, TOP_LEVEL_KEYS, '', errors);
+  checkKeys(value, 'history' in value ? RESPONSE_KEYS : TOP_LEVEL_KEYS, '', errors);
   if (value['schemaVersion'] !== INBODY_EXTRACTION_SCHEMA_VERSION && 'schemaVersion' in value) {
     // Anything else in a response of another version can't be read with these rules.
     return { ok: false, errors: [{ path: 'schemaVersion', problem: 'unsupported-version' }] };
@@ -291,6 +340,7 @@ export function parseInBodyExtraction(value: unknown): ExtractionParseResult {
     errors.push({ path: 'reportIssues', problem: 'invalid-value' });
   }
   const groups = EXTRACTION_GROUPS.map((group) => (group in value ? parseGroup(group, value[group], errors) : {}));
+  const history = 'history' in value ? parseHistory(value['history'], errors) : [];
   if (errors.length > 0) {
     return { ok: false, errors };
   }
@@ -302,6 +352,7 @@ export function parseInBodyExtraction(value: unknown): ExtractionParseResult {
     metadata,
     profile,
     measurements,
+    history,
   } as InBodyExtraction;
   const anyValue = EXTRACTION_FIELD_IDS.some((id) => hasValue(extractedField(extraction, id)));
   if (anyValue !== (extraction.outcome === 'extracted')) {
@@ -314,12 +365,15 @@ export function parseInBodyExtraction(value: unknown): ExtractionParseResult {
 
 const nullableString = (extra: Record<string, unknown> = {}) => ({ type: ['string', 'null'], ...extra });
 
-function fieldSchema(id: ExtractionFieldId): Record<string, unknown> {
+function fieldSchema(id: ExtractionFieldId, scope: 'current' | 'history' = 'current'): Record<string, unknown> {
   const spec: ExtractionFieldSpec = EXTRACTION_FIELDS[id];
   const unitHint = spec.units.length > 0 ? `unit as printed (one of ${spec.units.join(', ')})` : 'no unit (unit must be null)';
   return {
     type: 'object',
-    description: `Printed label: "${spec.sampleLabel}". The current test's value only, never a reference range or history value; ${unitHint}.`,
+    description:
+      scope === 'history'
+        ? `Printed label: "${spec.sampleLabel}" (for the date, the label under the point on the history chart, exactly as printed). This earlier test's value only; ${unitHint}.`
+        : `Printed label: "${spec.sampleLabel}". The current test's value only, never a reference range or history value; ${unitHint}.`,
     additionalProperties: false,
     required: [...FIELD_KEYS],
     properties: {
@@ -356,7 +410,7 @@ export function inBodyExtractionJsonSchema(): Record<string, unknown> {
   return {
     type: 'object',
     additionalProperties: false,
-    required: [...TOP_LEVEL_KEYS],
+    required: [...RESPONSE_KEYS],
     properties: {
       schemaVersion: { type: 'string', enum: [INBODY_EXTRACTION_SCHEMA_VERSION] },
       outcome: { type: 'string', enum: [...EXTRACTION_OUTCOMES] },
@@ -364,6 +418,18 @@ export function inBodyExtractionJsonSchema(): Record<string, unknown> {
       metadata: group('metadata'),
       profile: group('profile'),
       measurements: group('measurements'),
+      history: {
+        type: 'array',
+        description:
+          'The dated points of the history chart at the bottom of the sheet (weight, SMM and PBF of earlier tests), oldest first, one entry per printed test date, including the current test if it is plotted. Empty when the sheet has no history chart. Transcribe only what is printed; never invent a point or a value.',
+        maxItems: MAX_HISTORY_POINTS,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: [...HISTORY_FIELDS],
+          properties: Object.fromEntries(HISTORY_FIELDS.map((id) => [id, fieldSchema(id, 'history')])),
+        },
+      },
     },
   };
 }

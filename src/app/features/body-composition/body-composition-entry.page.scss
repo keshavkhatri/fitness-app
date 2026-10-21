@@ -102,32 +102,73 @@ fit-notice {
   text-align: start;
 }
 
-.reading {
-  @include fx.text(body-sm, semibold);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+// The earlier tests the report's history chart lists: one row each, with a checkbox.
+.earlier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.earlier-title {
+  @include fx.text(h3, semibold);
+}
+
+.earlier-list {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--color-border-strong);
-  border-top-color: var(--color-primary);
-  border-radius: var(--radius-pill);
-  animation: spin 0.8s linear infinite;
-}
+.earlier-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--tap-target-min);
+  padding: var(--space-3);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  &.disabled {
+    opacity: 0.7;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation: none;
+.earlier-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--color-primary);
+}
+
+.earlier-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.earlier-date {
+  @include fx.text(body, semibold);
+}
+
+.earlier-values {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.earlier-flag {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+
+  &.warn {
+    color: var(--color-warning-text);
   }
 }
 
