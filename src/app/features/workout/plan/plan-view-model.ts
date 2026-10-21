@@ -4,7 +4,7 @@ import { WorkoutLog, addDays, completedWorkouts, isTrainingWorkout, startOfWeek 
 import { toResumeCard } from '../active/active-workout-view-model';
 import { sessionFocusAreas } from '../workout-detail-view-model';
 import { WORKOUT_COPY } from '../workout-content';
-import { sessionPhoto } from '../workout-photos';
+import { REST_DAY_PHOTO, sessionPhoto } from '../workout-photos';
 import { CATALOG, DayView, WorkoutScreen } from '../workout-view-model';
 
 /**
@@ -66,7 +66,7 @@ export type PlanFeatureView =
       readonly areas: readonly string[];
     }
   | { readonly kind: 'activity'; readonly sessionId: string; readonly photo: string | null; readonly title: string; readonly summary: string }
-  | { readonly kind: 'rest'; readonly upNext: string | null };
+  | { readonly kind: 'rest'; readonly photo: string; readonly upNext: string | null };
 
 export type PlanRowStatus = 'done' | 'in-progress' | 'upcoming' | 'missed';
 
@@ -219,5 +219,5 @@ function toFeature(
   if (s.kind === 'activity' && today.sessionId) {
     return { kind: 'activity', sessionId: today.sessionId, photo: photoFor(today.sessionId), title: s.title, summary: s.summary };
   }
-  return { kind: 'rest', upNext: upNext ? WORKOUT_COPY.today.upNext(upNext.session.title, upNext.weekday) : null };
+  return { kind: 'rest', photo: REST_DAY_PHOTO, upNext: upNext ? WORKOUT_COPY.today.upNext(upNext.session.title, upNext.weekday) : null };
 }

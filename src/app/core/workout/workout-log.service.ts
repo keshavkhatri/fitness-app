@@ -10,6 +10,7 @@ import {
   finishWorkout,
   goToExercise,
   resetSet,
+  setRestSeconds,
   skipExercise,
   skipSet,
   startDecision,
@@ -126,6 +127,11 @@ export class WorkoutLogService {
 
   skipExercise(exerciseIndex: number): Promise<LogUpdate> {
     return this.update((log) => skipExercise(log, exerciseIndex));
+  }
+
+  /** The user's own rest between sets: one exercise, or all of them with `null`; `seconds` null restores the plan's rest. */
+  setRestSeconds(exerciseIndex: number | null, seconds: number | null): Promise<LogUpdate> {
+    return this.update((log) => setRestSeconds(log, exerciseIndex, seconds));
   }
 
   goToExercise(exerciseIndex: number): Promise<LogUpdate> {

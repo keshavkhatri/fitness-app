@@ -66,12 +66,14 @@
   font-size: 24px;
 }
 
+// max-width: in the stacked (narrow) layout the column would otherwise grow to its widest line and spill out of the card.
 .text {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-2);
   min-width: 0;
+  max-width: 100%;
 }
 
 .name {
@@ -89,6 +91,14 @@
   border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
   color: var(--color-text-secondary);
+}
+
+// The last-exercise reminder is a sentence, not a label: it wraps instead of being cut off.
+.last .chip {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  border-radius: var(--radius-md);
 }
 
 // Tight tiles (390px phones are ~154px wide): a slimmer thumbnail, so a long

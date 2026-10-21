@@ -30,7 +30,7 @@ import { RestTimerStatus, formatClock } from './rest-timer';
         [valueText]="status() === 'idle' ? copy.planned(clock()) : copy.remaining(clock())"
       >
         <div class="center">
-          <h2 class="title" id="rest-title">{{ status() === 'done' ? copy.completeTitle : copy.title }}</h2>
+          <h2 class="title" id="rest-title">{{ status() === 'done' ? copy.doneTitle : copy.title }}</h2>
           <p class="time" data-testid="rest-time">
             <span aria-hidden="true">{{ clock() }}</span>
             <span class="visually-hidden">{{ status() === 'idle' ? copy.planned(clock()) : copy.remaining(clock()) }}</span>
@@ -59,6 +59,9 @@ import { RestTimerStatus, formatClock } from './rest-timer';
           }
         </div>
       </fit-progress>
+      <button type="button" class="edit" data-testid="rest-edit" [attr.aria-label]="copy.edit(plannedClock())" (click)="editRest.emit()">
+        <span class="edit-face" aria-hidden="true"><ion-icon name="create-outline" /></span>
+      </button>
     </section>
   `,
   styleUrl: './rest-timer.component.scss',
@@ -76,8 +79,12 @@ export class RestTimerComponent {
   readonly pauseRest = output<void>();
   readonly resumeRest = output<void>();
   readonly dismissRest = output<void>();
+  /** Asks to change how long rest lasts. */
+  readonly editRest = output<void>();
 
   protected readonly copy = WORKOUT_COPY.active.rest;
+  /** The rest length in force (what the next rest will run), for the edit button's name. */
+  protected readonly plannedClock = computed(() => formatClock(this.plannedSeconds()));
   protected readonly clock = computed(() => formatClock(this.status() === 'idle' ? this.plannedSeconds() : this.remaining()));
   /** The ring drains as the rest runs; a finished rest is a full ring; before a rest it is empty. */
   protected readonly ringValue = computed(() => {

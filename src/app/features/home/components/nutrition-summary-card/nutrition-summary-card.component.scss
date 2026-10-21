@@ -69,20 +69,49 @@ fit-card {
 }
 
 // Body size, not h3: a three-digit intake ("171g") must stay inside the 72px ring.
+// Three digits fit as designed; longer intakes step down so they never touch the ring.
 .ring-value {
   @include fx.text(body, bold);
   @include fx.tabular-numbers;
   line-height: 20px;
+  white-space: nowrap;
+
+  &[data-fit='snug'] {
+    font-size: 14px;
+  }
+
+  &[data-fit='tight'] {
+    font-size: 12px;
+  }
 }
 
 .ring-target {
   @include fx.text(caption);
   color: var(--color-text-secondary);
+  white-space: nowrap;
+
+  &[data-fit='snug'] {
+    font-size: 11px;
+  }
+
+  &[data-fit='tight'] {
+    font-size: 10px;
+  }
 }
 
+// A figure is never broken across lines, and steps down when it is long.
 .no-target-value {
   @include fx.text(h2, bold);
   @include fx.tabular-numbers;
+  white-space: nowrap;
+
+  &[data-fit='snug'] {
+    font-size: 20px;
+  }
+
+  &[data-fit='tight'] {
+    font-size: 17px;
+  }
 }
 
 .protein-label {
@@ -101,15 +130,34 @@ fit-card {
   color: var(--color-text-secondary);
 }
 
+// "12,000" stays on one line: the number steps down instead of breaking.
 .cal-value {
   @include fx.text(h3, bold);
   @include fx.tabular-numbers;
+  white-space: nowrap;
+
+  &[data-fit='snug'] {
+    font-size: 17px;
+  }
+
+  &[data-fit='tight'] {
+    font-size: 14px;
+  }
 }
 
+// "/ 12,000 kcal" is shown whole: smaller, never cut off by the card.
 .cal-target {
   @include fx.text(caption);
   color: var(--color-text-secondary);
   white-space: nowrap;
+
+  &[data-fit='snug'] {
+    font-size: 11px;
+  }
+
+  &[data-fit='tight'] {
+    font-size: 10px;
+  }
 }
 
 .cal-bar {

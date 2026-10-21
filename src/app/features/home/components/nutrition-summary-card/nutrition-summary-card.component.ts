@@ -23,6 +23,15 @@ export class NutritionSummaryCardComponent {
   readonly openNutrition = output<void>();
 
   protected readonly protein = computed(() => this.summary().macros.find((m) => m.key === 'protein')!);
+  /**
+   * How snug a figure is in its space: "fit" (as designed), "snug" (a little smaller) or "tight" (smallest),
+   * by its length, so big numbers ("12,000", "1,250g") stay inside the ring and the card.
+   */
+  protected fit(text: string | null, fitMax: number, snugMax: number): 'fit' | 'snug' | 'tight' {
+    const length = (text ?? '').length;
+    return length <= fitMax ? 'fit' : length <= snugMax ? 'snug' : 'tight';
+  }
+
   /** "78 g" → "78g", as in the compact reference layout. */
   protected tight(value: string | null): string {
     return (value ?? '').replace(/\s(?=g$)/, '');

@@ -53,6 +53,7 @@ Subject: ${ATHLETE}, performing a ${e.name} with ${e.equipment}, captured mid-re
 
 // One-off photos (the workout summary's card).
 const EXTRAS = {
+  'rest-day': 'sitting on a black exercise mat on the gym floor, gently rolling a calf over a black foam roller, relaxed recovery-day posture, calm expression, a small dark towel beside him',
   'workout-complete': 'resting after his workout with a small dark towel over one shoulder, holding a dumbbell low at his side, looking down with a satisfied, tired expression, light sweat',
 };
 

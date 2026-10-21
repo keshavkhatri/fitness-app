@@ -121,24 +121,60 @@
   min-width: 0;
 }
 
-@media (max-width: 359px) {
+// A label that still doesn't fit is cut with an ellipsis rather than spilling out of the button.
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// 375px phones (and smaller): the clock keeps only the time, the buttons tighten, so "Complete set" fits whole.
+@media (max-width: 399px) {
   .footer {
     gap: var(--space-2);
+    padding-inline: 14px 10px;
   }
 
-  .clock-label,
-  .clock-value ion-icon {
+  .clock-label {
     display: none;
   }
 
+  .clock-value {
+    font-size: 18px;
+  }
+
   .main {
-    gap: 8px;
+    gap: 6px;
     padding: 0 var(--space-3);
     font-size: 15px;
   }
 
+  .tick {
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+  }
+
   .side {
-    width: 80px;
+    width: 92px;
     padding: 0 var(--space-2);
+  }
+}
+
+// 320px phones: no tick or clock icon.
+@media (max-width: 339px) {
+  .clock-value ion-icon,
+  .main:not(.wide) .tick {
+    display: none;
+  }
+
+  .side {
+    width: 72px;
+    padding: 0 6px;
+    font-size: 11.5px;
+
+    ion-icon {
+      display: none;
+    }
   }
 }

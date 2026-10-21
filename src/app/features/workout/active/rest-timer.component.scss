@@ -78,3 +78,33 @@
     line-height: 30px;
   }
 }
+
+// Change the rest length: a 44px target around a small corner disc.
+.rest {
+  position: relative;
+}
+
+.edit {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  display: grid;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+}
+
+.edit-face {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-surface-muted) 70%, var(--color-border-strong));
+  color: var(--color-text);
+  font-size: 15px;
+}

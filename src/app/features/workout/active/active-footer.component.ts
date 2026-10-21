@@ -21,7 +21,7 @@ import { WORKOUT_COPY } from '../workout-content';
       </div>
       @if (pending() > 0) {
         <button type="button" class="main" data-testid="complete-set" (click)="completeSet.emit()">
-          <span class="tick" aria-hidden="true"><ion-icon name="checkmark" /></span>{{ copy.completeSetShort }}
+          <span class="tick" aria-hidden="true"><ion-icon name="checkmark" /></span><span class="label">{{ copy.completeSetShort }}</span>
         </button>
         <button type="button" class="side" data-testid="advance" (click)="advance.emit()">
           <span class="side-label">{{ isLast() ? copy.finishShort : copy.nextShort }}</span><ion-icon name="chevron-forward" aria-hidden="true" />
@@ -31,7 +31,7 @@ import { WORKOUT_COPY } from '../workout-content';
           @if (isLast()) {
             <span class="tick" aria-hidden="true"><ion-icon name="checkmark" /></span>
           }
-          {{ isLast() ? copy.finishShort : copy.nextShort }}
+          <span class="label">{{ isLast() ? copy.finishShort : copy.nextShort }}</span>
           @if (!isLast()) {
             <ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
           }

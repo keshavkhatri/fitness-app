@@ -3,7 +3,7 @@ import { IonIcon } from '@ionic/angular';
 
 import { FitnessButtonComponent, FitnessCardComponent, FitnessProgressComponent } from '../../../../shared/ui';
 import { WORKOUT_COPY } from '../../../workout/workout-content';
-import { sessionIdPhoto } from '../../../workout/workout-photos';
+import { REST_DAY_PHOTO, sessionIdPhoto, sessionTypePhoto } from '../../../workout/workout-photos';
 import { FEATURED_WORKOUT_PHOTO } from '../../home-media';
 import { HomeWorkoutView } from '../../home-training';
 import { WorkoutArtComponent } from '../workout-art/workout-art.component';
@@ -137,10 +137,16 @@ export class TodayWorkoutCardComponent {
 
   /** A photo when one is configured, else the generated placeholder. */
   protected readonly photo = FEATURED_WORKOUT_PHOTO;
-  /** The session's photo (by its type); the generated art without one. */
+  /**
+   * The card's photo: the session's (by its type), the rest-day shot on a rest day, and the full-body hero for the
+   * set-up and unavailable states, so no state shows the drawn stand-in.
+   */
   protected readonly sessionPhoto = computed(() => {
     const w = this.workout();
-    return 'sessionId' in w ? sessionIdPhoto(w.sessionId) : null;
+    if ('sessionId' in w) {
+      return sessionIdPhoto(w.sessionId) ?? sessionTypePhoto('full-body');
+    }
+    return w.kind === 'rest' ? REST_DAY_PHOTO : sessionTypePhoto('full-body');
   });
   protected readonly seed = computed(() => {
     const w = this.workout();

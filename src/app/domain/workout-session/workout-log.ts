@@ -11,6 +11,7 @@ import {
   LoggingMode,
   SetEntry,
   SetLog,
+  REST_SECONDS_LIMITS,
   SetPosition,
   WORKOUT_LOG_LIMITS,
   WeightUnit,
@@ -232,6 +233,33 @@ export function skipExercise(log: WorkoutLog, exerciseIndex: number): WorkoutLog
         ? { ...e, sets: e.sets.map((s) => (s.status === 'pending' ? { ...pendingSet(s.setNumber), status: 'skipped' as const } : s)) }
         : e,
     ),
+  });
+}
+
+/**
+ * Sets the user's own rest between sets, for one exercise or (`exerciseIndex` null) for all of them.
+ * `seconds` null goes back to the planned rest. Sets and results are untouched.
+ */
+export function setRestSeconds(log: WorkoutLog, exerciseIndex: number | null, seconds: number | null): WorkoutLogResult<WorkoutLog> {
+  const check = editable(log);
+  if (!check.ok) {
+    return check;
+  }
+  if (exerciseIndex !== null && !log.exercises[exerciseIndex]) {
+    return fail('invalid-position', `No exercise ${exerciseIndex}.`);
+  }
+  if (seconds !== null && (!Number.isInteger(seconds) || seconds < REST_SECONDS_LIMITS.min || seconds > REST_SECONDS_LIMITS.max)) {
+    return fail('invalid-rest', `Rest must be a whole number of seconds from ${REST_SECONDS_LIMITS.min} to ${REST_SECONDS_LIMITS.max}.`);
+  }
+  return ok({
+    ...log,
+    exercises: log.exercises.map((e, ei) => {
+      if (exerciseIndex !== null && ei !== exerciseIndex) {
+        return e;
+      }
+      const { customRestSeconds: _previous, ...rest } = e;
+      return seconds === null || seconds === e.planned.restSeconds ? rest : { ...rest, customRestSeconds: seconds };
+    }),
   });
 }
 

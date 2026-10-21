@@ -55,7 +55,6 @@
         <app-exercise-demo class="hero" variant="stage" [exerciseId]="v.exercise.exerciseId" [name]="v.exercise.name">
           <app-workout-art class="hero-art" [seed]="v.exercise.exerciseId" [photo]="photo(v.exercise.exerciseId)" />
           <span class="hero-fade"></span>
-          <app-muscle-figure class="hero-figure" [muscles]="v.exercise.muscleIds" />
         </app-exercise-demo>
 
         <div class="panel fit-theme-dashboard" data-testid="sets">
@@ -79,6 +78,7 @@
                 (pauseRest)="timer.pause()"
                 (resumeRest)="timer.resume()"
                 (dismissRest)="timer.skip()"
+                (editRest)="openRestSheet()"
               />
             }
             <app-next-exercise-card class="next-card" [next]="v.next" (open)="openNext()" />
@@ -115,6 +115,15 @@
     />
   </ion-footer>
 }
+
+<app-rest-duration-sheet
+  [(open)]="restSheetOpen"
+  [exerciseName]="v?.exercise?.name ?? ''"
+  [seconds]="v?.exercise?.restSeconds ?? 0"
+  [plannedSeconds]="v?.exercise?.plannedRestSeconds ?? 0"
+  [running]="timer.status() === 'running' || timer.status() === 'paused'"
+  (chosen)="chooseRest($event)"
+/>
 
 <fit-bottom-sheet [title]="dialog()?.title ?? ''" [description]="dialog()?.message" screenTheme="immersive" [(open)]="dialogOpen">
   @if (dialog(); as d) {

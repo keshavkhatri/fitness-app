@@ -1,4 +1,4 @@
-import { Exercise, MuscleGroup } from '../../../domain/workout-programming';
+import { Exercise } from '../../../domain/workout-programming';
 import {
   ExerciseLog,
   ExercisePerformanceSession,
@@ -52,13 +52,13 @@ export interface ActiveExerciseView {
   readonly name: string;
   /** Primary muscles ("Chest"), shown as chips. */
   readonly muscles: readonly string[];
-  /** The same muscles as ids, for the anatomy figure. */
-  readonly muscleIds: readonly MuscleGroup[];
   /** "Barbell, bench, rack" or "Bodyweight"; null when unknown. */
   readonly equipment: string | null;
   /** "3 sets · 8–12 reps · 90 sec rest" */
   readonly planned: string;
+  /** The rest to run after a set: the user's own choice, else the plan's. */
   readonly restSeconds: number;
+  readonly plannedRestSeconds: number;
   readonly mode: LoggingMode;
   readonly fields: readonly FieldView[];
   readonly sets: readonly SetRowView[];
@@ -184,10 +184,10 @@ function toExercise(
     exerciseId: exercise.exerciseId,
     name: exercise.name,
     muscles: exerciseMuscles(catalog.get(exercise.exerciseId)),
-    muscleIds: catalog.get(exercise.exerciseId)?.primaryMuscles ?? [],
     equipment: exerciseEquipment(catalog.get(exercise.exerciseId)),
-    planned: formatPrescription(exercise.planned),
-    restSeconds: exercise.planned.restSeconds,
+    planned: formatPrescription({ ...exercise.planned, restSeconds: exercise.customRestSeconds ?? exercise.planned.restSeconds }),
+    restSeconds: exercise.customRestSeconds ?? exercise.planned.restSeconds,
+    plannedRestSeconds: exercise.planned.restSeconds,
     mode: exercise.logging,
     fields: fieldsFor(exercise, log),
     sets: exercise.sets.map((set, i) => toSetRow(set, i, exercise, log, last)),

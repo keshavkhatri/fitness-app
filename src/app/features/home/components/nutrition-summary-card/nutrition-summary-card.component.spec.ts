@@ -39,6 +39,18 @@ describe('NutritionSummaryCardComponent', () => {
     expect(el.querySelector('.cal-bar')?.getAttribute('aria-label')).toBe('Calories');
   });
 
+  it('steps big figures down so they stay inside the ring and the card', () => {
+    const input: FoodEntryInput = { name: 'Feast', quantity: 1, unit: 'serving', meal: 'lunch', calories: 10000, proteinGrams: 999, carbohydrateGrams: 100, fatGrams: 30 };
+    const entry = createFoodEntry(input, { id: 'big', date: '2026-10-08', now: '2026-10-08T12:00:00.000Z' });
+    const { el } = render(toDaySummary(nutritionDay(entry.ok ? [entry.value] : [], '2026-10-08'), TARGETS));
+    expect(el.querySelector('.ring-value')?.getAttribute('data-fit')).toBe('snug');
+    expect(el.querySelector('[data-testid=calories-eaten]')?.getAttribute('data-fit')).toBe('snug');
+    // The usual figures keep the designed size.
+    const usual = render(summary()).el;
+    expect(usual.querySelector('.ring-value')?.getAttribute('data-fit')).toBe('fit');
+    expect(usual.querySelector('[data-testid=calories-eaten]')?.getAttribute('data-fit')).toBe('fit');
+  });
+
   it('without a valid target: intake only, no ring or bar, a short note and a way to Nutrition', () => {
     const { el, fixture } = render(summary({ kind: 'available', targets: { calories: { kind: 'review-required' }, macros: { kind: 'withheld', reason: 'calorie-review' } } }));
     expect(el.querySelectorAll('[role=progressbar]')).toHaveLength(0);

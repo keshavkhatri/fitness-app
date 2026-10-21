@@ -18,25 +18,25 @@
           gradient
           [label]="p.label"
           [ringSize]="72"
-          [thickness]="4.8"
+          [thickness]="4.4"
           [value]="progress.value"
           [max]="progress.max"
           [valueText]="progress.valueText"
         >
-          <span class="ring-value">{{ tight(p.eaten) }}</span>
-          <span class="ring-target">of {{ tight(p.target) }}</span>
+          <span class="ring-value" [attr.data-fit]="fit(tight(p.eaten), 3, 4)">{{ tight(p.eaten) }}</span>
+          <span class="ring-target" [attr.data-fit]="fit('of ' + tight(p.target), 6, 8)">of {{ tight(p.target) }}</span>
         </fit-progress>
       } @else {
         <!-- No protein target today: the intake alone, no ring. -->
-        <span class="no-target-value">{{ tight(p.eaten) }}</span>
+        <span class="no-target-value" [attr.data-fit]="fit(tight(p.eaten), 4, 5)">{{ tight(p.eaten) }}</span>
       }
       <span class="protein-label">{{ p.label }}</span>
     </div>
 
     <div class="calories">
       <span class="cal-label">Calories</span>
-      <span class="cal-value" data-testid="calories-eaten">{{ c.eaten }}</span>
-      <span class="cal-target" data-testid="calories-target">{{ c.target ? '/ ' + c.target + ' kcal' : 'kcal' }}</span>
+      <span class="cal-value" data-testid="calories-eaten" [attr.data-fit]="fit(c.eaten, 5, 6)">{{ c.eaten }}</span>
+      <span class="cal-target" data-testid="calories-target" [attr.data-fit]="fit(c.target ? '/ ' + c.target + ' kcal' : 'kcal', 12, 14)">{{ c.target ? '/ ' + c.target + ' kcal' : 'kcal' }}</span>
       @if (c.progress; as bar) {
         <fit-progress class="cal-bar" label="Calories" gradient [tone]="c.over ? 'warning' : 'primary'" [value]="bar.value" [max]="bar.max" [valueText]="bar.valueText" />
       }

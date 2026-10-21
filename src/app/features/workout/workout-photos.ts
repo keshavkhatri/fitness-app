@@ -109,6 +109,9 @@ export function sessionPhoto(session: PlanSession | null | undefined): string | 
   return sessionTypePhoto(session?.sessionType);
 }
 
+/** The photo on rest days (a recovery moment: foam rolling), on Home and the Workout tab. */
+export const REST_DAY_PHOTO = `${DIR}rest-day.webp`;
+
 /** The workout summary's card photo. */
 export const WORKOUT_COMPLETE_PHOTO = `${DIR}workout-complete.webp`;
 

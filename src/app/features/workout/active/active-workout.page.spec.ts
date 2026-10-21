@@ -249,11 +249,56 @@ describe('ActiveWorkoutPage', () => {
       now = new Date(now.getTime() + 121_000);
       timer.tick();
       await settle();
-      expect(el.querySelector('#rest-title')?.textContent?.trim()).toBe('Rest complete');
+      expect(el.querySelector('#rest-title')?.textContent?.trim()).toBe('Rest done');
       expect(text('announcement')).toBe('Rest complete. Ready for your next set.');
 
       await click('Dismiss');
       expect(el.querySelector('[data-testid="rest-timer"]')).toBeNull();
+    });
+
+    it('lets the user choose their own rest: saved in the workout, used for the next rest, and a running rest restarts at it', async () => {
+      const { type, completeRow, fixture, text, click, settle, stored, el } = await render();
+      const page = fixture.componentInstance as unknown as { chooseRest(choice: { seconds: number | null; all: boolean }): Promise<void> };
+
+      // Idle tile: the planned rest (2:00) can be changed to 45 s for this exercise.
+      await click('Change rest time, now 02:00');
+      await page.chooseRest({ seconds: 45, all: false });
+      await settle();
+      expect(stored().exercises[0].customRestSeconds).toBe(45);
+      expect(stored().exercises[0].planned.restSeconds).toBe(120);
+      expect(stored().exercises[1].customRestSeconds).toBeUndefined();
+      expect(text('rest-time')).toContain('0:45');
+      expect(text('planned')).toContain('45 sec rest');
+      expect(text('announcement')).toBe('Rest time set to 00:45.');
+
+      // Completing a set now rests for 45 s.
+      await type(0, 'weight', '60');
+      await type(0, 'reps', '8');
+      await completeRow(0);
+      expect(text('rest-time')).toContain('0:45');
+
+      // Changing it mid-rest restarts the rest at the new length.
+      await page.chooseRest({ seconds: 90, all: false });
+      await settle();
+      expect(text('rest-time')).toContain('1:30');
+      expect(el.querySelector('[data-testid="rest-timer"]')).not.toBeNull();
+
+      // Every exercise at once, and back to the plan.
+      await page.chooseRest({ seconds: 60, all: true });
+      expect(stored().exercises.every((e: { customRestSeconds?: number; planned: { restSeconds: number } }) => (e.customRestSeconds ?? e.planned.restSeconds) === 60)).toBe(true);
+      await page.chooseRest({ seconds: null, all: false });
+      expect(stored().exercises[0].customRestSeconds).toBeUndefined();
+    });
+
+    it('a completed set has one check (the one that undoes it), not a second in front of the number', async () => {
+      const { type, completeRow, rows } = await render();
+      await type(0, 'weight', '60');
+      await type(0, 'reps', '8');
+      await completeRow(0);
+      const row = rows()[0];
+      expect(row.querySelectorAll('ion-icon[name="checkmark"]')).toHaveLength(1);
+      expect(row.querySelector('[data-testid="set-action"] ion-icon[name="checkmark"]')).not.toBeNull();
+      expect(row.querySelector('.set')?.textContent?.trim()).toBe('1');
     });
 
     it('skipping rest never blocks logging the next set', async () => {

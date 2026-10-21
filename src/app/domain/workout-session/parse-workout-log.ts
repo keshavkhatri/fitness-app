@@ -4,6 +4,7 @@ import {
   ExerciseLog,
   LoggingMode,
   PlannedPrescription,
+  REST_SECONDS_LIMITS,
   SetLog,
   SetStatus,
   WeightUnit,
@@ -40,6 +41,8 @@ const text = (value: unknown): string => (typeof value === 'string' && value.len
 const instant = (value: unknown): string => (Number.isFinite(Date.parse(text(value))) ? (value as string) : invalid());
 const flag = (value: unknown): boolean => (typeof value === 'boolean' ? value : invalid());
 const count = (value: unknown, min = 0): number => (Number.isInteger(value) && (value as number) >= min ? (value as number) : invalid());
+const restChoice = (value: unknown): number =>
+  Number.isInteger(value) && (value as number) >= REST_SECONDS_LIMITS.min && (value as number) <= REST_SECONDS_LIMITS.max ? (value as number) : invalid();
 const finite = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) ? value : invalid());
 const nullable =
   <T>(read: (value: unknown) => T) =>
@@ -116,6 +119,7 @@ function readExercise(value: unknown): ExerciseLog {
     name: text(e['name']),
     order: count(e['order'], 1),
     planned,
+    ...(e['customRestSeconds'] === undefined ? {} : { customRestSeconds: restChoice(e['customRestSeconds']) }),
     logging: member(isMode)(e['logging']),
     sets,
   };

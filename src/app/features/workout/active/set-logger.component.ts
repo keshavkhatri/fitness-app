@@ -20,8 +20,9 @@ export interface SetError {
  * value (weight + reps, reps, or seconds) and a round check per set.
  * - current (the next set to do): highlighted, filled lime badge;
  * - upcoming: plain boxes, still editable;
- * - completed: a check badge, the recorded values, a filled check that undoes
- *   the set (its values go back into the boxes to edit);
+ * - completed: its number, the recorded values, and a filled check (the only
+ *   check in the row) that undoes the set (its values go back into the boxes
+ *   to edit);
  * - skipped: dashes and an undo control.
  * Status is always text or an icon as well as colour. Presentational: values
  * come from the page.
@@ -51,8 +52,7 @@ export interface SetError {
             <span class="set" aria-hidden="true">
               @switch (row.status) {
                 @case ('completed') {
-                  <span class="tick"><ion-icon name="checkmark" /></span>
-                  <span class="number">{{ row.setNumber }}</span>
+                  <span class="badge">{{ row.setNumber }}</span>
                 }
                 @case ('skipped') {
                   <span class="badge"><ion-icon name="remove" /></span>

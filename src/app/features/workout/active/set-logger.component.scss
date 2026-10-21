@@ -73,21 +73,6 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.tick {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: var(--radius-pill);
-  background: var(--done);
-  color: #ffffff;
-  font-size: 13px;
-}
-
-.number {
-  min-width: 10px;
-}
-
 .box {
   @include fx.text(h3, semibold);
   @include fx.tabular-numbers;

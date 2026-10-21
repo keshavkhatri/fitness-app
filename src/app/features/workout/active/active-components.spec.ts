@@ -62,7 +62,7 @@ describe('RestTimerComponent', () => {
 
   it('done: says so in text, shows a full ring and a way to dismiss', () => {
     const { el, emitted, button, ring } = render('done', 0, 90);
-    expect(clean(el.querySelector('#rest-title'))).toBe('Rest complete');
+    expect(clean(el.querySelector('#rest-title'))).toBe('Rest done');
     expect(ring().getAttribute('aria-valuenow')).toBe('90');
     expect(el.querySelector('.actions')).toBeNull();
     button('Dismiss')!.click();

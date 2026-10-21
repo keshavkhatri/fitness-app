@@ -20,10 +20,10 @@ import { exercisePhoto } from '../workout-photos';
 import { WorkoutArtComponent } from '../../home/components/workout-art/workout-art.component';
 import { ExerciseDemoComponent } from '../components/exercise-demo.component';
 import { ActiveFooterComponent } from './active-footer.component';
-import { MuscleFigureComponent } from './muscle-figure.component';
 import { NextExerciseCardComponent } from './next-exercise-card.component';
+import { RestDurationSheetComponent, RestChoice } from './rest-duration-sheet.component';
 import { RestTimerComponent } from './rest-timer.component';
-import { RestTimer } from './rest-timer';
+import { RestTimer, formatClock } from './rest-timer';
 import { DraftEdit, SetError, SetLoggerComponent } from './set-logger.component';
 import { FieldKey, toActiveWorkoutView } from './active-workout-view-model';
 import { formatElapsed, spokenElapsed } from './workout-clock';
@@ -77,7 +77,7 @@ const parseNumber = (text: string | undefined): number | null => {
     LoadingSkeletonComponent,
     NoticeComponent,
     ActiveFooterComponent,
-    MuscleFigureComponent,
+    RestDurationSheetComponent,
     NextExerciseCardComponent,
     RestTimerComponent,
     WorkoutArtComponent,
@@ -141,6 +141,7 @@ export class ActiveWorkoutPage {
   protected readonly dialogKind = signal<DialogKind | null>(null);
   protected readonly dialogOpen = signal(false);
   protected readonly dialog = computed(() => this.dialogFor(this.dialogKind()));
+  protected readonly restSheetOpen = signal(false);
 
   constructor() {
     // The status bar gets light text even in a light Appearance while this always-dark screen is open.
@@ -214,6 +215,28 @@ export class ActiveWorkoutPage {
     if (seconds > 0) {
       this.timer.start(seconds);
     }
+  }
+
+  protected openRestSheet(): void {
+    this.restSheetOpen.set(true);
+  }
+
+  /** Saves the user's own rest (this exercise or all) and, if a rest is running, restarts it at the new length. */
+  protected async chooseRest(choice: RestChoice): Promise<void> {
+    const view = this.view();
+    if (!view) {
+      return;
+    }
+    const result = await this.logs.setRestSeconds(choice.all ? null : view.exerciseIndex, choice.seconds);
+    if (!result.ok) {
+      this.announcement.set(WORKOUT_COPY.active.rest.sheet.failed);
+      return;
+    }
+    const seconds = this.view()?.exercise.restSeconds ?? 0;
+    if (this.timer.status() === 'running' || this.timer.status() === 'paused') {
+      this.timer.start(seconds);
+    }
+    this.announcement.set(WORKOUT_COPY.active.rest.sheet.saved(formatClock(seconds)));
   }
 
   protected async completeSet(setIndex: number): Promise<void> {

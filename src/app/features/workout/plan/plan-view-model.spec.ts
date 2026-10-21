@@ -81,7 +81,7 @@ describe('plan tab view model', () => {
   it('rest day: what comes next, if anything', () => {
     const rest = planFor(REST_PROFILE);
     const view = toPlanTab(screenFor(rest), rest.sessions, [], null, THURSDAY);
-    expect(view.feature).toEqual({ kind: 'rest', upNext: 'Next up: Full Body C on Friday.' });
+    expect(view.feature).toEqual({ kind: 'rest', photo: 'assets/images/workouts/rest-day.webp', upNext: 'Next up: Full Body C on Friday.' });
   });
 
   it('without the plan’s sessions there are no focus areas (never invented)', () => {

@@ -54,6 +54,8 @@ export interface ExerciseLog {
   /** 1-based programmed order. */
   readonly order: number;
   readonly planned: PlannedPrescription;
+  /** The user's own rest between sets for this exercise; the planned rest applies when absent. */
+  readonly customRestSeconds?: number;
   readonly logging: LoggingMode;
   /** One per planned set, in order. */
   readonly sets: readonly SetLog[];
@@ -102,6 +104,7 @@ export type WorkoutLogErrorCode =
   | 'not-a-resistance-session'
   | 'invalid-position'
   | 'invalid-entry'
+  | 'invalid-rest'
   | 'workout-not-in-progress'
   | 'invalid-timestamp';
 
@@ -122,3 +125,6 @@ export const WORKOUT_LOG_LIMITS = {
   reps: { min: 1, max: 500 },
   durationSeconds: { min: 1, max: 7200 },
 } as const;
+
+/** Rest the user may choose between sets, in whole seconds (sanity limits, not training advice). */
+export const REST_SECONDS_LIMITS = { min: 15, max: 600, step: 15 } as const;

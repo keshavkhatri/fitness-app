@@ -1,0 +1,178 @@
+@use 'mixins' as fx;
+
+:host {
+  display: contents;
+}
+
+// Full screen on every size: a picture to inspect, not a card.
+ion-modal.demo-viewer {
+  --width: 100%;
+  --height: 100%;
+  --border-radius: 0;
+  --background: #0b0c0b;
+}
+
+// Ionic presents the modal outside the page, so the viewer sets its own (always dark) colours.
+.viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0b0c0b;
+  color: #ffffff;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: calc(var(--space-2) + var(--ion-safe-area-top, 0px)) var(--space-2) var(--space-2) var(--space-5);
+}
+
+.title {
+  @include fx.text(body, semibold);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.icon {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  color: #ffffff;
+  font-size: 22px;
+
+  &:disabled {
+    opacity: 0.35;
+  }
+}
+
+// The picture area: gestures happen here, so the browser must not scroll or zoom the page itself.
+.pad {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  outline-offset: -3px;
+}
+
+.picture {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+
+  &.moving {
+    cursor: grabbing;
+  }
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+
+    &.shown {
+      opacity: 1;
+    }
+  }
+
+  // The guide sheet is a light 3:2 composition: shown whole on its own background.
+  &.art {
+    background: #f5f4ee;
+
+    img {
+      transition: none;
+    }
+  }
+}
+
+.failed {
+  @include fx.text(body-sm);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  @include fx.safe-area-padding(bottom, var(--space-3));
+}
+
+.credit {
+  @include fx.text(caption);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.pill {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-4);
+  border: var(--border-hairline) solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-pill);
+  color: #ffffff;
+}
+
+.zoom {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.reset {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+  @include fx.tabular-numbers;
+
+  min-width: 56px;
+  min-height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  color: #ffffff;
+  text-align: center;
+
+  &:disabled {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picture img {
+    transition: none;
+  }
+}
