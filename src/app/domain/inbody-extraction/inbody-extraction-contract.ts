@@ -383,18 +383,79 @@ function parseHistory(raw: unknown, errors: ExtractionError[]): HistoryPoint[] {
   return points;
 }
 
+// --- Repairs the sheet itself justifies ---------------------------------------------
+
+const MASS_UNITS_ON_SHEET: readonly string[] = MASS;
+
+/** The mass unit this sheet uses: the one every mass value that states a unit agrees on; null if none or mixed. */
+function sheetMassUnit(value: Record<string, unknown>): string | null {
+  const seen = new Set<string>();
+  const fields: unknown[] = [];
+  if (isRecord(value['measurements'])) {
+    fields.push(...Object.values(value['measurements']));
+  }
+  for (const field of fields) {
+    if (isRecord(field) && (field['status'] === 'read' || field['status'] === 'uncertain') && typeof field['unit'] === 'string' && MASS_UNITS_ON_SHEET.includes(field['unit'])) {
+      seen.add(field['unit']);
+    }
+  }
+  return seen.size === 1 ? [...seen][0] : null;
+}
+
 /**
- * Strict check of a model response (already JSON-decoded). Every problem is
+ * Two kinds of slip the model makes, mended before the strict check (neither can create a value that the model
+ * did not read):
+ * - a value it read but gave no unit for: the unit is the field's only possible unit (%, kcal, L, kg/m², °), or, for a
+ *   mass, the unit every other mass on the same sheet states (a sheet prints one mass unit, and merged cells often
+ *   leave it off); with nothing to go on the field stays as it is and is rejected;
+ * - a field with no value that still carries a unit, or (not on the report) a label: those are dropped.
+ */
+function repairField(id: ExtractionFieldId, raw: Record<string, unknown>, massUnit: string | null): Record<string, unknown> {
+  const spec: ExtractionFieldSpec = EXTRACTION_FIELDS[id];
+  const hasReading = raw['status'] === 'read' || raw['status'] === 'uncertain';
+  if (hasReading && typeof raw['text'] === 'string' && raw['unit'] === null && spec.units.length > 0) {
+    const unit = spec.units.length === 1 ? spec.units[0] : spec.units.every((u) => MASS_UNITS_ON_SHEET.includes(u)) ? massUnit : null;
+    return unit ? { ...raw, unit } : raw;
+  }
+  if ((raw['status'] === 'not-on-report' || raw['status'] === 'unreadable') && raw['text'] === null) {
+    return { ...raw, unit: null, ...(raw['status'] === 'not-on-report' ? { sourceLabel: null } : {}) };
+  }
+  return raw;
+}
+
+function repairFields(fields: Record<string, unknown>, massUnit: string | null): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(fields).map(([key, raw]) => [key, key in EXTRACTION_FIELDS && isRecord(raw) ? repairField(key as ExtractionFieldId, raw, massUnit) : raw]),
+  );
+}
+
+function repairExtraction(value: Record<string, unknown>): Record<string, unknown> {
+  const massUnit = sheetMassUnit(value);
+  const repaired: Record<string, unknown> = { ...value };
+  for (const group of EXTRACTION_GROUPS) {
+    if (isRecord(value[group])) {
+      repaired[group] = repairFields(value[group], massUnit);
+    }
+  }
+  if (Array.isArray(value['history'])) {
+    repaired['history'] = value['history'].map((point: unknown) => (isRecord(point) ? repairFields(point, massUnit) : point));
+  }
+  return repaired;
+}
+
+/**
+ * Strict check of a model response (already JSON-decoded), after the repairs above. Every problem is
  * reported; the extraction is returned only when there are none.
  *
  * Beyond shape: `extracted` needs at least one value, and the other
  * outcomes may not carry any (nothing is prefilled from a report the model
  * itself rejected).
  */
-export function parseInBodyExtraction(value: unknown): ExtractionParseResult {
-  if (!isRecord(value)) {
+export function parseInBodyExtraction(input: unknown): ExtractionParseResult {
+  if (!isRecord(input)) {
     return { ok: false, errors: [{ path: '', problem: 'not-an-object' }] };
   }
+  const value = repairExtraction(input);
   const errors: ExtractionError[] = [];
   checkKeys(value, 'history' in value ? RESPONSE_KEYS : TOP_LEVEL_KEYS, '', errors);
   if (value['schemaVersion'] !== INBODY_EXTRACTION_SCHEMA_VERSION && 'schemaVersion' in value) {

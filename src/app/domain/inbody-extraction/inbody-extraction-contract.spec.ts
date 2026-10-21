@@ -73,6 +73,45 @@ describe('InBody extraction contract', () => {
     });
   });
 
+  describe('slips the sheet itself can mend', () => {
+    it('gives a mass read without a unit the unit the rest of the sheet states', () => {
+      const value = weight({ unit: null });
+      const parsed = parseInBodyExtraction(value);
+      expect(parsed.ok && parsed.value.measurements.weight).toMatchObject({ status: 'read', text: '68.4', unit: 'kg' });
+    });
+
+    it('gives a value with only one possible unit that unit', () => {
+      const value = withField('measurements', 'percent-body-fat', { status: 'read', text: '30.8', unit: null, sourceLabel: 'PBF' });
+      const parsed = parseInBodyExtraction(value);
+      expect(parsed.ok && parsed.value.measurements['percent-body-fat'].unit).toBe('%');
+    });
+
+    it('does not guess a mass unit when the sheet states none (or two)', () => {
+      const unitless = sample() as Json;
+      for (const field of Object.values(group(unitless, 'measurements')) as Record<string, unknown>[]) {
+        if (field['unit'] === 'kg') {
+          field['unit'] = null;
+        }
+      }
+      expect(parseInBodyExtraction(unitless).ok).toBe(false);
+      const mixed = sample() as Json;
+      group(mixed, 'measurements')['protein'] = { status: 'read', text: '20.7', unit: 'lb', sourceLabel: 'Protein' };
+      group(mixed, 'measurements')['minerals'] = { status: 'read', text: '3.0', unit: null, sourceLabel: 'Minerals' };
+      expect(parseInBodyExtraction(mixed).ok).toBe(false);
+    });
+
+    it('drops a unit or a label from a field that has no value', () => {
+      const unreadable = parseInBodyExtraction(weight({ status: 'unreadable', text: null }));
+      expect(unreadable.ok && unreadable.value.measurements.weight).toEqual({ status: 'unreadable', text: null, unit: null, sourceLabel: 'Weight' });
+      const absent = parseInBodyExtraction(weight({ status: 'not-on-report', text: null, unit: 'kg', sourceLabel: 'Weight' }));
+      expect(absent.ok && absent.value.measurements.weight).toEqual({ status: 'not-on-report', text: null, unit: null, sourceLabel: null });
+    });
+
+    it('never invents a value: a missing value with text is still rejected', () => {
+      expect(parseInBodyExtraction(weight({ status: 'not-on-report', unit: null, sourceLabel: null })).ok).toBe(false);
+    });
+  });
+
   it('never echoes a model-written key: it could quote the report', () => {
     const value = sample();
     value['Name: Jane Example, DOB 1990-01-01'] = 'x';
@@ -104,11 +143,8 @@ describe('InBody extraction contract', () => {
   });
 
   it.each<[string, Json]>([
-    ['a read value without its unit', weight({ unit: null })],
     ['a read value without text', weight({ text: null })],
     ['a missing value with text', weight({ status: 'not-on-report', unit: null, sourceLabel: null })],
-    ['an unreadable value with a unit', weight({ status: 'unreadable', text: null })],
-    ['a label for a field not on the report', weight({ status: 'not-on-report', text: null, unit: null })],
   ])('rejects %s as inconsistent', (_, value) => {
     expect(parseInBodyExtraction(value)).toEqual({ ok: false, errors: [{ path: 'measurements.weight', problem: 'inconsistent' }] });
   });

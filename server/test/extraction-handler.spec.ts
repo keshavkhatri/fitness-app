@@ -52,6 +52,38 @@ describe('POST /v1/inbody-extractions', () => {
     expect(await response.json()).toEqual(SAMPLE_INBODY380_EXTRACTION);
   });
 
+  describe('an answer that does not fit the contract', () => {
+    const INVALID: ProviderResult = { ok: true, body: completed(outputText('{}')) };
+
+    it('is tried once more, and the second answer is used when it is good', async () => {
+      const h = harness(INVALID);
+      const answers = [INVALID, SUCCESS];
+      h.client.create = async (body) => {
+        h.client.requests.push(body);
+        return answers.shift()!;
+      };
+      const response = await h.handle(upload(pngBytes()), CONTEXT);
+      expect(response.status).toBe(200);
+      expect(h.client.requests).toHaveLength(2);
+      expect(h.logs.map((l) => l.event)).toContain('extraction.retry');
+      expect(h.logs.map((l) => l.event)).toContain('extraction.completed');
+    });
+
+    it('is tried only once more: two bad answers are a 502, never a third call', async () => {
+      const h = harness(INVALID);
+      const response = await h.handle(upload(pngBytes()), CONTEXT);
+      expect((await errorOf(response)).code).toBe('invalid-extraction');
+      expect(h.client.requests).toHaveLength(2);
+    });
+
+    it('is not tried again when the daily budget is spent', async () => {
+      const h = harness(INVALID, { config: { dailyExtractionLimit: 1 } });
+      const response = await h.handle(upload(pngBytes()), CONTEXT);
+      expect((await errorOf(response)).code).toBe('invalid-extraction');
+      expect(h.client.requests).toHaveLength(1);
+    });
+  });
+
   it('sends the image with the shared request builder, strict schema and store: false', async () => {
     const { handle, client } = harness(SUCCESS);
     const bytes = pngBytes(300);
@@ -374,7 +406,14 @@ describe('concurrency limit', () => {
     expect(await attempt(aborted())).toBe(500); // upload aborted mid-way
     expect(await attempt(pngBytes(), (p) => p.resolve({ ok: false, failure: 'timeout' }))).toBe(504); // provider timeout
     expect(await attempt(pngBytes(), (p) => p.resolve({ ok: false, failure: 'http-error', status: 500 }))).toBe(503); // provider error
-    expect(await attempt(pngBytes(), (p) => p.resolve({ ok: true, body: completed(outputText('{}')) }))).toBe(502); // invalid output
+    // invalid output (it gets one more try, which is just as bad)
+    const invalid: ProviderResult = { ok: true, body: completed(outputText('{}')) };
+    const bad = h.handle(upload(pngBytes()), from(pending.length + 10));
+    await settle();
+    pending[pending.length - 1].resolve(invalid);
+    await settle();
+    pending[pending.length - 1].resolve(invalid);
+    expect((await bad).status).toBe(502);
     expect(await attempt(pngBytes(), (p) => p.reject(new Error('client crashed')))).toBe(500); // exception
     // After all of that, the single slot is free again.
     expect(await attempt(pngBytes(), (p) => p.resolve(SUCCESS))).toBe(200);

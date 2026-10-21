@@ -215,17 +215,25 @@ export function createExtractionHandler({ config, client, log, now = Date.now, r
     }
 
     const started = now();
-    const provided = await client.create(built.body);
+    let provided = await client.create(built.body);
+    let read = provided.ok ? readInBodyExtractionResponse(provided.body) : null;
+    // A model answer is not the same every time: one that does not fit the contract gets a second try (once, and
+    // only while the daily budget allows it).
+    if (read?.kind === 'invalid-output' && dailyLimiter.take('all').allowed) {
+      log('extraction.retry', { errorCount: read.errors.length, paths: read.errors.slice(0, 10).map((e) => e.path).join(' ') });
+      provided = await client.create(built.body);
+      read = provided.ok ? readInBodyExtractionResponse(provided.body) : null;
+    }
     const durationMs = now() - started;
-    if (!provided.ok) {
-      log('extraction.provider-failed', { failure: provided.failure, status: provided.status ?? 0, durationMs });
-      if (provided.failure === 'timeout') {
+    if (!provided.ok || !read) {
+      const failed = provided as Extract<typeof provided, { ok: false }>;
+      log('extraction.provider-failed', { failure: failed.failure, status: failed.status ?? 0, durationMs });
+      if (failed.failure === 'timeout') {
         return fail('provider-timeout', origin);
       }
-      const unavailable = provided.failure === 'rate-limited' || (provided.status ?? 0) >= 500;
+      const unavailable = failed.failure === 'rate-limited' || (failed.status ?? 0) >= 500;
       return fail(unavailable ? 'provider-unavailable' : 'provider-error', origin);
     }
-    const read = readInBodyExtractionResponse(provided.body);
     switch (read.kind) {
       case 'extraction':
         log('extraction.completed', { status: 200, outcome: read.extraction.outcome, durationMs });
