@@ -9,13 +9,19 @@ import { ExtractedField, INBODY_EXTRACTION_SCHEMA_VERSION } from '../inbody-extr
  * the validator.
  */
 const read = (text: string, unit: string | null, sourceLabel: string): ExtractedField => ({ status: 'read', text, unit, sourceLabel });
+/** A value this sheet did not print (a field the model is asked for, answered as not on the report). */
+const none: ExtractedField = { status: 'not-on-report', text: null, unit: null, sourceLabel: null };
 
 /** One printed point of the history chart (all fictional). */
 const point = (date: string, weight: string, smm: string, pbf: string) => ({
   'test-date-time': read(date, null, 'History date'),
   weight: read(weight, 'kg', 'Weight'),
   'skeletal-muscle-mass': read(smm, 'kg', 'SMM'),
+  'body-fat-mass': none,
   'percent-body-fat': read(pbf, '%', 'PBF'),
+  'ecw-ratio': none,
+  'phase-angle': none,
+  smi: none,
 });
 
 export const SAMPLE_INBODY380_EXTRACTION = {
@@ -53,6 +59,21 @@ export const SAMPLE_INBODY380_EXTRACTION = {
     'obesity-degree': read('107', '%', 'Obesity Degree'),
     'bone-mineral-content': read('2.62', 'kg', 'Bone Mineral Content'),
     'body-cell-mass': read('31.0', 'kg', 'Body Cell Mass'),
+    'inbody-score': none,
+    'target-weight': none,
+    'weight-control': none,
+    'fat-control': none,
+    'muscle-control': none,
+    'segmental-lean-right-arm': none,
+    'segmental-lean-left-arm': none,
+    'segmental-lean-trunk': none,
+    'segmental-lean-right-leg': none,
+    'segmental-lean-left-leg': none,
+    'segmental-lean-right-arm-percentage': none,
+    'segmental-lean-left-arm-percentage': none,
+    'segmental-lean-trunk-percentage': none,
+    'segmental-lean-right-leg-percentage': none,
+    'segmental-lean-left-leg-percentage': none,
   },
   // Oldest first; the last point is the current test, as the chart plots it.
   history: [

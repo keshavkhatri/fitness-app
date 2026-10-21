@@ -24,40 +24,58 @@
         <section class="upload" aria-labelledby="body-composition-upload" data-testid="report-upload">
           @if (report.available) {
             @let r = reportState();
-            <app-report-thumb class="upload-art" />
-            <h2 class="upload-title" id="body-composition-upload">{{ uploadCopy.title }}</h2>
-            <p class="note">{{ uploadCopy.intro }}</p>
+            @if (summaryMode()) {
+              <!-- A report has been read: the picker steps aside for what was captured. -->
+              <div class="read-summary" data-testid="report-read">
+                <ion-icon class="read-icon" name="checkmark-circle" aria-hidden="true" />
+                <div class="read-text">
+                  <h2 class="read-title" id="body-composition-upload">{{ uploadCopy.readTitle }}</h2>
+                  <p class="note">{{ uploadCopy.readHint }}</p>
+                </div>
+              </div>
+            } @else {
+              <app-report-thumb class="upload-art" />
+              <h2 class="upload-title" id="body-composition-upload">{{ uploadCopy.title }}</h2>
+              <p class="note">{{ uploadCopy.intro }}</p>
+            }
             <!-- Opened by the buttons below; hidden from assistive tech, which uses those buttons. -->
             <input #fileInput class="file-input" type="file" tabindex="-1" aria-hidden="true" [accept]="accept" (change)="onImageChosen($event)" />
             <input #cameraInput class="file-input" type="file" capture="environment" tabindex="-1" aria-hidden="true" [accept]="accept" (change)="onImageChosen($event)" />
-            <div class="upload-actions">
-              <button
-                fit-button
-                type="button"
-                size="lg"
-                block
-                icon="camera-outline"
-                data-testid="take-photo"
-                [disabled]="r.status === 'reading' || saving()"
-                (click)="takePhoto()"
-              >
-                {{ uploadCopy.takePhoto }}
+            @if (pickerOpen()) {
+              <div class="upload-actions">
+                <button
+                  fit-button
+                  type="button"
+                  size="lg"
+                  block
+                  icon="camera-outline"
+                  data-testid="take-photo"
+                  [disabled]="r.status === 'reading' || saving()"
+                  (click)="takePhoto()"
+                >
+                  {{ uploadCopy.takePhoto }}
+                </button>
+                <button
+                  fit-button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  block
+                  icon="document-text-outline"
+                  data-testid="choose-report"
+                  [disabled]="r.status === 'reading' || saving()"
+                  (click)="chooseImage()"
+                >
+                  {{ r.status === 'empty' ? uploadCopy.choose : uploadCopy.chooseAnother }}
+                </button>
+              </div>
+              <p class="formats">{{ uploadCopy.fileHint(maxMegabytes) }}</p>
+
+            } @else if (summaryMode()) {
+              <button fit-button type="button" variant="secondary" block icon="add" data-testid="change-report" [disabled]="saving()" (click)="changeImage.set(true)">
+                {{ uploadCopy.anotherImage }}
               </button>
-              <button
-                fit-button
-                type="button"
-                variant="secondary"
-                size="lg"
-                block
-                icon="document-text-outline"
-                data-testid="choose-report"
-                [disabled]="r.status === 'reading' || saving()"
-                (click)="chooseImage()"
-              >
-                {{ r.status === 'empty' ? uploadCopy.choose : uploadCopy.chooseAnother }}
-              </button>
-            </div>
-            <p class="formats">{{ uploadCopy.fileHint(maxMegabytes) }}</p>
+            }
 
             @if (reportFile(); as file) {
               <div class="file" data-testid="chosen-file">
@@ -95,8 +113,10 @@
                 </fit-notice>
               }
             </div>
-            @if (r.status !== 'read') {
-              <p class="note">{{ uploadCopy.manualInstead }}</p>
+            @if (!formVisible()) {
+              <button fit-button type="button" variant="ghost" block data-testid="manual-entry" [disabled]="r.status === 'reading'" (click)="openManualEntry()">
+                {{ uploadCopy.manualEntry }}
+              </button>
             }
           } @else {
             <h2 class="upload-title" id="body-composition-upload">{{ uploadCopy.title }}</h2>
@@ -105,106 +125,123 @@
         </section>
       }
 
-      <form id="body-composition-form" class="form" novalidate data-testid="body-composition-form" (submit)="$event.preventDefault(); save()">
-        <div class="unit" data-testid="mass-unit">
-          <!-- The control's legend carries the same name for assistive tech. -->
-          <p class="unit-label" aria-hidden="true">{{ copy.massUnit }}</p>
-          <fit-segmented-control
-            [name]="massUnitName"
-            [legend]="copy.massUnit"
-            [options]="massUnitOptions"
-            [value]="f.massUnit"
-            (valueChange)="setMassUnit($event)"
-          />
-          <p class="unit-hint">{{ copy.massUnitHint }}</p>
-        </div>
-
-        <fieldset class="values" data-testid="body-composition-values">
-          <legend class="legend">{{ copy.legend }}</legend>
-          @if (e.values; as groupError) {
-            <p class="group-error" [id]="groupErrorId" data-testid="values-error">{{ groupError }}</p>
-          }
-          @for (metric of keyMetrics; track metric) {
-            <fit-text-field
-              [label]="metricLabels[metric]"
-              [suffix]="unitFor(metric)"
-              inputMode="decimal"
-              [maxLength]="7"
-              [value]="f[metric]"
-              [hint]="noteFor(metric)"
-              [error]="e[metric] ?? null"
-              [invalid]="!!e.values"
-              [describedBy]="e.values ? groupErrorId : null"
-              [attr.data-testid]="'field-' + metric"
-              (valueChange)="update(metric, $event)"
+      @if (formVisible()) {
+        <form id="body-composition-form" class="form" novalidate data-testid="body-composition-form" (submit)="$event.preventDefault(); save()">
+          <div class="unit" data-testid="mass-unit">
+            <!-- The control's legend carries the same name for assistive tech. -->
+            <p class="unit-label" aria-hidden="true">{{ copy.massUnit }}</p>
+            <fit-segmented-control
+              [name]="massUnitName"
+              [legend]="copy.massUnit"
+              [options]="massUnitOptions"
+              [value]="f.massUnit"
+              (valueChange)="setMassUnit($event)"
             />
-          }
-          <details class="more" [open]="moreOpen() || hasMoreError()" data-testid="more-values">
-            <summary class="more-summary">{{ copy.more }}</summary>
-            <p class="note">{{ copy.moreHint }}</p>
-            <div class="more-fields">
-              @for (metric of moreMetrics; track metric) {
-                <fit-text-field
-                  [label]="metricLabels[metric]"
-                  [suffix]="unitFor(metric)"
-                  inputMode="decimal"
-                  [maxLength]="7"
-                  [value]="f[metric]"
-                  [hint]="noteFor(metric)"
-                  [error]="e[metric] ?? null"
-                  [invalid]="!!e.values"
-                  [describedBy]="e.values ? groupErrorId : null"
-                  [attr.data-testid]="'field-' + metric"
-                  (valueChange)="update(metric, $event)"
-                />
-              }
-            </div>
-          </details>
-        </fieldset>
-        <fit-text-field
-          type="date"
-          [label]="copy.date"
-          [max]="today"
-          enterKeyHint="done"
-          [value]="f.date"
-          [hint]="copy.dateHint"
-          [error]="e.date ?? null"
-          data-testid="field-date"
-          (valueChange)="update('date', $event)"
-        />
-      </form>
-      @if (historyChoices().length) {
-        <section class="earlier" aria-labelledby="body-composition-earlier" data-testid="earlier-results">
-          <h2 class="earlier-title" id="body-composition-earlier">{{ historyCopy.title }}</h2>
-          <p class="note">{{ historyCopy.intro(historyChoices().length) }}</p>
-          <ul class="earlier-list">
-            @for (choice of historyChoices(); track choice.date) {
-              <li class="earlier-item" [attr.data-testid]="'earlier-' + choice.date">
-                <label class="earlier-row" [class.disabled]="choice.alreadySaved">
-                  <input
-                    type="checkbox"
-                    class="earlier-check"
-                    [checked]="choice.selected"
-                    [disabled]="choice.alreadySaved || saving()"
-                    [attr.aria-label]="historyCopy.include(choice.label)"
-                    (change)="toggleEarlier(choice.date)"
-                  />
-                  <span class="earlier-text">
-                    <span class="earlier-date">{{ choice.label }}</span>&ngsp;
-                    <span class="earlier-values">{{ choice.summary }}</span>&ngsp;
-                    @if (choice.alreadySaved) {
-                      <span class="earlier-flag">{{ historyCopy.alreadySaved }}</span>
-                    } @else if (choice.needsReview) {
-                      <span class="earlier-flag warn">{{ historyCopy.check }}</span>
-                    }
-                  </span>
-                </label>
-              </li>
-            }
-          </ul>
-        </section>
-      }
+            <p class="unit-hint">{{ copy.massUnitHint }}</p>
+          </div>
 
+          <fieldset class="values" data-testid="body-composition-values">
+            <legend class="legend">{{ copy.legend }}</legend>
+            @if (e.values; as groupError) {
+              <p class="group-error" [id]="groupErrorId" data-testid="values-error">{{ groupError }}</p>
+            }
+            <!-- Read from a report: only what it showed (each still editable), until the rest is asked for. -->
+            @for (metric of shownKeyMetrics(); track metric) {
+              <fit-text-field
+                [label]="metricLabels[metric]"
+                [suffix]="unitFor(metric)"
+                inputMode="decimal"
+                [maxLength]="7"
+                [value]="f[metric]"
+                [hint]="noteFor(metric)"
+                [error]="e[metric] ?? null"
+                [invalid]="!!e.values"
+                [describedBy]="e.values ? groupErrorId : null"
+                [attr.data-testid]="'field-' + metric"
+                (valueChange)="update(metric, $event)"
+              />
+            }
+            @if (onlyCaptured()) {
+              <button fit-button type="button" variant="ghost" data-testid="show-all-fields" (click)="showAllFields.set(true)">{{ copy.showAll }}</button>
+            }
+            @if (shownMoreMetrics().length) {
+              <details class="more" [open]="moreOpen() || hasMoreError() || onlyCaptured()" data-testid="more-values">
+                <summary class="more-summary">{{ copy.more }}</summary>
+                <p class="note">{{ copy.moreHint }}</p>
+                <div class="more-fields">
+                  @for (metric of shownMoreMetrics(); track metric) {
+                    <fit-text-field
+                      [label]="metricLabels[metric]"
+                      [suffix]="unitFor(metric)"
+                      inputMode="decimal"
+                      [maxLength]="7"
+                      [value]="f[metric]"
+                      [hint]="noteFor(metric)"
+                      [error]="e[metric] ?? null"
+                      [invalid]="!!e.values"
+                      [describedBy]="e.values ? groupErrorId : null"
+                      [attr.data-testid]="'field-' + metric"
+                      (valueChange)="update(metric, $event)"
+                    />
+                  }
+                </div>
+              </details>
+            }
+          </fieldset>
+          <fit-text-field
+            type="date"
+            [label]="copy.date"
+            [max]="today"
+            enterKeyHint="done"
+            [value]="f.date"
+            [hint]="copy.dateHint"
+            [error]="e.date ?? null"
+            data-testid="field-date"
+            (valueChange)="update('date', $event)"
+          />
+          @if (!editing()) {
+            <label class="log-weight">
+              <input type="checkbox" data-testid="log-weight" [checked]="logWeights()" [disabled]="saving()" (change)="logWeights.set(!logWeights())" />
+              <span class="log-weight-text">
+                <span class="log-weight-label">{{ copy.logWeight }}</span>&ngsp;
+                <span class="log-weight-hint">{{ copy.logWeightHint }}</span>
+              </span>
+            </label>
+          }
+        </form>
+        @if (historyChoices().length) {
+          <section class="earlier" aria-labelledby="body-composition-earlier" data-testid="earlier-results">
+            <h2 class="earlier-title" id="body-composition-earlier">{{ historyCopy.title }}</h2>
+            <p class="note">{{ historyCopy.intro(historyChoices().length) }}</p>
+            <ul class="earlier-list">
+              @for (choice of historyChoices(); track choice.date) {
+                <li class="earlier-item" [attr.data-testid]="'earlier-' + choice.date">
+                  <label class="earlier-row" [class.disabled]="choice.alreadySaved">
+                    <input
+                      type="checkbox"
+                      class="earlier-check"
+                      [checked]="choice.selected"
+                      [disabled]="choice.alreadySaved || saving()"
+                      [attr.aria-label]="historyCopy.include(choice.label)"
+                      (change)="toggleEarlier(choice.date)"
+                    />
+                    <span class="earlier-text">
+                      <span class="earlier-date">{{ choice.label }}</span>&ngsp;
+                      <span class="earlier-values">{{ choice.summary }}</span>&ngsp;
+                      @if (choice.alreadySaved) {
+                        <span class="earlier-flag">{{ historyCopy.alreadySaved }}</span>
+                      } @else if (choice.needsReview) {
+                        <span class="earlier-flag warn">{{ historyCopy.check }}</span>
+                      }
+                    </span>
+                  </label>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+      }
     } @else if (l?.kind === 'not-found') {
       <h1 class="visually-hidden">{{ title() }}</h1>
       <fit-card data-testid="not-found">
@@ -244,7 +281,7 @@
   />
 }
 
-@if (editable()) {
+@if (editable() && formVisible()) {
   <ion-footer class="ion-no-border">
     <div class="footer">
       <!-- Always rendered with Save so its message is announced when it appears. -->

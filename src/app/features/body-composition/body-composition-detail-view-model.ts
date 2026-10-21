@@ -27,6 +27,22 @@ const GROUPS: readonly { readonly title: string; readonly metrics: readonly Body
   },
   { title: copy.detail.water, metrics: ['total-body-water', 'intracellular-water', 'extracellular-water', 'ecw-ratio'] },
   {
+    title: copy.detail.segmental,
+    metrics: [
+      'segmental-lean-right-arm',
+      'segmental-lean-right-arm-percentage',
+      'segmental-lean-left-arm',
+      'segmental-lean-left-arm-percentage',
+      'segmental-lean-trunk',
+      'segmental-lean-trunk-percentage',
+      'segmental-lean-right-leg',
+      'segmental-lean-right-leg-percentage',
+      'segmental-lean-left-leg',
+      'segmental-lean-left-leg-percentage',
+    ],
+  },
+  { title: copy.detail.targets, metrics: ['inbody-score', 'target-weight', 'weight-control', 'fat-control', 'muscle-control'] },
+  {
     title: copy.detail.other,
     metrics: ['bmi', 'smi', 'visceral-fat-level', 'basal-metabolic-rate', 'phase-angle', 'waist-hip-ratio', 'obesity-degree'],
   },

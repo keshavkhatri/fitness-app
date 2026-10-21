@@ -17,12 +17,13 @@ import { isOneOf } from '../fitness-profile';
  *   reliably is `unreadable`: never a guess. `uncertain` is a reading the
  *   user must check;
  * - fields are grouped as report metadata, profile details and measurements;
- * - the scalar results of the current test are extracted, plus the dated
- *   points of the "history" chart printed at the bottom of the sheet (weight,
- *   skeletal muscle mass and body-fat percentage of earlier tests, see
- *   `HISTORY_FIELDS`). Reference ranges, segmental analysis, impedance,
- *   evaluations, the InBody score, weight-control advice and the device's
- *   member ID are not.
+ * - the scalar results of the current test are extracted, including the
+ *   segmental lean analysis (kg and %), the InBody score and the weight,
+ *   fat and muscle control the device prints, plus the dated points of the
+ *   history charts (the "Body Composition History" table and the phase angle
+ *   and SMI charts, see `HISTORY_FIELDS`). Reference ranges, impedance, the
+ *   device's own evaluations (nutrition, body balance) and its member ID are
+ *   not.
  *
  * The catalogue is based on an InBody380 result sheet (English, template
  * "BR-English-R6-A-230522"). Other InBody models print other layouts;
@@ -52,8 +53,8 @@ export type ReportIssue = (typeof REPORT_ISSUES)[number];
 export const EXTRACTION_GROUPS = ['metadata', 'profile', 'measurements'] as const;
 export type ExtractionGroup = (typeof EXTRACTION_GROUPS)[number];
 
-/** `decimal`: digits with an optional decimal point; `text`: a short printed string. */
-export type FieldFormat = 'decimal' | 'text';
+/** `decimal`: digits with an optional decimal point; `signed-decimal`: the same with an optional leading minus; `text`: a short printed string. */
+export type FieldFormat = 'decimal' | 'signed-decimal' | 'text';
 
 export interface ExtractionFieldSpec {
   readonly group: ExtractionGroup;
@@ -68,6 +69,12 @@ type FieldSpecOf<G extends ExtractionGroup> = ExtractionFieldSpec & { readonly g
 const decimal = <G extends ExtractionGroup>(group: G, units: readonly string[], sampleLabel: string): FieldSpecOf<G> => ({
   group,
   format: 'decimal',
+  units,
+  sampleLabel,
+});
+const signed = <G extends ExtractionGroup>(group: G, units: readonly string[], sampleLabel: string): FieldSpecOf<G> => ({
+  group,
+  format: 'signed-decimal',
   units,
   sampleLabel,
 });
@@ -101,6 +108,21 @@ export const EXTRACTION_FIELDS = {
   'obesity-degree': decimal('measurements', ['%'], 'Obesity Degree'),
   'bone-mineral-content': decimal('measurements', MASS, 'Bone Mineral Content'),
   'body-cell-mass': decimal('measurements', MASS, 'Body Cell Mass'),
+  'inbody-score': decimal('measurements', [], 'InBody Score (the number of points out of 100)'),
+  'target-weight': decimal('measurements', MASS, 'Weight Control: Target Weight'),
+  'weight-control': signed('measurements', MASS, 'Weight Control: Weight Control'),
+  'fat-control': signed('measurements', MASS, 'Weight Control: Fat Control'),
+  'muscle-control': signed('measurements', MASS, 'Weight Control: Muscle Control'),
+  'segmental-lean-right-arm': decimal('measurements', MASS, 'Segmental Lean Analysis: Right Arm, the mass'),
+  'segmental-lean-left-arm': decimal('measurements', MASS, 'Segmental Lean Analysis: Left Arm, the mass'),
+  'segmental-lean-trunk': decimal('measurements', MASS, 'Segmental Lean Analysis: Trunk, the mass'),
+  'segmental-lean-right-leg': decimal('measurements', MASS, 'Segmental Lean Analysis: Right Leg, the mass'),
+  'segmental-lean-left-leg': decimal('measurements', MASS, 'Segmental Lean Analysis: Left Leg, the mass'),
+  'segmental-lean-right-arm-percentage': decimal('measurements', ['%'], 'Segmental Lean Analysis: Right Arm, the percentage'),
+  'segmental-lean-left-arm-percentage': decimal('measurements', ['%'], 'Segmental Lean Analysis: Left Arm, the percentage'),
+  'segmental-lean-trunk-percentage': decimal('measurements', ['%'], 'Segmental Lean Analysis: Trunk, the percentage'),
+  'segmental-lean-right-leg-percentage': decimal('measurements', ['%'], 'Segmental Lean Analysis: Right Leg, the percentage'),
+  'segmental-lean-left-leg-percentage': decimal('measurements', ['%'], 'Segmental Lean Analysis: Left Leg, the percentage'),
 } as const satisfies Record<string, ExtractionFieldSpec>;
 
 export type ExtractionFieldId = keyof typeof EXTRACTION_FIELDS;
@@ -112,8 +134,42 @@ export type FieldsOfGroup<G extends ExtractionGroup> = {
  * The fields of one history point: the chart at the bottom of an InBody sheet plots weight, SMM and PBF for the
  * last few tests. Each uses the spec of the field of the same id above; the date is the label under the point.
  */
-export const HISTORY_FIELDS = ['test-date-time', 'weight', 'skeletal-muscle-mass', 'percent-body-fat'] as const satisfies readonly ExtractionFieldId[];
+export const HISTORY_FIELDS = [
+  'test-date-time',
+  'weight',
+  'skeletal-muscle-mass',
+  'body-fat-mass',
+  'percent-body-fat',
+  'ecw-ratio',
+  'phase-angle',
+  'smi',
+] as const satisfies readonly ExtractionFieldId[];
 export type HistoryFieldId = (typeof HISTORY_FIELDS)[number];
+/**
+ * Fields added after the first release of this contract. An answer from a server that predates them (no such
+ * key) still reads, as "not on the report"; the model is always asked for them.
+ */
+export const ADDED_LATER: ReadonlySet<ExtractionFieldId> = new Set<ExtractionFieldId>([
+  'inbody-score',
+  'target-weight',
+  'weight-control',
+  'fat-control',
+  'muscle-control',
+  'segmental-lean-right-arm',
+  'segmental-lean-left-arm',
+  'segmental-lean-trunk',
+  'segmental-lean-right-leg',
+  'segmental-lean-left-leg',
+  'segmental-lean-right-arm-percentage',
+  'segmental-lean-left-arm-percentage',
+  'segmental-lean-trunk-percentage',
+  'segmental-lean-right-leg-percentage',
+  'segmental-lean-left-leg-percentage',
+]);
+
+/** In a history point, the series added after weight, SMM and PBF (older answers have only those). */
+const ADDED_IN_HISTORY: ReadonlySet<ExtractionFieldId> = new Set<ExtractionFieldId>(['body-fat-mass', 'ecw-ratio', 'phase-angle', 'smi']);
+
 /** More points than any sheet prints (about eight). */
 export const MAX_HISTORY_POINTS = 12;
 
@@ -155,6 +211,9 @@ export const hasValue = (field: ExtractedField): boolean => field.status === 're
 
 const DECIMAL_PATTERN = '^\\d+(\\.\\d+)?$';
 const DECIMAL = new RegExp(DECIMAL_PATTERN);
+const SIGNED_DECIMAL_PATTERN = '^-?\\d+(\\.\\d+)?$';
+const SIGNED_DECIMAL = new RegExp(SIGNED_DECIMAL_PATTERN);
+const NOT_ON_REPORT: ExtractedField = { status: 'not-on-report', text: null, unit: null, sourceLabel: null };
 /** Long enough for any printed value or label; longer strings are prose, not transcription. */
 const MAX_TEXT_LENGTH = 40;
 const MAX_LABEL_LENGTH = 80;
@@ -192,9 +251,9 @@ const isBoundedString = (value: unknown, max: number): value is string =>
   typeof value === 'string' && value.trim() !== '' && value.length <= max;
 
 /** Exactly `keys`, no more and no fewer; problems are appended to `errors`. */
-function checkKeys(value: Record<string, unknown>, keys: readonly string[], path: string, errors: ExtractionError[]): void {
+function checkKeys(value: Record<string, unknown>, keys: readonly string[], path: string, errors: ExtractionError[], optional: readonly string[] = []): void {
   for (const key of keys) {
-    if (!(key in value)) {
+    if (!(key in value) && !optional.includes(key)) {
       errors.push({ path: `${path}${key}`, problem: 'missing-key' });
     }
   }
@@ -227,7 +286,8 @@ function parseField(id: ExtractionFieldId, raw: unknown, path: string, errors: E
   if (sourceLabel !== null && !isBoundedString(sourceLabel, MAX_LABEL_LENGTH)) {
     errors.push({ path: `${path}.sourceLabel`, problem: 'invalid-value' });
   }
-  if (printed !== null && !(isBoundedString(printed, MAX_TEXT_LENGTH) && (spec.format === 'text' || DECIMAL.test(printed)))) {
+  const numberPattern = spec.format === 'signed-decimal' ? SIGNED_DECIMAL : DECIMAL;
+  if (printed !== null && !(isBoundedString(printed, MAX_TEXT_LENGTH) && (spec.format === 'text' || numberPattern.test(printed)))) {
     errors.push({ path: `${path}.text`, problem: 'invalid-value' });
   }
   if (unit !== null && !(typeof unit === 'string' && spec.units.includes(unit))) {
@@ -253,6 +313,15 @@ function parseField(id: ExtractionFieldId, raw: unknown, path: string, errors: E
   return field;
 }
 
+/**
+ * A field added after the first release: if the model's entry for it can't be used (a shape or consistency problem
+ * in this one field), only that value is dropped ("not on the report"): one odd extra field must not discard a
+ * whole report. The core fields stay strict.
+ */
+function parseAddedField(id: ExtractionFieldId, raw: unknown, path: string): ExtractedField {
+  return parseField(id, raw, path, []) ?? NOT_ON_REPORT;
+}
+
 function parseGroup(
   group: ExtractionGroup,
   raw: unknown,
@@ -263,10 +332,12 @@ function parseGroup(
     return {};
   }
   const ids = fieldsOfGroup(group);
-  checkKeys(raw, ids, `${group}.`, errors);
+  checkKeys(raw, ids, `${group}.`, errors, ids.filter((id) => ADDED_LATER.has(id)));
   const fields: Partial<Record<ExtractionFieldId, ExtractedField>> = {};
   for (const id of ids) {
-    if (id in raw) {
+    if (ADDED_LATER.has(id)) {
+      fields[id] = id in raw ? parseAddedField(id, raw[id], `${group}.${id}`) : NOT_ON_REPORT;
+    } else if (id in raw) {
       const field = parseField(id, raw[id], `${group}.${id}`, errors);
       if (field) {
         fields[id] = field;
@@ -293,10 +364,12 @@ function parseHistory(raw: unknown, errors: ExtractionError[]): HistoryPoint[] {
       return;
     }
     const before = errors.length;
-    checkKeys(item, HISTORY_FIELDS, `${path}.`, errors);
+    checkKeys(item, HISTORY_FIELDS, `${path}.`, errors, HISTORY_FIELDS.filter((id) => ADDED_IN_HISTORY.has(id)));
     const fields: Partial<Record<HistoryFieldId, ExtractedField>> = {};
     for (const id of HISTORY_FIELDS) {
-      if (id in item) {
+      if (ADDED_IN_HISTORY.has(id)) {
+        fields[id] = id in item ? parseAddedField(id, item[id], `${path}.${id}`) : NOT_ON_REPORT;
+      } else if (id in item) {
         const field = parseField(id, item[id], `${path}.${id}`, errors);
         if (field) {
           fields[id] = field;
@@ -381,7 +454,12 @@ function fieldSchema(id: ExtractionFieldId, scope: 'current' | 'history' = 'curr
       text: nullableString(
         spec.format === 'decimal'
           ? { pattern: DECIMAL_PATTERN, description: 'The number exactly as printed, without unit, rounding or conversion.' }
-          : { description: 'The text exactly as printed.' },
+          : spec.format === 'signed-decimal'
+            ? {
+                pattern: SIGNED_DECIMAL_PATTERN,
+                description: 'The number exactly as printed, without unit, rounding or conversion; a negative number starts with a minus sign and no space after it (for example -20.5).',
+              }
+            : { description: 'The text exactly as printed.' },
       ),
       unit: spec.units.length > 0 ? { type: ['string', 'null'], enum: [...spec.units, null] } : { type: 'null' },
       sourceLabel: nullableString({ description: 'The label printed next to the value.' }),

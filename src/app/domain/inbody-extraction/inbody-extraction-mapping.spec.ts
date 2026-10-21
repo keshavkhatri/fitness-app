@@ -55,8 +55,10 @@ describe('InBody extraction mapping', () => {
       },
       unmapped: ['age'],
     });
-    // Every measurement the sample states maps to its own metric.
-    expect(Object.values(prefill.assessment.values).every((p) => p.kind === 'prefilled')).toBe(true);
+    // Every measurement the sample states maps to its own metric; what this sheet does not print is "not on the report".
+    const entries = Object.values(prefill.assessment.values);
+    expect(entries.filter((p) => p.kind === 'prefilled')).toHaveLength(21);
+    expect(entries.filter((p) => p.kind !== 'prefilled').every((p) => p.kind === 'missing' && p.reason === 'not-on-report')).toBe(true);
   });
 
   it('never suggests a date of birth or lean body mass: Fat Free Mass is its own metric', () => {

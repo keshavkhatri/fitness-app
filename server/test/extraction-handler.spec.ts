@@ -60,7 +60,7 @@ describe('POST /v1/inbody-extractions', () => {
     expect(client.requests).toHaveLength(1);
     const expected = inBodyExtractionRequest(
       { mediaType: 'image/png', base64: base64(bytes) },
-      { model: 'test-vision-model', maxOutputTokens: 8000 },
+      { model: 'test-vision-model', maxOutputTokens: 16000 },
     );
     expect(expected.ok && client.requests[0]).toEqual(expected.ok && expected.body);
     expect(client.requests[0]).toMatchObject({

@@ -63,7 +63,7 @@ describe('InBody extraction contract', () => {
   it('rejects a missing or unknown field', () => {
     const value = sample();
     delete group(value, 'measurements')['weight'];
-    group(value, 'measurements')['inbody-score'] = { status: 'read', text: '62', unit: null, sourceLabel: 'InBody Score' };
+    group(value, 'measurements')['blood-pressure'] = { status: 'read', text: '120', unit: null, sourceLabel: 'Blood Pressure' };
     expect(parseInBodyExtraction(value)).toEqual({
       ok: false,
       errors: [

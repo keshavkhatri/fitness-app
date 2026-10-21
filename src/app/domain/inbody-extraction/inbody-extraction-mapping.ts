@@ -113,6 +113,21 @@ export const ASSESSMENT_FIELDS: Readonly<Partial<Record<BodyCompositionMetric, E
   'phase-angle': 'phase-angle',
   'waist-hip-ratio': 'waist-hip-ratio',
   'obesity-degree': 'obesity-degree',
+  'inbody-score': 'inbody-score',
+  'target-weight': 'target-weight',
+  'weight-control': 'weight-control',
+  'fat-control': 'fat-control',
+  'muscle-control': 'muscle-control',
+  'segmental-lean-right-arm': 'segmental-lean-right-arm',
+  'segmental-lean-left-arm': 'segmental-lean-left-arm',
+  'segmental-lean-trunk': 'segmental-lean-trunk',
+  'segmental-lean-right-leg': 'segmental-lean-right-leg',
+  'segmental-lean-left-leg': 'segmental-lean-left-leg',
+  'segmental-lean-right-arm-percentage': 'segmental-lean-right-arm-percentage',
+  'segmental-lean-left-arm-percentage': 'segmental-lean-left-arm-percentage',
+  'segmental-lean-trunk-percentage': 'segmental-lean-trunk-percentage',
+  'segmental-lean-right-leg-percentage': 'segmental-lean-right-leg-percentage',
+  'segmental-lean-left-leg-percentage': 'segmental-lean-left-leg-percentage',
 };
 
 /**
@@ -253,7 +268,11 @@ function readHistoryDate(today: IsoCalendarDate, yearFirst: boolean) {
 const HISTORY_METRICS: readonly (readonly [BodyCompositionMetric, HistoryFieldId])[] = [
   ['weight', 'weight'],
   ['skeletal-muscle-mass', 'skeletal-muscle-mass'],
+  ['body-fat-mass', 'body-fat-mass'],
   ['body-fat-percentage', 'percent-body-fat'],
+  ['ecw-ratio', 'ecw-ratio'],
+  ['phase-angle', 'phase-angle'],
+  ['smi', 'smi'],
 ];
 
 function historySuggestions(history: readonly HistoryPoint[], currentDate: IsoCalendarDate | null, today: IsoCalendarDate): HistorySuggestion[] {
@@ -288,9 +307,12 @@ function historySuggestions(history: readonly HistoryPoint[], currentDate: IsoCa
 }
 
 /** As reported (no conversion), and only if manual entry would accept it. */
+/** A number as printed, with an optional leading minus (the device's weight / fat / muscle control). */
+const parseSigned = (text: string): number | null => (/^-\d+(\.\d+)?$/.test(text.trim()) ? -(parseDecimal(text.trim().slice(1)) ?? Number.NaN) : parseDecimal(text));
+
 function readReported(metric: BodyCompositionMetric, today: IsoCalendarDate) {
   return ({ text, unit }: PrintedValue): Reading<ReportedValue> => {
-    const value = parseDecimal(text);
+    const value = parseSigned(text);
     unit ??= 'none';
     if (value === null || !isReportedUnit(unit)) {
       return problem('unrecognised');

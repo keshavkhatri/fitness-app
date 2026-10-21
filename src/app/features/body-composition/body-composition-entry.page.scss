@@ -229,3 +229,53 @@ fit-notice {
   gap: var(--space-5);
   margin-top: var(--space-3);
 }
+
+// A report has been read: a compact "done" row instead of the picker.
+.read-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  text-align: start;
+}
+
+.read-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-success, var(--color-primary));
+  font-size: 26px;
+}
+
+.read-title {
+  @include fx.text(h3, semibold);
+}
+
+// "Also add the weight to my weight history".
+.log-weight {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--tap-target-min);
+
+  input {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: 1px 0 0;
+    accent-color: var(--color-primary);
+  }
+}
+
+.log-weight-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.log-weight-label {
+  @include fx.text(body, semibold);
+}
+
+.log-weight-hint {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}

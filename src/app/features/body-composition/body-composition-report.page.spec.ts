@@ -111,7 +111,8 @@ describe('Body composition: add an assessment from a report', () => {
     expect(input('weight').value).toBe('68.4');
     expect(input('skeletal-muscle-mass').value).toBe('26.2');
     expect(input('fat-free-mass').value).toBe('47.3');
-    expect(input('lean-body-mass').value).toBe('');
+    // Only what the report showed is on screen: no empty field for a value it did not have.
+    expect(byTestId(el, 'field-lean-body-mass')).toBeNull();
     expect(input('date').value).toBe('2026-09-14');
     expect(byTestId(el, 'more-values')?.hasAttribute('open')).toBe(true);
     expect(storedAssessments(storage)).toHaveLength(1);
@@ -126,7 +127,15 @@ describe('Body composition: add an assessment from a report', () => {
     expect(added.reported['ecw-ratio']).toEqual({ value: 0.378, unit: 'none' });
     expect(added.reported).not.toHaveProperty('lean-body-mass');
     expect(storage.values.get(PROFILE_KEY)).toBe(PROFILE);
-    expect(storage.values.get(WEIGHT_KEY)).toBe(WEIGHTS);
+    // The weights also became weigh-ins on their own dates: the one already there, this test and the three earlier ones.
+    const weighIns = JSON.parse(storage.values.get(WEIGHT_KEY)!).entries as { date: string; weight: { kilograms: number } }[];
+    expect(weighIns.map((w) => [w.date, w.weight.kilograms])).toEqual([
+      ['2026-10-01', 82],
+      ['2026-09-14', 68.4],
+      ['2026-03-14', 71.9],
+      ['2026-05-09', 70.6],
+      ['2026-07-18', 69.3],
+    ]);
     fixture.destroy();
 
     // History (same root service): the new assessment first.
@@ -200,6 +209,128 @@ describe('Body composition: add an assessment from a report', () => {
     const added = storedAssessments(storage).find((a: { id: string }) => a.id === 'new-1');
     expect(added.source).toEqual({ device: 'inbody', entryMethod: 'manual' });
     expect(added.reported.weight).toEqual({ value: 94.2, unit: 'kg' });
+  });
+
+  describe('after a report has been read', () => {
+    it('steps the picker aside for a compact result, with a way to add another image', async () => {
+      const { el, fixture, upload } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      expect(byTestId(el, 'take-photo')).not.toBeNull();
+      await upload();
+      expect(clean(byTestId(el, 'report-read'))).toContain('Report read');
+      expect(byTestId(el, 'take-photo')).toBeNull();
+      expect(byTestId(el, 'choose-report')).toBeNull();
+      expect(el.textContent).not.toContain('Supported formats');
+
+      (byTestId(el, 'change-report') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(byTestId(el, 'take-photo')).not.toBeNull();
+      expect(byTestId(el, 'choose-report')).not.toBeNull();
+      expect(byTestId(el, 'report-read')).toBeNull();
+    });
+
+    it('shows only the values the report had, and the rest on request', async () => {
+      const { el, fixture, upload } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      await upload();
+      const shown = () => [...el.querySelectorAll('[data-testid^="field-"]')].map((f) => f.getAttribute('data-testid')!.replace('field-', ''));
+      expect(shown()).toContain('weight');
+      expect(shown()).toContain('skeletal-muscle-mass');
+      expect(shown()).toContain('ecw-ratio');
+      expect(shown()).not.toContain('lean-body-mass'); // the report has no such value
+      expect(byTestId(el, 'show-all-fields')).not.toBeNull();
+
+      (byTestId(el, 'show-all-fields') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(shown()).toContain('lean-body-mass');
+      expect(byTestId(el, 'show-all-fields')).toBeNull();
+    });
+
+    it('keeps a captured value on screen while it is being retyped (even emptied)', async () => {
+      const { el, fixture, upload, input } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      await upload();
+      input('weight').value = '';
+      input('weight').dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(byTestId(el, 'field-weight')).not.toBeNull();
+    });
+  });
+
+  describe('weights from the report', () => {
+    const weighIns = (storage: MemoryKeyValueStorage) =>
+      (JSON.parse(storage.values.get(WEIGHT_KEY)!).entries as { date: string; weight: { kilograms: number } }[]).map((w) => [w.date, w.weight.kilograms]);
+
+    it('are skipped when that day already has the same weight, so a report saved twice does not double them', async () => {
+      const first = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      await first.upload();
+      await first.submit();
+      expect(weighIns(first.storage)).toHaveLength(5);
+      const kept = first.storage.values.get(WEIGHT_KEY)!;
+      first.fixture.destroy();
+
+      // Same report again, in a fresh page over the same storage.
+      TestBed.resetTestingModule();
+      const second = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      second.storage.values.set(WEIGHT_KEY, kept);
+      second.storage.values.set(KEY, first.storage.values.get(KEY)!);
+      await second.upload();
+      await second.submit();
+      expect(weighIns(second.storage)).toHaveLength(5);
+    });
+
+    it('can be switched off: the assessments are saved, the weight history is left alone', async () => {
+      const { el, fixture, upload, submit, storage } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      await upload();
+      (byTestId(el, 'log-weight') as HTMLInputElement).click();
+      fixture.detectChanges();
+      await submit();
+      expect(storedAssessments(storage)).toHaveLength(5);
+      expect(storage.values.get(WEIGHT_KEY)).toBe(WEIGHTS);
+    });
+
+    it('go in the unit the report printed, and only for the earlier tests the user kept', async () => {
+      const { el, fixture, upload, submit, storage } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      await upload();
+      byTestId(el, 'earlier-2026-05-09')!.querySelector<HTMLInputElement>('input')!.click();
+      fixture.detectChanges();
+      await submit();
+      expect(weighIns(storage).map(([date]) => date)).not.toContain('2026-05-09');
+      expect(weighIns(storage)).toContainEqual(['2026-03-14', 71.9]);
+    });
+  });
+
+  describe('the values form', () => {
+    it('is hidden until the user chooses manual entry', async () => {
+      const { el, fixture, input } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      expect(byTestId(el, 'body-composition-form')).toBeNull();
+      expect(byTestId(el, 'save')).toBeNull();
+      expect(clean(byTestId(el, 'manual-entry'))).toBe('Enter values manually');
+      expect(byTestId(el, 'report-upload')).not.toBeNull();
+
+      (byTestId(el, 'manual-entry') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(byTestId(el, 'body-composition-form')).not.toBeNull();
+      expect(byTestId(el, 'save')).not.toBeNull();
+      expect(input('weight').value).toBe('');
+      // The choice is made: the button is no longer needed.
+      expect(byTestId(el, 'manual-entry')).toBeNull();
+    });
+
+    it('appears, filled in for review, once a report has been read', async () => {
+      const { el, upload, input } = await renderEntry(async () => json(200, SAMPLE_INBODY380_EXTRACTION));
+      expect(byTestId(el, 'body-composition-form')).toBeNull();
+      await upload();
+      expect(byTestId(el, 'body-composition-form')).not.toBeNull();
+      expect(input('weight').value).toBe('68.4');
+      expect(byTestId(el, 'manual-entry')).toBeNull();
+    });
+
+    it('stays hidden while a report is being read or after a failed read', async () => {
+      const { el, upload } = await renderEntry(async () => {
+        throw new TypeError('offline');
+      });
+      await upload();
+      expect(byTestId(el, 'body-composition-form')).toBeNull();
+      expect(byTestId(el, 'manual-entry')).not.toBeNull();
+    });
   });
 
   describe('earlier results from the report’s history chart', () => {
@@ -299,7 +430,9 @@ describe('Body composition: add an assessment from a report', () => {
     expect(overlay()).toBeNull();
     answer(json(200, SAMPLE_INBODY380_EXTRACTION));
     await settle(fixture);
-    expect(input('weight').value).toBe('');
+    // The late answer is dropped: nothing was filled in, and the form is still hidden.
+    expect(byTestId(el, 'body-composition-form')).toBeNull();
+    void input;
   });
 
   it('a failed upload explains itself and keeps manual entry available', async () => {
@@ -309,6 +442,10 @@ describe('Body composition: add an assessment from a report', () => {
     await upload();
     expect(clean(byTestId(el, 'report-status'))).toContain("Couldn't reach the report service");
     expect(byTestId(el, 'retry-report')).not.toBeNull();
+    // Manual entry is one tap away.
+    expect(byTestId(el, 'body-composition-form')).toBeNull();
+    (byTestId(el, 'manual-entry') as HTMLButtonElement).click();
+    fixture.detectChanges();
     input('weight').value = '90';
     input('weight').dispatchEvent(new Event('input'));
     fixture.detectChanges();

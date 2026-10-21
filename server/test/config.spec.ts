@@ -4,7 +4,7 @@ import { ConfigError, loadConfig } from '../src/config';
 describe('server configuration', () => {
   it('uses safe defaults', () => {
     expect(loadConfig({ OPENAI_API_KEY: 'k', OPENAI_MODEL: 'm' })).toEqual({
-      openAi: { apiKey: 'k', model: 'm', maxOutputTokens: 8000, timeoutMs: 90_000 },
+      openAi: { apiKey: 'k', model: 'm', maxOutputTokens: 16000, timeoutMs: 90_000 },
       maxUploadBytes: 8 * 1024 * 1024,
       maxConcurrentExtractions: 4,
       allowedOrigins: [],

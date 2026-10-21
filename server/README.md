@@ -30,7 +30,7 @@ server at startup with the variable's name, never its value.
 | --- | --- | --- |
 | `OPENAI_API_KEY` | — | Required for extraction. Server-side only: never in the app, its environment files or a commit. |
 | `OPENAI_MODEL` | — | Required. A vision model supporting Structured Outputs on the Responses API. |
-| `OPENAI_MAX_OUTPUT_TOKENS` | 8000 | 1000–64000 |
+| `OPENAI_MAX_OUTPUT_TOKENS` | 16000 | 1000–64000 |
 | `OPENAI_TIMEOUT_MS` | 90000 | 5000–300000 |
 | `INBODY_MAX_UPLOAD_BYTES` | 8 MiB | Up to 20 MiB; the app checks 8 MiB before sending. |
 | `MAX_CONCURRENT_EXTRACTIONS` | 4 | 1–100. Extractions in progress at once; more get 503 `server-busy` (with `Retry-After`) before any upload is read. Bounds memory: each holds one upload. |

@@ -85,11 +85,16 @@ const clean = (node: Element | null | undefined) => node?.textContent?.replace(/
 const byTestId = (root: Element, id: string) => root.querySelector(`[data-testid="${id}"]`);
 const stored = (storage: MemoryKeyValueStorage): unknown[] => JSON.parse(storage.values.get(KEY) ?? '{"assessments":[]}').assessments;
 
-async function renderForm(raw: string | null = null, profile: UserFitnessProfile | null = PROFILE) {
+/** `reveal`: choose "Enter values manually" first, as a user typing the values in does (the form starts hidden). */
+async function renderForm(raw: string | null = null, profile: UserFitnessProfile | null = PROFILE, reveal = true) {
   const spies = configure(raw, profile);
   const fixture = TestBed.createComponent(BodyCompositionEntryPage);
   await settle(fixture);
   const el = fixture.nativeElement as HTMLElement;
+  if (reveal) {
+    byTestId(el, 'manual-entry')?.dispatchEvent(new Event('click'));
+    await settle(fixture);
+  }
   const input = (field: string) => byTestId(el, `field-${field}`)!.querySelector('input')!;
   const type = (field: string, value: string) => {
     input(field).value = value;
@@ -112,6 +117,18 @@ async function renderForm(raw: string | null = null, profile: UserFitnessProfile
 }
 
 describe('Body composition entry page', () => {
+  it('starts with the report upload and a button for manual entry; the values form is hidden until chosen', async () => {
+    const { el, fixture } = await renderForm(null, PROFILE, false);
+    expect(byTestId(el, 'body-composition-form')).toBeNull();
+    expect(byTestId(el, 'save')).toBeNull();
+    expect(byTestId(el, 'report-upload')).not.toBeNull();
+    expect(clean(byTestId(el, 'manual-entry'))).toBe('Enter values manually');
+    (byTestId(el, 'manual-entry') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(byTestId(el, 'body-composition-form')).not.toBeNull();
+    expect(byTestId(el, 'save')).not.toBeNull();
+  });
+
   afterEach(() => vi.restoreAllMocks());
 
   it('shows each supported metric in the report’s unit, and today’s date', async () => {
@@ -126,7 +143,7 @@ describe('Body composition entry page', () => {
     expect(input('date').type).toBe('date');
     expect(input('date').value).toBe('2026-10-09');
     expect(input('date').getAttribute('max')).toBe('2026-10-09');
-    expect(clean(el.querySelector('.note'))).toBe('Saved to your body composition only. Your profile, weight history and measurements stay the same.');
+    expect(clean(el.querySelector('.note'))).toBe('Saved to your body composition. Weights can also go to your weight history; your profile and measurements are never changed.');
   });
 
   it('defaults masses to lb for an imperial profile, and kg without a profile', async () => {
@@ -251,7 +268,34 @@ describe('Body composition entry page', () => {
     expect(manual.source).toEqual({ device: 'inbody', entryMethod: 'manual' });
     expect(save).not.toHaveBeenCalled();
     expect(storage.values.get(PROFILE_KEY)).toBe(profileBefore);
-    expect(storage.values.get(WEIGHT_KEY)).toBe(WEIGHTS);
     expect(storage.values.get(MEASUREMENT_KEY)).toBe(MEASUREMENTS);
+    // The typed weight also became a weigh-in on its date; the one already there is untouched.
+    const weighIns = JSON.parse(storage.values.get(WEIGHT_KEY)!).entries as { date: string; weight: { kilograms: number } }[];
+    expect(weighIns).toHaveLength(2);
+    expect(weighIns[0]).toEqual(JSON.parse(WEIGHTS).entries[0]);
+    expect(weighIns[1]).toMatchObject({ date: '2026-10-09', weight: { kilograms: 80 } });
+  });
+
+  it('adds nothing to the weight history when that is switched off', async () => {
+    const { type, submit, storage, el, fixture } = await renderForm();
+    type('weight', '80');
+    const toggle = byTestId(el, 'log-weight') as HTMLInputElement;
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.checked).toBe(false);
+    await submit();
+    expect(stored(storage)).toHaveLength(1);
+    expect(storage.values.get(WEIGHT_KEY)).toBe(WEIGHTS);
+  });
+
+  it('converts nothing: a weight typed in lb is a weigh-in in lb, on the chosen date', async () => {
+    const { type, chooseUnit, submit, storage } = await renderForm();
+    chooseUnit('lb');
+    type('weight', '176.83');
+    type('date', '2026-10-05');
+    await submit();
+    const weighIns = JSON.parse(storage.values.get(WEIGHT_KEY)!).entries as { date: string; weight: { kilograms: number } }[];
+    const added = weighIns.find((w) => w.date === '2026-10-05')!;
+    expect(added.weight.kilograms).toBeCloseTo(80.2, 1);
   });
 });

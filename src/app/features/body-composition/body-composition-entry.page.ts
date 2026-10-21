@@ -17,6 +17,7 @@ import {
 import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
 
 import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
+import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
 import { MAX_REPORT_BYTES } from '../../core/inbody/inbody-extraction.client';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { ThemeService } from '../../core/theme/theme.service';
@@ -25,10 +26,11 @@ import {
   BodyCompositionAssessment,
   BodyCompositionMetric,
   KEY_BODY_COMPOSITION_METRICS,
+  ReportedValue,
   METRIC_QUANTITY,
   validateBodyCompositionInput,
 } from '../../domain/body-composition';
-import { UnitSystem } from '../../domain/fitness-profile';
+import { UnitSystem, weightFromPounds } from '../../domain/fitness-profile';
 import { INBODY_AI_PROVENANCE, INBODY_REPORT_MEDIA_TYPES } from '../../domain/inbody-extraction';
 import {
   AnalysisOverlayComponent,
@@ -72,6 +74,17 @@ const MASS_UNIT_OPTIONS: readonly SegmentOption<MassUnit>[] = [
   { value: 'kg', label: 'kg' },
   { value: 'lb', label: 'lb' },
 ];
+
+const SHOWN_IN_SUMMARY: readonly BodyCompositionMetric[] = ['weight', 'skeletal-muscle-mass', 'body-fat-percentage'];
+/** How many saved values a one-line summary doesn't name. */
+const moreCount = (values: Readonly<Partial<Record<BodyCompositionMetric, unknown>>>): number =>
+  Object.keys(values).filter((metric) => !SHOWN_IN_SUMMARY.includes(metric as BodyCompositionMetric)).length;
+
+/** An earlier test that was saved, with what was saved. */
+interface EarlierSaved {
+  readonly date: string;
+  readonly values: Readonly<Partial<Record<BodyCompositionMetric, ReportedValue>>>;
+}
 
 /** An earlier test from the report's history chart, offered for adding to the history. */
 interface EarlierChoice {
@@ -137,6 +150,7 @@ export class BodyCompositionEntryPage {
   readonly assessmentId = input<string>();
 
   private readonly history = inject(BodyCompositionHistoryService);
+  private readonly weights = inject(WeightHistoryService);
   private readonly profiles = inject(FitnessProfileService);
   private readonly nav = inject(NavController);
   protected readonly report = inject(ReportImport);
@@ -190,6 +204,13 @@ export class BodyCompositionEntryPage {
     return kind === 'new' || kind === 'edit';
   });
   protected readonly editing = computed(() => this.loaded()?.kind === 'edit');
+  /** The values form has been opened: by choosing manual entry, or by a report being read. Stays open once it is. */
+  private readonly manualOpen = signal(false);
+  /**
+   * The values form: always when correcting a saved assessment or when reports can't be uploaded; otherwise only
+   * once the user chooses manual entry, or a report has been read and its values are there to review.
+   */
+  protected readonly formVisible = computed(() => this.editing() || !this.report.available || this.manualOpen());
   protected readonly title = computed(() => (this.assessmentId() ? this.copy.editTitle : this.copy.title));
   /** The saved assessment as the form shows it; null when adding. */
   private readonly savedForm = computed(() => {
@@ -248,6 +269,8 @@ export class BodyCompositionEntryPage {
           s.values.weight && formatReportedValue(s.values.weight),
           s.values['skeletal-muscle-mass'] && `${formatReportedValue(s.values['skeletal-muscle-mass'])} muscle`,
           s.values['body-fat-percentage'] && `${formatReportedValue(s.values['body-fat-percentage'])} body fat`,
+          // The rest of what the chart printed for that day is added too.
+          moreCount(s.values) > 0 && `+${moreCount(s.values)} more`,
         ]
           .filter(Boolean)
           .join(' · '),
@@ -259,6 +282,31 @@ export class BodyCompositionEntryPage {
   });
 
   protected readonly reportState = this.report.current;
+  /** The user wants to pick another image although one has been read. */
+  protected readonly changeImage = signal(false);
+  /** Show the fields the report didn't have too (after a read, only the captured ones are shown). */
+  protected readonly showAllFields = signal(false);
+  /** Also add each weight to the weight history (weigh-ins), on its date. */
+  protected readonly logWeights = signal(true);
+  /** A report was read and the picker steps aside for its results. */
+  protected readonly summaryMode = computed(() => this.reportState().status === 'read' && !this.changeImage());
+  protected readonly pickerOpen = computed(() => this.reportState().status !== 'read' || this.changeImage());
+  /** The metrics the report gave a value for, in the form's order. */
+  protected readonly capturedMetrics = computed<readonly BodyCompositionMetric[]>(() => {
+    const prefilled = this.prefilledForm();
+    return prefilled ? BODY_COMPOSITION_METRICS.filter((metric) => prefilled[metric] !== '') : [];
+  });
+  /** After a read: only the captured values (until the user asks for the rest). */
+  protected readonly onlyCaptured = computed(() => this.prefilledForm() !== null && !this.showAllFields() && this.capturedMetrics().length > 0);
+  /** The fields on screen: the key ones, then the rest in "More report values" (after a read, only what was captured). */
+  protected readonly shownKeyMetrics = computed(() =>
+    this.onlyCaptured() ? this.capturedMetrics().filter(isKeyMetric) : this.keyMetrics,
+  );
+  protected readonly shownMoreMetrics = computed(() =>
+    this.onlyCaptured() ? this.capturedMetrics().filter((metric) => !isKeyMetric(metric)) : this.moreMetrics,
+  );
+  /** The value fields in the order they are on screen (date last). */
+  private readonly renderedMetrics = computed<readonly BodyCompositionMetric[]>(() => [...this.shownKeyMetrics(), ...this.shownMoreMetrics()]);
   protected readonly reportFile = computed(() => {
     const state = this.reportState();
     return state.status === 'selected' || state.status === 'reading' || state.status === 'failed' ? state.file : null;
@@ -290,6 +338,10 @@ export class BodyCompositionEntryPage {
         this.status.set('');
         this.reviewMessage.set(this.uploadCopy.review.message(filled, toCheck));
         this.skippedEarlier.set(new Set());
+        // Shown for review, and kept open after (saving forgets the reading, but the form must not vanish before the page leaves).
+        this.manualOpen.set(true);
+        this.changeImage.set(false);
+        this.showAllFields.set(false);
       });
     });
   }
@@ -324,6 +376,10 @@ export class BodyCompositionEntryPage {
 
   protected retryRead(): void {
     void this.report.read();
+  }
+
+  protected openManualEntry(): void {
+    this.manualOpen.set(true);
   }
 
   /** Leaves the full-screen wait: the reading is abandoned (a late answer is dropped). */
@@ -384,11 +440,26 @@ export class BodyCompositionEntryPage {
         this.saved.set(true);
         this.errors.set({});
         // The earlier tests from the report's history chart, once the main assessment is safely saved.
-        const earlier = l.kind === 'new' ? await this.saveEarlier() : { total: 0, saved: 0 };
+        const earlier = l.kind === 'new' ? await this.saveEarlier() : { total: 0, saved: [] as readonly EarlierSaved[] };
+        // The weights (this assessment's and the earlier tests') as weigh-ins on their dates.
+        const weighIns =
+          l.kind === 'new' && this.logWeights()
+            ? await this.logWeightEntries([
+                { date: input.date, weight: input.values.weight },
+                ...earlier.saved.map((s) => ({ date: s.date, weight: s.values.weight })),
+              ])
+            : { failed: 0 };
         this.report.reset();
-        if (earlier.saved < earlier.total) {
+        if (earlier.saved.length < earlier.total || weighIns.failed > 0) {
           // Stay: the assessment itself is saved, so Save is off and the message explains the rest.
-          this.status.set(this.historyCopy.partlyFailed(earlier.saved, earlier.total));
+          this.status.set(
+            [
+              earlier.saved.length < earlier.total ? this.historyCopy.partlyFailed(earlier.saved.length, earlier.total) : '',
+              weighIns.failed > 0 ? this.copy.weightsNotLogged(weighIns.failed) : '',
+            ]
+              .filter(Boolean)
+              .join(' '),
+          );
           return;
         }
         void this.nav.navigateBack(l.kind === 'edit' ? bodyCompositionDetailPath(l.assessment.id) : BODY_COMPOSITION_RETURN_PATH);
@@ -403,10 +474,10 @@ export class BodyCompositionEntryPage {
   }
 
   /** Adds each chosen earlier test as its own assessment, as read from the report. */
-  private async saveEarlier(): Promise<{ readonly total: number; readonly saved: number }> {
+  private async saveEarlier(): Promise<{ readonly total: number; readonly saved: readonly EarlierSaved[] }> {
     const chosen = this.historyChoices().filter((choice) => choice.selected);
     const suggestions = new Map((this.report.reading()?.prefill.history ?? []).map((s) => [s.date, s]));
-    let saved = 0;
+    const saved: EarlierSaved[] = [];
     for (const choice of chosen) {
       const suggestion = suggestions.get(choice.date);
       if (!suggestion) {
@@ -414,10 +485,41 @@ export class BodyCompositionEntryPage {
       }
       const result = await this.history.add({ date: suggestion.date, source: INBODY_AI_PROVENANCE, values: suggestion.values });
       if (result.ok) {
-        saved++;
+        saved.push({ date: suggestion.date, values: suggestion.values });
       }
     }
     return { total: chosen.length, saved };
+  }
+
+  /**
+   * Records each weight as a weigh-in on its date, in the unit the report printed. A day that already has the same
+   * weight is skipped, so saving the same report twice never doubles the weigh-ins. The profile is not touched.
+   */
+  private async logWeightEntries(items: readonly { readonly date: string; readonly weight: ReportedValue | null | undefined }[]): Promise<{ readonly failed: number }> {
+    const due = items.filter((item): item is { date: string; weight: ReportedValue } => !!item.weight && (item.weight.unit === 'kg' || item.weight.unit === 'lb'));
+    if (due.length === 0) {
+      return { failed: 0 };
+    }
+    if (this.weights.state().status !== 'ready') {
+      await this.weights.load();
+    }
+    let failed = 0;
+    for (const { date, weight } of due) {
+      const state = this.weights.state();
+      if (state.status !== 'ready') {
+        failed++;
+        continue;
+      }
+      const kilograms = weight.unit === 'lb' ? weightFromPounds(weight.value).kilograms : weight.value;
+      if (state.entries.some((entry) => entry.date === date && Math.abs(entry.weight.kilograms - kilograms) < 0.05)) {
+        continue;
+      }
+      const result = await this.weights.add({ weight: weight.value, unitSystem: weight.unit === 'lb' ? 'imperial' : 'metric', date });
+      if (!result.ok) {
+        failed++;
+      }
+    }
+    return { failed };
   }
 
   protected cancel(): void {
@@ -444,7 +546,7 @@ export class BodyCompositionEntryPage {
     this.errors.set(errors);
     this.status.set(this.copy.fixErrors);
     // Fields are rendered key metrics first, then the other metrics, then date.
-    const order: (BodyCompositionMetric | 'date')[] = [...this.keyMetrics, ...this.moreMetrics, 'date'];
+    const order: (BodyCompositionMetric | 'date')[] = [...this.renderedMetrics(), 'date'];
     const first = errors.values ? 0 : order.findIndex((field) => errors[field]);
     if (first >= 0) {
       this.fields()[first]?.focus();

@@ -107,7 +107,7 @@ export function bodyCompositionFormErrorsOf(
         messages[metric] = e.ratioRange(label);
       } else if (metric === 'weight') {
         messages[metric] = e.weightRange(weightRangeText(unitSystemOf(massUnit)));
-      } else if (METRIC_QUANTITY[metric] === 'mass') {
+      } else if (METRIC_QUANTITY[metric] === 'mass' || METRIC_QUANTITY[metric] === 'mass-change') {
         messages[metric] = e.massRange(label, maxMassText(massUnit));
       } else {
         const unit = unitLabelOf(formUnitOf(metric, massUnit));

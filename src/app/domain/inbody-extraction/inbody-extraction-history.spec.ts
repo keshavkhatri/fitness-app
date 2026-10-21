@@ -79,7 +79,16 @@ describe('InBody report history (the chart at the bottom of the sheet)', () => {
       expect(schema.required).toContain('history');
       expect(schema.properties['history'].type).toBe('array');
       expect(schema.properties['history'].maxItems).toBe(12);
-      expect(schema.properties['history'].items.required).toEqual(['test-date-time', 'weight', 'skeletal-muscle-mass', 'percent-body-fat']);
+      expect(schema.properties['history'].items.required).toEqual([
+        'test-date-time',
+        'weight',
+        'skeletal-muscle-mass',
+        'body-fat-mass',
+        'percent-body-fat',
+        'ecw-ratio',
+        'phase-angle',
+        'smi',
+      ]);
       expect(INBODY_EXTRACTION_INSTRUCTIONS).toContain('history chart');
     });
   });

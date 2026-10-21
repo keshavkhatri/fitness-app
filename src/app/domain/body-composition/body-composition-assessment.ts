@@ -45,6 +45,21 @@ export const BODY_COMPOSITION_METRICS = [
   'phase-angle',
   'waist-hip-ratio',
   'obesity-degree',
+  'inbody-score',
+  'target-weight',
+  'weight-control',
+  'fat-control',
+  'muscle-control',
+  'segmental-lean-right-arm',
+  'segmental-lean-left-arm',
+  'segmental-lean-trunk',
+  'segmental-lean-right-leg',
+  'segmental-lean-left-leg',
+  'segmental-lean-right-arm-percentage',
+  'segmental-lean-left-arm-percentage',
+  'segmental-lean-trunk-percentage',
+  'segmental-lean-right-leg-percentage',
+  'segmental-lean-left-leg-percentage',
 ] as const;
 export type BodyCompositionMetric = (typeof BODY_COMPOSITION_METRICS)[number];
 export const isBodyCompositionMetric = isOneOf(BODY_COMPOSITION_METRICS);
@@ -58,8 +73,11 @@ export const KEY_BODY_COMPOSITION_METRICS = [
   'fat-free-mass',
 ] as const satisfies readonly BodyCompositionMetric[];
 
-/** `index`: kg/m² (BMI, SMI); `ratio` / `level`: unitless numbers. */
-export type BodyCompositionQuantity = 'mass' | 'percentage' | 'volume' | 'index' | 'energy' | 'angle' | 'ratio' | 'level';
+/**
+ * `index`: kg/m² (BMI, SMI); `ratio` / `level` / `score`: unitless numbers; `mass-change`: a mass that can be
+ * negative or zero (the device's weight, fat and muscle control: how much to lose or gain).
+ */
+export type BodyCompositionQuantity = 'mass' | 'mass-change' | 'percentage' | 'volume' | 'index' | 'energy' | 'angle' | 'ratio' | 'level' | 'score';
 export const METRIC_QUANTITY: Readonly<Record<BodyCompositionMetric, BodyCompositionQuantity>> = {
   weight: 'mass',
   'body-fat-mass': 'mass',
@@ -83,6 +101,21 @@ export const METRIC_QUANTITY: Readonly<Record<BodyCompositionMetric, BodyComposi
   'phase-angle': 'angle',
   'waist-hip-ratio': 'ratio',
   'obesity-degree': 'percentage',
+  'inbody-score': 'score',
+  'target-weight': 'mass',
+  'weight-control': 'mass-change',
+  'fat-control': 'mass-change',
+  'muscle-control': 'mass-change',
+  'segmental-lean-right-arm': 'mass',
+  'segmental-lean-left-arm': 'mass',
+  'segmental-lean-trunk': 'mass',
+  'segmental-lean-right-leg': 'mass',
+  'segmental-lean-left-leg': 'mass',
+  'segmental-lean-right-arm-percentage': 'percentage',
+  'segmental-lean-left-arm-percentage': 'percentage',
+  'segmental-lean-trunk-percentage': 'percentage',
+  'segmental-lean-right-leg-percentage': 'percentage',
+  'segmental-lean-left-leg-percentage': 'percentage',
 };
 
 export const MASS_UNITS = ['kg', 'lb'] as const;
@@ -93,6 +126,8 @@ export const isReportedUnit = isOneOf(REPORTED_UNITS);
 
 const UNITS_BY_QUANTITY: Readonly<Record<BodyCompositionQuantity, readonly ReportedUnit[]>> = {
   mass: MASS_UNITS,
+  'mass-change': MASS_UNITS,
+  score: ['none'],
   percentage: ['%'],
   volume: ['L'],
   index: ['kg/m²'],
@@ -197,17 +232,30 @@ export const PLAUSIBLE_MAX: Readonly<Partial<Record<BodyCompositionMetric, numbe
   'extracellular-water': 200,
   'phase-angle': 30,
   'waist-hip-ratio': 5,
+  'inbody-score': 100,
+  'segmental-lean-right-arm-percentage': 300,
+  'segmental-lean-left-arm-percentage': 300,
+  'segmental-lean-trunk-percentage': 300,
+  'segmental-lean-right-leg-percentage': 300,
+  'segmental-lean-left-leg-percentage': 300,
 };
+
+/** The device's weight / fat / muscle control: negative (lose), zero or positive (gain), at most a body weight either way. */
+const CONTROL_METRICS: ReadonlySet<BodyCompositionMetric> = new Set<BodyCompositionMetric>(['weight-control', 'fat-control', 'muscle-control']);
 
 /**
  * Plausibility only (typos, impossible values), not reference ranges:
- * - weight: the profile's body-weight range;
+ * - weight and target weight: the profile's body-weight range;
+ * - the weight / fat / muscle control may be negative or zero: at most a body weight either way;
  * - other masses: above 0, at most the largest plausible body weight;
  * - body fat percentage and the ECW ratio: above 0 and below 100 / 1;
  * - everything else: above 0, up to PLAUSIBLE_MAX.
  * Values are never checked against each other (that would need a formula).
  */
 function isPlausible(metric: BodyCompositionMetric, { value, unit }: ReportedValue): boolean {
+  if (CONTROL_METRICS.has(metric)) {
+    return (unit === 'kg' || unit === 'lb') && Math.abs(unit === 'kg' ? value : value / POUNDS_PER_KILOGRAM) <= WEIGHT_KG.max;
+  }
   if (value <= 0) {
     return false;
   }
@@ -219,7 +267,7 @@ function isPlausible(metric: BodyCompositionMetric, { value, unit }: ReportedVal
   }
   if (unit === 'kg' || unit === 'lb') {
     const kilograms = unit === 'kg' ? value : value / POUNDS_PER_KILOGRAM;
-    return metric === 'weight' ? isWithin(kilograms, WEIGHT_KG) : kilograms <= WEIGHT_KG.max;
+    return metric === 'weight' || metric === 'target-weight' ? isWithin(kilograms, WEIGHT_KG) : kilograms <= WEIGHT_KG.max;
   }
   return value <= (PLAUSIBLE_MAX[metric] ?? Number.POSITIVE_INFINITY);
 }

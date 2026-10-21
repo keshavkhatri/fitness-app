@@ -67,7 +67,7 @@ export function loadConfig(env: Env): ServerConfig {
         ? {
             apiKey,
             model,
-            maxOutputTokens: integer(env, 'OPENAI_MAX_OUTPUT_TOKENS', 8000, 1000, 64000),
+            maxOutputTokens: integer(env, 'OPENAI_MAX_OUTPUT_TOKENS', 16000, 1000, 64000),
             timeoutMs: integer(env, 'OPENAI_TIMEOUT_MS', 90_000, 5_000, 300_000),
           }
         : null,
