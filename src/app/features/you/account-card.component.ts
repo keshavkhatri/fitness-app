@@ -7,7 +7,7 @@ import { FitnessButtonComponent, LoadingSkeletonComponent } from '../../shared/u
 /**
  * The You tab's account section. Accounts are optional: a guest sees what an account is for and
  * keeps using the app; a signed-in person sees who they are and can sign out. Neither changes the
- * data on this device, and the copy never claims anything is uploaded or synced.
+ * data on this device; uploading happens only through the opt-in cloud backup (Settings).
  */
 @Component({
   selector: 'app-account-card',
@@ -25,7 +25,7 @@ import { FitnessButtonComponent, LoadingSkeletonComponent } from '../../shared/u
                 <span class="email" data-testid="account-email">{{ state.user.email }}</span>
               </span>
             </div>
-            <p class="hint">Signed in. Your workouts, food and measurements still stay on this device: nothing is uploaded or synced yet.</p>
+            <p class="hint">Signed in. Your data stays on this device unless you turn on cloud backup below.</p>
             @if (!state.verified) {
               <p class="hint" data-testid="account-unverified">Couldn't reach StokeForm to confirm your sign-in. It will be checked again next time.</p>
             }
@@ -39,7 +39,7 @@ import { FitnessButtonComponent, LoadingSkeletonComponent } from '../../shared/u
           }
           @default {
             <p class="lead" data-testid="account-guest">You're using StokeForm on this device only.</p>
-            <p class="hint">Create an account to get ready for backup and syncing across devices, which come later. Your data stays on this device either way.</p>
+            <p class="hint">With an account you can turn on cloud backup, so your data is safe if you lose your phone and follows you to a new one. Without backup, your data stays on this device.</p>
             @if (auth.available) {
               <div class="actions">
                 <button fit-button type="button" block (click)="open(signUpPath)" data-testid="account-sign-up">Create account</button>

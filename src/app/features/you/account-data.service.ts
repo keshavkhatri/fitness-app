@@ -1,5 +1,6 @@
-import { Injectable, InjectionToken, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
+import { RESTART_APP } from '../../core/app-restart';
 import { AuthResult } from '../../core/auth/auth-api';
 import { AuthService } from '../../core/auth/auth.service';
 import { KeyValueStorage } from '../../core/storage/key-value-storage';
@@ -10,16 +11,13 @@ const APP_KEY_PREFIXES = ['fitness.', 'stokeform.'] as const;
 /** A device preference, not personal data: kept, so the app doesn't flash to another theme. */
 const KEPT_KEYS: ReadonlySet<string> = new Set(['fitness.theme-preference']);
 
-/** Starts the app afresh (every service's in-memory copy goes with the old data). */
-export const RESTART_APP = new InjectionToken<() => void>('RESTART_APP', {
-  providedIn: 'root',
-  factory: () => () => window.location.replace('/'),
-});
+export { RESTART_APP } from '../../core/app-restart';
 
 /**
  * Deleting an account, and erasing what the app keeps on this phone. The fitness data (profile, plan, workouts,
- * food, water, weight, measurements, reports, check-ins) lives only on the phone, so deleting the account erases it
- * here too; scheduled reminders are cancelled first (their schedule is part of what is erased).
+ * food, water, weight, measurements, reports, check-ins) lives on the phone (and in the cloud backup, if on, which
+ * the server deletes with the account), so deleting the account erases it here too; scheduled reminders are
+ * cancelled first (their schedule is part of what is erased).
  */
 @Injectable({ providedIn: 'root' })
 export class AccountDataService {

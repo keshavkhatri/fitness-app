@@ -21,7 +21,7 @@ export const AUTH_COPY = {
     switchAction: 'Sign in',
   },
   /** Said plainly on every account screen: nothing is uploaded yet. */
-  localData: 'Your workouts, food and measurements stay on this device. Nothing is uploaded or synced yet.',
+  localData: 'Your workouts, food and measurements stay on this device. Nothing is uploaded unless you turn on cloud backup in Settings.',
   fields: {
     name: 'Name',
     email: 'Email',

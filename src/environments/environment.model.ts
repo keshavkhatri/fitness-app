@@ -18,4 +18,8 @@ export interface AppEnvironment {
   readonly exerciseMediaBaseUrl: string | null;
   readonly revenueCat?: RevenueCatEnvironment;
   readonly privateTesting?: PrivateTestingEnvironment;
+  /** Sentry error reporting (core/monitoring): the project's DSN (public, not a secret); null turns reporting off. */
+  readonly sentryDsn?: string | null;
+  /** The release name errors are reported under (match android/app/build.gradle versionName). */
+  readonly release?: string | null;
 }

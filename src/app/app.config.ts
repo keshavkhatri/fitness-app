@@ -5,8 +5,13 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
 import { routes } from './app.routes';
 import { BrandTitleStrategy } from './core/brand-title.strategy';
 import { registerAppIcons } from './core/icons/register-icons';
+import { provideErrorReporting } from './core/monitoring/error-reporting';
 import { pageTransition } from './core/motion/page-transition';
 import { AuthService } from './core/auth/auth.service';
+import { EncryptedKeyValueStorage } from './core/storage/encrypted-key-value-storage';
+import { KeyValueStorage } from './core/storage/key-value-storage';
+import { SyncService } from './core/sync/sync.service';
+import { TrackedKeyValueStorage } from './core/sync/tracked-key-value-storage';
 import { BILLING_PROVIDER } from './core/entitlements/billing';
 import { billingProviderFactory } from './core/entitlements/revenuecat/revenuecat-billing.provider';
 import { trackTextScale } from './core/text-scale/text-scale';
@@ -38,18 +43,31 @@ export const appConfig: ApplicationConfig = {
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     { provide: TitleStrategy, useExisting: BrandTitleStrategy },
+    ...provideErrorReporting(),
     provideIonicAngular(ionicConfig),
     // Pro subscriptions go through RevenueCat once a public SDK key is configured (environments/billing.ts);
     // until then nothing can be bought and everyone is on Free.
     { provide: BILLING_PROVIDER, useFactory: billingProviderFactory },
     provideRouter(routes, withPreloading(PreloadAllModules), withComponentInputBinding()),
-    provideAppInitializer(() => {
+    provideAppInitializer(async () => {
       registerAppIcons();
+      // Everything injected before the first await (the injection context ends there).
+      // Data stored before encryption existed is encrypted once, before anything reads or writes it.
+      const storage = inject(KeyValueStorage);
+      const theme = inject(ThemeService);
+      const auth = inject(AuthService);
+      const sync = inject(SyncService);
+      const base = storage instanceof TrackedKeyValueStorage ? storage.inner : storage;
+      if (base instanceof EncryptedKeyValueStorage) {
+        await base.encryptExisting();
+      }
       trackTextScale();
       // Not awaited: the stored account is checked in the background, so startup never waits on the network.
-      void inject(AuthService).restore();
+      void auth.restore();
+      // Cloud backup (if on): changes from another phone arrive before the screens read their data (at most ~3 s).
+      await sync.start().catch(() => undefined);
       // Awaited so the stored theme applies before first paint.
-      return inject(ThemeService).restore();
+      return theme.restore();
     }),
   ],
 };

@@ -87,12 +87,15 @@ These follow what the app actually does today. If sync, billing or crash reporti
 | Personal info › Name | Yes | No | Account. Required for an account. |
 | Personal info › Email address | Yes | No | Account and account emails (Resend sends them for StokeForm, as a service provider). |
 | Photos | Yes, processed ephemerally | No | Optional InBody report photo. Sent to the server and OpenAI to read the values, then discarded. Neither stores it. OpenAI acts as a service provider. |
-| Health and fitness › Health info, Fitness info | No | No | Stays on the phone and is never uploaded. The values read from an InBody photo are returned to the phone, not stored on the server. |
-| App activity, App info and performance | No | No | No analytics and no crash reporting. |
+| Health and fitness › Health info, Fitness info | Yes (optional) | No | Only if the person turns on Cloud backup: kept to back up and sync their own data, encrypted on the server. The form's "optional" applies. Without backup, the data stays on the phone. |
+| Personal info › Other info (date of birth) | Yes (optional) | No | Part of the backed-up profile. The server also uses it to refuse backup for anyone under 18. |
+| Photos (profile photo) | Yes (optional) | No | The profile photo, only if Cloud backup is on. |
+| App info and performance › Crash logs, Diagnostics | Yes | No | Sentry, as a service provider, receives error reports without personal data. Used for app functionality and analytics (fixing bugs). |
+| App activity | No | No | No analytics. |
 | Device or other IDs | Yes | No | The Firebase push token, for notifications. It is stored with the account and deleted with it. |
 
 For the whole app:
-- Data is encrypted in transit: yes.
+- Data is encrypted in transit: yes (and at rest: on the phone, and on the server for backups).
 - Users can request deletion: yes (in the app and on the website).
 - No data is sold, and none is used for advertising.
 

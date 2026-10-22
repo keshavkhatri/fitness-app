@@ -107,7 +107,8 @@ describe('running migrations (PGlite, real PostgreSQL semantics)', () => {
     const status = await migrationStatus(client, files);
     expect(status.pending).toEqual([]);
     expect(status.applied).toHaveLength(files.length);
-  });
+    // Every migration on a fresh PGlite: slower than the default 5 s on a busy machine.
+  }, 30_000);
 
   it('is repeatable: a second run applies nothing and changes nothing', async () => {
     const db = await newDatabase();

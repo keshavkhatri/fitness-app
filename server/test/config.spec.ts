@@ -17,6 +17,8 @@ describe('server configuration', () => {
       database: null,
       auth: null,
       push: null,
+      sync: null,
+      sentry: null,
     });
   });
 

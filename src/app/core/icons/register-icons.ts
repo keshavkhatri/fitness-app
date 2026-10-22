@@ -105,7 +105,8 @@ import {
   phonePortraitOutline,
   lockClosedOutline,
   ticketOutline,
-  // Privacy and account deletion (Settings)
+  // Privacy, cloud backup and account deletion (Settings)
+  cloudUploadOutline,
   closeCircleOutline,
   shieldCheckmarkOutline,
   mailOutline,
@@ -228,6 +229,7 @@ export function registerAppIcons(): void {
     rocketOutline,
     layersOutline,
     ticketOutline,
+    cloudUploadOutline,
     closeCircleOutline,
     shieldCheckmarkOutline,
     mailOutline,

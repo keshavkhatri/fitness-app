@@ -1,4 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
+
+import { SECRET_STORE } from '../auth/session-store';
+import { TrackedKeyValueStorage } from '../sync/tracked-key-value-storage';
+import { EncryptedKeyValueStorage } from './encrypted-key-value-storage';
 
 /**
  * Small persistence seam for device-local preferences (theme, units, flags).
@@ -9,7 +14,16 @@ import { Injectable } from '@angular/core';
  *
  * Not intended for user data that must sync with the backend.
  */
-@Injectable({ providedIn: 'root', useFactory: () => new LocalKeyValueStorage() })
+@Injectable({
+  providedIn: 'root',
+  // On the phone every value is encrypted, with the key in the Android Keystore-backed secure store. The web build
+  // (development in a browser) has no secure store that outlives the tab, so it stays plain there. On top, the
+  // time each piece of data changed is recorded, for cloud sync (core/sync).
+  useFactory: () =>
+    new TrackedKeyValueStorage(
+      Capacitor.isNativePlatform() ? new EncryptedKeyValueStorage(new LocalKeyValueStorage(), inject(SECRET_STORE)) : new LocalKeyValueStorage(),
+    ),
+})
 export abstract class KeyValueStorage {
   abstract get(key: string): Promise<string | null>;
   /** Rejects when the value could not be persisted. */

@@ -8,14 +8,25 @@ import { createHandoffStore } from './auth/mobile-handoff';
 import { createDatabase } from './db/database';
 import { Log, createExtractionHandler } from './extraction-handler';
 import { severityOf } from './log';
+import { ErrorReporter, createSentryReporter } from './monitoring/sentry';
 import { createNodeServer } from './node-server';
 import { openAiResponsesClient } from './openai-client';
 import { createFcmSender } from './push/fcm';
 import { createPushRoutes } from './push/push-routes';
+import { createSyncCipher } from './sync/sync-crypto';
+import { createSyncRoutes } from './sync/sync-routes';
 import { writeDevOutboxEmail } from '../tools/dev-outbox';
 
+/** Set once the configuration is read: ERROR-level events also go to Sentry (when SENTRY_DSN is set). */
+let reporter: ErrorReporter | null = null;
 /** One JSON line per event; fields are codes, counts and durations only (see extraction-handler.ts). */
-const log: Log = (event, fields = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), severity: severityOf(event), event, ...fields }));
+const log: Log = (event, fields = {}) => {
+  const severity = severityOf(event);
+  console.log(JSON.stringify({ time: new Date().toISOString(), severity, event, ...fields }));
+  if (severity === 'ERROR') {
+    reporter?.report(event, fields);
+  }
+};
 
 let config;
 try {
@@ -24,6 +35,18 @@ try {
   console.error(error instanceof ConfigError ? `Invalid configuration: ${error.message}` : 'Invalid configuration.');
   process.exit(1);
 }
+
+if (config.sentry) {
+  reporter = createSentryReporter({ dsn: config.sentry.dsn, environment: process.env['NODE_ENV'] ?? 'development', release: config.sentry.release });
+}
+// Anything not caught elsewhere is reported (by its error name only) before the process ends.
+process.on('uncaughtException', (error) => {
+  log('server.uncaught-error', { errorName: error instanceof Error ? error.name : typeof error });
+  setTimeout(() => process.exit(1), 1_000);
+});
+process.on('unhandledRejection', (reason) => {
+  log('server.unhandled-rejection-error', { errorName: reason instanceof Error ? reason.name : typeof reason });
+});
 
 if (!config.openAi) {
   log('server.not-configured', { missing: 'OPENAI_API_KEY and/or OPENAI_MODEL' });
@@ -83,7 +106,17 @@ const accountRoutes = createAccountRoutes({
   allowedOrigins: config.allowedOrigins,
   log,
 });
-const server = createNodeServer(createAppHandler({ extraction, authRoutes, pushRoutes, accountRoutes }));
+if (!config.sync) {
+  log('sync.not-configured', { missing: 'SYNC_ENCRYPTION_KEY' });
+}
+const syncRoutes = createSyncRoutes({
+  store: auth && database ? database.pool : null,
+  cipher: config.sync ? createSyncCipher(config.sync.key) : null,
+  authenticate: (request) => authRoutes.authenticate(request),
+  allowedOrigins: config.allowedOrigins,
+  log,
+});
+const server = createNodeServer(createAppHandler({ extraction, authRoutes, pushRoutes, accountRoutes, syncRoutes }));
 server.listen(config.port, config.host, () => {
   const address = server.address();
   log('server.listening', { host: config.host, port: typeof address === 'object' && address ? address.port : config.port });

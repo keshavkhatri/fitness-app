@@ -14,10 +14,10 @@ export const environment = {
   /** The local InBody extraction server (`npm run server:start`). */
   inbodyExtractionEndpoint: 'http://localhost:8787/v1/inbody-extractions' as string | null,
   /**
-   * Exercise demonstration photos (free-exercise-db, public domain), pinned to
-   * one commit; null hides demonstrations.
+   * Exercise demonstration photos from a third-party CDN (free-exercise-db). Off: every exercise has its own bundled
+   * StokeForm guide image (assets/exercise-art), so nothing is loaded from another server.
    */
-  exerciseMediaBaseUrl: 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5/exercises/' as string | null,
+  exerciseMediaBaseUrl: null as string | null,
   /** RevenueCat subscriptions (Android). The key is shared by every environment: see billing.ts. */
   revenueCat: { androidApiKey: REVENUECAT_ANDROID_PUBLIC_KEY, entitlementId: REVENUECAT_PRO_ENTITLEMENT_ID } as {
     androidApiKey: string | null;
@@ -25,6 +25,9 @@ export const environment = {
   },
   /** Promo-code test access for private testing: on in development and debug builds, off in `environment.prod.ts`. */
   privateTesting: { enabled: true, promoCode: PRIVATE_TESTING_PROMO_CODE } as { enabled: boolean; promoCode: string },
+  /** No error reporting from development builds. */
+  sentryDsn: null as string | null,
+  release: null as string | null,
 };
 
 /*

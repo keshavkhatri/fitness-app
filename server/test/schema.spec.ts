@@ -44,7 +44,7 @@ describe('structure', () => {
     )).rows.map((r) => (r as { tbl: string }).tbl);
     expect(owned).toEqual([
       'stokeform.body_composition_assessments', 'stokeform.daily_check_ins', 'stokeform.food_entries', 'stokeform.measurement_entries',
-      'stokeform.notification_reads', 'stokeform.push_devices', 'stokeform.user_preferences', 'stokeform.user_profiles', 'stokeform.weight_entries',
+      'stokeform.notification_reads', 'stokeform.push_devices', 'stokeform.sync_entries', 'stokeform.user_preferences', 'stokeform.user_profiles', 'stokeform.weight_entries',
       'stokeform.workout_logs', 'stokeform.workout_plans',
     ]);
   });

@@ -4,6 +4,7 @@
  * returned. See server/README.md for every variable.
  */
 
+import { SentryDsn, parseDsn } from './monitoring/sentry';
 import { AuthConfig, loadAuthConfig } from './auth/auth-config';
 import { DatabaseConfig, loadDatabaseConfig } from './db/database-config';
 import { ConfigError, Env, integer, text } from './env';
@@ -47,6 +48,13 @@ export interface ServerConfig {
    * is given. projectId null: read from the metadata server. null: device registration still works, nothing is sent.
    */
   readonly push: { readonly projectId: string | null } | null;
+  /**
+   * Cloud backup and sync: the 32-byte key (SYNC_ENCRYPTION_KEY, base64) that encrypts synced data before it is
+   * stored. null: sync answers 503 (the app keeps everything on the phone).
+   */
+  readonly sync: { readonly key: Buffer } | null;
+  /** Error reporting to Sentry (SENTRY_DSN): ERROR-level log events are sent there too. null: off. */
+  readonly sentry: { readonly dsn: SentryDsn; readonly release: string | null } | null;
 }
 
 const MIB = 1024 * 1024;
@@ -61,6 +69,31 @@ function origins(env: Env): string[] {
     }
   }
   return list;
+}
+
+function sentry(env: Env): { dsn: SentryDsn; release: string | null } | null {
+  const value = text(env, 'SENTRY_DSN');
+  if (!value) {
+    return null;
+  }
+  const dsn = parseDsn(value);
+  if (!dsn) {
+    throw new ConfigError('SENTRY_DSN must be a Sentry DSN (https://<key>@<host>/<project>).');
+  }
+  // Cloud Run names each revision (K_REVISION): errors are grouped by the build they came from.
+  return { dsn, release: text(env, 'K_REVISION') ?? null };
+}
+
+function syncKey(env: Env): { key: Buffer } | null {
+  const value = text(env, 'SYNC_ENCRYPTION_KEY');
+  if (!value) {
+    return null;
+  }
+  const key = Buffer.from(value, 'base64');
+  if (key.length !== 32 || key.toString('base64') !== value.replace(/\s/g, '')) {
+    throw new ConfigError('SYNC_ENCRYPTION_KEY must be 32 random bytes, base64-encoded (e.g. openssl rand -base64 32).');
+  }
+  return { key };
 }
 
 export function loadConfig(env: Env): ServerConfig {
@@ -89,5 +122,7 @@ export function loadConfig(env: Env): ServerConfig {
     database: loadDatabaseConfig(env),
     auth: loadAuthConfig(env),
     push: text(env, 'FIREBASE_PROJECT_ID') || text(env, 'K_SERVICE') ? { projectId: text(env, 'FIREBASE_PROJECT_ID') ?? null } : null,
+    sync: syncKey(env),
+    sentry: sentry(env),
   };
 }

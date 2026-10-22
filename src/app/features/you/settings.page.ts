@@ -14,6 +14,7 @@ import { PromoCodeSheetComponent } from '../offer/components/promo-code-sheet.co
 import { RestoreSheetComponent } from '../offer/components/restore-sheet.component';
 import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
 import { AccountCardComponent } from './account-card.component';
+import { CloudBackupComponent } from './cloud-backup.component';
 import { PlanStatusComponent } from './plan-status.component';
 import { DELETE_ACCOUNT_PATH } from './delete-account.page';
 
@@ -44,6 +45,8 @@ export const SETTINGS_PATH = '/you/settings';
         </div>
 
         <app-account-card />
+
+        <app-cloud-backup />
 
         <section class="card" aria-labelledby="settings-appearance">
           <h2 class="setting-title" id="settings-appearance">Appearance</h2>
@@ -260,6 +263,7 @@ export const SETTINGS_PATH = '/you/settings';
     IonContent,
     IonIcon,
     AccountCardComponent,
+    CloudBackupComponent,
     FitnessChipComponent,
     PlanStatusComponent,
     PromoCodeSheetComponent,

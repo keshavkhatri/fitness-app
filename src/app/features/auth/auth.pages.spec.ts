@@ -116,7 +116,7 @@ describe('AccountFormPage', () => {
     const { fixture, backend } = await open('sign-in', {});
     expect(q(fixture, 'auth-title')!.textContent).toContain('Sign in');
     expect(q(fixture, 'field-name')).toBeNull();
-    expect(q(fixture, 'local-data')!.textContent).toContain('Nothing is uploaded or synced yet');
+    expect(q(fixture, 'local-data')!.textContent).toContain('Nothing is uploaded unless you turn on cloud backup');
     submit(fixture);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain(FIELD_ERRORS.emailRequired);
