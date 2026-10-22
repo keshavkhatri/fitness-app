@@ -105,6 +105,11 @@ import {
   phonePortraitOutline,
   lockClosedOutline,
   ticketOutline,
+  // Privacy and account deletion (Settings)
+  closeCircleOutline,
+  shieldCheckmarkOutline,
+  mailOutline,
+  openOutline,
   // Home dashboard cards
   water,
   sunny,
@@ -223,6 +228,10 @@ export function registerAppIcons(): void {
     rocketOutline,
     layersOutline,
     ticketOutline,
+    closeCircleOutline,
+    shieldCheckmarkOutline,
+    mailOutline,
+    openOutline,
     water,
     sunny,
     partlySunny,

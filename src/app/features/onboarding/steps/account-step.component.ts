@@ -3,6 +3,7 @@ import { IonIcon, NavController } from '@ionic/angular';
 
 import { AuthError, AuthProviders } from '../../../core/auth/auth-api';
 import { SIGN_IN_PATH, SIGN_UP_PATH } from '../../../core/auth/auth.guards';
+import { OPEN_EXTERNAL, PRIVACY_URL, TERMS_URL } from '../../../core/legal/legal-links';
 import { AuthService } from '../../../core/auth/auth.service';
 import { NAME_MAX_LENGTH, UserIdentityService, normalizeName } from '../../../core/identity/user-identity.service';
 import { ONBOARDING_PATH } from '../../../core/profile/onboarding.guards';
@@ -120,6 +121,12 @@ type Providers = { readonly kind: 'ready'; readonly value: AuthProviders } | { r
               </p>
             }
           </div>
+          <p class="legal" data-testid="account-step-legal">
+            By continuing you agree to the
+            <button type="button" class="link" (click)="openSite(termsUrl)">Terms of use</button>
+            and the
+            <button type="button" class="link" (click)="openSite(privacyUrl)">Privacy policy</button>.
+          </p>
         }
       }
     }
@@ -133,6 +140,14 @@ export class AccountStepComponent implements OnboardingStepForm {
   protected readonly auth = inject(AuthService);
   private readonly identity = inject(UserIdentityService);
   private readonly nav = inject(NavController);
+  private readonly openExternal = inject(OPEN_EXTERNAL);
+  protected readonly termsUrl = TERMS_URL;
+  protected readonly privacyUrl = PRIVACY_URL;
+
+  /** The terms and privacy policy are on stokeform.com. */
+  protected openSite(url: string): void {
+    void this.openExternal(url).catch(() => undefined);
+  }
 
   protected readonly headingId = STEP_HEADING_ID;
   protected readonly copy = AUTH_COPY;

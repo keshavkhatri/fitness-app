@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { IonBackButton, IonContent, IonIcon, NavController } from '@ionic/angular';
 
+import { AuthService } from '../../core/auth/auth.service';
 import { PrivateTestingService } from '../../core/entitlements/private-testing/private-testing.service';
+import { CONTACT_URL, OPEN_EXTERNAL, PRIVACY_URL, TERMS_URL } from '../../core/legal/legal-links';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { OFFER_PATH } from '../../core/profile/onboarding.guards';
 import { UnitPreferenceService } from '../../core/profile/unit-preference.service';
@@ -13,6 +15,7 @@ import { RestoreSheetComponent } from '../offer/components/restore-sheet.compone
 import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
 import { AccountCardComponent } from './account-card.component';
 import { PlanStatusComponent } from './plan-status.component';
+import { DELETE_ACCOUNT_PATH } from './delete-account.page';
 
 const THEME_OPTIONS: readonly SegmentOption<ThemePreference>[] = [
   { value: 'system', label: 'System' },
@@ -27,7 +30,8 @@ export const SETTINGS_PATH = '/you/settings';
 
 /**
  * Every app setting in one place (from You): your account, appearance, units, your plan (with Restore purchases and, for
- * private testers, the promo code), and what is coming.
+ * private testers, the promo code), reminders, privacy (the policy, terms and support on stokeform.com, and deleting
+ * the account or erasing this phone's data), and what is coming.
  */
 @Component({
   selector: 'app-settings',
@@ -89,6 +93,33 @@ export const SETTINGS_PATH = '/you/settings';
             <li>
               <button type="button" class="row" data-testid="settings-notifications" (click)="openNotifications()">
                 <ion-icon name="notifications-outline" aria-hidden="true" /><span>Reminders</span><ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+              </button>
+            </li>
+          </ul>
+        </section>
+
+        <section class="card" aria-labelledby="settings-privacy">
+          <h2 class="setting-title" id="settings-privacy">Privacy and account</h2>
+          <ul class="rows">
+            <li>
+              <button type="button" class="row" data-testid="settings-privacy" (click)="openSite(privacyUrl)">
+                <ion-icon name="shield-checkmark-outline" aria-hidden="true" /><span>Privacy policy</span><ion-icon class="chevron" name="open-outline" aria-hidden="true" />
+              </button>
+            </li>
+            <li>
+              <button type="button" class="row" data-testid="settings-terms" (click)="openSite(termsUrl)">
+                <ion-icon name="document-text-outline" aria-hidden="true" /><span>Terms of use</span><ion-icon class="chevron" name="open-outline" aria-hidden="true" />
+              </button>
+            </li>
+            <li>
+              <button type="button" class="row" data-testid="settings-contact" (click)="openSite(contactUrl)">
+                <ion-icon name="mail-outline" aria-hidden="true" /><span>Contact support</span><ion-icon class="chevron" name="open-outline" aria-hidden="true" />
+              </button>
+            </li>
+            <li>
+              <button type="button" class="row danger" data-testid="settings-delete-account" (click)="openDeleteAccount()">
+                <ion-icon name="trash-outline" aria-hidden="true" /><span>{{ signedIn() ? 'Delete account' : 'Erase data on this phone' }}</span
+                ><ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
               </button>
             </li>
           </ul>
@@ -211,6 +242,10 @@ export const SETTINGS_PATH = '/you/settings';
       color: var(--color-text-secondary);
     }
 
+    .row.danger {
+      color: var(--color-danger-text);
+    }
+
     .upcoming {
       @include fx.text(body-sm);
       display: flex;
@@ -241,6 +276,22 @@ export class SettingsPage {
   protected readonly upcomingSettings = UPCOMING_SETTINGS;
 
   private readonly nav = inject(NavController);
+  private readonly openExternal = inject(OPEN_EXTERNAL);
+  private readonly auth = inject(AuthService);
+
+  protected readonly privacyUrl = PRIVACY_URL;
+  protected readonly termsUrl = TERMS_URL;
+  protected readonly contactUrl = CONTACT_URL;
+  protected readonly signedIn = computed(() => this.auth.state().status === 'signed-in');
+
+  /** The privacy policy, terms and contact page are on stokeform.com. */
+  protected openSite(url: string): void {
+    void this.openExternal(url).catch(() => undefined);
+  }
+
+  protected openDeleteAccount(): void {
+    void this.nav.navigateForward(DELETE_ACCOUNT_PATH);
+  }
 
   protected openNotifications(): void {
     void this.nav.navigateForward(['/you', 'settings', 'notifications']);

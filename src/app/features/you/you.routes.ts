@@ -12,6 +12,11 @@ export default [
     loadComponent: () => import('./settings.page').then((m) => m.SettingsPage),
   },
   {
+    path: 'settings/delete-account',
+    title: 'Delete account',
+    loadComponent: () => import('./delete-account.page').then((m) => m.DeleteAccountPage),
+  },
+  {
     path: 'settings/notifications',
     title: 'Reminders',
     loadComponent: () => import('../reminders/reminder-settings.page').then((m) => m.ReminderSettingsPage),

@@ -611,3 +611,17 @@ Do these in order; stop at any failed check. Steps 1–8 change nothing that use
   "One database") and the phone. See [Setting up real email](#setting-up-real-email-resend).
 - The Google consent screen is named "StokeForm", matching the app. Its logo is optional: upload
   `src/assets/brand/stokeform-icon.svg` (as a PNG, 120 x 120) in the OAuth consent screen settings if you want it shown.
+
+## Deleting an account
+
+`POST /v1/account/delete` (`server/src/account/account-routes.ts`) is Google Play's in-app account deletion. It needs a signed-in session (Bearer token) and the body `{"confirm":"DELETE"}`, which the user types in the app. The account comes from the session only, never from the body.
+
+One SQL statement deletes the `auth."user"` row and the user's pending tokens in `auth.verification`. Every other table cascades from `auth."user"`:
+- sessions
+- linked Google accounts
+- `stokeform.push_devices`
+- every `stokeform.*` data table
+
+The schema test enforces this cascade for new tables. The log line is `account.deleted`, with a count and no identifiers. The app then erases its data on the phone and starts again at setup (`features/you/delete-account.page.ts`).
+
+Database backups (Neon point-in-time history) keep deleted rows until they age out. The privacy policy says so (docs/privacy-policy-updates.md).

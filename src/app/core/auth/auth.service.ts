@@ -175,6 +175,26 @@ export class AuthService {
   }
 
   /**
+   * Deletes the signed-in account on the server (sessions, linked Google sign-in, push devices: everything the
+   * server holds). On success the session is forgotten here too; the app's local data is the caller's to erase.
+   */
+  async deleteAccount(): Promise<AuthResult<void>> {
+    const session = await this.readSession();
+    if (!session) {
+      return { ok: false, error: 'invalid-credentials' };
+    }
+    const result = await this.api.deleteAccount(session.token);
+    if (!result.ok) {
+      return result;
+    }
+    await this.store.remove(SESSION_KEY);
+    this.current.set({ status: 'guest' });
+    // Sign-out hooks (e.g. this phone's push registration) end with the account; their server calls may fail now.
+    await Promise.allSettled(this.signOutHooks.map((hook) => hook(session.token)));
+    return { ok: true, value: undefined };
+  }
+
+  /**
    * Gives the signed-in account a display name (asked once when the account has none). Updates the
    * server first; the stored copy and state change only if it accepted.
    */

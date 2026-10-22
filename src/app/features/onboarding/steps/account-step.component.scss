@@ -63,3 +63,17 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+// Agreeing to the terms and privacy policy (both on stokeform.com).
+.legal {
+  @include fx.text(caption);
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
+  text-align: center;
+
+  .link {
+    @include fx.text(caption, semibold);
+    min-height: 0;
+    padding: 0;
+  }
+}

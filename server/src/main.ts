@@ -1,3 +1,4 @@
+import { createAccountRoutes } from './account/account-routes';
 import { ConfigError, loadConfig } from './config';
 import { createAppHandler } from './app-handler';
 import { Auth, ONE_TIME_TOKEN_MINUTES, createAuth } from './auth/auth';
@@ -76,7 +77,13 @@ const pushRoutes = createPushRoutes({
   allowedOrigins: config.allowedOrigins,
   log,
 });
-const server = createNodeServer(createAppHandler({ extraction, authRoutes, pushRoutes }));
+const accountRoutes = createAccountRoutes({
+  store: auth && database ? database.pool : null,
+  authenticate: (request) => authRoutes.authenticate(request),
+  allowedOrigins: config.allowedOrigins,
+  log,
+});
+const server = createNodeServer(createAppHandler({ extraction, authRoutes, pushRoutes, accountRoutes }));
 server.listen(config.port, config.host, () => {
   const address = server.address();
   log('server.listening', { host: config.host, port: typeof address === 'object' && address ? address.port : config.port });

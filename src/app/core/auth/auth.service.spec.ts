@@ -197,6 +197,25 @@ describe('AuthService', () => {
     expect(JSON.parse(store.values.get('session')!).user.name).toBe(USER.name);
   });
 
+  it('deleting the account sends the confirmation with the Bearer token, then forgets the session here', async () => {
+    const { auth, backend, store } = setup({ 'POST /api/auth/sign-in/email': signedIn, 'POST /v1/account/delete': () => new Response(null, { status: 204 }) });
+    await auth.signIn('alex@example.test', 'correct horse battery');
+    expect(await auth.deleteAccount()).toEqual({ ok: true, value: undefined });
+    expect(backend.calls.at(-1)).toMatchObject({ method: 'POST', path: '/v1/account/delete', body: { confirm: 'DELETE' }, headers: { authorization: `Bearer ${TOKEN}` } });
+    expect(auth.state()).toEqual({ status: 'guest' });
+    expect(store.values.has('session')).toBe(false);
+  });
+
+  it('a deletion the server refused (or without a session) keeps the account signed in', async () => {
+    const { auth, backend, store } = setup({ 'POST /api/auth/sign-in/email': signedIn, 'POST /v1/account/delete': () => json(503, {}) });
+    expect(await auth.deleteAccount()).toEqual({ ok: false, error: 'invalid-credentials' });
+    expect(backend.calls).toHaveLength(0);
+    await auth.signIn('alex@example.test', 'correct horse battery');
+    expect(await auth.deleteAccount()).toEqual({ ok: false, error: 'unavailable' });
+    expect(auth.state().status).toBe('signed-in');
+    expect(store.values.has('session')).toBe(true);
+  });
+
   it('signing out still works offline (the token is forgotten locally)', async () => {
     const { auth, store } = setup({ 'POST /api/auth/sign-in/email': signedIn, 'POST /api/auth/sign-out': () => Promise.reject(new TypeError('offline')) });
     await auth.signIn('alex@example.test', 'correct horse battery');

@@ -153,6 +153,18 @@ export class AuthApi {
     return response.value.status === 200 ? { ok: true, value: undefined } : { ok: false, error: await errorOf(response.value) };
   }
 
+  /**
+   * Deletes the signed-in account and everything the server holds for it (server: account-routes.ts). The server
+   * takes the account from the token only; the typed confirmation travels with it.
+   */
+  async deleteAccount(token: string): Promise<AuthResult<void>> {
+    const response = await this.request('POST', '/v1/account/delete', { confirm: 'DELETE' }, token);
+    if (!response.ok) {
+      return response;
+    }
+    return response.value.status === 204 ? { ok: true, value: undefined } : { ok: false, error: await errorOf(response.value) };
+  }
+
   /** The URL that starts Google sign-in in a browser; the server checks `redirect` against its allowlist. */
   googleStartUrl(redirect: string, challenge: string): string | null {
     if (!this.base) {

@@ -12,6 +12,8 @@
     "exercise-art": "node --env-file-if-exists=server/.env scripts/generate-exercise-art.mjs",
     "android:debug:local": "powershell -ExecutionPolicy Bypass -File scripts/android-debug.ps1 -Api Local",
     "android:debug:cloud": "powershell -ExecutionPolicy Bypass -File scripts/android-debug.ps1 -Api Cloud",
+    "android:release": "powershell -ExecutionPolicy Bypass -File scripts/android-release.ps1",
+    "android:release:apk": "powershell -ExecutionPolicy Bypass -File scripts/android-release.ps1 -Apk",
     "server:build": "npm --prefix server run build",
     "server:start": "npm run server:build && node --env-file-if-exists=server/.env server/dist/main.mjs",
     "server:test": "vitest run --config server/vitest.config.ts",

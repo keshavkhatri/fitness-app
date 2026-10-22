@@ -19,4 +19,8 @@ export class MemoryKeyValueStorage implements KeyValueStorage {
   async remove(key: string): Promise<void> {
     this.values.delete(key);
   }
+
+  async keys(): Promise<string[]> {
+    return [...this.values.keys()];
+  }
 }

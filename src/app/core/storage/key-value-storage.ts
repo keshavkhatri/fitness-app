@@ -15,6 +15,8 @@ export abstract class KeyValueStorage {
   /** Rejects when the value could not be persisted. */
   abstract set(key: string, value: string): Promise<void>;
   abstract remove(key: string): Promise<void>;
+  /** Every stored key (e.g. to erase the app's data). */
+  abstract keys(): Promise<string[]>;
 }
 
 /** Browser localStorage implementation. Read failures resolve null; write failures reject. */
@@ -36,6 +38,14 @@ export class LocalKeyValueStorage implements KeyValueStorage {
       localStorage.removeItem(key);
     } catch {
       // Nothing to remove if storage is unavailable.
+    }
+  }
+
+  async keys(): Promise<string[]> {
+    try {
+      return Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).filter((k): k is string => k !== null);
+    } catch {
+      return [];
     }
   }
 }
