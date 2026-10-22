@@ -1,0 +1,131 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+fit-card {
+  @include card.shell;
+}
+
+.head {
+  @include card.head;
+}
+
+.title-link {
+  @include card.title-link;
+}
+
+.chevron {
+  @include card.chevron;
+}
+
+.weight {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+.caption {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.foot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 56px;
+  margin-top: auto;
+}
+
+// The line runs behind the change pill, ending above its caption.
+.spark-box {
+  position: absolute;
+  inset: 4px 0 22px 0;
+
+  // Beside the change pill (the mockup's layout): the line on the left half.
+  &.beside {
+    inset: 4px 50% 4px 0;
+  }
+}
+
+.spark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.area {
+  fill: color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-primary-strong);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+// The latest point, drawn in CSS so it stays round however the line stretches.
+.last {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border: 2px solid var(--color-primary-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.change-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.change {
+  @include fx.text(caption, bold);
+  @include fx.tabular-numbers;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  white-space: nowrap;
+
+  ion-icon {
+    font-size: 12px;
+  }
+}
+
+.period {
+  color: var(--color-text-secondary);
+  font-size: 10.5px;
+}
+
+.empty {
+  margin-top: var(--space-1);
+}
+
+.log {
+  @include fx.text(caption, semibold);
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px;
+  margin-top: auto;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}

@@ -25,9 +25,35 @@ export interface DailyCheckIns {
    * itself, so the user's word is the record.
    */
   readonly activity: Readonly<Record<IsoCalendarDate, string>>;
+  /** Water drunk, in millilitres (the user adds it a glass at a time). */
+  readonly water: Readonly<Record<IsoCalendarDate, number>>;
 }
 
-export const EMPTY_CHECK_INS: DailyCheckIns = { steps: {}, recovery: {}, activity: {} };
+export const EMPTY_CHECK_INS: DailyCheckIns = { steps: {}, recovery: {}, activity: {}, water: {} };
+
+/** Plausible range for one day's water, in ml. */
+export const WATER_RANGE_ML = { min: 0, max: 10_000 } as const;
+
+/** One tap of "+" on the hydration card: a glass. */
+export const WATER_GLASS_ML = 250;
+
+/** Daily water goal without a body weight. */
+export const DEFAULT_WATER_GOAL_ML = 3_000;
+
+export function isValidWater(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= WATER_RANGE_ML.min && value <= WATER_RANGE_ML.max;
+}
+
+/**
+ * A daily water goal from body weight: about 33 ml per kg (a common guideline for active adults), to the nearest
+ * half litre, kept within 2–4 L. Without a weight, 3 L.
+ */
+export function waterGoalMl(weightKg: number | null): number {
+  if (weightKg === null || !(weightKg > 0)) {
+    return DEFAULT_WATER_GOAL_ML;
+  }
+  return Math.min(4_000, Math.max(2_000, Math.round((weightKg * 33) / 500) * 500));
+}
 
 export function isValidSteps(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= STEPS_RANGE.min && value <= STEPS_RANGE.max;
@@ -42,11 +68,12 @@ export function parseDailyCheckIns(value: unknown): DailyCheckIns {
   if (!value || typeof value !== 'object') {
     return EMPTY_CHECK_INS;
   }
-  const { steps, recovery, activity } = value as Record<string, unknown>;
+  const { steps, recovery, activity, water } = value as Record<string, unknown>;
   return {
     steps: pick(steps, isValidSteps),
     recovery: pick(recovery, isRecoveryLevel),
     activity: pick(activity, (v): v is string => typeof v === 'string' && v.length > 0 && v.length <= 80),
+    water: pick(water, isValidWater),
   };
 }
 

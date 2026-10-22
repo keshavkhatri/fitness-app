@@ -84,11 +84,47 @@
       <!-- No plan (setup or unavailable): no week to compare against, so no card. -->
     </div>
 
-    @if (insights().length) {
-      <section class="more" aria-label="More for you">
-        <app-home-insights [cards]="insights()" (act)="runInsight($event)" />
+    <div class="compact">
+      <section aria-label="Next milestone">
+        <app-milestone-card [milestone]="milestone()" (open)="openStreak()" />
+      </section>
+      <section aria-label="Body overview">
+        @if (body(); as b) {
+          <app-body-overview-card [body]="b" (open)="openWeightHistory()" (logWeight)="logWeight()" />
+        } @else {
+          <fit-skeleton height="172px" radius="card" />
+        }
+      </section>
+    </div>
+
+    <section class="wide" aria-label="Hydration">
+      <app-hydration-card [hydration]="hydration()" [busy]="savingCheckIn()" (open)="openWater()" (addGlass)="addGlass()" />
+    </section>
+
+    <section class="wide" aria-label="Mindset for today">
+      <app-mindset-card [quote]="mindset().quote" [tip]="mindset().tip" />
+    </section>
+
+    @if (nutrition.hasValue()) {
+      <section class="wide" aria-label="Macronutrient target">
+        <app-macro-target-card [rings]="macroRings()!" (open)="openNutrition()" />
+      </section>
+      <section class="wide" aria-label="Today's meals">
+        <app-today-meals-card [meals]="nutrition.value().meals" (open)="openNutrition()" (add)="addFood($event)" />
       </section>
     }
+
+    <section class="wide" aria-label="Weekly progress">
+      <app-weekly-progress-card [progress]="weekly()" (open)="openProgress()" />
+    </section>
+
+    <section class="wide" aria-label="Today's focus">
+      <app-today-focus-card [items]="focus()" (act)="runFocus($event)" />
+    </section>
+
+    <section class="wide" aria-label="Track your progress">
+      <app-track-progress-card (open)="openProgressOverview()" />
+    </section>
 
     <!-- The Weekly Fitness Review (from main); below the mockup's cards, as a row. -->
     <app-review-entry class="review" (open)="openReview()" />
@@ -103,5 +139,9 @@
     [saveError]="checkInError()"
     (saveSteps)="saveSteps($event)"
     (saveRecovery)="saveRecovery($event)"
+    [(waterOpen)]="waterOpen"
+    [water]="todayWater()"
+    [waterGoal]="waterGoal()"
+    (saveWater)="saveWater($event)"
   />
 </fit-page>

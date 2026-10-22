@@ -1,0 +1,89 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+}
+
+fit-card {
+  @include card.shell;
+  gap: var(--space-3);
+}
+
+.head {
+  @include card.head;
+}
+
+.title-link {
+  @include card.title-link;
+}
+
+.chevron {
+  @include card.chevron;
+}
+
+.rings {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+}
+
+// One hue per nutrient (as the mockup), each on a tint of itself.
+[data-key='protein'] {
+  --ring: #6aa318;
+}
+
+[data-key='calories'] {
+  --ring: #f2a516;
+}
+
+[data-key='carbs'] {
+  --ring: #f0607a;
+}
+
+[data-key='fat'] {
+  --ring: #9b7bf0;
+}
+
+fit-progress {
+  --progress-color: var(--ring);
+  --color-track: color-mix(in srgb, var(--ring) 22%, var(--color-surface));
+  max-width: 100%;
+}
+
+.eaten {
+  @include fx.text(body, bold);
+  @include fx.tabular-numbers;
+  line-height: 20px;
+  white-space: nowrap;
+
+  &.long {
+    font-size: 13px;
+  }
+}
+
+.target {
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+  font-size: 10.5px;
+  white-space: nowrap;
+
+  &.long {
+    font-size: 9.5px;
+  }
+}
+
+.label {
+  @include fx.text(caption, medium);
+}

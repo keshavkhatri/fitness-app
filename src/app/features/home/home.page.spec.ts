@@ -246,6 +246,23 @@ describe('HomePage', () => {
       expect(TestBed.inject(DailyCheckInService).checkIns().steps).toEqual({ '2026-10-08': 9500 });
     });
 
+    it('hydration: "+" adds a glass, the card opens the water sheet, and the sheet sets the total', async () => {
+      const { el, fixture, sheets } = await render();
+      const amount = () => el.querySelector('[data-testid="home-water-amount"]')?.textContent?.trim();
+      expect(amount()).toBe('0.0');
+      (el.querySelector('[data-testid="home-water-add"]') as HTMLButtonElement).click();
+      await settle(fixture);
+      expect(amount()).toBe('0.25');
+      (el.querySelector('[data-testid="home-water-open"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(sheets().waterOpen()).toBe(true);
+      sheets().saveWater.emit(1500);
+      await settle(fixture);
+      expect(sheets().waterOpen()).toBe(true);
+      expect(amount()).toBe('1.5');
+      expect(TestBed.inject(DailyCheckInService).checkIns().water).toEqual({ '2026-10-08': 1500 });
+    });
+
     it('Recover opens the check-in; choosing a level saves it', async () => {
       const { el, fixture, sheets } = await render();
       tile(el, 'recover')!.click();

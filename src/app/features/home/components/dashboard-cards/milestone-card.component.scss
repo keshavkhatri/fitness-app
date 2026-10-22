@@ -1,0 +1,100 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+fit-card {
+  @include card.shell;
+}
+
+.head {
+  @include card.head;
+}
+
+.title-link {
+  @include card.title-link;
+}
+
+.chevron {
+  @include card.chevron;
+}
+
+.flame {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.headline {
+  @include fx.text(h2, bold);
+  @include fx.tabular-numbers;
+}
+
+.caption {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+}
+
+.foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+
+  &.done {
+    border-color: transparent;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    box-shadow: 0 0 0 4px var(--color-primary-soft);
+  }
+}
+
+.track {
+  flex: 1;
+  height: 8px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary-strong);
+}
+
+.summit {
+  flex: none;
+  width: 64px;
+  height: 48px;
+  margin: 0 calc(var(--space-3) * -1) calc(var(--space-3) * -1) 0;
+}
+
+@container (max-width: 150px) {
+  .summit {
+    width: 44px;
+    height: 34px;
+  }
+}

@@ -1,0 +1,96 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+}
+
+// The mockup's lime-tinted card.
+fit-card {
+  @include card.shell;
+  gap: var(--space-3);
+  background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+}
+
+.head {
+  @include card.head;
+}
+
+.title-link {
+  @include card.title-link;
+}
+
+.chevron {
+  @include card.chevron;
+  background: var(--color-surface);
+}
+
+.meals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.6em), 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: var(--space-3) var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+}
+
+.icon {
+  font-size: 18px;
+}
+
+[data-meal='breakfast'] .icon {
+  color: #f2a516;
+}
+
+[data-meal='lunch'] .icon {
+  color: #e0a21b;
+}
+
+[data-meal='snacks'] .icon {
+  color: #5f8f14;
+}
+
+[data-meal='dinner'] .icon {
+  color: #8b6cf0;
+}
+
+.name {
+  @include fx.text(caption, medium);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kcal {
+  @include fx.tabular-numbers;
+  color: var(--color-text-secondary);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.add {
+  @include card.round-add;
+  width: 36px;
+  height: 36px;
+  margin-top: auto;
+  // A 44px hit area around the 36px circle.
+  outline-offset: 2px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+}

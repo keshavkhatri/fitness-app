@@ -4,24 +4,21 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { NavController } from '@ionic/angular';
 
 import { DailyCheckInService } from '../../core/daily-check-in/daily-check-in.service';
-import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
 import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
-import { InsightAction, toHomeInsights } from './home-insights';
-import { HomeInsightsComponent } from './components/home-insights/home-insights.component';
 import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { NutritionService } from '../../core/nutrition/nutrition.service';
 import { ONBOARDING_PATH } from '../../core/profile/onboarding.guards';
 import { ActivityStreakService } from '../../core/streak/activity-streak.service';
-import { CLOCK, localCalendarDateOf, localIsoDate } from '../../core/time/clock';
-import { calendarDateOf } from '../../domain/fitness-profile';
+import { CLOCK, localIsoDate } from '../../core/time/clock';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
-import { RecoveryLevel } from '../../domain/daily-check-in';
+import { RecoveryLevel, WATER_GLASS_ML, WATER_RANGE_ML, waterGoalMl } from '../../domain/daily-check-in';
+import { MealCategory } from '../../domain/nutrition';
 import { NotificationInboxService } from '../notifications/notification-inbox.service';
 import { NOTIFICATIONS_PATH } from '../notifications/notifications.page';
-import { NUTRITION_PATH } from '../nutrition/nutrition-paths';
+import { NEW_FOOD_PATH, NUTRITION_PATH } from '../nutrition/nutrition-paths';
 import { toDaySummary } from '../nutrition/nutrition-view-model';
 import { WORKOUT_COPY } from '../workout/workout-content';
 import { WORKOUT_PATH, activeWorkoutPath, workoutSessionPath } from '../workout/workout-paths';
@@ -42,7 +39,18 @@ import { TodayWorkoutCardComponent } from './components/today-workout-card/today
 import { WeekActivityCardComponent } from './components/week-activity-card/week-activity-card.component';
 import { ReviewEntryComponent } from '../fitness-review/components/review-entry.component';
 import { FITNESS_REVIEW_PATH } from '../fitness-review/fitness-review-paths';
+import { BodyOverviewCardComponent } from './components/dashboard-cards/body-overview-card.component';
+import { HydrationCardComponent } from './components/dashboard-cards/hydration-card.component';
+import { MacroTargetCardComponent } from './components/dashboard-cards/macro-target-card.component';
+import { MilestoneCardComponent } from './components/dashboard-cards/milestone-card.component';
+import { MindsetCardComponent } from './components/dashboard-cards/mindset-card.component';
+import { TodayFocusCardComponent } from './components/dashboard-cards/today-focus-card.component';
+import { TodayMealsCardComponent } from './components/dashboard-cards/today-meals-card.component';
+import { TrackProgressCardComponent } from './components/dashboard-cards/track-progress-card.component';
+import { WeeklyProgressCardComponent } from './components/dashboard-cards/weekly-progress-card.component';
 import { greetingFor } from './greeting';
+import { toBodyOverview, toFocus, toHydration, toMacroRings, toMealTiles, toMilestone, toWeeklyProgress } from './home-dashboard';
+import { mindsetFor } from './home-dashboard-content';
 import { HomeDayView, HomeTileAction, toHomeDay } from './home-today';
 import { HomeWeekView, HomeWorkoutView, toHomeWeek, toHomeWorkout } from './home-training';
 
@@ -60,7 +68,15 @@ export const YOU_PATH = '/you';
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
   imports: [
-    HomeInsightsComponent,
+    BodyOverviewCardComponent,
+    HydrationCardComponent,
+    MacroTargetCardComponent,
+    MilestoneCardComponent,
+    MindsetCardComponent,
+    TodayFocusCardComponent,
+    TodayMealsCardComponent,
+    TrackProgressCardComponent,
+    WeeklyProgressCardComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -83,7 +99,6 @@ export class HomePage {
   private readonly logs = inject(WorkoutLogService);
   private readonly workoutHistory = inject(WorkoutHistoryService);
   private readonly weightHistory = inject(WeightHistoryService);
-  private readonly compositionHistory = inject(BodyCompositionHistoryService);
   private readonly profiles = inject(FitnessProfileService);
   private readonly checkInService = inject(DailyCheckInService);
   private readonly identityService = inject(UserIdentityService);
@@ -138,36 +153,43 @@ export class HomePage {
     return this.plan.hasValue() && history ? toHomeWeek(this.plan.value().screen, history.week, history.overview) : null;
   });
 
-  // --- More cards ---------------------------------------------------------------------------
-  /** Everything the extra cards read, in one go (each source on its own: one failing hides only its cards). */
-  protected readonly insightData = resource({
+  // --- Dashboard cards (the mockup's second half) ------------------------------------------
+  /** Weigh-ins (body overview, the water goal) and the profile (its weight, before any weigh-in). */
+  protected readonly bodyData = resource({
     loader: async () => {
-      const [workouts, , , profile] = await Promise.all([
-        this.workoutHistory.list().then((r) => (r.ok ? r.workouts : null), () => null),
-        this.weightHistory.load().catch(() => undefined),
-        this.compositionHistory.load().catch(() => undefined),
-        this.profiles.load().catch(() => null),
-      ]);
-      return { workouts, profile };
+      const [, profile] = await Promise.all([this.weightHistory.load().catch(() => undefined), this.profiles.load().catch(() => null)]);
+      return { profile };
     },
   });
-  protected readonly insights = computed(() => {
-    if (!this.insightData.hasValue()) {
-      return [];
-    }
-    const { workouts, profile } = this.insightData.value();
-    const plan = this.plan.hasValue() ? this.plan.value() : null;
-    return toHomeInsights({
-      today: calendarDateOf(this.clock()),
-      todayIso: this.todayIso(),
-      workouts,
-      weights: this.weightHistory.state(),
-      composition: this.compositionHistory.state(),
-      profile,
-      screen: plan?.screen ?? null,
-      sessions: plan?.sessions ?? [],
-      streak: this.streak.hasValue() ? this.streak.value() : null,
-      localDate: localCalendarDateOf,
+  /** This week's food log (average calories); null when it can't be read. */
+  protected readonly nutritionWeek = resource({ loader: () => this.nutritionService.week().catch(() => null) });
+
+  protected readonly milestone = computed(() => toMilestone(this.streak.hasValue() ? this.streak.value() : null));
+  protected readonly body = computed(() => (this.bodyData.isLoading() ? null : toBodyOverview(this.weightHistory.state(), this.todayIso())));
+  protected readonly mindset = computed(() => {
+    const [y, m, d] = this.todayIso().split('-').map(Number);
+    return mindsetFor(Date.UTC(y, m - 1, d) / 86_400_000);
+  });
+
+  /** The latest weigh-in, else the profile's weight (kg), for the water goal. */
+  private readonly weightKg = computed(() => {
+    const s = this.weightHistory.state();
+    const latest = s.status === 'ready' ? [...s.entries].sort((a, b) => b.date.localeCompare(a.date))[0] : undefined;
+    return latest?.weight.kilograms ?? (this.bodyData.hasValue() ? (this.bodyData.value().profile?.weight.kilograms ?? null) : null);
+  });
+  protected readonly waterGoal = computed(() => waterGoalMl(this.weightKg()));
+  protected readonly todayWater = computed(() => this.checkInService.checkIns().water[this.todayIso()] ?? 0);
+  protected readonly hydration = computed(() => toHydration(this.todayWater(), this.waterGoal()));
+  protected readonly waterOpen = signal(false);
+
+  protected readonly weekly = computed(() => {
+    const week = this.nutritionWeek.hasValue() ? this.nutritionWeek.value() : null;
+    return toWeeklyProgress({
+      week: this.week(),
+      steps: this.checkInService.checkIns().steps,
+      nutrition: week?.week ?? null,
+      targets: week?.targets ?? null,
+      today: this.todayIso(),
     });
   });
 
@@ -203,9 +225,12 @@ export class HomePage {
   protected readonly nutrition = resource({
     loader: async () => {
       const { day, targets } = await this.nutritionService.snapshot();
-      return toDaySummary(day, targets);
+      return { ...toDaySummary(day, targets), meals: toMealTiles(day) };
     },
   });
+
+  protected readonly macroRings = computed(() => (this.nutrition.hasValue() ? toMacroRings(this.nutrition.value()) : null));
+  protected readonly focus = computed(() => toFocus(this.nutrition.hasValue() ? this.nutrition.value() : null));
 
   protected readonly starting = signal(false);
   protected readonly startMessage = signal('');
@@ -240,13 +265,16 @@ export class HomePage {
     this.history.reload();
     this.checkIns.reload();
     this.nutrition.reload();
-    this.insightData.reload();
+    this.bodyData.reload();
+    this.nutritionWeek.reload();
     void this.inbox.refresh().catch(() => undefined);
   }
 
   private whenSettled(): Promise<void> {
     const loading = computed(() =>
-      [this.identity, this.streak, this.plan, this.history, this.checkIns, this.nutrition].some((r) => r.isLoading()),
+      [this.identity, this.streak, this.plan, this.history, this.checkIns, this.nutrition, this.bodyData, this.nutritionWeek].some((r) =>
+        r.isLoading(),
+      ),
     );
     return new Promise((resolve) => {
       const watcher = effect(
@@ -388,28 +416,41 @@ export class HomePage {
     }
   }
 
-  /** A dashboard card was tapped. */
-  protected runInsight(action: InsightAction): void {
-    switch (action.kind) {
-      case 'log-weight':
-        void this.nav.navigateForward(['/you', 'weight-history', 'new']);
-        break;
-      case 'weight-history':
-        void this.nav.navigateForward('/you/weight-history');
-        break;
-      case 'body-composition':
-        void this.router.navigateByUrl(`${PROGRESS_PATH}?view=body`);
-        break;
-      case 'progress-workout':
-        void this.router.navigateByUrl(`${PROGRESS_PATH}?view=workout`);
-        break;
-      case 'session':
-        this.openSession(action.sessionId);
-        break;
-      case 'streak':
-        this.openStreak();
-        break;
+  /** "+" on the hydration card: one glass more. */
+  protected addGlass(): void {
+    void this.saveWater(Math.min(WATER_RANGE_ML.max, this.todayWater() + WATER_GLASS_ML));
+  }
+
+  protected openWater(): void {
+    this.checkInError.set(null);
+    this.waterOpen.set(true);
+  }
+
+  /** Today's water total (the sheet stays open to keep adjusting). */
+  protected async saveWater(ml: number): Promise<void> {
+    await this.saveCheckIn(() => this.checkInService.setWater(this.todayIso(), ml), () => undefined);
+  }
+
+  /** A "Today's focus" item: steps opens the steps sheet, protein opens Nutrition. */
+  protected runFocus(key: 'steps' | 'protein'): void {
+    if (key === 'steps') {
+      this.runTileAction({ kind: 'log-steps' });
+    } else {
+      this.openNutrition();
     }
+  }
+
+  /** "+" on a meal: Add food for that meal, today. */
+  protected addFood(meal: MealCategory): void {
+    void this.nav.navigateForward(NEW_FOOD_PATH, { queryParams: { meal } });
+  }
+
+  protected openWeightHistory(): void {
+    void this.nav.navigateForward('/you/weight-history');
+  }
+
+  protected logWeight(): void {
+    void this.nav.navigateForward(['/you', 'weight-history', 'new']);
   }
 
   protected openStreak(): void {
@@ -443,6 +484,10 @@ export class HomePage {
   /** "This week" is about workouts: Progress opens on its Workout section. */
   protected openProgress(): void {
     void this.router.navigateByUrl(`${PROGRESS_PATH}?view=workout`);
+  }
+
+  protected openProgressOverview(): void {
+    void this.router.navigateByUrl(PROGRESS_PATH);
   }
 
   protected setUpProfile(): void {

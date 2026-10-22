@@ -1,0 +1,152 @@
+@use 'mixins' as fx;
+
+// Shared look of Home's dashboard cards (the mockup's white cards with an icon title and a round chevron).
+
+@mixin shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-3);
+  border-color: transparent;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+@mixin head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+@mixin title {
+  @include fx.text(body-sm, bold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 32px;
+
+  ion-icon {
+    flex: none;
+    font-size: var(--icon-size-md);
+  }
+}
+
+// A title that is a button stretched over the whole card.
+@mixin title-link {
+  @include fx.button-reset;
+  @include title;
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::after {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+
+// Decorative: a tap on it falls through to the card's stretched link.
+@mixin chevron {
+  pointer-events: none;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-size: var(--icon-size-sm);
+}
+
+// Controls inside a stretched-link card sit above its hit area.
+@mixin above-link {
+  position: relative;
+  z-index: 1;
+}
+
+@mixin round-add {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include above-link;
+
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--icon-size-md);
+
+  ion-icon {
+    pointer-events: none;
+  }
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
+}
+
+// Photo cards (Mindset, Track your progress): dark, text on the left.
+@mixin photo-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  min-height: 188px;
+  padding: var(--space-4);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: #151714 center right / cover no-repeat;
+  color: #f5f4ee;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(10, 11, 9, 0.86) 0%, rgba(10, 11, 9, 0.6) 48%, rgba(10, 11, 9, 0.05) 100%);
+  }
+}
+
+@mixin pill-button {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  color: #151714;
+
+  ion-icon {
+    font-size: var(--icon-size-sm);
+  }
+
+  &:active {
+    background: #eceae2;
+  }
+}

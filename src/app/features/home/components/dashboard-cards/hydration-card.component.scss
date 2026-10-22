@@ -1,0 +1,79 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+  --water: #2f7cf6;
+}
+
+fit-card {
+  @include card.shell;
+}
+
+.head {
+  @include card.head;
+}
+
+.title-link {
+  @include card.title-link;
+}
+
+.chevron {
+  @include card.chevron;
+}
+
+.drop {
+  color: var(--water);
+}
+
+.amount {
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+.value {
+  @include fx.text(h2, bold);
+}
+
+.goal {
+  @include fx.text(body);
+  color: var(--color-text-secondary);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.glasses {
+  display: flex;
+  gap: 8px;
+}
+
+.glass {
+  width: 20px;
+  height: 28px;
+}
+
+.water {
+  fill: var(--water);
+  transition: y var(--motion-duration-base) var(--motion-ease);
+}
+
+.outline {
+  fill: none;
+  stroke: var(--color-border-strong);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.add {
+  @include card.round-add;
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}

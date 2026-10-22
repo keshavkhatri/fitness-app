@@ -1,0 +1,46 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+}
+
+.photo {
+  @include card.photo-card;
+}
+
+.eyebrow {
+  @include fx.text(body-sm, medium);
+  color: #e3e1d8;
+}
+
+.quote {
+  @include fx.text(h3, bold);
+  max-width: 15em;
+  margin-top: calc(var(--space-2) * -1);
+  line-height: 1.2;
+}
+
+.pill {
+  @include card.pill-button;
+
+  ion-icon:first-child {
+    color: #151714;
+  }
+}
+
+.tip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+
+  h3 {
+    @include fx.text(h3, bold);
+  }
+
+  p {
+    @include fx.text(body);
+    color: var(--color-text-secondary);
+  }
+}

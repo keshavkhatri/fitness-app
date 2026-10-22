@@ -1,0 +1,34 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+}
+
+.photo {
+  @include card.photo-card;
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+
+.title {
+  @include fx.text(h3, bold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  ion-icon {
+    font-size: var(--icon-size-md);
+  }
+}
+
+.text {
+  @include fx.text(body-sm);
+  max-width: 16em;
+  color: #e3e1d8;
+}
+
+.pill {
+  @include card.pill-button;
+  margin-top: var(--space-2);
+}

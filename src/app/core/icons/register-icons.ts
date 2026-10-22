@@ -105,6 +105,11 @@ import {
   phonePortraitOutline,
   lockClosedOutline,
   ticketOutline,
+  // Home dashboard cards
+  water,
+  sunny,
+  partlySunny,
+  moon,
 } from 'ionicons/icons';
 
 /**
@@ -218,5 +223,9 @@ export function registerAppIcons(): void {
     rocketOutline,
     layersOutline,
     ticketOutline,
+    water,
+    sunny,
+    partlySunny,
+    moon,
   });
 }

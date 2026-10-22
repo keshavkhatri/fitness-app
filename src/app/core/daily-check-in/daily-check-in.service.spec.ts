@@ -27,11 +27,11 @@ describe('DailyCheckInService', () => {
     await service.setSteps('2026-10-08', 4000);
     await service.setSteps('2026-10-08', 8200);
     await service.setRecovery('2026-10-08', 'good');
-    expect(service.checkIns()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {} });
+    expect(service.checkIns()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {}, water: {} });
 
     TestBed.resetTestingModule();
     const again = setup(storage).service;
-    expect(await again.load()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {} });
+    expect(await again.load()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {}, water: {} });
   });
 
   it('rejects invalid values without touching stored data', async () => {
@@ -40,6 +40,18 @@ describe('DailyCheckInService', () => {
     await expect(service.setSteps('2026-10-08', 1.5)).rejects.toThrow(RangeError);
     await expect(service.setRecovery('2026-10-08', 'amazing' as never)).rejects.toThrow(RangeError);
     expect(storage.values.has(KEY)).toBe(false);
+  });
+
+  it('saves the day’s water in ml and rejects implausible amounts', async () => {
+    const { service, storage } = setup();
+    await service.setWater('2026-10-08', 250);
+    await service.setWater('2026-10-08', 1250);
+    expect(service.checkIns().water).toEqual({ '2026-10-08': 1250 });
+    await expect(service.setWater('2026-10-08', -250)).rejects.toThrow(RangeError);
+    await expect(service.setWater('2026-10-08', 10_250)).rejects.toThrow(RangeError);
+
+    TestBed.resetTestingModule();
+    expect((await setup(storage).service.load()).water).toEqual({ '2026-10-08': 1250 });
   });
 
   it('a failed write keeps the previous state', async () => {
@@ -52,9 +64,9 @@ describe('DailyCheckInService', () => {
   it('unknown versions and corrupt data read as empty', async () => {
     const storage = new MemoryKeyValueStorage();
     storage.values.set(KEY, JSON.stringify({ version: 9, steps: { '2026-10-08': 1 } }));
-    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {}, activity: {} });
+    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {}, activity: {}, water: {} });
     TestBed.resetTestingModule();
     storage.values.set(KEY, '{nope');
-    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {}, activity: {} });
+    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {}, activity: {}, water: {} });
   });
 });

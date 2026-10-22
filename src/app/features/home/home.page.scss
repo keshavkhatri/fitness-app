@@ -58,7 +58,9 @@ section {
     grid-column: 1 / -1;
   }
 
-  .featured > * {
+  // The full-width phone cards pair up two to a row.
+  .featured > *,
+  .wide > * {
     flex: 1;
   }
 }

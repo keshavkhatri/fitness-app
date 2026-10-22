@@ -1,0 +1,80 @@
+@use 'mixins' as fx;
+@use '../dashboard-card' as card;
+
+:host {
+  display: block;
+}
+
+fit-card {
+  @include card.shell;
+  gap: var(--space-3);
+}
+
+.head {
+  @include card.head;
+}
+
+.title-link {
+  @include card.title-link;
+}
+
+.chevron {
+  @include card.chevron;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 0 var(--space-3);
+
+    &:first-child {
+      padding-left: 0;
+    }
+
+    &:last-child {
+      padding-right: 0;
+    }
+
+    & + li {
+      border-left: 1px solid var(--color-border);
+    }
+  }
+}
+
+.label {
+  @include fx.text(caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.value {
+  @include fx.text(h3, bold);
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+.track {
+  height: 8px;
+  margin-top: var(--space-1);
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary-strong);
+}
