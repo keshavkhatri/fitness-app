@@ -26,7 +26,7 @@ describe('NotificationInboxService', () => {
   it('builds today’s reminders from stored data, all unread at first', async () => {
     const { inbox } = setup();
     const items = await inbox.refresh();
-    expect(items.map((n) => n.action.kind)).toEqual(['open-session', 'recovery-check-in', 'log-food', 'log-weight']);
+    expect(items.map((n) => n.action?.kind)).toEqual(['open-session', 'recovery-check-in', 'log-food', 'log-weight']);
     expect(inbox.unreadCount()).toBe(4);
   });
 
@@ -64,11 +64,54 @@ describe('NotificationInboxService', () => {
     expect(again.find('food:2026-01-01')).toBeNull();
   });
 
+  it('lists what the phone showed, newest first, and a reminder shown today stands for its to-do', async () => {
+    const storage = new MemoryKeyValueStorage();
+    const sent = (key: string, kind: string | null, at: string, title: string) => ({
+      key,
+      source: kind ? 'reminder' : 'push',
+      kind,
+      title,
+      body: 'b',
+      at: new Date(at).toISOString(),
+      action: kind === 'training' ? { kind: 'open-session', sessionId: 's1' } : null,
+    });
+    storage.values.set(
+      'stokeform.notification-log',
+      JSON.stringify({
+        version: 1,
+        entries: [
+          sent('reminder:training:2026-10-08', 'training', '2026-10-08T08:00:00', 'Upper Body A is on today'),
+          sent('push:abc', null, '2026-10-07T18:00:00', 'Notifications are on'),
+        ],
+      }),
+    );
+    const { inbox } = setup(storage);
+    const items = await inbox.refresh();
+    expect(items.map((n) => n.id)).toEqual([
+      'recovery:2026-10-08',
+      'food:2026-10-08',
+      'weigh-in:2026-10-08',
+      'sent:reminder:training:2026-10-08',
+      'sent:push:abc',
+    ]);
+    const push = inbox.find('sent:push:abc')!;
+    expect(push).toEqual(expect.objectContaining({ category: 'general', date: '2026-10-07', action: null }));
+    expect(inbox.unreadCount()).toBe(5);
+  });
+
+  it('marking read before the inbox was opened keeps what was already read', async () => {
+    const storage = new MemoryKeyValueStorage();
+    storage.values.set('fitness.notifications-read', JSON.stringify({ version: 1, ids: ['food:2026-10-08'] }));
+    const { inbox } = setup(storage);
+    await inbox.markRead('sent:push:abc');
+    expect(JSON.parse(storage.values.get('fitness.notifications-read')!).ids).toEqual(['food:2026-10-08', 'sent:push:abc']);
+  });
+
   it('a check-in saved today removes its reminder', async () => {
     const storage = new MemoryKeyValueStorage();
     storage.values.set('fitness.daily-check-ins', JSON.stringify({ version: 1, steps: {}, recovery: { '2026-10-08': 'good' } }));
     const { inbox } = setup(storage);
-    expect((await inbox.refresh()).map((n) => n.action.kind)).not.toContain('recovery-check-in');
+    expect((await inbox.refresh()).map((n) => n.action?.kind)).not.toContain('recovery-check-in');
   });
 
   it('a failed write keeps reminders unread', async () => {

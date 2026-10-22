@@ -29,5 +29,8 @@ export function runNotificationAction(nav: NavController, action: NotificationAc
     case 'log-food':
       void nav.navigateForward(NEW_FOOD_PATH, { queryParams: { date: localIsoDate(now) } });
       break;
+    case 'streak':
+      void nav.navigateForward('/home/streak');
+      break;
   }
 }

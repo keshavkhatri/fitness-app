@@ -22,7 +22,7 @@ const facts = (f: Partial<NotificationFacts> = {}): NotificationFacts => ({
   daysSinceWeighIn: null,
   ...f,
 });
-const kinds = (f: Partial<NotificationFacts> = {}) => buildNotifications(facts(f)).map((n) => n.action.kind);
+const kinds = (f: Partial<NotificationFacts> = {}) => buildNotifications(facts(f)).map((n) => n.action?.kind);
 
 describe('notification inbox (builder)', () => {
   it('reminds of today’s planned workout, the check-in, food and a weigh-in, most relevant first', () => {
@@ -70,7 +70,7 @@ describe('notification inbox (builder)', () => {
     expect(filterNotifications(items, 'all', isRead)).toEqual(items);
     expect(filterNotifications(items, 'unread', isRead).map((n) => n.category)).toEqual(['recovery', 'nutrition', 'progress']);
     expect(filterNotifications(items, 'workout', isRead).map((n) => n.id)).toEqual([items[0].id]);
-    expect(filterNotifications(items, 'nutrition', isRead).map((n) => n.action.kind)).toEqual(['log-food']);
+    expect(filterNotifications(items, 'nutrition', isRead).map((n) => n.action?.kind)).toEqual(['log-food']);
     expect(filterNotifications([], 'unread', isRead)).toEqual([]);
     expect(read.size).toBe(1);
   });

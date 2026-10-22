@@ -11,7 +11,9 @@ import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
 import { IsoCalendarDate } from '../../domain/fitness-profile';
 import { toHomeWorkout } from '../home/home-training';
 import { toWorkoutScreen, weekdayIndexOf } from '../workout/workout-view-model';
-import { AppNotification, buildNotifications } from './notifications';
+import { COVERS, toInboxItem } from './notification-log';
+import { NotificationLogService } from './notification-log.service';
+import { AppNotification, buildInbox, buildNotifications } from './notifications';
 
 const READ_KEY = 'fitness.notifications-read';
 const SCHEMA_VERSION = 1;
@@ -19,9 +21,9 @@ const SCHEMA_VERSION = 1;
 const READ_LIMIT = 200;
 
 /**
- * The notification inbox: builds today's reminders from the user's data and
- * remembers which were read. Each source is read independently; one that
- * fails simply contributes no reminder.
+ * The notification inbox: what the phone was actually sent (the notification
+ * log) and today's to-dos built from the user's data, and which were read.
+ * Each source is read independently; one that fails simply contributes nothing.
  */
 @Injectable({ providedIn: 'root' })
 export class NotificationInboxService {
@@ -33,6 +35,8 @@ export class NotificationInboxService {
   private readonly checkIns = inject(DailyCheckInService);
   private readonly food = inject(NutritionRepository);
   private readonly weights = inject(WeightHistoryService);
+  private readonly log = inject(NotificationLogService);
+  private readLoaded = false;
 
   private readonly current = signal<readonly AppNotification[]>([]);
   private readonly read = signal<ReadonlySet<string>>(new Set());
@@ -51,6 +55,7 @@ export class NotificationInboxService {
 
   /** Marks one item read (its detail was opened). A failed write keeps it unread. */
   async markRead(id: string): Promise<void> {
+    await this.ensureRead();
     if (this.read().has(id)) {
       return;
     }
@@ -62,8 +67,9 @@ export class NotificationInboxService {
   async refresh(): Promise<readonly AppNotification[]> {
     const now = this.clock();
     const today = localIsoDate(now);
-    const [readIds, workout, trainedToday, checkIns, food, weighIn] = await Promise.all([
+    const [readIds, sent, workout, trainedToday, checkIns, food, weighIn] = await Promise.all([
       this.loadRead(),
+      settle(() => this.log.load()),
       settle(async () => {
         await this.logs.loadActive();
         return toHomeWorkout(toWorkoutScreen(await this.plans.load(), now), this.logs.active());
@@ -77,7 +83,7 @@ export class NotificationInboxService {
         return state.status === 'ready' ? (state.entries.at(-1)?.date ?? null) : undefined;
       }),
     ]);
-    const items = buildNotifications({
+    const todos = buildNotifications({
       today,
       workout: workout ?? null,
       trainedToday: trainedToday ?? false,
@@ -86,16 +92,30 @@ export class NotificationInboxService {
       foodLogged: food ? food.length > 0 : true,
       daysSinceWeighIn: weighIn === undefined ? 0 : weighIn === null ? null : daysBetween(weighIn, today),
     });
-    this.read.set(readIds);
+    const sentItems = (sent ?? []).map((e) => ({ entry: e, item: toInboxItem(e, localIsoDate) }));
+    const covered = new Set(sentItems.filter(({ entry, item }) => entry.kind && item.date === today).map(({ entry }) => COVERS[entry.kind!]));
+    const items = buildInbox(todos, sentItems.map(({ item }) => item), covered);
+    // Kept with anything marked read while this refresh was reading (a tap on a phone notification).
+    this.read.set(this.readLoaded ? new Set([...readIds, ...this.read()]) : readIds);
+    this.readLoaded = true;
     this.current.set(items);
     return items;
   }
 
   /** Marks every current item read ("Mark all read"). A failed write keeps them unread. */
   async markAllRead(): Promise<void> {
+    await this.ensureRead();
     const ids = [...new Set([...this.read(), ...this.current().map((n) => n.id)])].slice(-READ_LIMIT);
     await this.storage.set(READ_KEY, JSON.stringify({ version: SCHEMA_VERSION, ids }));
     this.read.set(new Set(ids));
+  }
+
+  /** Read state is loaded before it is changed (a tap on a phone notification can come before the inbox opens). */
+  private async ensureRead(): Promise<void> {
+    if (!this.readLoaded) {
+      this.read.set(await this.loadRead());
+      this.readLoaded = true;
+    }
   }
 
   private async loadRead(): Promise<ReadonlySet<string>> {

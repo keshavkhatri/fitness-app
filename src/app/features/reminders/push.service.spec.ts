@@ -26,6 +26,8 @@ function setup({ answer = (path: string) => new Response(path === '/v1/push/test
     unregister: async () => undefined,
     onToken: (h) => (tokenHandler = h),
     onTap: () => undefined,
+    onReceived: () => undefined,
+    delivered: async () => [],
   };
   TestBed.configureTestingModule({
     providers: [

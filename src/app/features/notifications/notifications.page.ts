@@ -3,10 +3,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonContent, IonHeader, IonIcon, IonToolbar, NavController } from '@ionic/angular';
 
 import { ThemeService } from '../../core/theme/theme.service';
+import { CLOCK, localIsoDate } from '../../core/time/clock';
 import { LoadingSkeletonComponent, SegmentOption, SegmentedControlComponent } from '../../shared/ui';
 import { notificationPath } from './notification-actions';
 import { NotificationInboxService } from './notification-inbox.service';
-import { AppNotification, CATEGORY_LABELS, NotificationFilter, filterNotifications, isNotificationFilter } from './notifications';
+import { formatTime } from './notification-log';
+import { AppNotification, CATEGORY_LABELS, NotificationFilter, filterNotifications, groupByDay, isNotificationFilter } from './notifications';
 
 export { CHECK_IN_QUERY, NOTIFICATIONS_PATH } from './notification-actions';
 
@@ -19,17 +21,17 @@ const FILTER_OPTIONS: readonly SegmentOption<NotificationFilter>[] = [
 
 /** What each filter says when it has nothing to show. */
 const EMPTY: Readonly<Record<NotificationFilter | 'none', { readonly title: string; readonly text: string }>> = {
-  none: { title: 'No notifications yet', text: "Reminders about today's training, food, recovery and weigh-ins appear here when there's something to do." },
-  all: { title: 'No notifications yet', text: "Reminders about today's training, food, recovery and weigh-ins appear here when there's something to do." },
+  none: { title: 'No notifications yet', text: "Today's to-dos and the reminders your phone shows appear here." },
+  all: { title: 'No notifications yet', text: "Today's to-dos and the reminders your phone shows appear here." },
   unread: { title: 'All caught up!', text: "You've seen all your notifications." },
   workout: { title: 'No workout notifications', text: 'Reminders about planned and in-progress workouts appear here.' },
   nutrition: { title: 'No nutrition notifications', text: 'A reminder appears here on days nothing has been logged yet.' },
 };
 
 /**
- * The notification inbox (Home's bell): today's reminders, built from the
- * user's own data (see NotificationInboxService), filtered by All, Unread,
- * Workouts or Nutrition. A reminder is marked read when its detail is opened,
+ * The notification inbox (Home's bell): today's to-dos and the notifications
+ * the phone showed, by day (see NotificationInboxService), filtered by All,
+ * Unread, Workouts or Nutrition. A reminder is marked read when its detail is opened,
  * or with "Mark all read"; filtering never changes read state.
  *
  * The filter is the `filter` query parameter, so it survives opening a
@@ -74,39 +76,41 @@ const EMPTY: Readonly<Record<NotificationFilter | 'none', { readonly title: stri
             <fit-skeleton height="84px" radius="card" />
           </div>
         } @else if (visible().length) {
-          <section aria-labelledby="notifications-today">
-            <h2 class="group" id="notifications-today">Today</h2>
-            <ul class="list" data-testid="notification-list">
-              @for (item of visible(); track item.id) {
-                @let unread = !inbox.isRead(item.id);
-                <li>
-                  <button
-                    type="button"
-                    class="item"
-                    [class.unread]="unread"
-                    [attr.data-testid]="'notification-' + item.id.split(':')[0]"
-                    (click)="open(item)"
-                  >
-                    <span class="icon" [attr.data-category]="item.category" aria-hidden="true"><ion-icon [name]="item.icon" /></span>
-                    <span class="text">
-                      <span class="title-row">
-                        <span class="item-title">{{ item.title }}</span>
-                        @if (unread) {
-                          <span class="dot" aria-hidden="true"></span>
-                        }
-                      </span>&ngsp;
-                      <span class="message">{{ item.message }}</span>
-                      <span class="visually-hidden">. {{ categoryLabels[item.category] }}, today{{ unread ? ', unread' : '' }}.</span>
-                    </span>
-                    <span class="meta" aria-hidden="true">
-                      <span class="time">Today</span>
-                      <ion-icon name="chevron-forward" />
-                    </span>
-                  </button>
-                </li>
-              }
-            </ul>
-          </section>
+          @for (group of groups(); track group.date; let first = $first) {
+            <section [attr.aria-labelledby]="'notifications-' + group.date">
+              <h2 class="group" [id]="'notifications-' + group.date">{{ group.label }}</h2>
+              <ul class="list" [attr.data-testid]="first ? 'notification-list' : 'notification-list-' + group.date">
+                @for (item of group.items; track item.id) {
+                  @let unread = !inbox.isRead(item.id);
+                  <li>
+                    <button
+                      type="button"
+                      class="item"
+                      [class.unread]="unread"
+                      [attr.data-testid]="'notification-' + item.id.split(':')[0]"
+                      (click)="open(item)"
+                    >
+                      <span class="icon" [attr.data-category]="item.category" aria-hidden="true"><ion-icon [name]="item.icon" /></span>
+                      <span class="text">
+                        <span class="title-row">
+                          <span class="item-title">{{ item.title }}</span>
+                          @if (unread) {
+                            <span class="dot" aria-hidden="true"></span>
+                          }
+                        </span>&ngsp;
+                        <span class="message">{{ item.message }}</span>
+                        <span class="visually-hidden">. {{ categoryLabels[item.category] }}, {{ spoken(item, group.label) }}{{ unread ? ', unread' : '' }}.</span>
+                      </span>
+                      <span class="meta" aria-hidden="true">
+                        <span class="time">{{ when(item, group.label) }}</span>
+                        <ion-icon name="chevron-forward" />
+                      </span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
         } @else {
           @let empty = emptyCopy();
           <div class="empty" data-testid="notifications-empty">
@@ -135,6 +139,7 @@ export class NotificationsPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly theme = inject(ThemeService);
+  private readonly clock = inject(CLOCK);
 
   protected readonly filterOptions = FILTER_OPTIONS;
   protected readonly categoryLabels = CATEGORY_LABELS;
@@ -147,6 +152,7 @@ export class NotificationsPage {
   });
   protected readonly hasAny = computed(() => this.inbox.items().length > 0);
   protected readonly visible = computed(() => filterNotifications(this.inbox.items(), this.activeFilter(), (id) => this.inbox.isRead(id)));
+  protected readonly groups = computed(() => groupByDay(this.visible(), localIsoDate(this.clock())));
   protected readonly emptyCopy = computed(() => EMPTY[this.hasAny() ? this.activeFilter() : 'none']);
   protected readonly dark = computed(() => this.hasAny() && (this.activeFilter() === 'all' || this.activeFilter() === 'unread'));
 
@@ -188,6 +194,17 @@ export class NotificationsPage {
     } finally {
       this.markingAll.set(false);
     }
+  }
+
+  /** A sent notification's time ("8:00 AM"); a to-do is for the day. */
+  protected when(item: AppNotification, day: string): string {
+    return item.at ? formatTime(item.at) : day;
+  }
+
+  /** "today", "yesterday at 8:00 AM", "Tuesday, Oct 20 at 8:00 AM". */
+  protected spoken(item: AppNotification, day: string): string {
+    const label = day === 'Today' || day === 'Yesterday' ? day.toLowerCase() : day;
+    return item.at ? `${label} at ${formatTime(item.at)}` : label;
   }
 
   protected open(item: AppNotification): void {

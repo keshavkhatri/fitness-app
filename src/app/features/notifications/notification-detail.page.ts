@@ -6,12 +6,13 @@ import { FitnessButtonComponent, LoadingSkeletonComponent } from '../../shared/u
 import { NOTIFICATIONS_PATH, runNotificationAction } from './notification-actions';
 import { NotificationInboxService } from './notification-inbox.service';
 import { sessionIdPhoto } from '../workout/workout-photos';
-import { ACTION_LABELS, AppNotification, CATEGORY_LABELS, notificationDayLabel } from './notifications';
+import { formatTime } from './notification-log';
+import { ACTION_LABELS, CATEGORY_LABELS, NotificationAction, notificationDayLabel } from './notifications';
 
 /**
- * One reminder in full (warm light): its category icon, title, message, the
- * day it is for, the facts it was built from, and one action that opens the
- * screen it is about. Opening it marks it read (stored, so it stays read).
+ * One notification in full (warm light): its category icon, title, message, the
+ * day it is for (and the time, for one the phone showed), the facts it was built
+ * from, and the action that opens the screen it is about (a push may have none). Opening it marks it read (stored, so it stays read).
  * A reminder that is no longer current (e.g. yesterday's) says so instead.
  */
 @Component({
@@ -59,20 +60,20 @@ import { ACTION_LABELS, AppNotification, CATEGORY_LABELS, notificationDayLabel }
           <div class="gone" data-testid="notification-gone">
             <span class="bell" aria-hidden="true"><ion-icon name="notifications-outline" /></span>
             <h1 class="title">This notification is no longer available</h1>
-            <p class="message">Reminders are for one day; this one has passed or is already done.</p>
+            <p class="message">To-dos are for one day, and notifications are kept for 30 days; this one has passed or is already done.</p>
           </div>
         }
       </main>
     </ion-content>
     <ion-footer class="ion-no-border">
       <div class="footer">
-        @if (notification(); as n) {
-          <button fit-button type="button" size="lg" block data-testid="notification-action" (click)="act(n)">
-            {{ actionLabels[n.action.kind] }}
+        @if (notification()?.action; as action) {
+          <button fit-button type="button" size="lg" block data-testid="notification-action" (click)="act(action)">
+            {{ actionLabels[action.kind] }}
             <ion-icon class="arrow" name="arrow-forward" aria-hidden="true" />
           </button>
         }
-        <button fit-button type="button" size="lg" block [variant]="notification() ? 'ghost' : 'primary'" (click)="back()">
+        <button fit-button type="button" size="lg" block [variant]="notification()?.action ? 'ghost' : 'primary'" (click)="back()">
           Back to notifications
         </button>
       </div>
@@ -103,7 +104,11 @@ export class NotificationDetailPage implements OnInit {
   });
   protected readonly dayLabel = computed(() => {
     const n = this.notification();
-    return n ? notificationDayLabel(n.date, localIsoDate(this.clock())) : '';
+    if (!n) {
+      return '';
+    }
+    const day = notificationDayLabel(n.date, localIsoDate(this.clock()));
+    return n.at ? `${day} · ${formatTime(n.at)}` : day;
   });
 
   ngOnInit(): void {
@@ -122,8 +127,8 @@ export class NotificationDetailPage implements OnInit {
     }
   }
 
-  protected act(notification: AppNotification): void {
-    runNotificationAction(this.nav, notification.action, this.clock());
+  protected act(action: NotificationAction): void {
+    runNotificationAction(this.nav, action, this.clock());
   }
 
   /** Back to the inbox as it was left (same filter); straight to it when opened directly. */

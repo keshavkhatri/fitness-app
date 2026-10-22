@@ -21,6 +21,7 @@ function fakeDevice(answer: ReminderPermission, available = true) {
     schedule: async (r) => void state.scheduled.push(...r),
     cancel: async (ids) => void state.cancelled.push(...ids),
     onTap: () => undefined,
+    onShown: () => undefined,
   };
   return { device, state };
 }

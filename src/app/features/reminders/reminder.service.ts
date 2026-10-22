@@ -11,11 +11,15 @@ import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
 import { activeDayStreak } from '../../domain/daily-check-in';
 import { PlannedReminder, ReminderFacts, ReminderSettings, parseReminderSettings, planReminders } from '../../domain/reminders';
 import { scheduleWeek, toWorkoutScreen, weekdayIndexOf } from '../workout/workout-view-model';
+import { SentNotification } from '../notifications/notification-log';
+import { NotificationLogService } from '../notifications/notification-log.service';
 import { REMINDER_DEVICE, ReminderPermission } from './reminder-device';
 
 const SETTINGS_KEY = 'stokeform.reminder-settings';
 /** The ids this app put on the device's schedule last time, so re-planning can replace them. */
 const SCHEDULED_KEY = 'stokeform.reminders-scheduled';
+/** What was scheduled, in full: those whose time has come by the next re-plan were shown (the notification log). */
+const PLANNED_KEY = 'stokeform.reminders-planned';
 const SCHEMA_VERSION = 1;
 const DAYS_AHEAD = 7;
 
@@ -36,6 +40,7 @@ export class ReminderService {
   private readonly weights = inject(WeightHistoryService);
   private readonly food = inject(NutritionRepository);
   private readonly streaks = inject(ActivityStreakService);
+  private readonly log = inject(NotificationLogService);
 
   private readonly current = signal<ReminderSettings>(parseReminderSettings(null));
   private queue: Promise<unknown> = Promise.resolve();
@@ -86,10 +91,12 @@ export class ReminderService {
       return;
     }
     const previous = await this.scheduledIds();
+    await this.recordShown();
     await this.device.cancel(previous);
     const settings = this.current();
     if (!settings.enabled || (await this.device.permission()) !== 'granted') {
       await this.storage.set(SCHEDULED_KEY, '[]');
+      await this.storage.set(PLANNED_KEY, '[]');
       this.planned.set([]);
       return;
     }
@@ -97,7 +104,31 @@ export class ReminderService {
     const planned = planReminders(settings, await this.facts(now), now);
     await this.device.schedule(planned);
     await this.storage.set(SCHEDULED_KEY, JSON.stringify(planned.map((r) => r.id)));
+    await this.storage.set(
+      PLANNED_KEY,
+      JSON.stringify(planned.map((r) => ({ key: r.key, kind: r.kind, at: r.at.toISOString(), title: r.title, body: r.body, action: r.action }))),
+    );
     this.planned.set(planned);
+  }
+
+  /**
+   * The last plan's reminders whose time has come were shown by the phone (the app wasn't there to see it):
+   * they go to the notification log, so the inbox lists them.
+   */
+  private async recordShown(): Promise<void> {
+    let stored: unknown;
+    try {
+      stored = JSON.parse((await this.storage.get(PLANNED_KEY)) ?? '[]');
+    } catch {
+      return;
+    }
+    const now = this.clock().getTime();
+    const shown = (Array.isArray(stored) ? stored : [])
+      .filter((r): r is { key: string; at: string } => !!r && typeof r.key === 'string' && typeof r.at === 'string')
+      .filter((r) => Date.parse(r.at) <= now)
+      .map((r) => ({ ...(r as object), key: `reminder:${r.key}`, source: 'reminder' }) as SentNotification);
+    // Read strictly by the log (anything malformed is dropped there).
+    await this.log.record(shown);
   }
 
   private async scheduledIds(): Promise<number[]> {

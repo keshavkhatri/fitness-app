@@ -2,10 +2,10 @@ import { IsoCalendarDate } from '../../domain/fitness-profile';
 import { HomeWorkoutView } from '../home/home-training';
 
 /**
- * The in-app notification inbox: short reminders derived from the user's own
- * data each time it's read (nothing is pushed or scheduled; there are no
- * system notifications yet). Each item has an id that is stable for its day,
- * so a reminder read today stays read, and tomorrow's is new.
+ * The in-app notification inbox: the notifications the phone actually showed
+ * (reminders and pushes, see notification-log.ts) and today's to-dos derived
+ * from the user's own data each time it's read. Each item has a stable id, so
+ * an item read stays read, and tomorrow's to-dos are new.
  */
 export interface AppNotification {
   readonly id: string;
@@ -15,15 +15,18 @@ export interface AppNotification {
   readonly tone: 'train' | 'primary' | 'body';
   readonly title: string;
   readonly message: string;
-  /** The day the reminder is for (reminders are built per day; there is no delivery time). */
+  /** The day it is for, or the day it was sent. */
   readonly date: IsoCalendarDate;
+  /** When a sent notification was shown (ISO-8601); null for a to-do, which is for the whole day. */
+  readonly at: string | null;
   /** Facts shown on the detail screen, from the same data the reminder was built from. */
   readonly details: readonly NotificationDetail[];
-  readonly action: NotificationAction;
+  /** What it opens; null for a push that is only news. */
+  readonly action: NotificationAction | null;
 }
 
 /** What a reminder is about; drives the inbox filters and icons. */
-export type NotificationCategory = 'workout' | 'nutrition' | 'recovery' | 'progress';
+export type NotificationCategory = 'workout' | 'nutrition' | 'recovery' | 'progress' | 'general';
 
 export interface NotificationDetail {
   readonly icon: string;
@@ -36,7 +39,8 @@ export type NotificationAction =
   | { readonly kind: 'open-session'; readonly sessionId: string }
   | { readonly kind: 'recovery-check-in' }
   | { readonly kind: 'log-weight' }
-  | { readonly kind: 'log-food' };
+  | { readonly kind: 'log-food' }
+  | { readonly kind: 'streak' };
 
 export interface NotificationFacts {
   readonly today: IsoCalendarDate;
@@ -64,6 +68,7 @@ export function buildNotifications(f: NotificationFacts): AppNotification[] {
       title: 'Workout in progress',
       message: `${w.title} · ${w.progress}`,
       date: f.today,
+      at: null,
       details: [
         { icon: 'barbell-outline', label: 'Workout', value: w.title },
         { icon: 'layers-outline', label: 'Progress', value: w.progress },
@@ -79,6 +84,7 @@ export function buildNotifications(f: NotificationFacts): AppNotification[] {
       title: `${w.title} is planned today`,
       message: `${w.countLabel} · ${w.durationLabel}`,
       date: f.today,
+      at: null,
       details: [
         { icon: 'calendar-outline', label: 'Workout', value: w.title },
         ...(w.focusAreas.length ? [{ icon: 'body-outline', label: 'Focus areas', value: w.focusAreas.join(', ') }] : []),
@@ -97,6 +103,7 @@ export function buildNotifications(f: NotificationFacts): AppNotification[] {
       title: 'How recovered do you feel?',
       message: 'A one-tap check-in for today.',
       date: f.today,
+      at: null,
       details: [],
       action: { kind: 'recovery-check-in' },
     });
@@ -110,6 +117,7 @@ export function buildNotifications(f: NotificationFacts): AppNotification[] {
       title: 'Nothing logged yet today',
       message: 'Log a meal to track calories and protein.',
       date: f.today,
+      at: null,
       details: [],
       action: { kind: 'log-food' },
     });
@@ -123,6 +131,7 @@ export function buildNotifications(f: NotificationFacts): AppNotification[] {
       title: 'Time to weigh in',
       message: f.daysSinceWeighIn === null ? 'Record your first weigh-in.' : `Your last weigh-in was ${f.daysSinceWeighIn} days ago.`,
       date: f.today,
+      at: null,
       details:
         f.daysSinceWeighIn === null
           ? []
@@ -133,6 +142,42 @@ export function buildNotifications(f: NotificationFacts): AppNotification[] {
   return items;
 }
 
+/**
+ * The inbox: today's to-dos first (unless a notification that arrived today already says the same thing: then
+ * that one stands for it), then what was sent, newest first. `covered` lists the to-do id prefixes
+ * ("planned", "food" …) that today's sent notifications cover.
+ */
+export function buildInbox(
+  todos: readonly AppNotification[],
+  sent: readonly AppNotification[],
+  covered: ReadonlySet<string>,
+): AppNotification[] {
+  const open = todos.filter((t) => !covered.has(t.id.split(':')[0]));
+  const history = [...sent].sort((x, y) => (y.at ?? '').localeCompare(x.at ?? ''));
+  return [...open, ...history];
+}
+
+/** The inbox in day groups (Today, Yesterday, then dates), in the inbox's order. */
+export function groupByDay(
+  items: readonly AppNotification[],
+  today: IsoCalendarDate,
+): { readonly date: IsoCalendarDate; readonly label: string; readonly items: readonly AppNotification[] }[] {
+  const groups = new Map<IsoCalendarDate, AppNotification[]>();
+  for (const item of items) {
+    groups.set(item.date, [...(groups.get(item.date) ?? []), item]);
+  }
+  return [...groups.entries()]
+    .sort(([x], [y]) => y.localeCompare(x))
+    .map(([date, list]) => ({ date, label: groupLabel(date, today), items: list }));
+}
+
+const shortDay = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+function groupLabel(date: IsoCalendarDate, today: IsoCalendarDate): string {
+  const days = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`)) / 86_400_000);
+  return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : shortDay.format(new Date(`${date}T00:00:00Z`));
+}
+
 /** The primary action's label on the detail screen. */
 export const ACTION_LABELS: Readonly<Record<NotificationAction['kind'], string>> = {
   resume: 'Resume workout',
@@ -140,6 +185,7 @@ export const ACTION_LABELS: Readonly<Record<NotificationAction['kind'], string>>
   'recovery-check-in': 'Check in now',
   'log-weight': 'Log weight',
   'log-food': 'Log food',
+  streak: 'View streak',
 };
 
 export const CATEGORY_LABELS: Readonly<Record<NotificationCategory, string>> = {
@@ -147,6 +193,7 @@ export const CATEGORY_LABELS: Readonly<Record<NotificationCategory, string>> = {
   nutrition: 'Nutrition',
   recovery: 'Recovery',
   progress: 'Progress',
+  general: 'StokeForm',
 };
 
 /** The inbox filters (as in the design: All, Unread, Workouts, Nutrition). */

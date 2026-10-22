@@ -8,6 +8,15 @@ import { CHANNEL_ID, ensureNotificationChannel } from './reminder-device';
 /** What a push carries besides its text (string fields only; never health values). */
 export type PushData = Readonly<Record<string, string>>;
 
+/** A push as the phone reports it. */
+export interface ReceivedPush {
+  /** Firebase's id for it (or the shade notification's tag); used only to tell pushes apart. */
+  readonly id: string;
+  readonly title: string;
+  readonly body: string;
+  readonly data: PushData;
+}
+
 /**
  * Firebase Cloud Messaging on the phone, behind a small seam: the Android app registers with Firebase
  * and receives the device token; the web build (and tests) have no push.
@@ -20,26 +29,42 @@ export interface PushDevice {
   /** Stops receiving pushes on this install (the token stops working). */
   unregister(): Promise<void>;
   onToken(handler: (token: string) => void): void;
-  /** Called with the push's data when the user taps it. */
-  onTap(handler: (data: PushData) => void): void;
+  /** Called when the user taps a push that arrived while the app was closed. */
+  onTap(handler: (push: ReceivedPush) => void): void;
+  /** Called when a push arrives while the app is open (it is shown as a local notification then). */
+  onReceived(handler: (push: ReceivedPush) => void): void;
+  /** Pushes that arrived while the app was closed and are still in the shade. */
+  delivered(): Promise<readonly ReceivedPush[]>;
 }
 
 /** A push that arrives while the app is open isn't shown by Android: show it as a local notification. */
 const FOREGROUND_ID_BASE = 900_000_000;
+/** Firebase's own shade notifications (the ones it posts while the app is closed) carry this tag. */
+const FCM_TAG = 'FCM-Notification';
+
+const toReceived = (push: { id?: string; tag?: string; title?: string; body?: string; data?: unknown }): ReceivedPush => ({
+  id: push.id || push.tag || `${push.title ?? ''}|${push.body ?? ''}`,
+  title: push.title ?? 'StokeForm',
+  body: push.body ?? '',
+  data: Object.fromEntries(Object.entries((push.data ?? {}) as Record<string, unknown>).filter(([, v]) => typeof v === 'string')) as PushData,
+});
 
 function capacitorPushDevice(): PushDevice {
   let foreground = 0;
+  const received: ((push: ReceivedPush) => void)[] = [];
   void ensureNotificationChannel();
-  void PushNotifications.addListener('pushNotificationReceived', async (push) => {
+  void PushNotifications.addListener('pushNotificationReceived', async (raw) => {
+    const push = toReceived(raw);
+    received.forEach((handler) => handler(push));
     await ensureNotificationChannel();
     void LocalNotifications.schedule({
       notifications: [
         {
           id: FOREGROUND_ID_BASE + (foreground++ % 1000),
-          title: push.title ?? 'StokeForm',
-          body: push.body ?? '',
+          title: push.title,
+          body: push.body,
           channelId: CHANNEL_ID,
-          extra: { push: push.data ?? {} },
+          extra: { push: push.data, key: `push:${push.id}` },
         },
       ],
     }).catch(() => undefined);
@@ -53,7 +78,15 @@ function capacitorPushDevice(): PushDevice {
       void PushNotifications.addListener('registration', ({ value }) => handler(value));
     },
     onTap(handler) {
-      void PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => handler((notification.data ?? {}) as PushData));
+      void PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => handler(toReceived(notification)));
+    },
+    onReceived(handler) {
+      received.push(handler);
+    },
+    async delivered() {
+      const { notifications } = await PushNotifications.getDeliveredNotifications();
+      // Only Firebase's own (this app's local reminders are in the shade too).
+      return notifications.filter((n) => (n.tag ?? '').startsWith(FCM_TAG)).map(toReceived);
     },
   };
 }
@@ -66,6 +99,8 @@ export const NO_PUSH_DEVICE: PushDevice = {
   unregister: async () => undefined,
   onToken: () => undefined,
   onTap: () => undefined,
+  onReceived: () => undefined,
+  delivered: async () => [],
 };
 
 export const PUSH_DEVICE = new InjectionToken<PushDevice>('PUSH_DEVICE', {
