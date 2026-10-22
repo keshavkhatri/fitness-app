@@ -16,7 +16,13 @@ describe('server configuration', () => {
       port: 8787,
       database: null,
       auth: null,
+      push: null,
     });
+  });
+
+  it('sends pushes on Cloud Run (project from the metadata server) or with an explicit Firebase project', () => {
+    expect(loadConfig({ K_SERVICE: 'api' }).push).toEqual({ projectId: null });
+    expect(loadConfig({ FIREBASE_PROJECT_ID: 'p-1' }).push).toEqual({ projectId: 'p-1' });
   });
 
   it('listens on loopback by default, on all interfaces in production, and on the port it is given', () => {

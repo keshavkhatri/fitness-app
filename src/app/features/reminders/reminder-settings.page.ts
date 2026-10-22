@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, resource, signal 
 import { IonBackButton, IonContent } from '@ionic/angular';
 
 import { ReminderSettings, isClockTime } from '../../domain/reminders';
+import { AuthService } from '../../core/auth/auth.service';
+import { PushService, PushTestResult } from './push.service';
 import { ReminderService } from './reminder.service';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -134,6 +136,21 @@ const formatter = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'num
               </div>
             </section>
 
+            @if (push.available && signedIn()) {
+              <section class="card" aria-labelledby="reminders-push">
+                <h2 class="setting-title" id="reminders-push">Account notifications</h2>
+                <p class="hint">
+                  {{ push.registered() ? 'This phone gets notifications for your account.' : 'Connecting this phone to your account…' }}
+                </p>
+                <button type="button" class="test" data-testid="reminders-push-test" [disabled]="testing()" (click)="sendTest()">
+                  {{ testing() ? 'Sending…' : 'Send a test notification' }}
+                </button>
+                @if (testResult(); as r) {
+                  <p class="hint" role="status" data-testid="reminders-push-result">{{ testMessages[r] }}</p>
+                }
+              </section>
+            }
+
             <section class="card" aria-labelledby="reminders-next">
               <h2 class="setting-title" id="reminders-next">Coming up</h2>
               @if (upcoming().length) {
@@ -160,6 +177,17 @@ export class ReminderSettingsPage {
   protected readonly reminders = inject(ReminderService);
   protected readonly loaded = resource({ loader: () => this.reminders.load() });
   protected readonly saving = signal(false);
+  protected readonly push = inject(PushService);
+  private readonly auth = inject(AuthService);
+  protected readonly signedIn = computed(() => this.auth.state().status === 'signed-in');
+  protected readonly testing = signal(false);
+  protected readonly testResult = signal<PushTestResult | null>(null);
+  protected readonly testMessages: Readonly<Record<PushTestResult, string>> = {
+    sent: 'Sent. It should arrive in a few seconds.',
+    'no-device': "This phone isn't connected yet. Try again in a moment.",
+    'too-soon': 'Wait half a minute before sending another.',
+    failed: "Couldn't send it. Check your connection and try again.",
+  };
   protected readonly blocked = computed(() => this.reminders.permission() === 'denied');
   protected readonly weekdays = WEEKDAYS;
   private queue: Promise<unknown> = Promise.resolve();
@@ -169,6 +197,15 @@ export class ReminderSettingsPage {
       .slice(0, 5)
       .map((r) => ({ id: r.id, title: r.title, when: formatter.format(r.at) })),
   );
+
+  protected async sendTest(): Promise<void> {
+    this.testing.set(true);
+    try {
+      this.testResult.set(await this.push.sendTest());
+    } finally {
+      this.testing.set(false);
+    }
+  }
 
   protected checked(event: Event): boolean {
     return (event.target as HTMLInputElement).checked;

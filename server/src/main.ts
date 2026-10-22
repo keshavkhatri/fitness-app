@@ -9,6 +9,8 @@ import { Log, createExtractionHandler } from './extraction-handler';
 import { severityOf } from './log';
 import { createNodeServer } from './node-server';
 import { openAiResponsesClient } from './openai-client';
+import { createFcmSender } from './push/fcm';
+import { createPushRoutes } from './push/push-routes';
 import { writeDevOutboxEmail } from '../tools/dev-outbox';
 
 /** One JSON line per event; fields are codes, counts and durations only (see extraction-handler.ts). */
@@ -63,7 +65,18 @@ const authRoutes = createAuthRoutes({
   log,
 });
 const extraction = createExtractionHandler({ config, client, log, readiness: database ? () => database.checkReadiness() : undefined });
-const server = createNodeServer(createAppHandler({ extraction, authRoutes }));
+if (!config.push) {
+  log('push.not-configured', { missing: 'FIREBASE_PROJECT_ID' });
+}
+const pushRoutes = createPushRoutes({
+  // Devices belong to accounts: without accounts there is nothing to register.
+  store: auth && database ? database.pool : null,
+  sender: config.push ? createFcmSender({ projectId: config.push.projectId, log }) : null,
+  authenticate: (request) => authRoutes.authenticate(request),
+  allowedOrigins: config.allowedOrigins,
+  log,
+});
+const server = createNodeServer(createAppHandler({ extraction, authRoutes, pushRoutes }));
 server.listen(config.port, config.host, () => {
   const address = server.address();
   log('server.listening', { host: config.host, port: typeof address === 'object' && address ? address.port : config.port });

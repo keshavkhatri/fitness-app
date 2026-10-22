@@ -42,6 +42,11 @@ export interface ServerConfig {
   readonly database: DatabaseConfig | null;
   /** null when BETTER_AUTH_SECRET is unset: account routes answer 503 and nothing else changes. */
   readonly auth: AuthConfig | null;
+  /**
+   * Push sending (Firebase Cloud Messaging): on Cloud Run (K_SERVICE is set there) or when FIREBASE_PROJECT_ID
+   * is given. projectId null: read from the metadata server. null: device registration still works, nothing is sent.
+   */
+  readonly push: { readonly projectId: string | null } | null;
 }
 
 const MIB = 1024 * 1024;
@@ -83,5 +88,6 @@ export function loadConfig(env: Env): ServerConfig {
     port: integer(env, 'PORT', 8787, 0, 65535),
     database: loadDatabaseConfig(env),
     auth: loadAuthConfig(env),
+    push: text(env, 'FIREBASE_PROJECT_ID') || text(env, 'K_SERVICE') ? { projectId: text(env, 'FIREBASE_PROJECT_ID') ?? null } : null,
   };
 }

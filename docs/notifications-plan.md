@@ -22,8 +22,16 @@ Status (updated 2026-10-22): **Phases 1 and 2 are built; Phase 3 is not started.
   - a "Coming up" preview
 
   The web build shows "Reminders work in the StokeForm app on your phone".
-- **Not yet tested on a real phone** (needs a new APK).
-- **Phase 3, push: not started.** It needs FCM credentials (`google-services.json`) and a server job.
+- **Phase 3, push: the plumbing is built; nothing is sent automatically yet.**
+  - **Firebase:** the project is `fitness-app-511714`. The Android app is `com.stokeformfitness.app`, and `android/app/google-services.json` is gitignored.
+  - **Server credentials:** Cloud Run sends as its own service account, which has the role `roles/firebasecloudmessaging.admin`, so there is no key file. Without `K_SERVICE` or `FIREBASE_PROJECT_ID` (local runs), it sends nothing.
+  - **Server:**
+    - migration `0008_push_devices.sql` stores one row per device token, owned by the account
+    - `POST /v1/push/devices` registers a device and `POST /v1/push/devices/remove` removes one
+    - `POST /v1/push/test` pushes to the caller's own phones, at most every 30 s
+    - `notifyUser(userId, message)` is ready for future server events; it deletes tokens that Firebase reports as unregistered
+  - **App:** `PushService` registers the phone only while someone is signed in AND reminders are on with the permission granted. Sign-out removes the device using the ending session. A push that arrives while the app is open is shown as a local notification. Settings › Reminders › "Send a test notification" sends a test push.
+  - **Not built yet:** the events themselves (subscription changes from RevenueCat, the weekly summary). They need billing and server-side data first.
 
 Written 2026-10-22.
 

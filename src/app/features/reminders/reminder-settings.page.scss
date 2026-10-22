@@ -179,6 +179,21 @@ ion-content {
   text-align: center;
 }
 
+.test {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+  align-self: flex-start;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-4);
+  border: var(--border-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
 .next {
   display: flex;
   flex-direction: column;

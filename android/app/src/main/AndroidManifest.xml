@@ -42,6 +42,18 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Pushes from the server (Firebase): the StokeForm status-bar icon, its tint, and the app's private
+             "reminders" channel (created by the app; see src/app/features/reminders). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_stokeform" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="reminders" />
     </application>
 
     <!-- Permissions -->

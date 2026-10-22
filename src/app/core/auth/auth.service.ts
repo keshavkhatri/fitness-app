@@ -85,6 +85,7 @@ export class AuthService {
   private readonly platform = inject(AUTH_PLATFORM);
 
   private readonly current = signal<AuthState>({ status: 'restoring' });
+  private readonly signOutHooks: ((token: string) => Promise<unknown>)[] = [];
   readonly state = this.current.asReadonly();
   readonly user = computed(() => {
     const s = this.current();
@@ -154,12 +155,21 @@ export class AuthService {
     return this.api.requestPasswordReset(email.trim());
   }
 
+  /**
+   * Runs at sign-out with the ending session's token, before the server ends it (e.g. to stop this
+   * phone's push notifications). Failures are ignored: signing out never waits on them succeeding.
+   */
+  onSignOut(hook: (token: string) => Promise<unknown>): void {
+    this.signOutHooks.push(hook);
+  }
+
   /** Ends the session here at once and on the server when it can. Local fitness data is untouched. */
   async signOut(): Promise<void> {
     const session = await this.readSession();
     await this.store.remove(SESSION_KEY);
     this.current.set({ status: 'guest' });
     if (session) {
+      await Promise.allSettled(this.signOutHooks.map((hook) => hook(session.token)));
       await this.api.signOut(session.token).catch(() => undefined);
     }
   }
