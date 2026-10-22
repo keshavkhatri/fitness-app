@@ -4,7 +4,7 @@ The StokeForm website: a home page, Terms, Privacy Policy and Contact page. Plai
 
 ```
 website/
-  index.html  terms.html  privacy.html  contact.html  404.html
+  index.html  terms.html  privacy.html  contact.html  delete-account.html  404.html
   assets/css/site.css       the one stylesheet (dark by default, light if the visitor's system is light)
   assets/img/               icons and the social preview image (generated, see below)
   assets/fonts/             Inter (SIL Open Font License, included)
@@ -33,7 +33,15 @@ npx serve website            # then open http://localhost:3000  (clean URLs: /te
 - **Contact address.** Every page uses `support@stokeform.com`. Create that mailbox (or change it in the four pages) before launch.
 - **Who "we" are.** The policy and terms say "StokeForm" and "we". Add the legal name (and address, if required where you are) of the person or company that runs the app, and the country whose law governs the terms (`terms.html`, section 14).
 - **Legal review.** The texts describe how the app works today. Have them reviewed before launch, and update them (and the date) whenever the app starts collecting something new, for example backup or sync of fitness data.
-- **Facts that must stay true:** fitness data is not uploaded; the server runs on Google Cloud in europe-west1; the database is Neon; email is sent through Resend; InBody reports are read through OpenAI; sign-in uses Google. If any of these change, change `privacy.html`.
+- **Facts that must stay true:**
+  - Fitness data is encrypted on the phone and uploaded only with the opt-in cloud backup (encrypted on the server; turning it off deletes it).
+  - The server checks that backed-up profiles are 18+.
+  - Push notifications go through Firebase Cloud Messaging.
+  - Crash and error reports go to Sentry, without personal data.
+  - The server runs on Google Cloud in europe-west1, the database is Neon, email is sent through Resend, InBody reports are read through OpenAI, and sign-in uses Google.
+  - Account deletion is in the app, and `delete-account.html` describes it (Google Play links to that page).
+
+  If any of these change, change `privacy.html` (and its date).
 
 ## Google sign-in (OAuth consent screen)
 
