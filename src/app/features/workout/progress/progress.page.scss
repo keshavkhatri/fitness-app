@@ -129,3 +129,17 @@
   padding: 0;
   list-style: none;
 }
+
+// "Compare with: Last time | First record" above the body cards.
+.compare {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.compare-label {
+  @include fx.text(caption, medium);
+  color: var(--color-text-secondary);
+}

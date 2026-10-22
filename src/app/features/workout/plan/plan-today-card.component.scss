@@ -133,6 +133,18 @@ fit-card {
   margin-top: var(--space-2);
 }
 
+.done {
+  @include fx.text(body, semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary);
+
+  ion-icon {
+    font-size: 22px;
+  }
+}
+
 .cta {
   margin-top: var(--space-4);
   border-radius: var(--radius-card);

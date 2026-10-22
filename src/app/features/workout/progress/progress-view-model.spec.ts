@@ -49,6 +49,24 @@ describe('progress overview view model', () => {
       expect(muscle).toMatchObject({ value: '35', unit: 'kg', change: { text: '+1.8 kg', direction: 'up' } });
     });
 
+    it('compared with the first recording instead: how far it has come since the start', () => {
+      const weights = {
+        status: 'ready' as const,
+        unitSystem: 'metric' as const,
+        entries: [weigh('w0', '2026-06-02', 97.4), weigh('w1', '2026-10-01', 95.1), weigh('w2', '2026-10-07', 94.5)],
+      };
+      const composition = {
+        status: 'ready' as const,
+        assessments: [assess('a0', '2026-06-02', 39.8, 32.8), assess('a1', '2026-09-03', 35, 35.2), assess('a2', '2026-10-01', 33.4, 35.8)],
+      };
+      const [weight, fat, muscle] = toBodyMetrics(weights, composition, TODAY, 'first');
+      expect(weight).toMatchObject({ value: '94.5', change: { text: '−2.9 kg', direction: 'down' }, caption: 'since 2 Jun' });
+      expect(fat).toMatchObject({ change: { text: '−6.4 pts', direction: 'down' }, caption: 'since 2 Jun' });
+      expect(muscle).toMatchObject({ change: { text: '+3 kg', direction: 'up' }, caption: 'since 2 Jun' });
+      // The default stays "since last time".
+      expect(toBodyMetrics(weights, composition, TODAY)[0].caption).toBe('vs 1 Oct');
+    });
+
     it('one recording: its date, no change; none: "Not recorded" (never a zero)', () => {
       const weights = { status: 'ready' as const, unitSystem: 'metric' as const, entries: [weigh('w1', '2026-10-07', 78.4)] };
       const [weight, fat, muscle] = toBodyMetrics(weights, { status: 'ready', assessments: [assess('a1', '2026-10-01', 18.5)] }, TODAY);

@@ -1,0 +1,129 @@
+@use 'mixins' as fx;
+
+// --- Activity grid (fits a phone: no sideways scrolling) ------------------------------------------
+.grid-wrap {
+  display: flex;
+  gap: 4px;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-rows: 14px repeat(7, 14px);
+  gap: 3px;
+  padding-top: 0;
+
+  span {
+    font-size: 9.5px;
+    line-height: 14px;
+    color: var(--color-text-secondary);
+  }
+
+}
+
+.grid-area {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.months {
+  display: grid;
+  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  gap: 3px;
+  height: 14px;
+
+  span {
+    font-size: 9.5px;
+    line-height: 14px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  gap: 3px;
+}
+
+.week {
+  display: grid;
+  grid-template-rows: repeat(7, 14px);
+  gap: 3px;
+}
+
+.cell {
+  @include fx.button-reset;
+  display: block;
+  width: 100%;
+  max-width: 16px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--color-surface-muted);
+
+  &[data-level='1'] {
+    background: color-mix(in srgb, #ff7a18 30%, var(--color-surface-muted));
+  }
+
+  &[data-level='2'] {
+    background: color-mix(in srgb, #ff7a18 55%, var(--color-surface-muted));
+  }
+
+  &[data-level='3'] {
+    background: color-mix(in srgb, #ff7a18 78%, var(--color-surface-muted));
+  }
+
+  &[data-level='4'] {
+    background: #ff7a18;
+  }
+
+  &.future {
+    background: transparent;
+    outline: 1px dashed var(--color-border);
+    outline-offset: -1px;
+  }
+
+  &.today {
+    outline: 2px solid var(--color-text);
+    outline-offset: 1px;
+  }
+
+  &.selected {
+    outline: 2px solid #d9631e;
+    outline-offset: 1px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+  }
+}
+
+.grid-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.day-detail {
+  @include fx.text(caption, medium);
+  min-height: 16px;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+
+  .cell {
+    width: 11px;
+    height: 11px;
+  }
+}
+

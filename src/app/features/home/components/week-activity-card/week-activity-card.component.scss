@@ -61,7 +61,9 @@ fit-card {
   }
 }
 
+// Decorative: a tap on it falls through to the card's stretched link.
 .chevron {
+  pointer-events: none;
   display: grid;
   flex: none;
   place-items: center;
@@ -85,38 +87,47 @@ fit-card {
 // --- Chart ---------------------------------------------------------------------------
 .chart {
   display: grid;
-  flex: 1;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
-  min-height: 84px;
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .day {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
+  gap: 3px;
 }
 
-.bar {
-  display: flex;
-  flex: 1;
-  align-items: flex-end;
-  width: 9px;
-}
-
-// Done bars are filled; planned and rest bars are empty tracks of different
-// heights (never color alone).
-.fill {
-  width: 100%;
+// The day markers (also used by the legend): a shape for each state.
+.mark {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
   border-radius: var(--radius-pill);
-  background: var(--color-track);
-  transition: height var(--motion-duration-ring) var(--motion-ease);
+  font-size: 10px;
 }
 
-[data-state='done'] .fill {
-  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-strong));
+[data-mark='done'] .mark {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+[data-mark='planned'] .mark {
+  border: 1.5px solid var(--color-text-secondary);
+}
+
+[data-mark='missed'] .mark {
+  border: 1.5px dashed var(--color-border-strong);
+}
+
+[data-mark='rest'] .mark::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
 }
 
 .letter {
@@ -127,6 +138,45 @@ fit-card {
 .today .letter {
   color: var(--color-text);
   font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.minutes {
+  @include fx.tabular-numbers;
+  min-height: 12px;
+  color: var(--color-text-secondary);
+  font-size: 9.5px;
+  line-height: 12px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-text-secondary);
+    font-size: 10.5px;
+  }
+
+  .mark {
+    width: 12px;
+    height: 12px;
+    font-size: 9px;
+  }
+
+  [data-mark='planned'] .mark,
+  [data-mark='missed'] .mark {
+    border-width: 1.5px;
+  }
 }
 
 // Very narrow cards (two columns at 320px): the title drops its icon rather

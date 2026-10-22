@@ -10,18 +10,15 @@
   color: var(--color-text-secondary);
 }
 
-.scroller {
-  overflow-x: hidden;
+.frame {
+  overflow: hidden;
+}
 
-  &.scrolls {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
+.hint {
+  @include fx.text(caption);
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  text-align: center;
 }
 
 .chart {
@@ -67,6 +64,40 @@
     fill: var(--color-primary-strong);
     stroke: var(--color-primary-strong);
   }
+}
+
+.point.minor {
+  stroke-width: 2;
+}
+
+.point.selected {
+  fill: var(--color-text);
+  stroke: var(--color-text);
+}
+
+.hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.date.selected {
+  fill: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.bubble {
+  pointer-events: none;
+
+  rect {
+    fill: var(--color-text);
+  }
+}
+
+.bubble-value {
+  @include fx.tabular-numbers;
+  fill: var(--color-surface);
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
 }
 
 .value {

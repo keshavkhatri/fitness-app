@@ -11,6 +11,11 @@ export default [
     title: 'Settings',
     loadComponent: () => import('./settings.page').then((m) => m.SettingsPage),
   },
+  {
+    path: 'settings/notifications',
+    title: 'Reminders',
+    loadComponent: () => import('../reminders/reminder-settings.page').then((m) => m.ReminderSettingsPage),
+  },
   { path: 'progress', loadChildren: () => import('../workout/progress/progress.routes') },
   { path: 'weight-history', loadChildren: () => import('../body-weight/weight-history.routes') },
   { path: 'measurements', loadChildren: () => import('../body-measurements/measurements.routes') },

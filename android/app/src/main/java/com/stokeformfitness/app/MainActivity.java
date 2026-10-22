@@ -1,4 +1,4 @@
-package com.fitnessapp.app;
+package com.stokeformfitness.app;
 
 import com.getcapacitor.BridgeActivity;
 

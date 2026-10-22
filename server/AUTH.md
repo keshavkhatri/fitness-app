@@ -183,7 +183,7 @@ development, in `sessionStorage`. **Never in `localStorage`.** Sessions last `AU
    Tab) at `/v1/auth/google/start` with only the verifier's SHA-256 *challenge*.
 2. Google sign-in happens in the browser and returns to `/api/auth/callback/google`.
 3. `/v1/auth/google/complete` makes a 3-minute, single-use code tied to the challenge and redirects to
-   `com.fitnessapp.app://auth/callback?code=…` (or `?error=account-not-linked|email-not-verified|google-sign-in-failed`),
+   `com.stokeformfitness.app://auth/callback?code=…` (or `?error=account-not-linked|email-not-verified|google-sign-in-failed`),
    which reopens the app (intent filter in `AndroidManifest.xml`).
 4. The app sends `{ code, verifier }` to `/v1/auth/mobile/exchange` and receives its session token.
 
@@ -208,7 +208,7 @@ credentials**; with neither, the app says accounts are unavailable. While off, a
 | `EMAIL_FROM` | | With `resend`: e.g. `StokeForm <no-reply@your-domain>`, on a domain verified in Resend. |
 | `EMAIL_DEV_OUTBOX_DIR` | `server/.dev-outbox` | With `dev-outbox` (git-ignored). |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | unset (Google hidden) | Both or neither. The secret is **secret**; the id is not. |
-| `AUTH_APP_REDIRECT_URLS` | `com.fitnessapp.app://auth/callback` | Where Google sign-in may return, comma-separated. Add `http://localhost:4200/auth/callback` for web development. |
+| `AUTH_APP_REDIRECT_URLS` | `com.stokeformfitness.app://auth/callback` | Where Google sign-in may return, comma-separated. Add `http://localhost:4200/auth/callback` for web development. |
 | `AUTH_SESSION_DAYS` | 30 | 1–90. |
 | `ALLOWED_ORIGINS` | (existing) | Also Better Auth's trusted origins. Android: `https://localhost`; iOS: `capacitor://localhost`; web dev: `http://localhost:4200`. |
 | `CLIENT_IP_HEADER` | (existing) | Used for the rate limits: sign-in 5/min, sign-up 3/min, confirmation links 10/min, reset requests 3/min, new passwords 10/min. |
@@ -405,7 +405,7 @@ npm run server:install
 # BETTER_AUTH_SECRET, BETTER_AUTH_URL=http://localhost:8787,
 # EMAIL_DELIVERY=dev-outbox,
 # ALLOWED_ORIGINS=http://localhost:4200,http://localhost:8100,https://localhost,
-# AUTH_APP_REDIRECT_URLS=com.fitnessapp.app://auth/callback,http://localhost:4200/auth/callback
+# AUTH_APP_REDIRECT_URLS=com.stokeformfitness.app://auth/callback,http://localhost:4200/auth/callback
 # and optionally GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.
 npm run server:migrate:status   # 0006 and 0007 are already applied: expect "up to date"
 npm run server:start            # http://localhost:8787
@@ -428,7 +428,7 @@ in-memory outbox and a simulated Google token endpoint.
 
 ## Testing on an Android phone
 
-Two debug builds, both keeping the app ID `com.fitnessapp.app` and the debug signing key, so
+Two debug builds, both keeping the app ID `com.stokeformfitness.app` and the debug signing key, so
 `adb install -r` updates the installed app **and keeps its data**:
 
 | Build | API it talks to | Command |
@@ -501,7 +501,7 @@ that are not enabled can't be reached.
 | `OPENAI_API_KEY`, `OPENAI_MODEL` | secret / plain (exist) | unchanged |
 | `ALLOWED_ORIGINS` | plain (exists) | `https://localhost,capacitor://localhost`: already right for the Android and iOS apps; it is also the accounts' trusted-origin list. No change. |
 | `CLIENT_IP_HEADER` | plain (exists) | `x-forwarded-for`: already set. Keep the service directly on `run.app` (no load balancer in front). |
-| `AUTH_APP_REDIRECT_URLS`, `AUTH_SESSION_DAYS` | optional | leave unset (deep link `com.fitnessapp.app://auth/callback`, 30 days) |
+| `AUTH_APP_REDIRECT_URLS`, `AUTH_SESSION_DAYS` | optional | leave unset (deep link `com.stokeformfitness.app://auth/callback`, 30 days) |
 | Scaling | service setting | `--max-instances 1` (min 0 is fine) |
 | Runtime account | exists | `893557393361-compute@developer.gserviceaccount.com`: needs `roles/secretmanager.secretAccessor` on each **new** secret (it already has it on the two existing ones) |
 
@@ -595,7 +595,7 @@ Do these in order; stop at any failed check. Steps 1–8 change nothing that use
   once, even after another reset succeeds; they go to the same mailbox. Reset has been exercised with the
   dev outbox only, not through real email delivery.
 - **No "change password" while signed in yet** (reset by email is the only way), and no account deletion.
-- **Custom-scheme deep link.** Another app could register `com.fitnessapp.app://` too. The verifier
+- **Custom-scheme deep link.** Another app could register `com.stokeformfitness.app://` too. The verifier
   makes an intercepted code useless, but Android App Links (a verified `https` link) would be stronger.
 - **Single instance required** (in-memory hand-off codes and rate limits). The deployed service currently allows
   **20**: it must be set to 1 when accounts are enabled ([CLOUD_RUN.md](CLOUD_RUN.md#instances)).

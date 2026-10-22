@@ -37,13 +37,13 @@ import { FitnessAvatarComponent } from '../../../../shared/ui';
         }
       </h1>
       @if (streak(); as days) {
-        <p class="streak" data-testid="home-streak">
+        <button type="button" class="streak" data-testid="home-streak" [attr.aria-label]="days + ' day streak: see your streak'" (click)="openStreak.emit()">
           <span class="flame" aria-hidden="true">🔥</span>
-          <span class="streak-text">
+          <span class="streak-text" aria-hidden="true">
             <span class="streak-value">{{ days }} day</span>
             <span class="streak-label">streak</span>
           </span>
-        </p>
+        </button>
       }
     </div>
   `,
@@ -62,6 +62,8 @@ export class HomeHeaderComponent {
 
   readonly openNotifications = output<void>();
   readonly openProfile = output<void>();
+  /** The streak page (current and best streak, the activity grid). */
+  readonly openStreak = output<void>();
 
   protected readonly brand = APP_BRAND;
   protected readonly bellLabel = computed(() => {

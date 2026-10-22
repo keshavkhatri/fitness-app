@@ -42,7 +42,7 @@ The app hard-codes only the entitlement id. Products come from the current offer
 
 | What | Value | Where it is set |
 | --- | --- | --- |
-| Android package (application id) | `com.fitnessapp.app` | already the app's id |
+| Android package (application id) | `com.stokeformfitness.app` | already the app's id |
 | RevenueCat entitlement | `pro` | RevenueCat dashboard; also `REVENUECAT_PRO_ENTITLEMENT_ID` in `src/environments/billing.ts` |
 | RevenueCat offering | `default`, marked **current** | RevenueCat dashboard (the app uses whatever offering is current) |
 | Packages in the offering | `$rc_monthly` (and optionally `$rc_annual`) | RevenueCat dashboard; use the standard package types |
@@ -58,7 +58,7 @@ These names are suggestions; if you choose others, only the entitlement id (`pro
 ### Google Play Console
 
 1. Have a Google Play developer account with a merchant (payments) profile.
-2. Create the app with package name `com.fitnessapp.app` and complete the store listing and the policy declarations Play asks for.
+2. Create the app with package name `com.stokeformfitness.app` and complete the store listing and the policy declarations Play asks for.
 3. Upload a **release-signed** build to the **Internal testing** track. Google Play Billing only works for a build installed from Play (side-loaded or `adb`-installed debug APKs cannot buy). A release signing key does not exist in this repo yet (`android/` has no release signing configuration): create an upload key and configure signing before this step.
 4. **Monetize > Subscriptions**: create `stokeform_pro` with a base plan `monthly` (and optionally `annual`). Set the prices (you choose them; this code has none) and **activate** the base plans.
 5. **Setup > License testing**: add the Google accounts of testers so their test purchases cost nothing.
@@ -66,7 +66,7 @@ These names are suggestions; if you choose others, only the entitlement id (`pro
 
 ### RevenueCat dashboard
 
-1. Create a project and add an **Android (Google Play)** app with package name `com.fitnessapp.app`. Upload the service-account JSON from step 6 above.
+1. Create a project and add an **Android (Google Play)** app with package name `com.stokeformfitness.app`. Upload the service-account JSON from step 6 above.
 2. **Products**: import (or add) `stokeform_pro:monthly` and optionally `stokeform_pro:annual`.
 3. **Entitlements**: create `pro` and attach the products.
 4. **Offerings**: create `default`, add a `$rc_monthly` package (and `$rc_annual`), attach the products, and **make it the current offering**.

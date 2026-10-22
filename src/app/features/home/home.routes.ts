@@ -7,6 +7,11 @@ export default [
     loadComponent: () => import('./home.page').then((m) => m.HomePage),
   },
   {
+    path: 'streak',
+    title: 'Streak',
+    loadComponent: () => import('./streak/streak.page').then((m) => m.StreakPage),
+  },
+  {
     path: 'notifications',
     title: 'Notifications',
     loadComponent: () => import('../notifications/notifications.page').then((m) => m.NotificationsPage),

@@ -4,11 +4,17 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { NavController } from '@ionic/angular';
 
 import { DailyCheckInService } from '../../core/daily-check-in/daily-check-in.service';
+import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
+import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
+import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
+import { InsightAction, toHomeInsights } from './home-insights';
+import { HomeInsightsComponent } from './components/home-insights/home-insights.component';
 import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { NutritionService } from '../../core/nutrition/nutrition.service';
 import { ONBOARDING_PATH } from '../../core/profile/onboarding.guards';
 import { ActivityStreakService } from '../../core/streak/activity-streak.service';
-import { CLOCK, localIsoDate } from '../../core/time/clock';
+import { CLOCK, localCalendarDateOf, localIsoDate } from '../../core/time/clock';
+import { calendarDateOf } from '../../domain/fitness-profile';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
@@ -54,6 +60,7 @@ export const YOU_PATH = '/you';
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
   imports: [
+    HomeInsightsComponent,
     EmptyStateComponent,
     FitnessButtonComponent,
     FitnessCardComponent,
@@ -75,6 +82,9 @@ export class HomePage {
   private readonly plans = inject(WorkoutPlanService);
   private readonly logs = inject(WorkoutLogService);
   private readonly workoutHistory = inject(WorkoutHistoryService);
+  private readonly weightHistory = inject(WeightHistoryService);
+  private readonly compositionHistory = inject(BodyCompositionHistoryService);
+  private readonly profiles = inject(FitnessProfileService);
   private readonly checkInService = inject(DailyCheckInService);
   private readonly identityService = inject(UserIdentityService);
   private readonly streakService = inject(ActivityStreakService);
@@ -128,12 +138,46 @@ export class HomePage {
     return this.plan.hasValue() && history ? toHomeWeek(this.plan.value().screen, history.week, history.overview) : null;
   });
 
+  // --- More cards ---------------------------------------------------------------------------
+  /** Everything the extra cards read, in one go (each source on its own: one failing hides only its cards). */
+  protected readonly insightData = resource({
+    loader: async () => {
+      const [workouts, , , profile] = await Promise.all([
+        this.workoutHistory.list().then((r) => (r.ok ? r.workouts : null), () => null),
+        this.weightHistory.load().catch(() => undefined),
+        this.compositionHistory.load().catch(() => undefined),
+        this.profiles.load().catch(() => null),
+      ]);
+      return { workouts, profile };
+    },
+  });
+  protected readonly insights = computed(() => {
+    if (!this.insightData.hasValue()) {
+      return [];
+    }
+    const { workouts, profile } = this.insightData.value();
+    const plan = this.plan.hasValue() ? this.plan.value() : null;
+    return toHomeInsights({
+      today: calendarDateOf(this.clock()),
+      todayIso: this.todayIso(),
+      workouts,
+      weights: this.weightHistory.state(),
+      composition: this.compositionHistory.state(),
+      profile,
+      screen: plan?.screen ?? null,
+      sessions: plan?.sessions ?? [],
+      streak: this.streak.hasValue() ? this.streak.value() : null,
+      localDate: localCalendarDateOf,
+    });
+  });
+
   // --- Your day -----------------------------------------------------------------------------
   /** Today's steps and recovery check-in. */
   protected readonly checkIns = resource({ loader: () => this.checkInService.load() });
   private readonly todayIso = computed(() => localIsoDate(this.clock()));
   protected readonly todaySteps = computed(() => this.checkInService.checkIns().steps[this.todayIso()] ?? null);
   protected readonly todayRecovery = computed(() => this.checkInService.checkIns().recovery[this.todayIso()] ?? null);
+  protected readonly activityDone = computed(() => !!this.checkInService.checkIns().activity[this.todayIso()]);
 
   /** null until today's plan and history are known (a plan failure reads as unavailable). */
   protected readonly day = computed<HomeDayView | null>(() => {
@@ -196,6 +240,7 @@ export class HomePage {
     this.history.reload();
     this.checkIns.reload();
     this.nutrition.reload();
+    this.insightData.reload();
     void this.inbox.refresh().catch(() => undefined);
   }
 
@@ -333,6 +378,44 @@ export class HomePage {
     }
   }
 
+  /** Today's light activity: the user's own "done" (the app doesn't track it), or undone. Counts for the streak. */
+  protected async markActivity(sessionId: string | null): Promise<void> {
+    try {
+      await this.checkInService.setActivityDone(this.todayIso(), sessionId);
+      this.streak.reload();
+    } catch {
+      // Not saved: the card keeps its previous state.
+    }
+  }
+
+  /** A dashboard card was tapped. */
+  protected runInsight(action: InsightAction): void {
+    switch (action.kind) {
+      case 'log-weight':
+        void this.nav.navigateForward(['/you', 'weight-history', 'new']);
+        break;
+      case 'weight-history':
+        void this.nav.navigateForward('/you/weight-history');
+        break;
+      case 'body-composition':
+        void this.router.navigateByUrl(`${PROGRESS_PATH}?view=body`);
+        break;
+      case 'progress-workout':
+        void this.router.navigateByUrl(`${PROGRESS_PATH}?view=workout`);
+        break;
+      case 'session':
+        this.openSession(action.sessionId);
+        break;
+      case 'streak':
+        this.openStreak();
+        break;
+    }
+  }
+
+  protected openStreak(): void {
+    void this.nav.navigateForward('/home/streak');
+  }
+
   protected openNotifications(): void {
     void this.nav.navigateForward(NOTIFICATIONS_PATH);
   }
@@ -357,8 +440,9 @@ export class HomePage {
     void this.nav.navigateForward(FITNESS_REVIEW_PATH);
   }
 
+  /** "This week" is about workouts: Progress opens on its Workout section. */
   protected openProgress(): void {
-    void this.router.navigateByUrl(PROGRESS_PATH);
+    void this.router.navigateByUrl(`${PROGRESS_PATH}?view=workout`);
   }
 
   protected setUpProfile(): void {

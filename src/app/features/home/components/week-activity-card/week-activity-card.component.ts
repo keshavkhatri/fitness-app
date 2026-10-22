@@ -4,16 +4,14 @@ import { IonIcon } from '@ionic/angular';
 import { FitnessCardComponent } from '../../../../shared/ui';
 import { HomeWeekView } from '../../home-training';
 
-/** Bars never shrink below this share, so a short workout still reads as done. */
-const MIN_DONE_HEIGHT = 0.35;
-/** A full-height bar is at least an hour (or the week's longest day). */
-const FULL_BAR_MINUTES = 60;
+/** How a day reads at a glance; every state has its own shape, never colour alone. */
+export type WeekDayMark = 'done' | 'planned' | 'missed' | 'rest';
 
 /**
- * This week's training: finished of planned workouts and one bar per day
- * (Monday–Sunday). Done bars are as tall as the time trained; planned days
- * show an empty tall bar, rest days a short one. Only recorded history and the
- * plan's own week. The whole card opens Progress. Presentational only.
+ * This week's training: finished of planned workouts, and one marker per day (Monday–Sunday) with a legend:
+ * a filled check for a day trained (with its minutes), a ring for a planned workout still ahead, a dashed ring
+ * for a planned day that has passed without one, and a dot for a rest day. Only recorded history and the plan's
+ * own week. The whole card opens Progress (its Workout section). Presentational only.
  */
 @Component({
   selector: 'app-week-activity-card',
@@ -35,15 +33,28 @@ const FULL_BAR_MINUTES = 60;
         <p class="unit">{{ w.planned === 1 ? 'workout' : 'workouts' }}</p>
       </div>
 
-      <!-- One sentence for assistive tech; the bars are its picture. -->
+      <!-- One sentence for assistive tech; the markers are its picture. -->
       <div class="chart" role="img" data-testid="home-week" [attr.aria-label]="w.accessibleLabel">
-        @for (day of bars(); track day.key) {
-          <div class="day" [attr.data-state]="day.state" [class.today]="day.isToday">
-            <span class="bar"><span class="fill" [style.height.%]="day.height"></span></span>
+        @for (day of marks(); track day.key) {
+          <div class="day" [attr.data-state]="day.state" [attr.data-mark]="day.mark" [class.today]="day.isToday">
+            <span class="mark">
+              @if (day.mark === 'done') {
+                <ion-icon name="checkmark" />
+              }
+            </span>
             <span class="letter">{{ day.letter }}</span>
+            <span class="minutes" data-testid="home-week-minutes">{{ day.mark === 'done' && day.minutes > 0 ? day.minutes + 'm' : '' }}</span>
           </div>
         }
       </div>
+      <ul class="legend" aria-hidden="true">
+        <li data-mark="done"><span class="mark"><ion-icon name="checkmark" /></span>Done</li>
+        <li data-mark="planned"><span class="mark"></span>Planned</li>
+        @if (hasMissed()) {
+          <li data-mark="missed"><span class="mark"></span>Missed</li>
+        }
+        <li data-mark="rest"><span class="mark"></span>Rest</li>
+      </ul>
     </fit-card>
   `,
   styleUrl: './week-activity-card.component.scss',
@@ -56,12 +67,11 @@ export class WeekActivityCardComponent {
   /** Progress (weekly activity and per-exercise history). */
   readonly openProgress = output<void>();
 
-  protected readonly bars = computed(() => {
+  /** Each day with its marker: a planned day before today that wasn't trained is "missed". */
+  protected readonly marks = computed(() => {
     const days = this.week().days;
-    const longest = Math.max(FULL_BAR_MINUTES, ...days.map((d) => d.minutes));
-    return days.map((d) => ({
-      ...d,
-      height: d.state === 'done' ? Math.max(MIN_DONE_HEIGHT, d.minutes / longest) * 100 : d.state === 'planned' ? 85 : 40,
-    }));
+    const today = days.findIndex((d) => d.isToday);
+    return days.map((d, i) => ({ ...d, mark: (d.state === 'planned' && today >= 0 && i < today ? 'missed' : d.state) as WeekDayMark }));
   });
+  protected readonly hasMissed = computed(() => this.marks().some((d) => d.mark === 'missed'));
 }

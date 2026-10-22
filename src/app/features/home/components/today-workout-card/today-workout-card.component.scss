@@ -42,6 +42,42 @@ fit-card {
 }
 
 // --- Content ---------------------------------------------------------------------------
+// The planned workout's name stretches its button over the card; the actions sit above it.
+.card-link {
+  all: unset;
+  cursor: pointer;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+  }
+
+  &:focus-visible::after {
+    outline: var(--focus-ring-width, 3px) solid var(--color-focus, #fff);
+    outline-offset: -4px;
+  }
+}
+
+.cta {
+  position: relative;
+  z-index: 2;
+}
+
+.done {
+  @include fx.text(body, semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary);
+
+  ion-icon {
+    font-size: 22px;
+  }
+}
+
 .content {
   position: relative;
   display: flex;

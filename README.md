@@ -52,7 +52,7 @@ Not implemented yet: sync of app data to the account, progress photos, push noti
 
 ## Android
 
-The Android project is in `android/` (app ID `com.fitnessapp.app`). Debug builds are signed with the
+The Android project is in `android/` (app ID `com.stokeformfitness.app`). Debug builds are signed with the
 local debug key; `adb install -r android/app/build/outputs/apk/debug/app-debug.apk` updates an installed
 debug build and keeps its data. iOS has not been added yet (`npx cap add ios`).
 

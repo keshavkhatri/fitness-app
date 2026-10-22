@@ -755,9 +755,10 @@ edge colour. Android 12 and later ignore the splash image: they show the launche
 (`windowSplashScreenBackground`). The in-app SVG marks in `src/assets/brand/` are the older lime mark and aren't
 used for the launcher. After regenerating: `npx cap sync android` and rebuild the APK.
 
-**Not named after the brand, on purpose:** the Android `applicationId` `com.fitnessapp.app` (it is the installed
-app's identity, its signing lineage, and the Google sign-in deep link `com.fitnessapp.app://auth/callback`) and
-the root npm package name `fitness-app`. Everything else that carried a placeholder name (the Postgres schema
+**App id:** the Android `applicationId` is `com.stokeformfitness.app` (changed from the placeholder
+`com.fitnessapp.app` on 2026-10-22, before launch). It is the installed app's identity, its signing lineage, the
+Google sign-in deep link `com.stokeformfitness.app://auth/callback` and the Firebase app. Only the root npm package
+name `fitness-app` keeps the placeholder. Everything else that carried a placeholder name (the Postgres schema
 `stokeform`, the server package `stokeform-server`, the secure-storage key prefix `stokeform.auth.`) was renamed
 before launch. A future move to a new application id would be a separate migration: Android treats it as a
 different app, so it means a new store listing.

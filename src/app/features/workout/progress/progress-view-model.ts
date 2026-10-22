@@ -1,7 +1,7 @@
 import { BodyCompositionHistoryState } from '../../../core/body-composition/body-composition-history.service';
 import { WeightHistoryState } from '../../../core/body-measurements/weight-history.service';
 import { WorkoutHistoryResult } from '../../../core/workout/workout-history.service';
-import { BodyCompositionMetric, latestReportedValues, metricChange } from '../../../domain/body-composition';
+import { BodyCompositionAssessment, BodyCompositionMetric, MetricChange, latestReportedValues, metricChange } from '../../../domain/body-composition';
 import { weightHistory } from '../../../domain/body-measurements';
 import { CalendarDate, IsoCalendarDate, calendarDateOf, compareCalendarDates, parseIsoCalendarDate } from '../../../domain/fitness-profile';
 import {
@@ -69,15 +69,18 @@ export function formatPerformedSet(set: PerformedSet, logging: LoggingMode, unit
 
 // --- Body metrics -----------------------------------------------------------------------------
 
+/** What a body card's change is measured against: the recording before the latest, or the very first one. */
+export type BodyComparison = 'previous' | 'first';
+
 export interface BodyMetricView {
   readonly key: 'weight' | 'body-fat' | 'muscle';
   readonly label: string;
   /** "72.4" and "kg" (the unit as recorded), or null when nothing was recorded. */
   readonly value: string | null;
   readonly unit: string;
-  /** Difference from the previous recording; null with a single recording (or different units). */
+  /** Difference from the previous (or the first) recording; null with a single recording (or different units). */
   readonly change: { readonly text: string; readonly spoken: string; readonly direction: 'up' | 'down' | 'same' } | null;
-  /** "vs Oct 1" (the previous recording's date), "Oct 8" (only one), or "Not recorded". */
+  /** "vs Oct 1" (the previous recording), "since Jun 2" (the first), "Oct 8" (only one), or "Not recorded". */
   readonly caption: string;
 }
 
@@ -88,23 +91,26 @@ const splitValue = (text: string): { value: string; unit: string } => {
 
 const direction = (n: number): 'up' | 'down' | 'same' => (n > 0 ? 'up' : n < 0 ? 'down' : 'same');
 
-function weightMetric(state: WeightHistoryState, today: IsoCalendarDate): BodyMetricView {
+function weightMetric(state: WeightHistoryState, today: IsoCalendarDate, compare: BodyComparison): BodyMetricView {
   const base = { key: 'weight' as const, label: copy.body.weight };
   if (state.status !== 'ready' || state.entries.length === 0) {
     return { ...base, value: null, unit: '', change: null, caption: copy.body.notRecorded };
   }
-  const [latest, previous] = weightHistory(state.entries, state.unitSystem);
+  const history = weightHistory(state.entries, state.unitSystem);
+  const [latest, previous] = history;
   const shown = splitValue(formatDisplayWeight(latest.displayWeight, state.unitSystem));
   if (!previous || latest.changeSincePrevious === null) {
     return { ...base, ...shown, change: null, caption: isoDayMonth(latest.entry.date, today) };
   }
-  const change = latest.changeSincePrevious + 0;
+  const from = compare === 'first' ? history[history.length - 1] : previous;
+  const change = (compare === 'first' ? Math.round((latest.displayWeight - from.displayWeight) * 10) / 10 : latest.changeSincePrevious) + 0;
   const text = change === 0 ? copy.body.noChange : formatChange(change, state.unitSystem);
+  const date = isoDayMonth(from.entry.date, today);
   return {
     ...base,
     ...shown,
     change: { text, spoken: text, direction: direction(change) },
-    caption: copy.body.vs(isoDayMonth(previous.entry.date, today)),
+    caption: compare === 'first' ? copy.body.since(date) : copy.body.vs(date),
   };
 }
 
@@ -114,6 +120,7 @@ function compositionMetric(
   key: 'body-fat' | 'muscle',
   label: string,
   today: IsoCalendarDate,
+  compare: BodyComparison,
 ): BodyMetricView {
   const base = { key, label };
   const latest = state.status === 'ready' ? latestReportedValues(state.assessments).find((l) => l.metric === metric) : undefined;
@@ -121,7 +128,7 @@ function compositionMetric(
     return { ...base, value: null, unit: '', change: null, caption: copy.body.notRecorded };
   }
   const shown = splitValue(formatReportedValue(latest.value));
-  const difference = metricChange(state.assessments, metric);
+  const difference = compare === 'first' ? changeSinceFirst(state.assessments, metric) : metricChange(state.assessments, metric);
   if (!difference || difference.kind !== 'change') {
     return { ...base, ...shown, change: null, caption: isoDayMonth(latest.assessment.date, today) };
   }
@@ -134,15 +141,38 @@ function compositionMetric(
     ...base,
     ...shown,
     change: { text, spoken, direction: direction(difference.change) },
-    caption: copy.body.vs(isoDayMonth(difference.previous.date, today)),
+    caption: (compare === 'first' ? copy.body.since : copy.body.vs)(isoDayMonth(difference.previous.date, today)),
   };
 }
 
-export function toBodyMetrics(weights: WeightHistoryState, composition: BodyCompositionHistoryState, today: IsoCalendarDate): readonly BodyMetricView[] {
+/** The latest reading against the very first one in the same unit (null with fewer than two). */
+function changeSinceFirst(assessments: readonly BodyCompositionAssessment[], metric: BodyCompositionMetric): MetricChange | null {
+  const readings = [...assessments]
+    .filter((a) => a.reported[metric] !== undefined)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  if (readings.length < 2) {
+    return null;
+  }
+  const latest = readings[readings.length - 1];
+  const unit = latest.reported[metric]!.unit;
+  const first = readings.find((a) => a.reported[metric]!.unit === unit)!;
+  if (first === latest) {
+    return null;
+  }
+  const change = Math.round((latest.reported[metric]!.value - first.reported[metric]!.value) * 100) / 100 + 0;
+  return { kind: 'change', metric, latest, previous: first, change, unit };
+}
+
+export function toBodyMetrics(
+  weights: WeightHistoryState,
+  composition: BodyCompositionHistoryState,
+  today: IsoCalendarDate,
+  compare: BodyComparison = 'previous',
+): readonly BodyMetricView[] {
   return [
-    weightMetric(weights, today),
-    compositionMetric(composition, 'body-fat-percentage', 'body-fat', copy.body.bodyFat, today),
-    compositionMetric(composition, 'skeletal-muscle-mass', 'muscle', copy.body.muscle, today),
+    weightMetric(weights, today, compare),
+    compositionMetric(composition, 'body-fat-percentage', 'body-fat', copy.body.bodyFat, today, compare),
+    compositionMetric(composition, 'skeletal-muscle-mass', 'muscle', copy.body.muscle, today, compare),
   ];
 }
 

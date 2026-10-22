@@ -21,7 +21,7 @@ const THEME_OPTIONS: readonly SegmentOption<ThemePreference>[] = [
 ];
 
 /** Settings that exist in the product plan but are not built yet. */
-const UPCOMING_SETTINGS: readonly string[] = ['Notifications', 'Connected health apps'];
+const UPCOMING_SETTINGS: readonly string[] = ['Connected health apps'];
 
 export const SETTINGS_PATH = '/you/settings';
 
@@ -78,6 +78,17 @@ export const SETTINGS_PATH = '/you/settings';
             <li>
               <button type="button" class="row" data-testid="settings-restore" (click)="restoreOpen.set(true)">
                 <ion-icon name="sync-outline" aria-hidden="true" /><span>Restore purchases</span><ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
+              </button>
+            </li>
+          </ul>
+        </section>
+
+        <section class="card" aria-labelledby="settings-notifications">
+          <h2 class="setting-title" id="settings-notifications">Notifications</h2>
+          <ul class="rows">
+            <li>
+              <button type="button" class="row" data-testid="settings-notifications" (click)="openNotifications()">
+                <ion-icon name="notifications-outline" aria-hidden="true" /><span>Reminders</span><ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
               </button>
             </li>
           </ul>
@@ -230,6 +241,11 @@ export class SettingsPage {
   protected readonly upcomingSettings = UPCOMING_SETTINGS;
 
   private readonly nav = inject(NavController);
+
+  protected openNotifications(): void {
+    void this.nav.navigateForward(['/you', 'settings', 'notifications']);
+  }
+
   private readonly profiles = inject(FitnessProfileService);
   private readonly units = inject(UnitPreferenceService);
   private readonly cdr = inject(ChangeDetectorRef);

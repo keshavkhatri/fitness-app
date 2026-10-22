@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { provideStackNav } from '../../../core/navigation/stack-nav';
+
 /** Progress lives under You (`/you/progress`); it presents workout data, so its code sits with the workout feature. */
 export default [
   {
@@ -26,4 +28,9 @@ export default [
     title: 'Progress',
     loadComponent: () => import('../history/workout-history-detail.page').then((m) => m.WorkoutHistoryDetailPage),
   },
+  // The body sections Progress links to, in this stack too: opened from the Progress tab, Back comes back to it
+  // (their own links are kept in this tab by provideStackNav). Under You they are the You routes themselves.
+  { path: 'weight-history', providers: [provideStackNav('/progress')], loadChildren: () => import('../../body-weight/weight-history.routes') },
+  { path: 'measurements', providers: [provideStackNav('/progress')], loadChildren: () => import('../../body-measurements/measurements.routes') },
+  { path: 'body-composition', providers: [provideStackNav('/progress')], loadChildren: () => import('../../body-composition/body-composition.routes') },
 ] satisfies Routes;

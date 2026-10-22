@@ -68,6 +68,13 @@ export class DailyCheckInService {
     await this.save(next);
   }
 
+  /** Marks the day's planned light activity as done (`sessionId` the plan's activity session), or clears it with null. */
+  async setActivityDone(date: IsoCalendarDate, sessionId: string | null): Promise<void> {
+    const { [date]: _previous, ...rest } = this.current().activity;
+    const next = { ...this.current(), activity: sessionId ? { ...rest, [date]: sessionId } : rest };
+    await this.save(next);
+  }
+
   private async save(next: DailyCheckIns): Promise<void> {
     await this.storage.set(STORAGE_KEY, JSON.stringify({ version: SCHEMA_VERSION, ...next }));
     this.current.set(next);

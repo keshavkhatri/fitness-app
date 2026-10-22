@@ -21,6 +21,10 @@
   @if (v !== 'workout') {
     <section aria-labelledby="progress-body" data-testid="body-metrics">
       <h2 class="visually-hidden" id="progress-body">{{ copy.body.title }}</h2>
+      <div class="compare" data-testid="body-compare">
+        <span class="compare-label" aria-hidden="true">{{ copy.body.compareLegend }}</span>
+        <fit-segmented-control variant="compact" name="progress-body-compare" [legend]="copy.body.compareLegend" [options]="comparisonOptions" [(value)]="bodyComparison" />
+      </div>
       <app-body-metric-cards [metrics]="bodyMetrics()" (openMetric)="openBodyMetric($event)" />
     </section>
 

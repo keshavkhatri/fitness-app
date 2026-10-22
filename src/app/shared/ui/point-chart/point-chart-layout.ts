@@ -18,13 +18,15 @@ export interface PointChartPoint {
 export interface LaidOutPoint extends PointChartPoint {
   readonly x: number;
   readonly y: number;
+  /** Its value and date are printed (all points are when they fit; otherwise the first, latest, highest, lowest and evenly spaced ones). */
+  readonly labelled: boolean;
 }
 
 export interface PointChartLayout {
   readonly width: number;
   readonly height: number;
-  /** Wider than the narrowest card: the chart scrolls sideways. */
-  readonly scrolls: boolean;
+  /** More readings than labels fit: some points are unlabelled (a tap shows them). */
+  readonly thinned: boolean;
   readonly points: readonly LaidOutPoint[];
   /** SVG polyline `points`; empty for one point. */
   readonly path: string;
@@ -38,7 +40,7 @@ export interface PointChartLayout {
 export const POINT_CHART = {
   /** The width drawn at when the card's width isn't known (user units = CSS px). */
   minWidth: 320,
-  /** The least room per reading, so values and dates never touch: about seven fit on a phone before it scrolls. */
+  /** The least room per label, so values and dates never touch: about seven on a phone. */
   slot: 44,
   side: 22,
   height: 212,
@@ -51,14 +53,33 @@ export const POINT_CHART = {
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
-/** `available`: the card's width in CSS px (the chart fills it, and scrolls only when the readings don't fit). */
+/**
+ * Which points get a printed label when they can't all have one: the latest, the first, the highest and the lowest
+ * first, then evenly spaced ones, each at least a label's width from the others.
+ */
+function labelledIndices(values: readonly number[], xs: readonly number[], capacity: number): ReadonlySet<number> {
+  const n = values.length;
+  if (n <= capacity) {
+    return new Set(values.map((_, i) => i));
+  }
+  const highest = values.indexOf(Math.max(...values));
+  const lowest = values.indexOf(Math.min(...values));
+  const spaced = Array.from({ length: capacity }, (_, k) => Math.round((k * (n - 1)) / Math.max(1, capacity - 1)));
+  const chosen: number[] = [];
+  for (const i of [n - 1, 0, highest, lowest, ...spaced]) {
+    if (!chosen.includes(i) && chosen.every((j) => Math.abs(xs[i] - xs[j]) >= POINT_CHART.slot)) {
+      chosen.push(i);
+    }
+  }
+  return new Set(chosen);
+}
+
+/** `available`: the card's width in CSS px. The chart always fits it: it never scrolls sideways. */
 export function pointChartLayout(points: readonly PointChartPoint[], minSpan = 0, available: number = POINT_CHART.minWidth): PointChartLayout {
   const { slot, side, height, plotTop, plotBottom, dateY, detailY } = POINT_CHART;
-  const minWidth = Math.max(240, Math.floor(available));
+  const width = Math.max(240, Math.floor(available));
   const n = points.length;
-  const natural = side * 2 + Math.max(0, n - 1) * slot;
-  const scrolls = natural > minWidth;
-  const width = scrolls ? natural : minWidth;
+  const capacity = Math.max(2, Math.floor((width - side * 2) / slot) + 1);
   const step = n > 1 ? (width - side * 2) / (n - 1) : 0;
   const xOf = (i: number) => (n === 1 ? width / 2 : side + i * step);
 
@@ -73,11 +94,13 @@ export function pointChartLayout(points: readonly PointChartPoint[], minSpan = 0
   const span = hi - lo || 1;
   const yOf = (v: number) => (hi === lo ? (plotTop + plotBottom) / 2 : plotBottom - ((v - lo) / span) * (plotBottom - plotTop));
 
-  const laidOut = points.map((p, i) => ({ ...p, x: round(xOf(i)), y: round(yOf(p.value)) }));
+  const xs = points.map((_, i) => round(xOf(i)));
+  const labelled = labelledIndices(values, xs, capacity);
+  const laidOut = points.map((p, i) => ({ ...p, x: xs[i], y: round(yOf(p.value)), labelled: labelled.has(i) }));
   return {
     width,
     height,
-    scrolls,
+    thinned: n > capacity,
     points: laidOut,
     path: laidOut.length > 1 ? laidOut.map((p) => `${p.x},${p.y}`).join(' ') : '',
     baseline: plotBottom + 10,

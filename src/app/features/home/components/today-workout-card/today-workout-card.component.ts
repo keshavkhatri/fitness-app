@@ -33,7 +33,11 @@ import { WorkoutArtComponent } from '../workout-art/workout-art.component';
           @case ('resume') {
             <p class="eyebrow"><ion-icon name="play" aria-hidden="true" />{{ copy.resume.eyebrow }}</p>
             <div class="bottom">
-              <h2 class="name">{{ w.title }}</h2>
+              <h2 class="name">
+                <button type="button" class="card-link" data-testid="home-workout-open" [attr.aria-label]="w.title + ', workout details'" (click)="openSession.emit(w.sessionId)">
+                  {{ w.title }}
+                </button>
+              </h2>
               <p class="focus" data-testid="home-workout-progress">{{ w.progress }}</p>
               <fit-progress class="sets" label="Sets done" [value]="w.setsDone" [max]="w.setsTotal || 1" [valueText]="w.progress" />
               <button fit-button type="button" class="cta" [attr.aria-label]="'Resume ' + w.title" (click)="resumeSession.emit(w.sessionId)">
@@ -44,7 +48,12 @@ import { WorkoutArtComponent } from '../workout-art/workout-art.component';
           @case ('resistance') {
             <p class="eyebrow"><ion-icon class="star" name="star" aria-hidden="true" />Recommended</p>
             <div class="bottom">
-              <h2 class="name">{{ w.title }}</h2>
+              <h2 class="name">
+                <!-- Stretched over the card: the card opens the workout's details (Start stays its own button). -->
+                <button type="button" class="card-link" data-testid="home-workout-open" [attr.aria-label]="w.title + ', workout details'" (click)="openSession.emit(w.sessionId)">
+                  {{ w.title }}
+                </button>
+              </h2>
               <ul class="meta">
                 <li><ion-icon name="time-outline" aria-hidden="true" />{{ w.minutes }} min</li>
                 <li><ion-icon name="apps-outline" aria-hidden="true" />{{ w.countLabel }}</li>
@@ -67,11 +76,20 @@ import { WorkoutArtComponent } from '../workout-art/workout-art.component';
           @case ('activity') {
             <p class="eyebrow"><ion-icon name="walk-outline" aria-hidden="true" />{{ copy.today.activityEyebrow }}</p>
             <div class="bottom">
-              <h2 class="name">{{ w.title }}</h2>
+              <h2 class="name">
+                <button type="button" class="card-link" data-testid="home-workout-open" [attr.aria-label]="w.title + ', details'" (click)="openSession.emit(w.sessionId)">
+                  {{ w.title }}
+                </button>
+              </h2>
               <p class="focus">{{ w.summary }}</p>
-              <button fit-button type="button" class="cta" (click)="openSession.emit(w.sessionId)">
-                {{ copy.today.viewActivity }}<ion-icon name="chevron-forward" aria-hidden="true" />
-              </button>
+              @if (activityDone()) {
+                <p class="done" data-testid="home-activity-done"><ion-icon name="checkmark-circle" aria-hidden="true" />{{ copy.today.doneToday }}</p>
+                <button fit-button type="button" variant="ghost" class="cta undo" data-testid="home-activity-undo" (click)="markActivity.emit(null)">{{ copy.today.undoDone }}</button>
+              } @else {
+                <button fit-button type="button" class="cta" icon="checkmark" data-testid="home-activity-mark" (click)="markActivity.emit(w.sessionId)">
+                  {{ copy.today.markDone }}
+                </button>
+              }
             </div>
           }
           @case ('rest') {
@@ -122,9 +140,13 @@ export class TodayWorkoutCardComponent {
   readonly starting = input(false, { transform: booleanAttribute });
   /** Shown above Start, e.g. when a start failed. Announced. */
   readonly statusMessage = input('');
+  /** Today's light activity was marked done. */
+  readonly activityDone = input(false, { transform: booleanAttribute });
+  /** Mark today's light activity done (its session id), or undo it (null). */
+  readonly markActivity = output<string | null>();
   /** Plan session id → start it now (Home starts the workout directly). */
   readonly startSession = output<string>();
-  /** Plan session id → Workout Detail (activities). */
+  /** Plan session id → Workout Detail (a planned workout's card, or an activity). */
   readonly openSession = output<string>();
   /** Plan session id of the workout in progress → Active Workout. */
   readonly resumeSession = output<string>();

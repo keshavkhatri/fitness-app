@@ -38,7 +38,13 @@ import { PlanFeatureView } from './plan-view-model';
             <div class="bottom">
               <h2 class="name">{{ f.title }}</h2>
               <p class="line">{{ f.summary }}</p>
-              <button fit-button type="button" class="cta" block (click)="openSession.emit(f.sessionId)">{{ copy.viewActivity }}</button>
+              @if (activityDone()) {
+                <p class="done" data-testid="plan-activity-done"><ion-icon name="checkmark-circle" aria-hidden="true" />{{ todayCopy.doneToday }}</p>
+                <button fit-button type="button" variant="ghost" class="cta" block data-testid="plan-activity-undo" (click)="markActivity.emit(null)">{{ todayCopy.undoDone }}</button>
+              } @else {
+                <button fit-button type="button" class="cta" block icon="checkmark" data-testid="plan-activity-mark" (click)="markActivity.emit(f.sessionId)">{{ todayCopy.markDone }}</button>
+              }
+              <button fit-button type="button" variant="ghost" block class="details" data-testid="plan-activity-details" (click)="openSession.emit(f.sessionId)">{{ copy.viewActivity }}</button>
             </div>
           }
           @case ('rest') {
@@ -101,6 +107,10 @@ export class PlanTodayCardComponent {
   readonly starting = input(false, { transform: booleanAttribute });
   /** Shown above Start, e.g. when a start failed. Announced. */
   readonly statusMessage = input('');
+  /** Today's light activity was marked done (the app doesn't track it itself). */
+  readonly activityDone = input(false, { transform: booleanAttribute });
+  /** Mark today's light activity done (its session id), or undo it (null). */
+  readonly markActivity = output<string | null>();
   readonly startSession = output<string>();
   readonly resumeSession = output<string>();
   /** Plan session id → Workout Detail (activities). */

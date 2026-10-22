@@ -40,8 +40,8 @@ describe('auth configuration', () => {
   });
 
   it('reads app redirect URLs as exact URLs without query or fragment', () => {
-    expect(loadAuthConfig({ ...base, AUTH_APP_REDIRECT_URLS: 'com.fitnessapp.app://auth/callback, http://localhost:4200/auth/callback' })?.appRedirectUrls).toEqual([
-      'com.fitnessapp.app://auth/callback',
+    expect(loadAuthConfig({ ...base, AUTH_APP_REDIRECT_URLS: 'com.stokeformfitness.app://auth/callback, http://localhost:4200/auth/callback' })?.appRedirectUrls).toEqual([
+      'com.stokeformfitness.app://auth/callback',
       'http://localhost:4200/auth/callback',
     ]);
     expect(message({ ...base, AUTH_APP_REDIRECT_URLS: 'https://x.example/cb?next=1' })).toMatch(/without a query/);

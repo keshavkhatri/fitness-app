@@ -159,6 +159,9 @@ export const WORKOUT_COPY = {
   today: {
     workoutEyebrow: "Today's workout",
     activityEyebrow: "Today's activity",
+    markDone: 'Mark as done',
+    doneToday: 'Done for today',
+    undoDone: 'Undo',
     restEyebrow: 'Today',
     viewWorkout: 'View workout',
     viewActivity: 'View activity',
@@ -467,6 +470,9 @@ export const WORKOUT_COPY = {
       notRecorded: 'Not recorded',
       noChange: 'No change',
       vs: (date: string) => `vs ${date}`,
+      since: (date: string) => `since ${date}`,
+      compareLegend: 'Compare with',
+      compare: { previous: 'Last time', first: 'First record' },
       links: { weight: 'Weight history', composition: 'Body composition', measurements: 'Measurements' },
     },
     weight: {

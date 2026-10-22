@@ -142,6 +142,34 @@ describe('OnboardingPage (InBody report setup)', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('keeps the report through signing in, which leaves the page (the reading in memory is gone by then)', async () => {
+    const { flow, storage, startWithReport, pickImage, clickPrimary, confirmDetails, settle } = await render({ answers: [async () => json(200, rawExtraction())] });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('read'));
+    await settle();
+    await confirmDetails();
+    flow.update({ activityLevel: 'sedentary', primaryGoal: 'lose-fat', trainingExperience: 'beginner', trainingDaysPerWeek: 3, trainingLocation: 'gym', equipment: ['full-gym'] });
+    while (flow.stepId() !== 'summary') {
+      await clickPrimary();
+    }
+    await clickPrimary(); // to the account step: the report is set aside on the device
+    expect(flow.stepId()).toBe('account');
+    await vi.waitFor(() => expect(storage.values.has('stokeform.onboarding-report')).toBe(true));
+
+    // Google's sign-in (or the email link) reloads the app: nothing read in this session survives in memory.
+    TestBed.inject(ReportImport).reset();
+    await flow.complete();
+    await settle();
+
+    const assessments = JSON.parse(storage.values.get(BODY_COMPOSITION_KEY)!).assessments as { date: string }[];
+    expect(assessments.map((a) => a.date).sort()).toEqual(['2026-03-14', '2026-05-09', '2026-07-18', '2026-09-14']);
+    expect(JSON.parse(storage.values.get(WEIGHT_HISTORY_KEY)!).entries).toHaveLength(4);
+    // Used once, then gone.
+    expect(storage.values.has('stokeform.onboarding-report')).toBe(false);
+  });
+
   it('keeps nothing from the report when the user switches that off on the review', async () => {
     const { el, flow, storage, startWithReport, pickImage, clickPrimary, confirmDetails, settle } = await render({ answers: [async () => json(200, rawExtraction())] });
     await startWithReport();
@@ -163,6 +191,7 @@ describe('OnboardingPage (InBody report setup)', () => {
     expect(storage.values.has(PROFILE_KEY)).toBe(true);
     expect(storage.values.has(BODY_COMPOSITION_KEY)).toBe(false);
     expect(storage.values.has(WEIGHT_HISTORY_KEY)).toBe(false);
+    expect(storage.values.has('stokeform.onboarding-report')).toBe(false);
   });
 
   it('reads the report once, then prefills each screen for review and saves only after confirmation', async () => {

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonBackButton, IonIcon, NavController } from '@ionic/angular';
 
@@ -21,6 +22,7 @@ import {
   SegmentedControlComponent,
 } from '../../../shared/ui';
 import { BodyCompositionMetric } from '../../../domain/body-composition';
+import { inStack } from '../../../core/navigation/stack-nav';
 import { BODY_COMPOSITION_HISTORY_PATH, NEW_BODY_COMPOSITION_PATH } from '../../body-composition/body-composition-paths';
 import { MEASUREMENT_HISTORY_PATH } from '../../body-measurements/measurement-paths';
 import { NEW_WEIGHT_PATH, WEIGHT_HISTORY_PATH } from '../../body-weight/weight-history-paths';
@@ -33,7 +35,7 @@ import { ConsistencyCardComponent } from './consistency-card.component';
 import { toExerciseRow } from './exercise-list-view-model';
 import { ExerciseRowListComponent } from './exercise-row-list.component';
 import { progressBaseOf } from './progress-paths';
-import { BodyMetricView, KeyMetricView, ProgressWorkoutsView, toBodyMetrics, toProgressWorkouts } from './progress-view-model';
+import { BodyComparison, BodyMetricView, KeyMetricView, ProgressWorkoutsView, toBodyMetrics, toProgressWorkouts } from './progress-view-model';
 import { WeightTrendCardComponent, WeightTrendState } from './weight-trend-card.component';
 import { CompositionTrendCardComponent } from './composition-trend-card.component';
 import { CompositionTrendView, toCompositionTrend } from './composition-trend-view-model';
@@ -84,11 +86,23 @@ export class ProgressPage {
   private readonly nav = inject(NavController);
   private readonly router = inject(Router);
   /** `/progress` (its own tab) or `/you/progress` (pushed from You: a back button, no avatar). */
-  protected readonly base = progressBaseOf(inject(ActivatedRoute));
+  private readonly route = inject(ActivatedRoute);
+  protected readonly base = progressBaseOf(this.route);
   protected readonly inYou = this.base === '/you/progress';
+  /** A body section (weight history, body composition, measurements) in this page's own stack, so Back returns here. */
+  private bodyPath<T extends string | readonly string[]>(path: T): T {
+    return this.inYou ? path : inStack(path, '/progress');
+  }
 
   protected readonly copy = WORKOUT_COPY.progress;
   protected readonly view = signal<ProgressView>('overview');
+  /** A link can open a section (`?view=workout`, e.g. Home's "This week"); the tab page stays alive, so every visit counts. */
+  private readonly linkedView = this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+    const view = params.get('view');
+    if (view === 'overview' || view === 'workout' || view === 'body') {
+      this.view.set(view);
+    }
+  });
   protected readonly views: readonly SegmentOption<ProgressView>[] = (['overview', 'workout', 'body'] as const).map((value) => ({
     value,
     label: this.copy.view[value],
@@ -120,8 +134,14 @@ export class ProgressPage {
   });
 
   // --- Body ------------------------------------------------------------------------------------
+  /** The body cards' change: since the last recording, or since the first (how far you've come). */
+  protected readonly bodyComparison = signal<BodyComparison>('previous');
+  protected readonly comparisonOptions: readonly SegmentOption<BodyComparison>[] = (['previous', 'first'] as const).map((value) => ({
+    value,
+    label: this.copy.body.compare[value],
+  }));
   protected readonly bodyMetrics = computed<readonly BodyMetricView[]>(() =>
-    toBodyMetrics(this.weights.state(), this.composition.state(), this.weights.today()),
+    toBodyMetrics(this.weights.state(), this.composition.state(), this.weights.today(), this.bodyComparison()),
   );
 
   /** Kept while the page is open (not persisted). */
@@ -213,23 +233,23 @@ export class ProgressPage {
   }
 
   protected openWeightHistory(): void {
-    void this.nav.navigateForward(WEIGHT_HISTORY_PATH);
+    void this.nav.navigateForward(this.bodyPath(WEIGHT_HISTORY_PATH));
   }
 
   protected addWeight(): void {
-    void this.nav.navigateForward(NEW_WEIGHT_PATH);
+    void this.nav.navigateForward(this.bodyPath(NEW_WEIGHT_PATH));
   }
 
   protected addBodyComposition(): void {
-    void this.nav.navigateForward(NEW_BODY_COMPOSITION_PATH);
+    void this.nav.navigateForward(this.bodyPath(NEW_BODY_COMPOSITION_PATH));
   }
 
   protected openBodyComposition(): void {
-    void this.nav.navigateForward(BODY_COMPOSITION_HISTORY_PATH);
+    void this.nav.navigateForward(this.bodyPath(BODY_COMPOSITION_HISTORY_PATH));
   }
 
   protected openMeasurements(): void {
-    void this.nav.navigateForward(MEASUREMENT_HISTORY_PATH);
+    void this.nav.navigateForward(this.bodyPath(MEASUREMENT_HISTORY_PATH));
   }
 
   protected openReview(): void {

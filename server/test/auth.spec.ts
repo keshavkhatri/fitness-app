@@ -19,7 +19,7 @@ import { MIGRATIONS_DIRECTORY, newDatabase, pglitePool, sqlClient } from './pgli
 // endpoint (see "Google identities"), so Better Auth's real callback and linking rules run.
 // Placeholder secrets only.
 const BASE = 'http://localhost:8787';
-const APP_REDIRECT = 'com.fitnessapp.app://auth/callback';
+const APP_REDIRECT = 'com.stokeformfitness.app://auth/callback';
 const SECRET = 'test-only-Zq7v2Lr9Wm4Kt8Ns1Xc6Bp3Hd5Jf0Ge';
 const GOOGLE_CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
 const authConfig = ({ google = false, email = true } = {}): AuthConfig => ({
@@ -641,7 +641,7 @@ describe('Google sign-in', () => {
     it('sends a single-use code to the app deep link, which only the original verifier can redeem', async () => {
       const done = await complete((await verifiedUser()).cookie);
       expect(done.status).toBe(302);
-      expect(done.headers.get('location')).toMatch(/^com\.fitnessapp\.app:\/\/auth\/callback\?code=/);
+      expect(done.headers.get('location')).toMatch(/^com\.stokeformfitness\.app:\/\/auth\/callback\?code=/);
       const code = codeFrom(done)!;
 
       const wrong = await post('/v1/auth/mobile/exchange', { code, verifier: 'w'.repeat(43) });

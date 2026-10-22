@@ -9,6 +9,9 @@ import { OnboardingDraft, applyDraftChange, draftFromProfile, toFitnessProfile }
 import { INITIAL_PROGRESS, OnboardingProgress, OnboardingProgressStore } from './onboarding-progress.store';
 import { OnboardingStepId, applicableSteps, stepById } from './onboarding-steps';
 import { ReportImport } from './report-import.service';
+import { PendingReportStore } from './pending-report.store';
+import { CLOCK, localIsoDate } from '../../../core/time/clock';
+import { inBodyPrefill } from '../../../domain/inbody-extraction';
 
 export type ProfileSaveStatus = 'idle' | 'saving' | 'error';
 
@@ -42,6 +45,8 @@ export class OnboardingFlow {
   /** The report read during setup, if any (provided with the flow on the onboarding route). */
   private readonly report = inject(ReportImport, { optional: true });
   private readonly reportResults = inject(ReportResults);
+  private readonly pendingReport = inject(PendingReportStore);
+  private readonly clock = inject(CLOCK);
 
   private readonly state = signal<OnboardingProgress>(INITIAL_PROGRESS);
 
@@ -146,6 +151,13 @@ export class OnboardingFlow {
       this.goTo(incomplete, true);
       return false;
     }
+    // Signing in may leave the page: the report the user chose to keep has to outlive this session.
+    const reading = this.report?.reading();
+    if (reading && this.report?.keepResults()) {
+      void this.pendingReport.save({ extraction: reading.extraction, logWeights: this.report.logWeights() });
+    } else {
+      void this.pendingReport.clear();
+    }
     this.goTo('account', false);
     return true;
   }
@@ -183,18 +195,33 @@ export class OnboardingFlow {
     // The name is the account's (set at the account step) or edited in You: never written from here.
     await this.store.clear().catch(() => undefined);
     if (this.mode() === 'new') {
-      // The InBody report read during setup becomes body composition (and weigh-ins), as on the You tab.
-      // Best effort: the profile exists either way, and everything can be added again from You.
-      const reading = this.report?.reading();
-      if (reading && this.report?.keepResults()) {
-        await this.reportResults.saveReading(reading.prefill, { logWeights: this.report.logWeights() }).catch(() => undefined);
-      }
+      // The InBody report read during setup becomes body composition (and weigh-ins), as on the You tab: from this
+      // session, or (after signing in left the page) from where the account step kept it. Best effort: the profile
+      // exists either way, and everything can be added again from You.
+      await this.keepReport().catch(() => undefined);
       // A new user sees the plan offer once, after their assessment (the profile editor never does).
       await this.offer.markPending();
       // Not persisted: progress was just cleared and the profile now exists.
       this.state.set({ ...this.state(), stepId: 'finish', editingFromSummary: false });
     }
     return true;
+  }
+
+  private async keepReport(): Promise<void> {
+    const reading = this.report?.reading();
+    const pending = reading ? null : await this.pendingReport.load();
+    try {
+      if (reading && this.report?.keepResults()) {
+        await this.reportResults.saveReading(reading.prefill, { logWeights: this.report.logWeights() });
+      } else if (pending) {
+        const prefill = inBodyPrefill(pending.extraction, localIsoDate(this.clock()));
+        if (prefill.kind === 'prefill') {
+          await this.reportResults.saveReading(prefill, { logWeights: pending.logWeights });
+        }
+      }
+    } finally {
+      await this.pendingReport.clear();
+    }
   }
 
   private goTo(stepId: OnboardingStepId, editingFromSummary: boolean): void {

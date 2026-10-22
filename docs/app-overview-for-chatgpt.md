@@ -39,7 +39,7 @@
 
 ## 1. What the app is (one-minute summary)
 
-A **cross-platform (iOS/Android) personal fitness companion** built with **Ionic 9 + Angular 22 + Capacitor 8**. Brand name in the UI: **StokeForm** (`src/app/core/brand.ts`); Capacitor/Android app name is "StokeForm"; the app id `com.fitnessapp.app` and the root npm package name `fitness-app` are deliberately not named after the brand (installation, signing and the Google sign-in deep link depend on the id).
+A **cross-platform (iOS/Android) personal fitness companion** built with **Ionic 9 + Angular 22 + Capacitor 8**. Brand name in the UI: **StokeForm** (`src/app/core/brand.ts`); Capacitor/Android app name is "StokeForm"; the app id is `com.stokeformfitness.app` (installation, signing, Firebase and the Google sign-in deep link depend on it); only the root npm package name `fitness-app` keeps the placeholder name.
 
 Positioning from the brand docs: *energy, strength, personal transformation and measurable progress*; the name means "to stoke (feed a fire) + form".
 
@@ -146,7 +146,7 @@ fitness-app/
 ├── package.json / package-lock.json
 ├── angular.json                    Build/serve/test/lint targets; prod fileReplacements for environments
 ├── Dockerfile / .dockerignore / .gcloudignore   Container image of the server (built from repo root; see §14)
-├── capacitor.config.ts             appId com.fitnessapp.app, appName "StokeForm", webDir "www"
+├── capacitor.config.ts             appId com.stokeformfitness.app, appName "StokeForm", webDir "www"
 ├── ionic.config.json               type angular-standalone, capacitor integration
 ├── eslint.config.js                Architectural lint rules (see §5.3)
 ├── tsconfig*.json, .editorconfig, .browserslistrc, .gitignore
@@ -165,7 +165,7 @@ fitness-app/
 │   ├── tools/                      migrate, cleanup, email-test, dev-outbox, migration-files (CLI entry points)
 │   ├── test/*.spec.ts              ~270 tests (auth, cleanup, config, database, email, handler, migrations, node-server, openai, readiness, schema…) + pglite.ts
 │   ├── AUTH.md, CLOUD_RUN.md, DATABASE.md, README.md, .env.example  (the real .env is git-ignored)
-├── android/                        Capacitor Android project (appId com.fitnessapp.app; launcher icons/splash generated from the brand mark)
+├── android/                        Capacitor Android project (appId com.stokeformfitness.app; launcher icons/splash generated from the brand mark)
 ├── www/                            Build output (git-ignored)
 ├── src/
 │   ├── index.html, main.ts, global.scss, test-setup.ts
@@ -650,7 +650,7 @@ Deliberately closed (404): Better Auth's `/api/auth/one-time-token/*`, `/api/aut
 - **Verified identities only.** Email/password: no session until the address is confirmed via the emailed link (24 h, signed, built by the server with its own landing page — a client-sent `callbackURL` is ignored). Google: identity is read **on the server** from the ID token returned to the server by Google's token endpoint (code + client secret over TLS); nothing the app or browser sends is trusted as identity; an address Google reports unverified gets no session. `authenticate()` treats an unconfirmed user's session as no session at all.
 - **Account linking** (explicit in `auth.ts`: `trustedProviders: []`, `requireLocalEmailVerified: true`, `allowDifferentEmails: false`): a Google sign-in joins an existing account with the same address **only if** Google says the address is verified **and** the existing account's address is confirmed; otherwise the app is told `account-not-linked`.
 - **Tokens.** The app (WebView origin `https://localhost`) and API are different sites, so cookies would be third-party; the app sends `Authorization: Bearer <signed token>` (unsigned/altered tokens refused). Stored in Android Keystore-backed secure storage (never `localStorage`); sessions last `AUTH_SESSION_DAYS` (default 30, 1–90) and are extended once a day while used; sign-out on one device leaves others signed in.
-- **Google on Android without a secret in the app (PKCE-style):** the app makes a random 32-byte **verifier**, stores it securely, opens a Custom Tab at `/v1/auth/google/start` sending only its **SHA-256 challenge**; after Google, the server makes a **3-minute single-use code** bound to the challenge and redirects to `com.fitnessapp.app://auth/callback?code=…` (or `?error=account-not-linked|email-not-verified|google-sign-in-failed`), which reopens the app (intent filter); the app posts `{code, verifier}` to `/v1/auth/mobile/exchange` for its token. A stolen code is useless without the verifier; the redirect must be in `AUTH_APP_REDIRECT_URLS`. If Android killed the app while the browser was open, the link is read as the launch URL (handled once). Known weakness: a custom-scheme link could be registered by another app (Android App Links would be stronger).
+- **Google on Android without a secret in the app (PKCE-style):** the app makes a random 32-byte **verifier**, stores it securely, opens a Custom Tab at `/v1/auth/google/start` sending only its **SHA-256 challenge**; after Google, the server makes a **3-minute single-use code** bound to the challenge and redirects to `com.stokeformfitness.app://auth/callback?code=…` (or `?error=account-not-linked|email-not-verified|google-sign-in-failed`), which reopens the app (intent filter); the app posts `{code, verifier}` to `/v1/auth/mobile/exchange` for its token. A stolen code is useless without the verifier; the redirect must be in `AUTH_APP_REDIRECT_URLS`. If Android killed the app while the browser was open, the link is read as the launch URL (handled once). Known weakness: a custom-scheme link could be registered by another app (Android App Links would be stronger).
 - **Password reset.** "Forgot your password?" always answers identically (no enumeration; no timing difference). `POST …/request-password-reset` (3/min/client) stores a **1-hour single-use token** and emails a link to the server's own static page, which strips the token from the address bar/history, asks for the new password twice (8–128 chars), and posts it (10/min/client). Success **revokes every session** of the account; a bad/used/expired token changes nothing; a too-short password does not consume the link. A never-confirmed account can reset (how the real owner reclaims an address from a squatter) but still can't sign in until confirmed. Without email delivery, reset is disabled.
 - **Cleanup job** `cleanup.mjs` (`npm run server:cleanup` = **preview by default**, `:apply` deletes): removes only old (default ≥ 14 days) **unconfirmed, password-only accounts with no sessions, data or pending tokens**, FK-discovered data tables, `FOR UPDATE SKIP LOCKED`, `--limit` (default 50), idempotent, re-checked in the deleting statement. Meant to run as a Cloud Run **job + Cloud Scheduler** (documented in `CLOUD_RUN.md`, **not created**). Run the preview first: the npm scripts read `DATABASE_URL` from `server/.env`, which is the one real database.
 - **Rate limits** (per client): sign-in 5/min, sign-up 3/min, confirmation links 10/min, reset requests 3/min, new passwords 10/min. Tests prove forged `Host`/`X-Forwarded-For` can't move emailed links or evade limits.
@@ -697,7 +697,7 @@ Deliberately closed (404): Better Auth's `/api/auth/one-time-token/*`, `/api/aut
 | `BETTER_AUTH_URL` | required with the secret | Public origin, https except localhost, no path |
 | `EMAIL_DELIVERY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_DEV_OUTBOX_DIR` | unset | See email above |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | unset | Both or neither |
-| `AUTH_APP_REDIRECT_URLS` | `com.fitnessapp.app://auth/callback` | Add `http://localhost:4200/auth/callback` for web dev |
+| `AUTH_APP_REDIRECT_URLS` | `com.stokeformfitness.app://auth/callback` | Add `http://localhost:4200/auth/callback` for web dev |
 | `AUTH_SESSION_DAYS` | 30 | 1–90 |
 | `HOST` / `PORT` | 127.0.0.1 / 8787 | `HOST` defaults to `0.0.0.0` when `NODE_ENV=production`; Cloud Run supplies `PORT` |
 
@@ -772,7 +772,7 @@ npm run server:start                   # http://127.0.0.1:8787 (dev-outbox write
 | Target | Status |
 |---|---|
 | **Web** | The production build runs as a static SPA (needs SPA fallback to `index.html` for deep links; `<base href="/">`). **Not hosted anywhere** — no hosting config, no deploy script. |
-| **Android** | Capacitor project exists (`appName` and launcher label "StokeForm"; deep-link intent filter `com.fitnessapp.app://auth/callback` for Google sign-in; permission `INTERNET` only; `allowBackup="true"`). A **debug APK** was built and installed on one physical phone (§15). **No release signing config, no Play Store setup, versionCode 1 / versionName "1.0"**, `minifyEnabled false` in release. Launcher icons/splash are generated from the StokeForm mark (verified from the built APK and offline mask previews only, **not yet seen on a phone**). |
+| **Android** | Capacitor project exists (`appName` and launcher label "StokeForm"; deep-link intent filter `com.stokeformfitness.app://auth/callback` for Google sign-in; permission `INTERNET` only; `allowBackup="true"`). A **debug APK** was built and installed on one physical phone (§15). **No release signing config, no Play Store setup, versionCode 1 / versionName "1.0"**, `minifyEnabled false` in release. Launcher icons/splash are generated from the StokeForm mark (verified from the built APK and offline mask previews only, **not yet seen on a phone**). |
 | **iOS** | **Not added.** Would need `npx cap add ios` and a Mac/Xcode. |
 | **API server on Cloud Run** | **Deployed, but an old build.** Service `deploy-fitness-app-backend`, project **`fitness-app-511714`** (number 893557393361), region **`europe-west1`**, public URL `https://deploy-fitness-app-backend-893557393361.europe-west1.run.app`. Image from commit `c1c92a3` (**no accounts code**; `/v1/auth/providers` answers 404 there). Settings read from Google Cloud on 16 Oct: **max-instances 20** (accounts need **1**), concurrency 80, timeout 300 s, 512 Mi, unauthenticated invocation allowed (protection = CORS, size/rate limits, OpenAI spend cap), runs as the default compute service account; plain env `NODE_ENV`, `OPENAI_MODEL`, `ALLOWED_ORIGINS` (`https://localhost,capacitor://localhost`), `CLIENT_IP_HEADER=x-forwarded-for`, `DATABASE_*` tuning; Secret Manager secrets **`OPENAI_API_KEY`** and **`DATABASE_URL`** (upper-case names). `/health` and `/ready` return 200. No `BETTER_AUTH_*`, `GOOGLE_*`, `RESEND_*`/`EMAIL_*` settings, no Cloud Run job, Cloud Scheduler API not enabled. **Trap:** this machine's default gcloud project is a different one (`wallpaper-generator-509111`) — every command must pass `--project fitness-app-511714`; never accept "enable API?" prompts for the default project. **Unverified:** that the deployed `DATABASE_URL` secret points at the same Neon database as `server/.env`. |
 | **Accounts in production** | **Not enabled.** A 10-step ordered plan with prerequisites P1–P9 is in `server/AUTH.md` ("Enabling accounts in production"): confirm which DB the secret points at; rotate the Neon password and OpenAI key; take a Neon backup; set up and test **Resend** with a verified sending domain; add the production redirect URI to the Google OAuth client; create secrets (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `GOOGLE_CLIENT_SECRET`); deploy the new build **inert** (without `BETTER_AUTH_SECRET` the account routes answer 503 and the app runs as guest) and check `/health`, `/ready`, providers all false, a synthetic extraction; create the cleanup job in preview mode; then turn accounts on with one `gcloud run services update` (adds secrets/vars **and** `--max-instances 1`) and verify with a real account on a phone. Rollback = route traffic to the previous revision or remove `BETTER_AUTH_SECRET`; migrations need no rollback. Note the production app's `apiBaseUrl` already points at this service, so the account screens appear as "unavailable" until step 9. |
@@ -782,7 +782,7 @@ npm run server:start                   # http://127.0.0.1:8787 (dev-outbox write
 | **CI/CD** | None in the repo. |
 | **Release readiness** | Blocked on §19 items: unencrypted local storage, client-only age gate, accounts not live, no billing, no release signing, no store assets. |
 
-Capacitor config is minimal (`appId com.fitnessapp.app`, `appName StokeForm`, `webDir www`). The Android manifest handles configuration changes (`orientation|…|uiMode|density`), so rotation does not restart the activity; portrait is **not** locked.
+Capacitor config is minimal (`appId com.stokeformfitness.app`, `appName StokeForm`, `webDir www`). The Android manifest handles configuration changes (`orientation|…|uiMode|density`), so rotation does not restart the activity; portrait is **not** locked.
 
 ---
 
@@ -844,7 +844,7 @@ The production web build now points at the Cloud Run API (`apiBaseUrl`, `inbodyE
 6. **A Neon database password leaked** into `server/.env.example`, was committed and pushed (commit `8981114`; a later "remove credentials" commit removed it from the files but it remains in Git history). The owner was told to reset it; **reset not confirmed**. Same for the OpenAI key (#3). Treat both as compromised until rotated.
 7. **Local runs hit the production database** (only one Neon DB exists), so development mistakes can affect real accounts.
 8. No dependency/licence audit documented; no CSP configured for the web build (the server's static reset/confirmation pages do use a nonce CSP); `android:allowBackup="true"` in the manifest means app data (incl. unencrypted `localStorage`) may be included in Android backups.
-9. Custom-scheme deep link (`com.fitnessapp.app://`) could be claimed by another app; mitigated by the PKCE-style verifier, Android App Links would be stronger.
+9. Custom-scheme deep link (`com.stokeformfitness.app://`) could be claimed by another app; mitigated by the PKCE-style verifier, Android App Links would be stronger.
 10. Email delivery (Resend) and production account flows are untested with real credentials.
 
 ---
@@ -927,7 +927,7 @@ Target **WCAG 2.1 AA**. Mechanisms: contrast ratios documented per token pair (t
 - Don't add a shared component until two screens need it (or one needs it and it encodes an accessibility rule).
 - Git: feature branches + PRs; the owner commits themself (assistant edits are left uncommitted unless asked).
 - Accounts: no session without a confirmed email; nothing from the client is trusted as identity; sign-in/out never reads, uploads or erases local fitness data; Premium access is decided only by `canAccess()` and a verified entitlement; docs and commands must name the real Cloud Run project (`--project fitness-app-511714`) and the upper-case secret names `OPENAI_API_KEY` / `DATABASE_URL`; `gcloud --set-secrets` / `--set-env-vars` replace whole lists (use `--update-*`).
-- Naming: **StokeForm** is final (do not propose alternatives); the app id `com.fitnessapp.app` and npm package `fitness-app` intentionally keep the old name. Commit messages follow conventional style (`feat(scope):`, `fix(scope):`, `docs:`).
+- Naming: **StokeForm** is final (do not propose alternatives); the app id is `com.stokeformfitness.app`; the npm package `fitness-app` keeps the old name. Commit messages follow conventional style (`feat(scope):`, `fix(scope):`, `docs:`).
 
 ---
 

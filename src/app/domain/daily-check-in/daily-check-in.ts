@@ -20,9 +20,14 @@ export const STEPS_RANGE = { min: 0, max: 100_000 } as const;
 export interface DailyCheckIns {
   readonly steps: Readonly<Record<IsoCalendarDate, number>>;
   readonly recovery: Readonly<Record<IsoCalendarDate, RecoveryLevel>>;
+  /**
+   * A plan's light-activity day the user marked as done (the session id): the app doesn't track walks or rides
+   * itself, so the user's word is the record.
+   */
+  readonly activity: Readonly<Record<IsoCalendarDate, string>>;
 }
 
-export const EMPTY_CHECK_INS: DailyCheckIns = { steps: {}, recovery: {} };
+export const EMPTY_CHECK_INS: DailyCheckIns = { steps: {}, recovery: {}, activity: {} };
 
 export function isValidSteps(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= STEPS_RANGE.min && value <= STEPS_RANGE.max;
@@ -37,10 +42,11 @@ export function parseDailyCheckIns(value: unknown): DailyCheckIns {
   if (!value || typeof value !== 'object') {
     return EMPTY_CHECK_INS;
   }
-  const { steps, recovery } = value as Record<string, unknown>;
+  const { steps, recovery, activity } = value as Record<string, unknown>;
   return {
     steps: pick(steps, isValidSteps),
     recovery: pick(recovery, isRecoveryLevel),
+    activity: pick(activity, (v): v is string => typeof v === 'string' && v.length > 0 && v.length <= 80),
   };
 }
 

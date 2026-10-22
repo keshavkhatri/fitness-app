@@ -23,12 +23,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Google sign-in returns here from the browser (com.fitnessapp.app://auth/callback). See server/AUTH.md. -->
+            <!-- Google sign-in returns here from the browser (com.stokeformfitness.app://auth/callback). See server/AUTH.md. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.fitnessapp.app" android:host="auth" android:pathPrefix="/callback" />
+                <data android:scheme="com.stokeformfitness.app" android:host="auth" android:pathPrefix="/callback" />
             </intent-filter>
 
         </activity>

@@ -17,7 +17,7 @@ export type AuthState =
   | { readonly status: 'signed-in'; readonly user: AccountUser; readonly verified: boolean };
 
 /** The Android/iOS deep link the Google flow returns to (AndroidManifest intent filter; server allowlist). */
-export const APP_AUTH_CALLBACK = 'com.fitnessapp.app://auth/callback';
+export const APP_AUTH_CALLBACK = 'com.stokeformfitness.app://auth/callback';
 /** The web app's return page during development (also on the server allowlist). */
 export const WEB_AUTH_CALLBACK_PATH = '/auth/callback';
 

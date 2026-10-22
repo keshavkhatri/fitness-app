@@ -27,11 +27,11 @@ describe('DailyCheckInService', () => {
     await service.setSteps('2026-10-08', 4000);
     await service.setSteps('2026-10-08', 8200);
     await service.setRecovery('2026-10-08', 'good');
-    expect(service.checkIns()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' } });
+    expect(service.checkIns()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {} });
 
     TestBed.resetTestingModule();
     const again = setup(storage).service;
-    expect(await again.load()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' } });
+    expect(await again.load()).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {} });
   });
 
   it('rejects invalid values without touching stored data', async () => {
@@ -52,9 +52,9 @@ describe('DailyCheckInService', () => {
   it('unknown versions and corrupt data read as empty', async () => {
     const storage = new MemoryKeyValueStorage();
     storage.values.set(KEY, JSON.stringify({ version: 9, steps: { '2026-10-08': 1 } }));
-    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {} });
+    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {}, activity: {} });
     TestBed.resetTestingModule();
     storage.values.set(KEY, '{nope');
-    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {} });
+    expect(await setup(storage).service.load()).toEqual({ steps: {}, recovery: {}, activity: {} });
   });
 });

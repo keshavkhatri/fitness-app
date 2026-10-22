@@ -35,7 +35,7 @@ export interface AuthConfig {
 }
 
 /** The app's deep link (capacitor.config appId + a fixed path), used when AUTH_APP_REDIRECT_URLS is unset. */
-export const DEFAULT_APP_REDIRECT_URL = 'com.fitnessapp.app://auth/callback';
+export const DEFAULT_APP_REDIRECT_URL = 'com.stokeformfitness.app://auth/callback';
 const MIN_SECRET_LENGTH = 32;
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
 

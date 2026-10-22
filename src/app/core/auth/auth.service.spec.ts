@@ -286,7 +286,7 @@ describe('AuthService', () => {
 
     it('ignores deep links that are not the sign-in callback', async () => {
       const { auth, platform, deepLink } = setup();
-      deepLink('com.fitnessapp.app://somewhere-else?code=x');
+      deepLink('com.stokeformfitness.app://somewhere-else?code=x');
       await flush();
       expect(platform.closes).toBe(0);
       expect(auth.googleError()).toBeNull();

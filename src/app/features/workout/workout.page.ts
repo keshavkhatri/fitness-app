@@ -5,7 +5,8 @@ import { IonIcon, NavController } from '@ionic/angular';
 import { canAccess } from '../../core/entitlements/access-policy';
 import { EntitlementService } from '../../core/entitlements/entitlement.service';
 import { OFFER_PATH, ONBOARDING_PATH, ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
-import { CLOCK } from '../../core/time/clock';
+import { CLOCK, localIsoDate } from '../../core/time/clock';
+import { DailyCheckInService } from '../../core/daily-check-in/daily-check-in.service';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
@@ -70,6 +71,11 @@ export class WorkoutPage {
   private readonly router = inject(Router);
   private readonly logs = inject(WorkoutLogService);
   private readonly history = inject(WorkoutHistoryService);
+  private readonly checkIns = inject(DailyCheckInService);
+  /** Read once so a light-activity day already marked done shows as done. */
+  private readonly checkInsLoaded = resource({ loader: () => this.checkIns.load() });
+  /** Today's light activity was marked done. */
+  protected readonly activityDone = computed(() => !!this.checkIns.checkIns().activity[localIsoDate(this.clock())]);
   private readonly entitlements = inject(EntitlementService);
 
   protected readonly copy = WORKOUT_COPY;
@@ -171,6 +177,11 @@ export class WorkoutPage {
     } finally {
       this.starting.set(false);
     }
+  }
+
+  /** Today's light activity: the user's own "done" (the app doesn't track it), or undone. */
+  protected async markActivity(sessionId: string | null): Promise<void> {
+    await this.checkIns.setActivityDone(localIsoDate(this.clock()), sessionId).catch(() => undefined);
   }
 
   protected openSession(sessionId: string): void {

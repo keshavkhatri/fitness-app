@@ -1,0 +1,251 @@
+@use 'mixins' as fx;
+
+ion-toolbar {
+  --background: var(--color-bg);
+  --min-height: var(--tap-target-min);
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+ion-content {
+  --background: var(--color-bg);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) 0 var(--space-2);
+}
+
+.icon-button {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  display: grid;
+  place-items: center;
+  width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  border-radius: var(--radius-pill);
+  font-size: 24px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-gutter) calc(var(--space-8) + var(--ion-safe-area-bottom, 0px));
+}
+
+// --- Hero ------------------------------------------------------------------------------------
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  overflow: hidden;
+  border-radius: var(--radius-hero);
+  background: radial-gradient(120% 90% at 50% 0%, #3a2a12 0%, #161714 62%);
+  color: #ffffff;
+  text-align: center;
+}
+
+.flame {
+  font-size: 64px;
+  line-height: 1;
+  filter: grayscale(1) opacity(0.5);
+
+  &.lit {
+    filter: drop-shadow(0 0 18px rgba(255, 150, 40, 0.75));
+    animation: flicker 2.4s ease-in-out infinite;
+  }
+}
+
+.count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.number {
+  @include fx.tabular-numbers;
+  font-size: 64px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.count-label {
+  @include fx.text(body, semibold);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.message {
+  @include fx.text(body-sm);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.milestone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.milestone-text {
+  @include fx.text(caption, medium);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffb347, #ff7a18);
+  transition: width 900ms var(--motion-ease);
+}
+
+// --- Stats -----------------------------------------------------------------------------------
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.stat {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+
+  dt {
+    @include fx.text(caption, medium);
+    color: var(--color-text-secondary);
+  }
+
+  dd {
+    @include fx.text(h2, bold);
+    @include fx.tabular-numbers;
+    margin: 0;
+
+    span {
+      @include fx.text(body-sm);
+      color: var(--color-text-secondary);
+    }
+  }
+
+  &.best dd {
+    color: #d9631e;
+  }
+}
+
+// --- Cards -----------------------------------------------------------------------------------
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.card-title {
+  @include fx.text(body, bold);
+}
+
+.note {
+  @include fx.text(body-sm);
+  color: var(--color-text-secondary);
+}
+
+// --- Milestones & what counts -----------------------------------------------------------------
+.badges {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  opacity: 0.55;
+
+  &.reached {
+    background: color-mix(in srgb, #ffb347 22%, var(--color-surface));
+    opacity: 1;
+  }
+}
+
+.badge-icon {
+  font-size: 22px;
+}
+
+.badge-days {
+  @include fx.text(body-sm, bold);
+}
+
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include fx.text(body-sm, medium);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+  }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+  }
+
+  50% {
+    transform: scale(1.08) rotate(2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flame.lit {
+    animation: none;
+  }
+
+  .fill {
+    transition: none;
+  }
+}

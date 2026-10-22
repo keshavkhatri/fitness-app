@@ -91,6 +91,10 @@
 }
 
 .streak {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.pressable;
+
   display: flex;
   flex: none;
   align-items: center;

@@ -330,14 +330,23 @@ describe('HomePage', () => {
       expect(navigateByUrl).toHaveBeenCalledWith('/workout');
     });
 
-    it('an activity day offers the activity', async () => {
+    it('an activity day opens its details from the card and can be marked done (and undone)', async () => {
       const { el, fixture, forward } = await render({ profile: ACTIVITY_PROFILE });
       const card = workoutCard(el)!;
       expect(clean(card.querySelector('.name'))).toBe('Light Activity');
-      buttonIn(card, 'View activity')!.click();
+      card.querySelector<HTMLButtonElement>('[data-testid=home-workout-open]')!.click();
       await fixture.whenStable();
       const [path] = forward.mock.calls[0] as unknown as [string[]];
       expect(TestBed.inject(WorkoutPlanService).plan()?.sessions.find((s) => s.id === path[2])?.kind).toBe('activity');
+
+      card.querySelector<HTMLButtonElement>('[data-testid=home-activity-mark]')!.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(card.querySelector('[data-testid=home-activity-done]')).not.toBeNull();
+      card.querySelector<HTMLButtonElement>('[data-testid=home-activity-undo]')!.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(card.querySelector('[data-testid=home-activity-mark]')).not.toBeNull();
     });
 
     it('a workout in progress is offered for resuming (from the log service)', async () => {
@@ -412,19 +421,20 @@ describe('HomePage', () => {
     const count = (el: HTMLElement) => clean(el.querySelector('[data-testid=home-week-count]'));
     const days = (el: HTMLElement) => [...el.querySelectorAll('.chart .day')];
 
-    it('finished of planned workouts this Monday–Sunday week, one bar per day, and opens Progress', async () => {
+    it('finished of planned workouts this Monday–Sunday week, one marker per day with a legend, and opens Progress on Workout', async () => {
       const history = [workoutAt(4, 40), workoutAt(5, 30), workoutAt(7, 60)]; // Sun (last week), Mon, Wed
       const { el, fixture, navigateByUrl } = await render({ history });
       expect(count(el)).toBe('2/4');
       expect(el.querySelector('[data-testid=home-week]')?.getAttribute('aria-label')).toMatch(/^This week: 2 of 4 workouts done\. Today, Thursday: /);
       expect(days(el).map((d) => d.getAttribute('data-state'))).toEqual(['done', 'planned', 'done', 'planned', 'planned', 'rest', 'rest']);
-      // Done bars are as tall as the time trained: 60 min fills the bar, 30 min half of it.
-      const heights = days(el).map((d) => (d.querySelector('.fill') as HTMLElement).style.height);
-      expect([heights[0], heights[2]]).toEqual(['50%', '100%']);
+      // Done days carry their minutes; a planned day already past is "missed", one still ahead "planned".
+      expect(days(el).map((d) => clean(d.querySelector('[data-testid=home-week-minutes]')))).toEqual(['30m', '', '60m', '', '', '', '']);
+      expect(days(el).map((d) => d.getAttribute('data-mark'))).toEqual(['done', 'missed', 'done', 'planned', 'planned', 'rest', 'rest']);
+      expect([...el.querySelectorAll('.legend li')].map((li) => clean(li))).toEqual(['Done', 'Planned', 'Missed', 'Rest']);
       expect(clean(el.querySelector('.chart .day.today .letter'))).toBe('T');
       el.querySelector<HTMLButtonElement>('[data-testid=home-week-open]')!.click();
       await fixture.whenStable();
-      expect(navigateByUrl).toHaveBeenCalledWith('/progress');
+      expect(navigateByUrl).toHaveBeenCalledWith('/progress?view=workout');
     });
 
     it('the weekly review is reachable from Home, with or without a plan', async () => {
