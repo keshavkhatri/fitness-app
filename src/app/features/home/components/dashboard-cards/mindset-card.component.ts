@@ -9,7 +9,7 @@ import { MINDSET_PHOTO } from '../../home-media';
 @Component({
   selector: 'app-mindset-card',
   template: `
-    <section class="photo" aria-labelledby="home-mindset-title" [style.background-image]="'url(' + photo + ')'">
+    <section class="photo" aria-labelledby="home-mindset-title" [style.--photo]="'url(' + photo + ')'">
       <h2 id="home-mindset-title" class="eyebrow">Mindset for today</h2>
       <p class="quote" data-testid="home-mindset-quote">“{{ quote() }}”</p>
       <button type="button" class="pill" data-testid="home-tip-open" (click)="tipOpen.set(true)">

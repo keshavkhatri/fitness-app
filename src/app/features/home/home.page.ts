@@ -5,7 +5,6 @@ import { NavController } from '@ionic/angular';
 
 import { DailyCheckInService } from '../../core/daily-check-in/daily-check-in.service';
 import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
-import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { UserIdentityService } from '../../core/identity/user-identity.service';
 import { NutritionService } from '../../core/nutrition/nutrition.service';
 import { ONBOARDING_PATH } from '../../core/profile/onboarding.guards';
@@ -14,7 +13,9 @@ import { CLOCK, localIsoDate } from '../../core/time/clock';
 import { WorkoutHistoryService } from '../../core/workout/workout-history.service';
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
-import { RecoveryLevel, WATER_GLASS_ML, WATER_RANGE_ML, waterGoalMl } from '../../domain/daily-check-in';
+import { RecoveryLevel } from '../../domain/daily-check-in';
+import { WATER_GLASS_ML } from '../../domain/nutrition';
+import { WaterLogService } from '../../core/nutrition/water-log.service';
 import { MealCategory } from '../../domain/nutrition';
 import { NotificationInboxService } from '../notifications/notification-inbox.service';
 import { NOTIFICATIONS_PATH } from '../notifications/notifications.page';
@@ -40,7 +41,9 @@ import { WeekActivityCardComponent } from './components/week-activity-card/week-
 import { ReviewEntryComponent } from '../fitness-review/components/review-entry.component';
 import { FITNESS_REVIEW_PATH } from '../fitness-review/fitness-review-paths';
 import { BodyOverviewCardComponent } from './components/dashboard-cards/body-overview-card.component';
-import { HydrationCardComponent } from './components/dashboard-cards/hydration-card.component';
+import { HydrationCardComponent } from '../nutrition/components/hydration-card.component';
+import { WaterSheetComponent } from '../nutrition/components/water-sheet.component';
+import { toHydration } from '../nutrition/nutrition-water';
 import { MacroTargetCardComponent } from './components/dashboard-cards/macro-target-card.component';
 import { MilestoneCardComponent } from './components/dashboard-cards/milestone-card.component';
 import { MindsetCardComponent } from './components/dashboard-cards/mindset-card.component';
@@ -49,7 +52,7 @@ import { TodayMealsCardComponent } from './components/dashboard-cards/today-meal
 import { TrackProgressCardComponent } from './components/dashboard-cards/track-progress-card.component';
 import { WeeklyProgressCardComponent } from './components/dashboard-cards/weekly-progress-card.component';
 import { greetingFor } from './greeting';
-import { toBodyOverview, toFocus, toHydration, toMacroRings, toMealTiles, toMilestone, toWeeklyProgress } from './home-dashboard';
+import { toBodyOverview, toFocus, toMacroRings, toMealTiles, toMilestone, toWeeklyProgress } from './home-dashboard';
 import { mindsetFor } from './home-dashboard-content';
 import { HomeDayView, HomeTileAction, toHomeDay } from './home-today';
 import { HomeWeekView, HomeWorkoutView, toHomeWeek, toHomeWorkout } from './home-training';
@@ -70,6 +73,7 @@ export const YOU_PATH = '/you';
   imports: [
     BodyOverviewCardComponent,
     HydrationCardComponent,
+    WaterSheetComponent,
     MacroTargetCardComponent,
     MilestoneCardComponent,
     MindsetCardComponent,
@@ -99,10 +103,10 @@ export class HomePage {
   private readonly logs = inject(WorkoutLogService);
   private readonly workoutHistory = inject(WorkoutHistoryService);
   private readonly weightHistory = inject(WeightHistoryService);
-  private readonly profiles = inject(FitnessProfileService);
   private readonly checkInService = inject(DailyCheckInService);
   private readonly identityService = inject(UserIdentityService);
   private readonly streakService = inject(ActivityStreakService);
+  private readonly waterLog = inject(WaterLogService);
   protected readonly inbox = inject(NotificationInboxService);
   private readonly clock = inject(CLOCK);
   private readonly router = inject(Router);
@@ -154,11 +158,13 @@ export class HomePage {
   });
 
   // --- Dashboard cards (the mockup's second half) ------------------------------------------
-  /** Weigh-ins (body overview, the water goal) and the profile (its weight, before any weigh-in). */
-  protected readonly bodyData = resource({
+  /** Weigh-ins (body overview). */
+  protected readonly bodyData = resource({ loader: () => this.weightHistory.load().catch(() => undefined) });
+  /** Water today (Nutrition's water log) and the daily goal. */
+  protected readonly water = resource({
     loader: async () => {
-      const [, profile] = await Promise.all([this.weightHistory.load().catch(() => undefined), this.profiles.load().catch(() => null)]);
-      return { profile };
+      const [, goal] = await Promise.all([this.waterLog.load(), this.waterLog.goalMl()]);
+      return { goal };
     },
   });
   /** This week's food log (average calories); null when it can't be read. */
@@ -171,14 +177,8 @@ export class HomePage {
     return mindsetFor(Date.UTC(y, m - 1, d) / 86_400_000);
   });
 
-  /** The latest weigh-in, else the profile's weight (kg), for the water goal. */
-  private readonly weightKg = computed(() => {
-    const s = this.weightHistory.state();
-    const latest = s.status === 'ready' ? [...s.entries].sort((a, b) => b.date.localeCompare(a.date))[0] : undefined;
-    return latest?.weight.kilograms ?? (this.bodyData.hasValue() ? (this.bodyData.value().profile?.weight.kilograms ?? null) : null);
-  });
-  protected readonly waterGoal = computed(() => waterGoalMl(this.weightKg()));
-  protected readonly todayWater = computed(() => this.checkInService.checkIns().water[this.todayIso()] ?? 0);
+  protected readonly waterGoal = computed(() => (this.water.hasValue() ? this.water.value().goal : 3_000));
+  protected readonly todayWater = computed(() => this.waterLog.days()[this.todayIso()] ?? 0);
   protected readonly hydration = computed(() => toHydration(this.todayWater(), this.waterGoal()));
   protected readonly waterOpen = signal(false);
 
@@ -216,6 +216,8 @@ export class HomePage {
   protected readonly recoveryOpen = signal(false);
   protected readonly savingCheckIn = signal(false);
   protected readonly checkInError = signal<string | null>(null);
+  protected readonly savingWater = signal(false);
+  protected readonly waterError = signal<string | null>(null);
 
   // --- Nutrition ----------------------------------------------------------------------------
   /**
@@ -236,8 +238,12 @@ export class HomePage {
   protected readonly startMessage = signal('');
 
   private entered = false;
+  /** The first load's entrance (cards rising in one after another); not replayed on every return to the tab. */
+  protected readonly intro = signal(true);
 
   constructor() {
+    const introTimer = setTimeout(() => this.intro.set(false), 1600);
+    inject(DestroyRef).onDestroy(() => clearTimeout(introTimer));
     this.hapticOnCalorieTarget();
     void this.inbox.refresh().catch(() => undefined);
     this.openCheckInFromQuery();
@@ -266,13 +272,14 @@ export class HomePage {
     this.checkIns.reload();
     this.nutrition.reload();
     this.bodyData.reload();
+    this.water.reload();
     this.nutritionWeek.reload();
     void this.inbox.refresh().catch(() => undefined);
   }
 
   private whenSettled(): Promise<void> {
     const loading = computed(() =>
-      [this.identity, this.streak, this.plan, this.history, this.checkIns, this.nutrition, this.bodyData, this.nutritionWeek].some((r) =>
+      [this.identity, this.streak, this.plan, this.history, this.checkIns, this.nutrition, this.bodyData, this.water, this.nutritionWeek].some((r) =>
         r.isLoading(),
       ),
     );
@@ -418,17 +425,29 @@ export class HomePage {
 
   /** "+" on the hydration card: one glass more. */
   protected addGlass(): void {
-    void this.saveWater(Math.min(WATER_RANGE_ML.max, this.todayWater() + WATER_GLASS_ML));
+    void this.saveWater(() => this.waterLog.add(this.todayIso(), WATER_GLASS_ML));
   }
 
   protected openWater(): void {
-    this.checkInError.set(null);
+    this.waterError.set(null);
     this.waterOpen.set(true);
   }
 
-  /** Today's water total (the sheet stays open to keep adjusting). */
-  protected async saveWater(ml: number): Promise<void> {
-    await this.saveCheckIn(() => this.checkInService.setWater(this.todayIso(), ml), () => undefined);
+  /** Today's water total, from the sheet (it stays open to keep adjusting). */
+  protected setWater(ml: number): void {
+    void this.saveWater(() => this.waterLog.set(this.todayIso(), ml));
+  }
+
+  private async saveWater(save: () => Promise<void>): Promise<void> {
+    this.savingWater.set(true);
+    this.waterError.set(null);
+    try {
+      await save();
+    } catch {
+      this.waterError.set("Couldn't save. Try again.");
+    } finally {
+      this.savingWater.set(false);
+    }
   }
 
   /** A "Today's focus" item: steps opens the steps sheet, protein opens Nutrition. */

@@ -126,3 +126,21 @@
   fill: var(--color-text-secondary);
   font-size: 10px;
 }
+
+// --- Motion (docs/motion-plan.md #25): the line draws itself left to right, the area fades in under it,
+// and the points pop in along the line.
+.line {
+  stroke-dasharray: 1;
+  animation: fit-draw 1000ms var(--motion-ease) 150ms backwards;
+}
+
+.area {
+  animation: fit-fade 700ms var(--motion-ease) 500ms backwards;
+}
+
+.point {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fit-pop 380ms var(--motion-spring) backwards;
+  animation-delay: calc(250ms + min(var(--i, 0), 20) * 45ms);
+}

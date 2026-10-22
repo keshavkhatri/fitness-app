@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSign
 import { IonBackButton, IonIcon, NavController } from '@ionic/angular';
 
 import { NutritionService } from '../../core/nutrition/nutrition.service';
+import { WaterLogService } from '../../core/nutrition/water-log.service';
+import { toWaterWeek } from './nutrition-water';
 import { IsoCalendarDate } from '../../domain/fitness-profile';
 import { shiftWeek, weekStartOf } from '../../domain/nutrition';
 import {
@@ -59,6 +61,7 @@ export class NutritionWeekPage {
   private readonly nutrition = inject(NutritionService);
   private readonly nav = inject(NavController);
   private readonly clock = inject(CLOCK);
+  private readonly waterLog = inject(WaterLogService);
 
   protected readonly copy = NUTRITION_COPY.week;
   protected readonly nutritionPath = NUTRITION_PATH;
@@ -91,6 +94,17 @@ export class NutritionWeekPage {
     { value: 'carbs', label: 'Carbs' },
     { value: 'fat', label: 'Fat' },
   ];
+  /** Water: the log and the daily goal. */
+  private readonly water = resource({
+    loader: async () => {
+      const [, goal] = await Promise.all([this.waterLog.load(), this.waterLog.goalMl()]);
+      return goal;
+    },
+  });
+  protected readonly waterWeek = computed(() =>
+    this.water.hasValue() ? toWaterWeek(this.weekStart(), this.waterLog.days(), this.water.value(), this.nutrition.today()) : null,
+  );
+
   protected readonly calorieChart = computed(() => {
     const s = this.state.hasValue() ? this.state.value() : null;
     return s ? toWeekChart(s.week, s.targets, 'calories', s.today) : null;
@@ -119,6 +133,7 @@ export class NutritionWeekPage {
   ionViewWillEnter(): void {
     if (this.entered) {
       this.state.reload();
+      this.water.reload();
     }
     this.entered = true;
   }

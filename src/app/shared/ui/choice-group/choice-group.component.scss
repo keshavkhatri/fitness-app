@@ -185,3 +185,19 @@
     background: none;
   }
 }
+
+// --- Motion (docs/motion-plan.md #6): the chosen option's check pops in. ------------------
+.selected .indicator {
+  animation: fit-pop 380ms var(--motion-spring);
+}
+
+.option {
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease),
+    box-shadow var(--motion-duration-fast) var(--motion-ease),
+    transform var(--motion-duration-fast) var(--motion-ease);
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

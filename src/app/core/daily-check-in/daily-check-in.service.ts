@@ -6,7 +6,6 @@ import {
   RecoveryLevel,
   isRecoveryLevel,
   isValidSteps,
-  isValidWater,
   parseDailyCheckIns,
 } from '../../domain/daily-check-in';
 import { IsoCalendarDate } from '../../domain/fitness-profile';
@@ -73,15 +72,6 @@ export class DailyCheckInService {
   async setActivityDone(date: IsoCalendarDate, sessionId: string | null): Promise<void> {
     const { [date]: _previous, ...rest } = this.current().activity;
     const next = { ...this.current(), activity: sessionId ? { ...rest, [date]: sessionId } : rest };
-    await this.save(next);
-  }
-
-  /** Replaces the day's water (ml). Rejects values outside 0–10,000 ml. */
-  async setWater(date: IsoCalendarDate, ml: number): Promise<void> {
-    if (!isValidWater(ml)) {
-      throw new RangeError('Water must be a whole number of millilitres from 0 to 10,000.');
-    }
-    const next = { ...this.current(), water: { ...this.current().water, [date]: ml } };
     await this.save(next);
   }
 

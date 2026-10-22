@@ -31,6 +31,13 @@ Status (updated 2026-10-22): **Phases 1 and 2 are built; Phase 3 is not started.
     - `POST /v1/push/test` pushes to the caller's own phones, at most every 30 s
     - `notifyUser(userId, message)` is ready for future server events; it deletes tokens that Firebase reports as unregistered
   - **App:** `PushService` registers the phone only while someone is signed in AND reminders are on with the permission granted. Sign-out removes the device using the ending session. A push that arrives while the app is open is shown as a local notification. Settings › Reminders › "Send a test notification" sends a test push.
+  - **Inbox connected (2026-10-22):** the bell's inbox lists what the phone actually showed, next to today's to-dos. This history is the notification log (`features/notifications/notification-log*.ts`, key `stokeform.notification-log`, 30 days / 100 entries). Entries get there four ways:
+    - Reminders whose time came are recorded on the next re-plan (`stokeform.reminders-planned`).
+    - A reminder shown while the app is open is recorded as it shows.
+    - A push received while the app is open is recorded as it arrives.
+    - Pushes still in the shade are recorded on launch and resume.
+
+    A notification tapped in the shade opens its screen and marks the same inbox item read (`NotificationTrackingService`). A reminder that arrived today replaces the matching to-do, so the same thing isn't listed twice. A push swiped away while the app was closed is never seen by the app, so it is not listed.
   - **Not built yet:** the events themselves (subscription changes from RevenueCat, the weekly summary). They need billing and server-side data first.
 
 Written 2026-10-22.

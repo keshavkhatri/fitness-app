@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
+import { ConfettiComponent } from '../../../../shared/ui';
 import { WorkoutOverviewView } from '../workout-summary-view-model';
 
 /** Decorative confetti: [left %, top px, rotation deg, tone]. */
@@ -20,6 +21,8 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
             <span [class]="'piece tone-' + piece[3]" [style.left.%]="piece[0]" [style.top.px]="piece[1]" [style.rotate.deg]="piece[2]"></span>
           }
         </div>
+        <!-- A burst as the summary opens (docs/motion-plan.md #22). -->
+        <fit-confetti />
       }
       <span class="mark" [class.partial]="!v.fullyCompleted" aria-hidden="true">
         <ion-icon [name]="v.fullyCompleted ? 'checkmark' : 'flag-outline'" />
@@ -62,7 +65,7 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
     </aside>
   `,
   styleUrl: './overview-view.component.scss',
-  imports: [IonIcon],
+  imports: [ConfettiComponent, IonIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SummaryOverviewComponent {

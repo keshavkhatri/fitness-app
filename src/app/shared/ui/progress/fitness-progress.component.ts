@@ -9,7 +9,8 @@ let nextGradientId = 0;
 const RING_CENTER = 18;
 
 /**
- * Accessible progress indicator (linear bar or ring).
+ * Accessible progress indicator (linear bar or ring). It fills up from empty when it first appears, and slides
+ * to new values after that (docs/motion-plan.md #4).
  * Ring content (e.g. a centred number) can be projected. It is decorative
  * for assistive tech, so pass `valueText` to describe the value.
  */
@@ -35,6 +36,7 @@ const RING_CENTER = 18;
             cy="18"
             [attr.r]="radius()"
             [attr.stroke-dasharray]="circumference()"
+            [style.--ring-empty]="circumference()"
             [attr.stroke-dashoffset]="dashOffset()"
             [attr.stroke]="gradient() ? 'url(#' + gradientId + ')' : null"
           />
@@ -61,6 +63,8 @@ const RING_CENTER = 18;
     // core/text-scale) so the figures inside a ring never outgrow it.
     '[style.--ring-size]': `'calc(' + ringSize() + 'px * var(--text-scale, 1))'`,
     '[style.--ring-thickness]': 'thickness()',
+    // Staggers the fill-up when several appear together (e.g. the macro rings).
+    '[style.--fill-delay]': "enterDelay() + 'ms'",
   },
 })
 export class FitnessProgressComponent {
@@ -77,6 +81,8 @@ export class FitnessProgressComponent {
   readonly gradient = input(false, { transform: booleanAttribute });
   /** Stroke width in viewBox units (36 = the ring's size; up to 8). */
   readonly thickness = input(3.5, { transform: numberAttribute });
+  /** Delay (ms) before the fill-up when it first appears. */
+  readonly enterDelay = input(0, { transform: numberAttribute });
 
   protected readonly gradientId = `fit-progress-gradient-${nextGradientId++}`;
 

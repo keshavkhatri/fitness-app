@@ -22,3 +22,4 @@ export * from './ruler/ruler-math';
 export * from './analysis-overlay/analysis-overlay.component';
 export * from './point-chart/point-chart.component';
 export * from './point-chart/point-chart-layout';
+export * from './confetti/confetti.component';

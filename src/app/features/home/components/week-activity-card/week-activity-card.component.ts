@@ -36,7 +36,7 @@ export type WeekDayMark = 'done' | 'planned' | 'missed' | 'rest';
       <!-- One sentence for assistive tech; the markers are its picture. -->
       <div class="chart" role="img" data-testid="home-week" [attr.aria-label]="w.accessibleLabel">
         @for (day of marks(); track day.key) {
-          <div class="day" [attr.data-state]="day.state" [attr.data-mark]="day.mark" [class.today]="day.isToday">
+          <div class="day" [attr.data-state]="day.state" [attr.data-mark]="day.mark" [class.today]="day.isToday" [style.--i]="$index">
             <span class="mark">
               @if (day.mark === 'done') {
                 <ion-icon name="checkmark" />

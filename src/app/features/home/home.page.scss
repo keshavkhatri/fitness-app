@@ -43,7 +43,8 @@ section {
 }
 
 // Full width below the compact cards (spans both columns on tablets).
-.review {
+.review,
+.full {
   grid-column: 1 / -1;
 }
 
@@ -86,4 +87,20 @@ section {
 
 .compact-title {
   @include fx.text(body, semibold);
+}
+
+// --- Motion (docs/motion-plan.md #8) ----------------------------------------------------
+// First load: the cards rise in one after another (rows of two share a delay step).
+.intro > * {
+  animation: fit-rise var(--motion-enter) var(--motion-ease) backwards;
+}
+
+@for $i from 1 through 14 {
+  .intro > :nth-child(#{$i}) {
+    animation-delay: #{($i - 1) * 70}ms;
+  }
+}
+
+.intro .compact > :nth-child(2) {
+  animation: fit-rise var(--motion-enter) var(--motion-ease) 60ms backwards;
 }

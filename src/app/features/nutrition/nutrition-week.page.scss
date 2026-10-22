@@ -147,3 +147,13 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+
+// --- Water -----------------------------------------------------------------------------
+.water-average {
+  @include fx.tabular-numbers;
+  min-height: 0;
+}
+
+.water-value {
+  @include fx.text(h2, bold);
+}

@@ -185,3 +185,18 @@ input {
     }
   }
 }
+
+// --- Motion (docs/motion-plan.md #7): the newly selected segment settles in. -------------
+.segment.selected {
+  animation: segment-select 320ms var(--motion-spring);
+}
+
+@keyframes segment-select {
+  from {
+    transform: scale(0.92);
+  }
+
+  to {
+    transform: scale(1);
+  }
+}

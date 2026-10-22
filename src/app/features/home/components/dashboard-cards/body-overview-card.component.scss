@@ -1,9 +1,8 @@
 @use 'mixins' as fx;
-@use '../dashboard-card' as card;
+@use 'dashboard-card' as card;
 
 :host {
   display: block;
-  container-type: inline-size;
 }
 
 fit-card {
@@ -22,6 +21,13 @@ fit-card {
   @include card.chevron;
 }
 
+.figures {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .weight {
   @include fx.text(h2, bold);
   @include fx.tabular-numbers;
@@ -33,58 +39,7 @@ fit-card {
   color: var(--color-text-secondary);
 }
 
-.foot {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  min-height: 56px;
-  margin-top: auto;
-}
-
-// The line runs behind the change pill, ending above its caption.
-.spark-box {
-  position: absolute;
-  inset: 4px 0 22px 0;
-
-  // Beside the change pill (the mockup's layout): the line on the left half.
-  &.beside {
-    inset: 4px 50% 4px 0;
-  }
-}
-
-.spark {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.area {
-  fill: color-mix(in srgb, var(--color-primary) 22%, transparent);
-}
-
-.line {
-  fill: none;
-  stroke: var(--color-primary-strong);
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-// The latest point, drawn in CSS so it stays round however the line stretches.
-.last {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  margin: -4.5px 0 0 -4.5px;
-  border: 2px solid var(--color-primary-strong);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-}
-
 .change-wrap {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -111,6 +66,64 @@ fit-card {
 .period {
   color: var(--color-text-secondary);
   font-size: 10.5px;
+  white-space: nowrap;
+}
+
+// --- The line: every weigh-in, all time ------------------------------------------------
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.spark-box {
+  position: relative;
+  display: block;
+  height: 64px;
+}
+
+.spark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.area {
+  fill: color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-primary-strong);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+// The first and latest weigh-ins, drawn in CSS so they stay round however the line stretches.
+.dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border: 2px solid var(--color-primary-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+
+  &.first {
+    border-color: var(--color-border-strong);
+  }
+}
+
+.ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: 10.5px;
+  @include fx.tabular-numbers;
 }
 
 .empty {
@@ -123,9 +136,40 @@ fit-card {
   align-items: center;
   align-self: flex-start;
   gap: 4px;
-  margin-top: auto;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
   background: var(--color-primary);
   color: var(--color-on-primary);
+}
+
+// --- Motion (docs/motion-plan.md #14) ---------------------------------------------------
+// The line draws itself left to right (a clip reveal, so the non-scaling stroke stays even); the latest point
+// pops in at the end and pulses.
+.spark {
+  animation: body-reveal 1100ms var(--motion-ease) 250ms backwards;
+}
+
+@keyframes body-reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.dot.first {
+  animation: fit-pop 360ms var(--motion-spring) 200ms backwards;
+}
+
+.dot.last {
+  color: var(--color-primary-strong);
+  animation:
+    fit-pop 420ms var(--motion-spring) 1250ms backwards,
+    fit-pulse 1.8s ease-out 1.7s 2;
+}
+
+.change {
+  animation: fit-pop 420ms var(--motion-spring) 500ms backwards;
 }

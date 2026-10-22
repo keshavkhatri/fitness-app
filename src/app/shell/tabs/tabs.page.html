@@ -1,4 +1,4 @@
-<ion-tabs (ionTabsDidChange)="activeTab.set($event.tab)">
+<ion-tabs (ionTabsDidChange)="tabChanged($event.tab)">
   <ion-tab-bar slot="bottom" class="fit-theme-dashboard">
     @for (item of tabBarItems; track item.id) {
       <ion-tab-button [tab]="item.id">

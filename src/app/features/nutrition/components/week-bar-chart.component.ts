@@ -14,7 +14,7 @@ import { WeekChartView } from '../nutrition-week-chart';
   selector: 'app-week-bar-chart',
   template: `
     @let c = chart();
-    <div class="chart" aria-hidden="true">
+    <div class="chart" aria-hidden="true" [attr.data-metric]="c.metric">
       <div class="axis">
         @for (t of c.ticks; track $index) {
           <span class="tick" [style.bottom.%]="t.position">{{ t.label }}</span>
@@ -25,7 +25,7 @@ import { WeekChartView } from '../nutrition-week-chart';
           <span class="grid" [style.bottom.%]="t.position"></span>
         }
         @for (b of c.bars; track b.date) {
-          <div class="column" [attr.data-status]="b.status">
+          <div class="column" [attr.data-status]="b.status" [style.--i]="$index">
             @if (c.targetHeight !== null && b.status !== 'upcoming') {
               <span class="target" [style.height.%]="c.targetHeight"></span>
             }

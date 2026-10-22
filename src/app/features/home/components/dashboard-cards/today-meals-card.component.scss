@@ -1,5 +1,5 @@
 @use 'mixins' as fx;
-@use '../dashboard-card' as card;
+@use 'dashboard-card' as card;
 
 :host {
   display: block;
@@ -93,4 +93,24 @@ fit-card {
     position: absolute;
     inset: -4px;
   }
+}
+
+// --- Motion (docs/motion-plan.md #16) ---------------------------------------------------
+.meals li {
+  animation: fit-pop 420ms var(--motion-spring) backwards;
+  animation-delay: calc(150ms + var(--i, 0) * 70ms);
+}
+
+// The morning sun turns slowly.
+[data-meal='breakfast'] .icon {
+  animation: fit-spin 12s linear infinite;
+}
+
+// "+" turns a quarter as it's pressed.
+.add ion-icon {
+  transition: transform var(--motion-duration-base) var(--motion-spring);
+}
+
+.add:active ion-icon {
+  transform: rotate(90deg) scale(1.1);
 }

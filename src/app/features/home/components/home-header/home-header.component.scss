@@ -123,3 +123,49 @@
   @include fx.text(caption);
   color: var(--color-text-secondary);
 }
+
+// --- Motion (docs/motion-plan.md #9, #10) -----------------------------------------------
+// The streak flame flickers, from its base.
+.flame {
+  display: inline-block;
+  transform-origin: 50% 85%;
+  animation: fit-flicker 1.6s ease-in-out infinite;
+}
+
+// The greeting's hand waves a few times, then rests.
+.wave {
+  display: inline-block;
+  transform-origin: 70% 80%;
+  animation: home-hand-wave 1.8s ease-in-out 400ms 2;
+}
+
+@keyframes home-hand-wave {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+
+  10%,
+  30% {
+    transform: rotate(16deg);
+  }
+
+  20%,
+  40% {
+    transform: rotate(-8deg);
+  }
+}
+
+// With something unread the bell rings once and its dot pulses.
+.bell:has(.dot) ion-icon {
+  transform-origin: 50% 10%;
+  animation: fit-ring 900ms ease-in-out 600ms 1;
+}
+
+.dot {
+  color: var(--color-danger);
+  animation:
+    fit-pop 400ms var(--motion-spring) backwards,
+    fit-pulse 2s ease-out 1s 3;
+}

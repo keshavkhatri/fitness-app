@@ -132,3 +132,27 @@
   }
 }
 
+
+// --- Motion (docs/motion-plan.md #24): the bars grow from the bottom, one after another, and move to new
+// values (e.g. another macro). The bar's own centring transform is kept in the keyframes.
+.bar {
+  transform-origin: 50% 100%;
+  transition: height var(--motion-duration-ring) var(--motion-ease);
+  animation: week-bar-grow 650ms var(--motion-ease) backwards;
+  animation-delay: calc(120ms + var(--i, 0) * 55ms);
+}
+
+@keyframes week-bar-grow {
+  from {
+    transform: translateX(-50%) scaleY(0);
+  }
+
+  to {
+    transform: translateX(-50%) scaleY(1);
+  }
+}
+
+// Water bars in water's own blue.
+.chart[data-metric='water'] .bar {
+  background: linear-gradient(to top, #1f63d6, #5aa0ff);
+}

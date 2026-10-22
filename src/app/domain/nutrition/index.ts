@@ -6,3 +6,4 @@ export * from './food-portion';
 export * from './nutrition-day';
 export * from './nutrition-week';
 export * from './nutrition-targets';
+export * from './water';

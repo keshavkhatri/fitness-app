@@ -1,8 +1,7 @@
 import { WeightHistoryState } from '../../core/body-measurements/weight-history.service';
-import { waterGoalMl } from '../../domain/daily-check-in';
 import { NutritionDay, nutritionDay } from '../../domain/nutrition';
 import { mindsetFor } from './home-dashboard-content';
-import { toBodyOverview, toFocus, toHydration, toMacroRings, toMealTiles, toMilestone, toWeeklyProgress } from './home-dashboard';
+import { BODY_POINTS, toBodyOverview, toFocus, toMacroRings, toMealTiles, toMilestone, toWeeklyProgress } from './home-dashboard';
 import { HomeWeekView } from './home-training';
 import { DaySummaryView } from '../nutrition/nutrition-view-model';
 
@@ -22,15 +21,24 @@ describe('home dashboard cards', () => {
     expect(toMilestone(400).caption).toBe('Every milestone reached');
   });
 
-  it('shows the latest weight and the change this month', () => {
+  it('shows the latest weight against the very first one (all time)', () => {
     const state: WeightHistoryState = {
       status: 'ready',
       unitSystem: 'metric',
-      entries: [entry('2026-09-20', 95.7), entry('2026-10-05', 95.1), entry('2026-10-20', 94.5)],
+      entries: [entry('2026-10-05', 95.1), entry('2025-12-20', 97.7), entry('2026-10-20', 94.5)],
     };
     const view = toBodyOverview(state, '2026-10-22');
-    expect(view).toEqual(expect.objectContaining({ kind: 'ready', latest: '94.5 kg', change: '1.2 kg', direction: 'down' }));
-    expect(view?.kind === 'ready' && view.points.map((p) => Math.round(p * 100) / 100)).toEqual([1, 0.5, 0]);
+    expect(view).toEqual(
+      expect.objectContaining({ kind: 'ready', latest: '94.5 kg', start: '97.7 kg', since: '20 Dec 2025', change: '3.2 kg', direction: 'down', count: 3 }),
+    );
+    expect(view?.kind === 'ready' && view.points.map((p) => Math.round(p * 100) / 100)).toEqual([1, 0.19, 0]);
+  });
+
+  it('draws a long history with at most the point limit, keeping the first and the latest', () => {
+    const entries = Array.from({ length: 200 }, (_, i) => entry(`2026-${String(1 + Math.floor(i / 28)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`, 100 - i / 10));
+    const view = toBodyOverview({ status: 'ready', unitSystem: 'metric', entries }, '2026-10-22');
+    expect(view?.kind === 'ready' && view.points.length).toBe(BODY_POINTS);
+    expect(view?.kind === 'ready' && [view.points[0], view.points.at(-1)]).toEqual([1, 0]);
   });
 
   it('has no change for a single weigh-in, and an empty state without any', () => {
@@ -38,22 +46,6 @@ describe('home dashboard cards', () => {
     expect(one).toEqual(expect.objectContaining({ kind: 'ready', change: null, points: [] }));
     expect(toBodyOverview({ status: 'ready', unitSystem: 'metric', entries: [] }, '2026-10-22')).toEqual({ kind: 'empty' });
     expect(toBodyOverview({ status: 'loading' }, '2026-10-22')).toBeNull();
-  });
-
-  it('fills four glasses, each a quarter of the goal', () => {
-    const view = toHydration(1_125, 3_000);
-    expect(view.amount).toBe('1.13');
-    expect(view.goal).toBe('/ 3.0 L');
-    expect(view.glasses).toEqual([1, 0.5, 0, 0]);
-    expect(toHydration(250, 3_000).amount).toBe('0.25');
-    expect(toHydration(3_000, 3_000).reached).toBe(true);
-  });
-
-  it('sets the water goal from body weight, in half litres within 2–4 L', () => {
-    expect(waterGoalMl(94.5)).toBe(3_000);
-    expect(waterGoalMl(50)).toBe(2_000);
-    expect(waterGoalMl(150)).toBe(4_000);
-    expect(waterGoalMl(null)).toBe(3_000);
   });
 
   it('lists the meals in the order they are eaten, with calories once logged', () => {

@@ -29,7 +29,10 @@ div.fill {
   height: 100%;
   border-radius: inherit;
   background: var(--progress-color);
+  transform-origin: left;
   transition: width var(--motion-duration-ring) var(--motion-ease);
+  // Fills up from empty when it first appears.
+  animation: fit-grow-x var(--motion-duration-ring) var(--motion-ease) var(--fill-delay, 0ms) backwards;
 }
 
 // --- Ring ---------------------------------------------------------------------
@@ -72,6 +75,14 @@ circle.fill {
   stroke: var(--progress-color);
   stroke-linecap: round;
   transition: stroke-dashoffset var(--motion-duration-ring) var(--motion-ease);
+  // Fills up from empty when it first appears (to its bound offset).
+  animation: progress-ring-in 900ms var(--motion-ease) var(--fill-delay, 0ms) backwards;
+}
+
+@keyframes progress-ring-in {
+  from {
+    stroke-dashoffset: var(--ring-empty);
+  }
 }
 
 .center {

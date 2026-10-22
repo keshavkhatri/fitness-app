@@ -127,3 +127,9 @@
   }
 }
 
+
+// --- Motion (docs/motion-plan.md #20): the weeks fade in, oldest first. -------------------
+.week {
+  animation: fit-rise 380ms var(--motion-ease) backwards;
+  animation-delay: calc(150ms + var(--i, 0) * 28ms);
+}

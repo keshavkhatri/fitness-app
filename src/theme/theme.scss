@@ -5,6 +5,7 @@
 @use 'tokens';
 @use 'mixins' as fx;
 @use 'tracking';
+@use 'motion';
 
 html {
   font-family: var(--font-family-base);

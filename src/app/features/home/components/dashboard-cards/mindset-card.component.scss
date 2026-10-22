@@ -1,5 +1,5 @@
 @use 'mixins' as fx;
-@use '../dashboard-card' as card;
+@use 'dashboard-card' as card;
 
 :host {
   display: block;

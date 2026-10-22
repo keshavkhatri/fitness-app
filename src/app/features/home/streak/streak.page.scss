@@ -249,3 +249,14 @@ ion-content {
     transition: none;
   }
 }
+
+// --- Motion (docs/motion-plan.md #20): the milestones pop in; reached ones bounce. --------
+.badge {
+  animation: fit-pop 420ms var(--motion-spring) backwards;
+  animation-delay: calc(300ms + var(--i, 0) * 60ms);
+}
+
+.badge.reached .badge-icon {
+  display: inline-block;
+  animation: fit-bounce 600ms var(--motion-ease) calc(800ms + var(--i, 0) * 60ms) backwards;
+}

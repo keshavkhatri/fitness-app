@@ -66,6 +66,20 @@
       </fit-card>
     }
 
+    <!-- Water by day (logged separately from food, so shown whether or not food was logged). -->
+    @if (waterWeek(); as w) {
+      <section class="card" aria-labelledby="week-water-title" data-testid="water-chart">
+        <h2 class="card-title" id="week-water-title">Water</h2>
+        <p class="water-average" data-testid="water-average">
+          @if (w.average) {
+            <span class="water-value">{{ w.average }}</span>&ngsp;<span class="caption">a day</span>
+          }
+        </p>
+        <p class="caption">{{ w.caption }}@if (w.goalDays) {&ngsp;· goal reached on {{ w.goalDays }} {{ w.goalDays === 1 ? 'day' : 'days' }}}</p>
+        <app-week-bar-chart [chart]="w.chart" label="Water by day" />
+      </section>
+    }
+
     <app-week-day-list [days]="s.days" (openDay)="openDay($event)" />
   } @else if (s.kind === 'error') {
     <fit-card data-testid="week-error">

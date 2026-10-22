@@ -15,13 +15,11 @@ import { HomeWeekView } from './home-training';
 
 /**
  * Home's dashboard cards below the week (the mockup's second half): the next streak milestone, body overview,
- * hydration, macro rings, today's meals, the week's averages and today's focus. Pure: the page reads the data,
+ * macro rings, today's meals, the week's averages and today's focus. Pure: the page reads the data,
  * these only shape it. Nothing is invented: a missing value reads as missing, not as zero.
  */
 
 const whole = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
-// "0.25", "1.5", "3.0": a glass (250 ml) is never rounded away.
-const litres = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
 
 // --- Next milestone ------------------------------------------------------------------------
 
@@ -71,18 +69,38 @@ export type BodyOverviewView =
       readonly kind: 'ready';
       /** "94.5 kg" */
       readonly latest: string;
-      /** "1.2 kg" (no sign: the arrow says which way), null without an earlier weigh-in this month. */
+      /** The first weigh-in ("95.7 kg"); null with only one. */
+      readonly start: string | null;
+      /** "2 Jun" (with the year when it isn't this year): when the first weigh-in was. */
+      readonly since: string | null;
+      /** "1.2 kg" (no sign: the arrow says which way), null with only one weigh-in. */
       readonly change: string | null;
       readonly direction: 'up' | 'down' | 'same' | null;
       /** Sparkline points, 0–1 (higher = heavier), oldest first; at least two or none. */
       readonly points: readonly number[];
+      /** Weigh-ins recorded. */
+      readonly count: number;
       readonly accessibleLabel: string;
     };
 
-/**
- * The latest weigh-in, and the change this calendar month: from the last weigh-in before the month began (or the
- * month's first one) to the latest. The sparkline draws the same stretch.
- */
+/** The sparkline draws at most this many points (evenly picked, always keeping the first and the latest). */
+export const BODY_POINTS = 40;
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function shortDate(date: IsoCalendarDate, today: IsoCalendarDate): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return `${d} ${MONTHS_SHORT[m - 1]}${date.slice(0, 4) === today.slice(0, 4) ? '' : ` ${y}`}`;
+}
+
+function sample<T>(items: readonly T[], max: number): T[] {
+  if (items.length <= max) {
+    return [...items];
+  }
+  return Array.from({ length: max }, (_, i) => items[Math.round((i * (items.length - 1)) / (max - 1))]);
+}
+
+/** The latest weigh-in against the very first one (all time), and every weigh-in as a line. */
 export function toBodyOverview(state: WeightHistoryState, today: IsoCalendarDate): BodyOverviewView | null {
   if (state.status !== 'ready') {
     return state.status === 'loading' ? null : { kind: 'empty' };
@@ -92,14 +110,10 @@ export function toBodyOverview(state: WeightHistoryState, today: IsoCalendarDate
   }
   const unit = state.unitSystem;
   const sorted = [...state.entries].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
-  const latestEntry = sorted[sorted.length - 1];
-  const monthStart = `${today.slice(0, 7)}-01`;
-  const beforeMonth = sorted.filter((e) => e.date < monthStart);
-  const firstIndex = beforeMonth.length ? beforeMonth.length - 1 : sorted.findIndex((e) => e.date >= monthStart);
-  const stretch = sorted.slice(Math.max(0, firstIndex)).slice(-12);
-  const values = stretch.map((e) => weightInUnit(e.weight, unit));
-  const latest = weightInUnit(latestEntry.weight, unit);
-  const baseline = stretch.length > 1 ? values[0] : null;
+  const first = sorted[0];
+  const values = sample(sorted, BODY_POINTS).map((e) => weightInUnit(e.weight, unit));
+  const latest = weightInUnit(sorted[sorted.length - 1].weight, unit);
+  const baseline = sorted.length > 1 ? weightInUnit(first.weight, unit) : null;
   const delta = baseline === null ? null : Math.round((latest - baseline) * 10) / 10;
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -107,43 +121,23 @@ export function toBodyOverview(state: WeightHistoryState, today: IsoCalendarDate
   const latestText = formatDisplayWeight(latest, unit);
   const change = delta === null ? null : delta === 0 ? 'No change' : formatChange(delta, unit).replace(/^[+−]/, '');
   const direction = delta === null ? null : delta > 0 ? 'up' : delta < 0 ? 'down' : 'same';
+  const since = baseline === null ? null : shortDate(first.date, today);
   return {
     kind: 'ready',
     latest: latestText,
+    start: baseline === null ? null : formatDisplayWeight(baseline, unit),
+    since,
     change,
     direction,
     points,
+    count: sorted.length,
     accessibleLabel:
       `Current weight ${latestText}.` +
-      (delta === null ? '' : delta === 0 ? ' No change this month.' : ` ${direction === 'down' ? 'Down' : 'Up'} ${change} this month.`),
-  };
-}
-
-// --- Hydration -----------------------------------------------------------------------------
-
-export const HYDRATION_GLASSES = 4;
-
-export interface HydrationView {
-  /** "1.2" (litres) */
-  readonly amount: string;
-  /** "/ 3.0 L" */
-  readonly goal: string;
-  /** How full each of the four glasses is, 0–1 (each is a quarter of the goal). */
-  readonly glasses: readonly number[];
-  readonly reached: boolean;
-  readonly accessibleLabel: string;
-}
-
-export function toHydration(ml: number, goalMl: number): HydrationView {
-  const quarter = goalMl / HYDRATION_GLASSES;
-  const amount = litres.format(ml / 1000);
-  const goal = litres.format(goalMl / 1000);
-  return {
-    amount,
-    goal: `/ ${goal} L`,
-    glasses: Array.from({ length: HYDRATION_GLASSES }, (_, i) => Math.min(1, Math.max(0, (ml - i * quarter) / quarter))),
-    reached: ml >= goalMl,
-    accessibleLabel: `Water today: ${amount} of ${goal} litres.`,
+      (delta === null
+        ? ''
+        : delta === 0
+          ? ` No change since ${since}.`
+          : ` ${direction === 'down' ? 'Down' : 'Up'} ${change} since your first weigh-in on ${since}.`),
   };
 }
 

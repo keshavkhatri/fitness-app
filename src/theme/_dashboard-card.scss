@@ -114,9 +114,19 @@
   padding: var(--space-4);
   overflow: hidden;
   border-radius: var(--radius-lg);
-  background: #151714 center right / cover no-repeat;
+  background: #151714;
   color: #f5f4ee;
   isolation: isolate;
+
+  // The photo (set as --photo on the element) drifts closer, slowly (docs/motion-plan.md #18).
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background: var(--photo, none) center right / cover no-repeat;
+    animation: fit-ken-burns 16s ease-in-out infinite alternate;
+  }
 
   &::before {
     content: '';
@@ -141,12 +151,19 @@
   border-radius: var(--radius-pill);
   background: #ffffff;
   color: #151714;
+  transition: transform var(--motion-duration-fast) var(--motion-ease);
 
   ion-icon {
     font-size: var(--icon-size-sm);
   }
 
+  // The trailing arrow nudges forward now and then.
+  ion-icon:last-child {
+    animation: fit-nudge 2.4s ease-in-out 1s infinite;
+  }
+
   &:active {
     background: #eceae2;
+    transform: scale(0.96);
   }
 }

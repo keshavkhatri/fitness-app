@@ -21,6 +21,8 @@ import { WorkoutLog } from '../../domain/workout-session';
 import { finishedLog } from '../../domain/workout-session/testing/workout-log-fixtures';
 import { ACTIVITY_PROFILE, PROFILE, REST_PROFILE, planFor, profileWith } from '../workout/testing/workout-fixtures';
 import { DailyCheckInService } from '../../core/daily-check-in/daily-check-in.service';
+import { WaterLogService } from '../../core/nutrition/water-log.service';
+import { WaterSheetComponent } from '../nutrition/components/water-sheet.component';
 import { CheckInSheetsComponent } from './components/check-in-sheets/check-in-sheets.component';
 import { HomePage } from './home.page';
 
@@ -247,20 +249,22 @@ describe('HomePage', () => {
     });
 
     it('hydration: "+" adds a glass, the card opens the water sheet, and the sheet sets the total', async () => {
-      const { el, fixture, sheets } = await render();
-      const amount = () => el.querySelector('[data-testid="home-water-amount"]')?.textContent?.trim();
+      const { el, fixture } = await render();
+      const water = () => fixture.debugElement.query(By.directive(WaterSheetComponent)).componentInstance as WaterSheetComponent;
+      const amount = () => el.querySelector('[data-testid="water-amount"]')?.textContent?.trim();
       expect(amount()).toBe('0.0');
-      (el.querySelector('[data-testid="home-water-add"]') as HTMLButtonElement).click();
+      (el.querySelector('[data-testid="water-add"]') as HTMLButtonElement).click();
       await settle(fixture);
       expect(amount()).toBe('0.25');
-      (el.querySelector('[data-testid="home-water-open"]') as HTMLButtonElement).click();
+      (el.querySelector('[data-testid="water-open"]') as HTMLButtonElement).click();
       fixture.detectChanges();
-      expect(sheets().waterOpen()).toBe(true);
-      sheets().saveWater.emit(1500);
+      expect(water().open()).toBe(true);
+      water().save.emit(1500);
       await settle(fixture);
-      expect(sheets().waterOpen()).toBe(true);
+      expect(water().open()).toBe(true);
       expect(amount()).toBe('1.5');
-      expect(TestBed.inject(DailyCheckInService).checkIns().water).toEqual({ '2026-10-08': 1500 });
+      // Part of nutrition: the day's total in the water log.
+      expect(TestBed.inject(WaterLogService).days()).toEqual({ '2026-10-08': 1500 });
     });
 
     it('Recover opens the check-in; choosing a level saves it', async () => {

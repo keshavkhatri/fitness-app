@@ -1,0 +1,276 @@
+// =============================================================================
+// Motion: the app's shared keyframes (global, so any component can name them) and the reduced-motion switch.
+// See docs/motion-plan.md. Only transform, opacity and SVG stroke/position are animated (cheap on phones).
+// A staggered item sets `--i` (its index) and uses `animation-delay: calc(var(--i, 0) * var(--motion-stagger))`.
+// =============================================================================
+
+:root {
+  --motion-stagger: 55ms;
+  --motion-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-enter: 420ms;
+}
+
+/* Rises into place (cards, list items, tab content). */
+@keyframes fit-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fit-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Pops in with a small overshoot (checks, dots, badges). */
+@keyframes fit-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* A bounce for something just pressed or selected. */
+@keyframes fit-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.22);
+  }
+
+  70% {
+    transform: scale(0.94);
+  }
+}
+
+/* A flame: grows and leans a little (transform-origin at its base). */
+@keyframes fit-flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-3deg);
+  }
+
+  25% {
+    transform: scale(1.06, 0.96) rotate(2deg);
+  }
+
+  50% {
+    transform: scale(0.96, 1.08) rotate(-1deg);
+  }
+
+  75% {
+    transform: scale(1.04) rotate(3deg);
+  }
+}
+
+/* A bell ringing once (transform-origin at its top). */
+@keyframes fit-ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+
+  15% {
+    transform: rotate(16deg);
+  }
+
+  30% {
+    transform: rotate(-14deg);
+  }
+
+  45% {
+    transform: rotate(10deg);
+  }
+
+  60% {
+    transform: rotate(-6deg);
+  }
+
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+/* A soft halo pulse (dots, the latest point). */
+@keyframes fit-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* A flag in the wind (transform-origin at the pole). */
+@keyframes fit-wave-flag {
+  0%,
+  100% {
+    transform: skewY(0) scaleX(1);
+  }
+
+  25% {
+    transform: skewY(-8deg) scaleX(0.92);
+  }
+
+  50% {
+    transform: skewY(4deg) scaleX(1.04);
+  }
+
+  75% {
+    transform: skewY(-4deg) scaleX(0.96);
+  }
+}
+
+/* An arrow nudging forward. */
+@keyframes fit-nudge {
+  0%,
+  60%,
+  100% {
+    transform: translateX(0);
+  }
+
+  30% {
+    transform: translateX(4px);
+  }
+}
+
+/* A photo drifting closer (Ken Burns). */
+@keyframes fit-ken-burns {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.09) translate(-1.5%, -1%);
+  }
+}
+
+/* A water surface moving sideways (the wave shape is twice the glass wide). */
+@keyframes fit-water-wave {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* A glass that was just filled. */
+@keyframes fit-splash {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  35% {
+    transform: translateY(-4px) scale(1.08, 0.94);
+  }
+
+  65% {
+    transform: translateY(1px) scale(0.97, 1.04);
+  }
+}
+
+/* A line drawing itself (paths with pathLength="1" and stroke-dasharray: 1). */
+@keyframes fit-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Bars growing from their start (transform-origin at the start). */
+@keyframes fit-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes fit-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Slow turn (the breakfast sun). */
+@keyframes fit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Confetti pieces: each flies on its own path (--dx, --dy, --r set per piece). */
+@keyframes fit-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 0), var(--dy, 120px)) rotate(var(--r, 360deg));
+  }
+}
+
+// Reduced motion: no animation anywhere (values show at once), transitions finish immediately.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+// A card whose stretched title link is being touched presses in slightly (docs/motion-plan.md #5).
+fit-card {
+  transition: transform var(--motion-duration-fast) var(--motion-ease);
+}
+
+fit-card:has(.title-link:active) {
+  transform: scale(0.985);
+}

@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, resource, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonIcon, NavController } from '@ionic/angular';
 
 import { NutritionService } from '../../core/nutrition/nutrition.service';
+import { WaterLogService } from '../../core/nutrition/water-log.service';
 import { ONBOARDING_PATH, ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
 import { CLOCK } from '../../core/time/clock';
 import { IsoCalendarDate } from '../../domain/fitness-profile';
-import { MealCategory } from '../../domain/nutrition';
+import { MealCategory, WATER_GLASS_ML } from '../../domain/nutrition';
 import {
   EmptyStateComponent,
   FitnessButtonComponent,
@@ -17,6 +18,9 @@ import {
 } from '../../shared/ui';
 import { DayStripComponent } from './components/day-strip.component';
 import { DaySummaryComponent } from './components/day-summary.component';
+import { HydrationCardComponent } from './components/hydration-card.component';
+import { WaterSheetComponent } from './components/water-sheet.component';
+import { toHydration } from './nutrition-water';
 import { LinkCardComponent } from './components/link-card.component';
 import { MealSectionComponent } from './components/meal-section.component';
 import { CHECK_IN_COPY } from '../calorie-check-in/calorie-check-in-content';
@@ -39,6 +43,8 @@ import { NoticeAction, suggestedMeal, toDateHeader, toDayStrip, toNutritionScree
   imports: [
     DayStripComponent,
     DaySummaryComponent,
+    HydrationCardComponent,
+    WaterSheetComponent,
     LinkCardComponent,
     IonIcon,
     EmptyStateComponent,
@@ -56,6 +62,7 @@ export class NutritionPage {
   private readonly nav = inject(NavController);
   private readonly router = inject(Router);
   private readonly clock = inject(CLOCK);
+  private readonly waterLog = inject(WaterLogService);
 
   protected readonly copy = NUTRITION_COPY;
   protected readonly checkIn = CHECK_IN_COPY;
@@ -75,6 +82,23 @@ export class NutritionPage {
     }
   });
 
+  // --- Water (the selected day) -----------------------------------------------------------------
+  /** The water log and the daily goal. */
+  private readonly water = resource({
+    loader: async () => {
+      const [, goal] = await Promise.all([this.waterLog.load(), this.waterLog.goalMl()]);
+      return goal;
+    },
+  });
+  protected readonly waterGoal = computed(() => (this.water.hasValue() ? this.water.value() : 3_000));
+  protected readonly dayWater = computed(() => this.waterLog.days()[this.nutrition.selectedDate()] ?? 0);
+  protected readonly hydration = computed(() =>
+    toHydration(this.dayWater(), this.waterGoal(), this.header().isToday ? 'today' : `on ${this.header().date}`),
+  );
+  protected readonly waterOpen = signal(false);
+  protected readonly savingWater = signal(false);
+  protected readonly waterError = signal<string | null>(null);
+
   private entered = false;
 
   constructor() {
@@ -84,9 +108,37 @@ export class NutritionPage {
   /** Tab re-entry: recalculate targets (the profile may have changed); food logs are only re-read. */
   ionViewWillEnter(): void {
     if (this.entered) {
+      // Water may have been added on Home.
+      this.water.reload();
       void (this.nutrition.state().status === 'ready' ? this.nutrition.refreshTargets() : this.nutrition.load());
     }
     this.entered = true;
+  }
+
+  /** "+" on the hydration card: a glass more on the day shown. */
+  protected addGlass(): void {
+    void this.saveWater(() => this.waterLog.add(this.nutrition.selectedDate(), WATER_GLASS_ML));
+  }
+
+  protected openWater(): void {
+    this.waterError.set(null);
+    this.waterOpen.set(true);
+  }
+
+  protected setWater(ml: number): void {
+    void this.saveWater(() => this.waterLog.set(this.nutrition.selectedDate(), ml));
+  }
+
+  private async saveWater(save: () => Promise<void>): Promise<void> {
+    this.savingWater.set(true);
+    this.waterError.set(null);
+    try {
+      await save();
+    } catch {
+      this.waterError.set("Couldn't save. Try again.");
+    } finally {
+      this.savingWater.set(false);
+    }
   }
 
   protected previousDay(): void {

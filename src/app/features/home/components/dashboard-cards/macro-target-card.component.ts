@@ -20,7 +20,7 @@ import { MacroRingView } from '../../home-dashboard';
       <ul class="rings">
         @for (ring of rings(); track ring.key) {
           <li [attr.data-key]="ring.key" [attr.data-testid]="'home-ring-' + ring.key">
-            <fit-progress variant="ring" [label]="ring.label" [ringSize]="68" [thickness]="4.2" [value]="ring.value" [max]="ring.max" [valueText]="ring.valueText">
+            <fit-progress variant="ring" [label]="ring.label" [ringSize]="68" [thickness]="4.2" [enterDelay]="$index * 120" [value]="ring.value" [max]="ring.max" [valueText]="ring.valueText">
               <span class="eaten" [class.long]="ring.eaten.length > 4">{{ ring.eaten }}</span>
               @if (ring.target) {
                 <span class="target" [class.long]="ring.target.length > 7">{{ ring.target }}</span>

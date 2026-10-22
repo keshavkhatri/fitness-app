@@ -7,9 +7,9 @@ describe('daily check-ins (domain)', () => {
       steps: { '2026-10-08': 8200, '2026-10-07': -5, 'not-a-date': 100, '2026-10-06': 1.5, '2026-10-05': 100_001 },
       recovery: { '2026-10-08': 'good', '2026-10-07': 'amazing' },
     });
-    expect(parsed).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {}, water: {} });
-    expect(parseDailyCheckIns(null)).toEqual({ steps: {}, recovery: {}, activity: {}, water: {} });
-    expect(parseDailyCheckIns('x')).toEqual({ steps: {}, recovery: {}, activity: {}, water: {} });
+    expect(parsed).toEqual({ steps: { '2026-10-08': 8200 }, recovery: { '2026-10-08': 'good' }, activity: {} });
+    expect(parseDailyCheckIns(null)).toEqual({ steps: {}, recovery: {}, activity: {} });
+    expect(parseDailyCheckIns('x')).toEqual({ steps: {}, recovery: {}, activity: {} });
   });
 
   it('formats steps compactly, never rounding up', () => {

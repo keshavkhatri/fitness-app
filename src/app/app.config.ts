@@ -5,6 +5,7 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
 import { routes } from './app.routes';
 import { BrandTitleStrategy } from './core/brand-title.strategy';
 import { registerAppIcons } from './core/icons/register-icons';
+import { pageTransition } from './core/motion/page-transition';
 import { AuthService } from './core/auth/auth.service';
 import { BILLING_PROVIDER } from './core/entitlements/billing';
 import { billingProviderFactory } from './core/entitlements/revenuecat/revenuecat-billing.provider';
@@ -25,8 +26,12 @@ const prefersReducedMotion =
  * the same rule. Platform-specific tweaks, if ever needed, belong here
  * (Ionic config) or behind `Platform`, not inside components.
  */
+const isIos = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 const ionicConfig: Parameters<typeof provideIonicAngular>[0] = {
   animated: !prefersReducedMotion,
+  // Android: the app's own slide-and-fade (docs/motion-plan.md #1). iOS keeps its native transition and swipe-back.
+  ...(isIos ? {} : { navAnimation: pageTransition }),
 };
 
 export const appConfig: ApplicationConfig = {

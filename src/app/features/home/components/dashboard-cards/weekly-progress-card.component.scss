@@ -1,5 +1,5 @@
 @use 'mixins' as fx;
-@use '../dashboard-card' as card;
+@use 'dashboard-card' as card;
 
 :host {
   display: block;
@@ -77,4 +77,18 @@ fit-card {
   height: 100%;
   border-radius: inherit;
   background: var(--color-primary-strong);
+}
+
+// --- Motion (docs/motion-plan.md #17): the bars grow from the left, one after another. ---
+.fill {
+  transform-origin: left;
+  animation: fit-grow-x 800ms var(--motion-ease) backwards;
+}
+
+.stats li:nth-child(2) .fill {
+  animation-delay: 120ms;
+}
+
+.stats li:nth-child(3) .fill {
+  animation-delay: 240ms;
 }

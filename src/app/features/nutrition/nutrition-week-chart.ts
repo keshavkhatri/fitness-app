@@ -67,7 +67,7 @@ export interface WeekBarView {
 }
 
 export interface WeekChartView {
-  readonly metric: WeekMetric;
+  readonly metric: WeekMetric | 'water';
   /** "Calories" */
   readonly name: string;
   /** Top to bottom. */

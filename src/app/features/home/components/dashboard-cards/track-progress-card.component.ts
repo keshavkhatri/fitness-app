@@ -7,7 +7,7 @@ import { TRACK_PROGRESS_PHOTO } from '../../home-media';
 @Component({
   selector: 'app-track-progress-card',
   template: `
-    <section class="photo" aria-labelledby="home-track-title" [style.background-image]="'url(' + photo + ')'">
+    <section class="photo" aria-labelledby="home-track-title" [style.--photo]="'url(' + photo + ')'">
       <h2 id="home-track-title" class="title"><ion-icon name="trending-up" aria-hidden="true" />Track your progress</h2>
       <p class="text">Log your weight, measurements and see your transformation.</p>
       <button type="button" class="pill" data-testid="home-track-open" (click)="open.emit()">

@@ -79,7 +79,7 @@ const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedi
             <h2 class="card-title" id="streak-milestones-title">Milestones</h2>
             <ul class="badges" data-testid="streak-badges">
               @for (m of milestones; track m) {
-                <li class="badge" [class.reached]="v.summary.reached.includes(m)">
+                <li class="badge" [class.reached]="v.summary.reached.includes(m)" [style.--i]="$index">
                   <span class="badge-icon" aria-hidden="true">{{ v.summary.reached.includes(m) ? '🏅' : '🔒' }}</span>
                   <span class="badge-days">{{ m }}</span>
                   <span class="visually-hidden">{{ m }}-day streak {{ v.summary.reached.includes(m) ? 'reached' : 'not reached yet' }}</span>

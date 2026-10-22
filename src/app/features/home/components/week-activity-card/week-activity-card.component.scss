@@ -186,3 +186,15 @@ fit-card {
     display: none;
   }
 }
+
+// --- Motion (docs/motion-plan.md #11) ---------------------------------------------------
+// Trained days' checks pop in one by one; today's planned ring pulses once.
+.chart [data-mark='done'] .mark {
+  animation: fit-pop 460ms var(--motion-spring) backwards;
+  animation-delay: calc(250ms + var(--i, 0) * 70ms);
+}
+
+.chart .today[data-mark='planned'] .mark {
+  color: var(--color-primary-strong);
+  animation: fit-pulse 1.6s ease-out 900ms 2;
+}

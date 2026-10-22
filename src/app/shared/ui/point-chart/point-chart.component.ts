@@ -43,13 +43,14 @@ let nextId = 0;
         }
         <line class="baseline" [attr.x1]="l.points[0]?.x ?? 0" [attr.x2]="l.points[l.points.length - 1]?.x ?? 0" [attr.y1]="l.baseline" [attr.y2]="l.baseline" />
         @if (l.path) {
-          <polygon [attr.points]="areaPoints()" [attr.fill]="'url(#' + areaId + ')'" />
-          <polyline class="line" [attr.points]="l.path" data-testid="chart-line" />
+          <polygon class="area" [attr.points]="areaPoints()" [attr.fill]="'url(#' + areaId + ')'" />
+          <polyline class="line" pathLength="1" [attr.points]="l.path" data-testid="chart-line" />
         }
-        @for (p of l.points; track p.key; let last = $last) {
+        @for (p of l.points; track p.key; let last = $last, i = $index) {
           @let shown = p.labelled && (!selected() || !nearSelected(p));
           <circle
             class="point"
+            [style.--i]="i"
             [class.latest]="last"
             [class.minor]="!p.labelled"
             [class.selected]="p.key === selected()"

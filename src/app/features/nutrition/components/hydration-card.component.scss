@@ -1,0 +1,128 @@
+@use 'mixins' as fx;
+@use 'dashboard-card' as card;
+
+:host {
+  display: block;
+  container-type: inline-size;
+  --water: #2f7cf6;
+}
+
+fit-card {
+  @include card.shell;
+}
+
+.head {
+  @include card.head;
+}
+
+.title-link {
+  @include card.title-link;
+}
+
+.chevron {
+  @include card.chevron;
+}
+
+.drop {
+  color: var(--water);
+}
+
+.amount {
+  @include fx.tabular-numbers;
+  white-space: nowrap;
+}
+
+.value {
+  @include fx.text(h2, bold);
+}
+
+.goal {
+  @include fx.text(body);
+  color: var(--color-text-secondary);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.glasses {
+  display: flex;
+  gap: 8px;
+}
+
+.glass {
+  width: 20px;
+  height: 28px;
+}
+
+.water {
+  fill: var(--water);
+  // -50% of its own width (40) is one wave period (20): a seamless loop.
+  transform-box: fill-box;
+  animation: fit-water-wave 2.4s linear infinite;
+}
+
+// The level slides to the new amount, and rises from empty when the card first appears.
+.level {
+  transition: transform 600ms var(--motion-ease);
+  animation: hydration-rise 900ms var(--motion-ease) 200ms backwards;
+}
+
+@keyframes hydration-rise {
+  from {
+    transform: translateY(26px);
+  }
+}
+
+.glass.splash {
+  transform-origin: 50% 100%;
+  animation: fit-splash 600ms var(--motion-ease);
+}
+
+.drop {
+  transform-origin: 50% 100%;
+}
+
+:host:has(.glass.splash) .drop {
+  animation: fit-bounce 500ms var(--motion-ease);
+}
+
+.outline {
+  fill: none;
+  stroke: var(--color-border-strong);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.add {
+  @include card.round-add;
+  transition: transform var(--motion-duration-fast) var(--motion-ease);
+
+  &:active:not(:disabled) {
+    transform: scale(0.9);
+  }
+
+  &.bounce ion-icon {
+    animation: fit-bounce 450ms var(--motion-ease);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+// A half-width card on a narrow phone: smaller glasses, so the + still fits beside them.
+@container (max-width: 180px) {
+  .glasses {
+    gap: 5px;
+  }
+
+  .glass {
+    width: 14px;
+    height: 20px;
+  }
+}

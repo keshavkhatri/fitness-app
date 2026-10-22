@@ -11,7 +11,7 @@
     (openStreak)="openStreak()"
   />
 
-  <div class="dashboard">
+  <div class="dashboard" [class.intro]="intro()">
     <section class="day" aria-labelledby="home-day">
       <app-day-summary-card headingId="home-day" [day]="day()" (tileSelected)="runTileAction($event)" />
     </section>
@@ -88,17 +88,18 @@
       <section aria-label="Next milestone">
         <app-milestone-card [milestone]="milestone()" (open)="openStreak()" />
       </section>
-      <section aria-label="Body overview">
-        @if (body(); as b) {
-          <app-body-overview-card [body]="b" (open)="openWeightHistory()" (logWeight)="logWeight()" />
-        } @else {
-          <fit-skeleton height="172px" radius="card" />
-        }
+      <section aria-label="Hydration">
+        <app-hydration-card [hydration]="hydration()" [busy]="savingWater()" (open)="openWater()" (addGlass)="addGlass()" />
       </section>
     </div>
 
-    <section class="wide" aria-label="Hydration">
-      <app-hydration-card [hydration]="hydration()" [busy]="savingCheckIn()" (open)="openWater()" (addGlass)="addGlass()" />
+    <!-- All time, so the whole row. -->
+    <section class="full" aria-label="Body overview">
+      @if (body(); as b) {
+        <app-body-overview-card [body]="b" (open)="openWeightHistory()" (logWeight)="logWeight()" />
+      } @else {
+        <fit-skeleton height="172px" radius="card" />
+      }
     </section>
 
     <section class="wide" aria-label="Mindset for today">
@@ -139,9 +140,14 @@
     [saveError]="checkInError()"
     (saveSteps)="saveSteps($event)"
     (saveRecovery)="saveRecovery($event)"
-    [(waterOpen)]="waterOpen"
+  />
+
+  <app-water-sheet
+    [(open)]="waterOpen"
     [water]="todayWater()"
-    [waterGoal]="waterGoal()"
-    (saveWater)="saveWater($event)"
+    [goal]="waterGoal()"
+    [saving]="savingWater()"
+    [error]="waterError()"
+    (save)="setWater($event)"
   />
 </fit-page>

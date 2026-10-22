@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonIcon, IonLabel, IonTabBar, IonTabButton, IonTabs, NavController } from '@ionic/angular';
 
@@ -60,6 +60,36 @@ export class TabsPage {
   private readonly clock = inject(CLOCK);
   private readonly plans = inject(WorkoutPlanService);
   private readonly logs = inject(WorkoutLogService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * A tab became active. Switching tabs (not the first one shown) fades the tab's content up into place
+   * (docs/motion-plan.md #2). Played here, on the tab change only: pages opened or returned to inside a tab
+   * have their own page transition, and a second fade there showed as a blink.
+   */
+  protected tabChanged(tab: string): void {
+    const switched = this.activeTab() !== undefined && this.activeTab() !== tab;
+    this.activeTab.set(tab);
+    if (switched && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      requestAnimationFrame(() => this.fadeInActivePage());
+    }
+  }
+
+  private fadeInActivePage(): void {
+    const pages = this.host.nativeElement.querySelectorAll<HTMLElement>('ion-tabs ion-router-outlet > .ion-page:not(.ion-page-hidden)');
+    const page = pages[pages.length - 1];
+    // The page's own blocks, never ion-content (a transform there would break its fixed children).
+    const blocks = page?.querySelectorAll<HTMLElement>(':scope > fit-page > ion-content > :is(.custom-header, .large-title-block, .page-body)');
+    blocks?.forEach((block) =>
+      block.animate?.(
+        [
+          { opacity: 0.4, transform: 'translateY(8px)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        { duration: 260, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+      ),
+    );
+  }
 
   /**
    * Handles an available Quick Add action (the sheet has already closed).

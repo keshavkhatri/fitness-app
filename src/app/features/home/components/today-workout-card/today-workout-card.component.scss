@@ -225,3 +225,22 @@ fit-card {
     margin-top: var(--space-4);
   }
 }
+
+// --- Motion (docs/motion-plan.md #19) ---------------------------------------------------
+// The workout photo drifts closer, slowly; the call to action's arrow nudges now and then.
+.photo {
+  animation: fit-ken-burns 18s ease-in-out infinite alternate;
+}
+
+.cta ion-icon {
+  animation: fit-nudge 2.4s ease-in-out 1.2s infinite;
+}
+
+// Marking the activity done: the "done" line pops in with its check.
+.done {
+  animation: fit-rise 320ms var(--motion-ease) backwards;
+
+  ion-icon {
+    animation: fit-pop 480ms var(--motion-spring) 80ms backwards;
+  }
+}

@@ -27,7 +27,7 @@ const ICONS: Readonly<Record<MealCategory, string>> = {
       </div>
       <ul class="meals">
         @for (tile of meals(); track tile.meal) {
-          <li [attr.data-meal]="tile.meal">
+          <li [attr.data-meal]="tile.meal" [style.--i]="$index">
             <ion-icon class="icon" [name]="icons[tile.meal]" aria-hidden="true" />
             <span class="name">{{ tile.label }}</span>
             @if (tile.calories) {

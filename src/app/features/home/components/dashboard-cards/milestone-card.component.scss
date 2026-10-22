@@ -1,5 +1,5 @@
 @use 'mixins' as fx;
-@use '../dashboard-card' as card;
+@use 'dashboard-card' as card;
 
 :host {
   display: block;
@@ -92,9 +92,59 @@ fit-card {
   margin: 0 calc(var(--space-3) * -1) calc(var(--space-3) * -1) 0;
 }
 
-@container (max-width: 150px) {
+
+// A half-width card on a narrow phone: the decorative chevron goes, so the title fits; dots and summit shrink.
+@container (max-width: 180px) {
+  .chevron {
+    display: none;
+  }
+
+  .dots {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .dot {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+  }
+
   .summit {
     width: 44px;
     height: 34px;
   }
+}
+
+// --- Motion (docs/motion-plan.md #12) ---------------------------------------------------
+.flame {
+  display: inline-block;
+  transform-origin: 50% 85%;
+  animation: fit-flicker 1.6s ease-in-out infinite;
+}
+
+// Days already done pop in one by one; the ones to go fade in.
+.dot {
+  animation: fit-pop 420ms var(--motion-spring) backwards;
+  animation-delay: calc(200ms + var(--i, 0) * 90ms);
+
+  &:not(.done) {
+    animation-name: fit-fade;
+  }
+}
+
+// The summit rises, then its flag waves from the pole.
+.peaks {
+  animation: fit-rise 600ms var(--motion-ease) 150ms backwards;
+}
+
+.flag {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: fit-wave-flag 1.8s ease-in-out infinite;
+}
+
+.fill {
+  transform-origin: left;
+  animation: fit-grow-x 800ms var(--motion-ease) 200ms backwards;
 }

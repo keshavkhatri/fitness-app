@@ -128,3 +128,9 @@
     align-self: stretch;
   }
 }
+
+// --- Motion (docs/motion-plan.md #26): the meals rise in one after another as a day loads. ---
+.meal-list > li {
+  animation: fit-rise 380ms var(--motion-ease) backwards;
+  animation-delay: calc(120ms + var(--i, 0) * 60ms);
+}

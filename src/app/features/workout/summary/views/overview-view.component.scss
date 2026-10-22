@@ -202,3 +202,24 @@
 .stat[data-key='calories'] ion-icon {
   color: #ff8a3d;
 }
+
+// --- Motion (docs/motion-plan.md #22): the check pops, the headline and numbers rise in. ---
+.mark {
+  animation: fit-pop 600ms var(--motion-spring) 100ms backwards;
+}
+
+.title {
+  animation: fit-rise 420ms var(--motion-ease) 300ms backwards;
+}
+
+.message {
+  animation: fit-rise 420ms var(--motion-ease) 400ms backwards;
+}
+
+.workout {
+  animation: fit-rise 460ms var(--motion-ease) 500ms backwards;
+}
+
+.stats {
+  animation: fit-rise 460ms var(--motion-ease) 620ms backwards;
+}

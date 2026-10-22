@@ -49,6 +49,9 @@
 
       <app-day-summary [calories]="s.calories" [macros]="s.macros" (logFood)="addFood()" />
 
+      <!-- Water for the day shown (part of the day's nutrition; the week view has its history). -->
+      <app-hydration-card class="water" [hydration]="hydration()" [busy]="savingWater()" (open)="openWater()" (addGlass)="addGlass()" />
+
       <section class="meals" aria-labelledby="nutrition-meals">
         <h2 class="section-title" id="nutrition-meals">{{ copy.meals.title }}</h2>
         @if (s.isEmpty) {
@@ -56,7 +59,7 @@
         }
         <ul class="meal-list">
           @for (meal of s.meals; track meal.meal) {
-            <li><app-meal-section [meal]="meal" [addText]="copy.meals.add" (addFood)="addFood(meal.meal)" (editFood)="editFood($event)" /></li>
+            <li [style.--i]="$index"><app-meal-section [meal]="meal" [addText]="copy.meals.add" (addFood)="addFood(meal.meal)" (editFood)="editFood($event)" /></li>
           }
         </ul>
       </section>
@@ -79,4 +82,14 @@
       </div>
     }
   }
+
+  <app-water-sheet
+    [(open)]="waterOpen"
+    [title]="header().isToday ? 'Water today' : 'Water · ' + header().date"
+    [water]="dayWater()"
+    [goal]="waterGoal()"
+    [saving]="savingWater()"
+    [error]="waterError()"
+    (save)="setWater($event)"
+  />
 </fit-page>

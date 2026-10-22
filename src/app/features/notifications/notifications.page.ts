@@ -82,7 +82,7 @@ const EMPTY: Readonly<Record<NotificationFilter | 'none', { readonly title: stri
               <ul class="list" [attr.data-testid]="first ? 'notification-list' : 'notification-list-' + group.date">
                 @for (item of group.items; track item.id) {
                   @let unread = !inbox.isRead(item.id);
-                  <li>
+                  <li [style.--i]="$index">
                     <button
                       type="button"
                       class="item"

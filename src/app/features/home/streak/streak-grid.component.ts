@@ -28,7 +28,7 @@ const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'] as const;
         </div>
         <div class="grid" role="grid" aria-label="Active days, week by week" data-testid="streak-grid" [style.--weeks]="g.weeks.length">
           @for (week of g.weeks; track week.key) {
-            <div class="week" role="row">
+            <div class="week" role="row" [style.--i]="$index">
               @for (day of week.days; track day.date) {
                 <button
                   type="button"

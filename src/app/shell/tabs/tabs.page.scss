@@ -71,3 +71,8 @@ ion-tab-button {
     }
   }
 }
+
+// --- Motion (docs/motion-plan.md #3): the newly selected tab's icon pops. ---------------
+ion-tab-button.tab-selected ion-icon {
+  animation: fit-bounce 420ms var(--motion-ease);
+}

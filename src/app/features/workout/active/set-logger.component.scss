@@ -161,3 +161,8 @@
   padding: var(--space-1) 0;
   color: var(--color-danger-text);
 }
+
+// --- Motion (docs/motion-plan.md #23): a set's check pops when it's completed. ------------
+.row[data-status='completed'] .circle {
+  animation: fit-pop 460ms var(--motion-spring);
+}
