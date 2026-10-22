@@ -8,8 +8,7 @@ import { UserIdentityService } from '../../../core/identity/user-identity.servic
 import { CLOCK } from '../../../core/time/clock';
 import { WorkoutHistoryService } from '../../../core/workout/workout-history.service';
 import { WorkoutPlanService } from '../../../core/workout/workout-plan.service';
-import { WeightRange, rangeStart, weightRangeSummary } from '../../../domain/body-measurements';
-import { parseIsoCalendarDate } from '../../../domain/fitness-profile';
+import { WeightRange, weightRangeSummary } from '../../../domain/body-measurements';
 import { performedExercises } from '../../../domain/workout-session';
 import {
   EmptyStateComponent,
@@ -21,10 +20,11 @@ import {
   SegmentOption,
   SegmentedControlComponent,
 } from '../../../shared/ui';
-import { BODY_COMPOSITION_HISTORY_PATH } from '../../body-composition/body-composition-paths';
+import { BodyCompositionMetric } from '../../../domain/body-composition';
+import { BODY_COMPOSITION_HISTORY_PATH, NEW_BODY_COMPOSITION_PATH } from '../../body-composition/body-composition-paths';
 import { MEASUREMENT_HISTORY_PATH } from '../../body-measurements/measurement-paths';
 import { NEW_WEIGHT_PATH, WEIGHT_HISTORY_PATH } from '../../body-weight/weight-history-paths';
-import { WeightChartView, axisDateLabel, toTrendSummary, weightChart } from '../../body-weight/weight-trend-view-model';
+import { PointChartView, toTrendSummary, weightChart } from '../../body-weight/weight-trend-view-model';
 import { ReviewEntryComponent } from '../../fitness-review/components/review-entry.component';
 import { FITNESS_REVIEW_PATH } from '../../fitness-review/fitness-review-paths';
 import { WORKOUT_COPY } from '../workout-content';
@@ -33,8 +33,10 @@ import { ConsistencyCardComponent } from './consistency-card.component';
 import { toExerciseRow } from './exercise-list-view-model';
 import { ExerciseRowListComponent } from './exercise-row-list.component';
 import { progressBaseOf } from './progress-paths';
-import { BodyMetricView, KeyMetricView, ProgressWorkoutsView, dayMonth, toBodyMetrics, toProgressWorkouts } from './progress-view-model';
+import { BodyMetricView, KeyMetricView, ProgressWorkoutsView, toBodyMetrics, toProgressWorkouts } from './progress-view-model';
 import { WeightTrendCardComponent, WeightTrendState } from './weight-trend-card.component';
+import { CompositionTrendCardComponent } from './composition-trend-card.component';
+import { CompositionTrendView, toCompositionTrend } from './composition-trend-view-model';
 
 type ProgressView = 'overview' | 'workout' | 'body';
 
@@ -68,6 +70,7 @@ export const EXERCISE_PREVIEW_LIMIT = 4;
     ConsistencyCardComponent,
     ExerciseRowListComponent,
     WeightTrendCardComponent,
+    CompositionTrendCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -137,28 +140,26 @@ export class ProgressPage {
     return summary && s.status === 'ready' ? toTrendSummary(summary, this.weightRange(), s.unitSystem, this.weights.today()) : null;
   });
   /** The weight history's own chart; null when it can't be built (the latest value still shows). */
-  protected readonly weightChart = computed<WeightChartView | null>(() => {
+  protected readonly weightChart = computed<PointChartView | null>(() => {
     const s = this.weights.state();
     const summary = this.weightSummary();
     if (!summary || s.status !== 'ready') {
       return null;
     }
-    const today = this.weights.today();
-    const start = rangeStart(this.weightRange(), today) ?? summary.first.entry.date;
     try {
-      return weightChart.build(summary, start, today, s.unitSystem, { start: axisDateLabel(start, today), end: axisDateLabel(today, today) });
+      return weightChart.build(summary, s.unitSystem, this.weights.today());
     } catch {
       return null;
     }
   });
 
-  /** The latest weigh-in in the range, beside its point: "72.4 kg" / "8 Oct". */
-  protected readonly weightCallout = computed(() => {
-    const summary = this.weightSummary();
-    const trend = this.weightTrend();
-    const latest = summary ? parseIsoCalendarDate(summary.latest.entry.date) : null;
-    const today = parseIsoCalendarDate(this.weights.today());
-    return trend && latest && today ? { value: trend.latest.weight, date: dayMonth(latest, today) } : null;
+  /** Body fat, muscle and the rest over time: the chosen metric and range (kept while the page is open). */
+  protected readonly compositionMetric = signal<BodyCompositionMetric | null>(null);
+  /** All time by default: reports are weeks apart, so shorter windows often hold one point. */
+  protected readonly compositionRange = signal<WeightRange>('all');
+  protected readonly compositionTrend = computed<CompositionTrendView | null>(() => {
+    const s = this.composition.state();
+    return s.status === 'ready' ? toCompositionTrend(s.assessments, this.compositionMetric(), this.compositionRange(), this.weights.today()) : null;
   });
 
   // --- Header ----------------------------------------------------------------------------------
@@ -217,6 +218,10 @@ export class ProgressPage {
 
   protected addWeight(): void {
     void this.nav.navigateForward(NEW_WEIGHT_PATH);
+  }
+
+  protected addBodyComposition(): void {
+    void this.nav.navigateForward(NEW_BODY_COMPOSITION_PATH);
   }
 
   protected openBodyComposition(): void {

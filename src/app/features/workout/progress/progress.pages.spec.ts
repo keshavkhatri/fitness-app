@@ -100,9 +100,9 @@ describe('Progress', () => {
       const cards = [...el.querySelectorAll('[data-testid="body-metrics"] .body-card')];
       expect(cards.map((c) => clean(c.querySelector('.body-value')))).toEqual(['78.4 kg', '18.5 %', '–']);
       expect(cards.map((c) => clean(c.querySelector('.body-caption')))).toEqual(['vs 1 Oct', 'vs 1 Sep', 'Not recorded']);
-      expect(clean(el.querySelector('[data-testid="weight-chart-callout"] .callout-value'))).toBe('78.4 kg');
-      expect(clean(el.querySelector('[data-testid="weight-chart-callout"] .callout-date'))).toBe('7 Oct');
-      expect(el.querySelectorAll('[data-testid="weight-chart-point"]')).toHaveLength(2); // last 90 days: Oct 1 and Oct 7
+      expect(clean(el.querySelector('[data-testid="weight-trend"] .value.latest'))).toBe('78.4');
+      expect(clean(el.querySelector('[data-testid="weight-trend"] .date.latest'))).toBe('7 Oct');
+      expect(el.querySelectorAll('[data-testid="weight-trend"] [data-testid="chart-point"]')).toHaveLength(2); // last 90 days: Oct 1 and Oct 7
       expect(clean(el.querySelector('[data-testid="consistency-summary"]'))).toBe('2 of 2 weeks with a workout');
       expect([...el.querySelectorAll('[data-testid="key-metrics"] .metric')].map((m) => clean(m.querySelector('dt')))).toEqual([
         'Total workouts',
@@ -119,10 +119,10 @@ describe('Progress', () => {
       expect(all.map((i) => i.value)).toEqual(['30d', '90d', '180d', '365d', 'all']);
       all[4].click();
       fixture.detectChanges();
-      expect(el.querySelectorAll('[data-testid="weight-chart-point"]')).toHaveLength(3);
+      expect(el.querySelectorAll('[data-testid="weight-trend"] [data-testid="chart-point"]')).toHaveLength(3);
       all[0].click();
       fixture.detectChanges();
-      expect(el.querySelectorAll('[data-testid="weight-chart-point"]')).toHaveLength(2);
+      expect(el.querySelectorAll('[data-testid="weight-trend"] [data-testid="chart-point"]')).toHaveLength(2);
     });
 
     it('no recordings: says so (never a zero) and offers to add a weight', async () => {
@@ -166,7 +166,7 @@ describe('Progress', () => {
       const { el, button, settle, root } = await render(ProgressPage, [], {}, undefined, BODY);
       expect(clean(el.querySelector('[data-testid="progress-empty"]'))).toContain('Your training progress starts here');
       expect(el.querySelector('[data-testid="key-metrics"]')).toBeNull();
-      expect(clean(el.querySelector('[data-testid="weight-chart-callout"] .callout-value'))).toBe('78.4 kg');
+      expect(clean(el.querySelector('[data-testid="weight-trend"] .value.latest'))).toBe('78.4');
       button('View workout')!.click();
       await settle();
       expect(root).toHaveBeenCalledWith('/workout');
@@ -248,8 +248,8 @@ describe('Progress', () => {
       expect(el.querySelector('h1')?.textContent?.trim()).toBe('Bench Press');
       expect(clean(el.querySelector('[data-testid="performance-best"]'))).toContain('100 kg × 6');
       expect(clean(el.querySelector('[data-testid="performance-change"]'))).toBe('Max weight +10 kg since 10 Jul');
-      expect(el.querySelectorAll('[data-testid="performance-point"]')).toHaveLength(4);
-      expect(el.querySelector('[data-testid="performance-chart"]')?.getAttribute('aria-label')).toContain('4 sessions');
+      expect(el.querySelectorAll('[data-testid="performance-chart"] [data-testid="chart-point"]')).toHaveLength(4);
+      expect(el.querySelector('[data-testid="performance-chart"] svg')?.getAttribute('aria-label')).toContain('4 sessions');
       expect(el.querySelectorAll('[data-testid="performance-session"]')).toHaveLength(4);
       expect(el.textContent).not.toMatch(/1RM|estimated/i);
     });
@@ -260,11 +260,11 @@ describe('Progress', () => {
       expect(ranges).toEqual(['1m', '3m', '6m', '1y', 'all']);
       el.querySelector<HTMLInputElement>('input[name="performance-range"][value="1m"]')!.click();
       fixture.detectChanges();
-      expect(el.querySelectorAll('[data-testid="performance-point"]')).toHaveLength(3);
+      expect(el.querySelectorAll('[data-testid="performance-chart"] [data-testid="chart-point"]')).toHaveLength(3);
       expect(el.querySelectorAll('[data-testid="performance-session"]')).toHaveLength(3);
       el.querySelector<HTMLInputElement>('input[name="performance-metric"][value="reps"]')!.click();
       fixture.detectChanges();
-      expect(clean(el.querySelector('[data-testid="performance-latest"] .callout-value'))).toBe('6 reps');
+      expect(clean(el.querySelector('[data-testid="performance-chart"] .value.latest'))).toBe('6');
 
       el.querySelector<HTMLButtonElement>('[data-testid="performance-session"]')!.click();
       await settle();

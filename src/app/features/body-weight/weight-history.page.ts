@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { IonBackButton, IonIcon, NavController } from '@ionic/angular';
 
 import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
-import { WeightRange, rangeStart, weightRangeSummary } from '../../domain/body-measurements';
+import { WeightRange, weightRangeSummary } from '../../domain/body-measurements';
 import { EmptyStateComponent, FitnessButtonComponent, FitnessCardComponent, LoadingSkeletonComponent, PageLayoutComponent } from '../../shared/ui';
 import { WeightTrendComponent } from './components/weight-trend.component';
 import { WEIGHT_HISTORY_COPY } from './weight-history-content';
 import { NEW_WEIGHT_PATH, weightEntryPath } from './weight-history-paths';
 import { toWeightHistoryScreen } from './weight-history-view-model';
-import { WeightChartView, axisDateLabel, latestCallout, toTrendSummary, weightChart } from './weight-trend-view-model';
+import { PointChartView, toTrendSummary, weightChart } from './weight-trend-view-model';
 
 /**
  * Recorded body weights: a chart and first/latest summary for a chosen range
@@ -51,24 +51,17 @@ export class WeightHistoryPage {
     return summary && s.status === 'ready' ? toTrendSummary(summary, this.range(), s.unitSystem, this.history.today()) : null;
   });
   /** null if the chart can't be built: the summary and text list still show. */
-  protected readonly chart = computed<WeightChartView | null>(() => {
+  protected readonly chart = computed<PointChartView | null>(() => {
     const s = this.history.state();
     const summary = this.rangeSummary();
     if (!summary || s.status !== 'ready') {
       return null;
     }
-    const today = this.history.today();
-    const start = rangeStart(this.range(), today) ?? summary.first.entry.date;
     try {
-      return weightChart.build(summary, start, today, s.unitSystem, { start: axisDateLabel(start, today), end: axisDateLabel(today, today) });
+      return weightChart.build(summary, s.unitSystem, this.history.today());
     } catch {
       return null;
     }
-  });
-  protected readonly callout = computed(() => {
-    const s = this.history.state();
-    const summary = this.rangeSummary();
-    return summary && s.status === 'ready' ? latestCallout(summary, s.unitSystem) : null;
   });
   protected readonly emptyRangeTitle = computed(() => this.copy.trend.emptyRange(this.copy.trend.rangeNames[this.range()]));
 

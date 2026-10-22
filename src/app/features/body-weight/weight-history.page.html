@@ -14,7 +14,7 @@
   @let s = screen();
   @switch (s.kind) {
     @case ('ready') {
-      <app-weight-trend [(range)]="range" [trend]="trend()" [chart]="chart()" [callout]="callout()" [emptyTitle]="emptyRangeTitle()" (addWeight)="add()" />
+      <app-weight-trend [(range)]="range" [trend]="trend()" [chart]="chart()" [emptyTitle]="emptyRangeTitle()" (addWeight)="add()" />
       <section class="section" aria-labelledby="weight-history-list">
         <h2 class="section-title" id="weight-history-list">{{ copy.list.title }}</h2>
         <ul class="rows">

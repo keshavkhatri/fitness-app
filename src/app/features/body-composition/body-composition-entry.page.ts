@@ -17,7 +17,6 @@ import {
 import { IonContent, IonFooter, IonIcon, NavController } from '@ionic/angular';
 
 import { BodyCompositionHistoryService } from '../../core/body-composition/body-composition-history.service';
-import { WeightHistoryService } from '../../core/body-measurements/weight-history.service';
 import { MAX_REPORT_BYTES } from '../../core/inbody/inbody-extraction.client';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
 import { ThemeService } from '../../core/theme/theme.service';
@@ -30,7 +29,7 @@ import {
   METRIC_QUANTITY,
   validateBodyCompositionInput,
 } from '../../domain/body-composition';
-import { UnitSystem, weightFromPounds } from '../../domain/fitness-profile';
+import { UnitSystem } from '../../domain/fitness-profile';
 import { INBODY_AI_PROVENANCE, INBODY_REPORT_MEDIA_TYPES } from '../../domain/inbody-extraction';
 import {
   AnalysisOverlayComponent,
@@ -48,6 +47,7 @@ import { ReportImport } from '../onboarding/state/report-import.service';
 import { REPORT_FAILURE_COPY, reportIssueText, reportReviewSummary } from '../onboarding/state/report-review';
 import { BODY_COMPOSITION_COPY } from './body-composition-content';
 import { formatReportedValue, shortDateOf } from './body-composition-history-view-model';
+import { EarlierSaved, ReportResults, WeighInItem } from './report-results.service';
 import {
   BodyCompositionFormErrors,
   BodyCompositionFormValues,
@@ -79,12 +79,6 @@ const SHOWN_IN_SUMMARY: readonly BodyCompositionMetric[] = ['weight', 'skeletal-
 /** How many saved values a one-line summary doesn't name. */
 const moreCount = (values: Readonly<Partial<Record<BodyCompositionMetric, unknown>>>): number =>
   Object.keys(values).filter((metric) => !SHOWN_IN_SUMMARY.includes(metric as BodyCompositionMetric)).length;
-
-/** An earlier test that was saved, with what was saved. */
-interface EarlierSaved {
-  readonly date: string;
-  readonly values: Readonly<Partial<Record<BodyCompositionMetric, ReportedValue>>>;
-}
 
 /** An earlier test from the report's history chart, offered for adding to the history. */
 interface EarlierChoice {
@@ -150,7 +144,7 @@ export class BodyCompositionEntryPage {
   readonly assessmentId = input<string>();
 
   private readonly history = inject(BodyCompositionHistoryService);
-  private readonly weights = inject(WeightHistoryService);
+  private readonly results = inject(ReportResults);
   private readonly profiles = inject(FitnessProfileService);
   private readonly nav = inject(NavController);
   protected readonly report = inject(ReportImport);
@@ -474,52 +468,14 @@ export class BodyCompositionEntryPage {
   }
 
   /** Adds each chosen earlier test as its own assessment, as read from the report. */
-  private async saveEarlier(): Promise<{ readonly total: number; readonly saved: readonly EarlierSaved[] }> {
-    const chosen = this.historyChoices().filter((choice) => choice.selected);
-    const suggestions = new Map((this.report.reading()?.prefill.history ?? []).map((s) => [s.date, s]));
-    const saved: EarlierSaved[] = [];
-    for (const choice of chosen) {
-      const suggestion = suggestions.get(choice.date);
-      if (!suggestion) {
-        continue;
-      }
-      const result = await this.history.add({ date: suggestion.date, source: INBODY_AI_PROVENANCE, values: suggestion.values });
-      if (result.ok) {
-        saved.push({ date: suggestion.date, values: suggestion.values });
-      }
-    }
-    return { total: chosen.length, saved };
+  /** Adds each chosen earlier test as its own assessment, as read from the report. */
+  private saveEarlier(): Promise<{ readonly total: number; readonly saved: readonly EarlierSaved[] }> {
+    const chosen = new Set(this.historyChoices().filter((choice) => choice.selected).map((choice) => choice.date));
+    return this.results.addEarlier((this.report.reading()?.prefill.history ?? []).filter((s) => chosen.has(s.date)));
   }
 
-  /**
-   * Records each weight as a weigh-in on its date, in the unit the report printed. A day that already has the same
-   * weight is skipped, so saving the same report twice never doubles the weigh-ins. The profile is not touched.
-   */
-  private async logWeightEntries(items: readonly { readonly date: string; readonly weight: ReportedValue | null | undefined }[]): Promise<{ readonly failed: number }> {
-    const due = items.filter((item): item is { date: string; weight: ReportedValue } => !!item.weight && (item.weight.unit === 'kg' || item.weight.unit === 'lb'));
-    if (due.length === 0) {
-      return { failed: 0 };
-    }
-    if (this.weights.state().status !== 'ready') {
-      await this.weights.load();
-    }
-    let failed = 0;
-    for (const { date, weight } of due) {
-      const state = this.weights.state();
-      if (state.status !== 'ready') {
-        failed++;
-        continue;
-      }
-      const kilograms = weight.unit === 'lb' ? weightFromPounds(weight.value).kilograms : weight.value;
-      if (state.entries.some((entry) => entry.date === date && Math.abs(entry.weight.kilograms - kilograms) < 0.05)) {
-        continue;
-      }
-      const result = await this.weights.add({ weight: weight.value, unitSystem: weight.unit === 'lb' ? 'imperial' : 'metric', date });
-      if (!result.ok) {
-        failed++;
-      }
-    }
-    return { failed };
+  private logWeightEntries(items: readonly WeighInItem[]): Promise<{ readonly failed: number }> {
+    return this.results.logWeights(items);
   }
 
   protected cancel(): void {

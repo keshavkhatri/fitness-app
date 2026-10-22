@@ -1,5 +1,6 @@
 import { CalendarDate, calendarDateOf, compareCalendarDates } from '../../../domain/fitness-profile';
 import { ExercisePerformance, ExercisePerformanceSession, LoggingMode, isBetterSet, sessionVolume, topSet } from '../../../domain/workout-session';
+import { PointChartPoint, pointDateLines } from '../../../shared/ui';
 import { WORKOUT_COPY } from '../workout-content';
 import { comparableSessions, formatTrendChange } from './exercise-list-view-model';
 import { formatPerformedSet } from './progress-view-model';
@@ -88,71 +89,30 @@ const metricUnit = (metric: PerformanceMetric, session: ExercisePerformanceSessi
 const grouped = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 const formatMetric = (value: number, unit: string) => `${grouped.format(value)} ${unit}`;
 
-// --- Chart geometry ---------------------------------------------------------------------------
+// --- Chart ------------------------------------------------------------------------------------
 
-export const PERFORMANCE_CHART = { width: 320, height: 180, left: 36, right: 14, top: 16, bottom: 26 } as const;
-
+/** The sessions as a labelled point chart: each value above its point, its date below. */
 export interface PerformanceChartView {
-  readonly points: readonly { readonly key: string; readonly x: number; readonly y: number }[];
-  /** Polyline points, chronological; empty with one point. */
-  readonly path: string;
-  readonly yTicks: readonly { readonly y: number; readonly label: string }[];
-  readonly xLabels: readonly { readonly x: number; readonly label: string; readonly anchor: 'start' | 'middle' | 'end' }[];
-  /** The latest point's value, shown next to it. */
-  readonly latest: { readonly x: number; readonly y: number; readonly value: string; readonly date: string };
+  readonly points: readonly PointChartPoint[];
+  /** "kg", "reps", "sec". */
   readonly unit: string;
+  /** At least 20% of the largest value (and 1), so small differences aren't blown up into steep slopes. */
+  readonly minSpan: number;
 }
 
-const STEPS = [0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
-const dayNumber = (d: CalendarDate) => Date.UTC(d.year, d.month - 1, d.day) / 86_400_000;
 /** "24 Sep" */
 const dateText = (d: CalendarDate) => `${d.day} ${MONTHS[d.month - 1]}`;
-const round = (n: number) => Math.round(n * 10) / 10;
+const isoOf = (d: CalendarDate) => `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
 
-/**
- * Axis bounds containing the values with at least 20% of the largest value
- * as span (small differences aren't blown up into steep slopes), on a round
- * step; never below zero.
- */
-export function performanceAxis(values: readonly number[]): { min: number; max: number; step: number } {
-  let lo = Math.min(...values);
-  let hi = Math.max(...values);
-  const minSpan = Math.max(hi * 0.2, 1);
-  if (hi - lo < minSpan) {
-    const mid = (lo + hi) / 2;
-    lo = Math.max(0, mid - minSpan / 2);
-    hi = lo + minSpan;
-  }
-  const step = STEPS.find((s) => (hi - lo) / s <= 4) ?? STEPS[STEPS.length - 1];
-  return { min: Math.max(0, Math.floor(lo / step) * step), max: Math.ceil(hi / step) * step, step };
-}
-
-function toChart(entries: readonly { date: CalendarDate; value: number; key: string }[], start: CalendarDate, today: CalendarDate, unit: string): PerformanceChartView {
-  const c = PERFORMANCE_CHART;
-  const plotW = c.width - c.left - c.right;
-  const plotH = c.height - c.top - c.bottom;
-  const startDay = dayNumber(start);
-  const endDay = Math.max(dayNumber(today), startDay + 1);
-  const axis = performanceAxis(entries.map((e) => e.value));
-  const xOf = (d: CalendarDate) => c.left + ((dayNumber(d) - startDay) / (endDay - startDay)) * plotW;
-  const yOf = (v: number) => c.top + (1 - (v - axis.min) / (axis.max - axis.min)) * plotH;
-  const points = entries.map((e) => ({ key: e.key, x: round(xOf(e.date)), y: round(yOf(e.value)) }));
-  const yTicks = [];
-  for (let v = axis.min; v <= axis.max + axis.step / 2; v += axis.step) {
-    yTicks.push({ y: round(yOf(v)), label: grouped.format(v) });
-  }
-  const last = entries[entries.length - 1];
-  const lastPoint = points[points.length - 1];
+function toChart(entries: readonly { date: CalendarDate; value: number; key: string }[], today: CalendarDate, unit: string): PerformanceChartView {
+  const lines = pointDateLines(
+    entries.map((e) => isoOf(e.date)),
+    isoOf(today),
+  );
   return {
-    points,
-    path: points.length > 1 ? points.map((p) => `${p.x},${p.y}`).join(' ') : '',
-    yTicks,
-    xLabels: [
-      { x: c.left, label: dateText(start), anchor: 'start' },
-      { x: c.width - c.right, label: WORKOUT_COPY.history.today, anchor: 'end' },
-    ],
-    latest: { x: lastPoint.x, y: lastPoint.y, value: formatMetric(last.value, unit), date: dateText(last.date) },
+    points: entries.map((e) => ({ key: e.key, value: e.value, valueText: grouped.format(e.value), ...lines(isoOf(e.date)) })),
     unit,
+    minSpan: Math.max(Math.max(...entries.map((e) => e.value)) * 0.2, 1),
   };
 }
 
@@ -259,7 +219,7 @@ export function toExercisePerformanceView(
             since: copy.since(dateText(first.date)),
             direction: difference > 0 ? 'up' : difference < 0 ? 'down' : 'same',
           },
-    chart: entries.length ? toChart(entries, start ?? entries[0].date, today, unit) : null,
+    chart: entries.length ? toChart(entries, today, unit) : null,
     chartLabel: entries.length
       ? `${metricName}, ${rangeName}: ${entries.length === 1 ? `1 session, ${formatMetric(first.value, unit)} on ${dateText(first.date)}` : `${entries.length} sessions, from ${formatMetric(first.value, unit)} on ${dateText(first.date)} to ${formatMetric(last.value, unit)} on ${dateText(last.date)}`}.`
       : copy.emptyRange,

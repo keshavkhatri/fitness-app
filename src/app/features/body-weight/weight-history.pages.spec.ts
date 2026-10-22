@@ -211,15 +211,15 @@ describe('Body weight trend (history page)', () => {
 
   it('switching ranges filters the chart and summary; the full list stays', async () => {
     const { el, fixture } = await renderHistory(SPREAD);
-    expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(2);
+    expect(el.querySelectorAll('[data-testid=chart-point]')).toHaveLength(2);
     expect(summaryText(el)).toBe('Latest 81.9 kg Today Change −0.3 kg From 82.2 kg, Thursday, Oct 1 Lowest 81.9 kg Today Highest 82.2 kg Thursday, Oct 1');
 
     chooseRange(fixture, '90d');
-    expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(3);
+    expect(el.querySelectorAll('[data-testid=chart-point]')).toHaveLength(3);
     expect(clean(byTestId(el, 'trend-change'))).toBe('−1.6 kg');
 
     chooseRange(fixture, 'all');
-    expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(4);
+    expect(el.querySelectorAll('[data-testid=chart-point]')).toHaveLength(4);
     expect(summaryText(el)).toContain('From 86.0 kg, Sunday, Mar 1');
     expect(summaryText(el)).toContain('Highest 86.0 kg Sunday, Mar 1');
     expect(clean(byTestId(el, 'trend-change'))).toBe('−4.1 kg');
@@ -231,7 +231,7 @@ describe('Body weight trend (history page)', () => {
     const { el, forward } = await renderHistory([entry('old', '2026-03-01', 86)]);
     const empty = byTestId(el, 'trend-empty')!;
     expect(clean(empty)).toContain('No weigh-ins in the last 30 days');
-    expect(byTestId(el, 'weight-chart')).toBeNull();
+    expect(byTestId(el, 'point-chart')).toBeNull();
     expect(byTestId(el, 'trend-summary')).toBeNull();
     [...empty.querySelectorAll('button')].find((b) => clean(b) === 'Add weight')!.click();
     expect(forward).toHaveBeenCalledWith(['/you', 'weight-history', 'new']);
@@ -240,8 +240,8 @@ describe('Body weight trend (history page)', () => {
 
   it('a single measurement is one visible point and claims no change', async () => {
     const { el } = await renderHistory([entry('only', '2026-10-09', 80)]);
-    expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(1);
-    expect(byTestId(el, 'weight-chart-line')).toBeNull();
+    expect(el.querySelectorAll('[data-testid=chart-point]')).toHaveLength(1);
+    expect(byTestId(el, 'chart-line')).toBeNull();
     expect(byTestId(el, 'trend-change')).toBeNull();
     expect(summaryText(el)).toContain('Only one measurement in this range');
   });
@@ -251,7 +251,7 @@ describe('Body weight trend (history page)', () => {
       entry('am', '2026-10-09', 80.2, '2026-10-09T05:00:00.000Z'),
       entry('pm', '2026-10-09', 80.8, '2026-10-09T18:00:00.000Z'),
     ]);
-    const points = [...el.querySelectorAll('[data-testid=weight-chart-point]')];
+    const points = [...el.querySelectorAll('[data-testid=chart-point]')];
     expect(points).toHaveLength(2);
     expect(points[0].getAttribute('cx')).not.toBe(points[1].getAttribute('cx'));
     expect(measurements(el)).toEqual(['80.2 kg, Today', '80.8 kg, Today']);
@@ -259,7 +259,7 @@ describe('Body weight trend (history page)', () => {
 
   it('describes the chart for screen readers and lists its measurements as text', async () => {
     const { el } = await renderHistory(SPREAD);
-    const svg = byTestId(el, 'weight-chart')!;
+    const svg = byTestId(el, 'point-chart')!;
     expect(svg.getAttribute('role')).toBe('img');
     expect(svg.getAttribute('aria-label')).toBe(
       'Weight chart for the last 30 days: 2 measurements, from 82.2 kg (Thursday, Oct 1) to 81.9 kg (Today). Change between first and latest recorded measurements: −0.3 kg.',
@@ -271,7 +271,7 @@ describe('Body weight trend (history page)', () => {
   it('uses the profile’s unit everywhere in the trend', async () => {
     const { el } = await renderHistory([entry('a', '2026-10-01', 80), entry('b', '2026-10-09', 79.5)], { ...PROFILE, unitSystem: 'imperial' });
     expect(summaryText(el)).toBe('Latest 175.3 lb Today Change −1.1 lb From 176.4 lb, Thursday, Oct 1 Lowest 175.3 lb Today Highest 176.4 lb Thursday, Oct 1');
-    expect(clean(el.querySelector('app-weight-chart .axis-unit'))).toBe('Weight (lb)');
+    expect(clean(el.querySelector('fit-point-chart .caption'))).toBe('Weight (lb)');
   });
 
   it('if the chart can’t be built, the summary, text and list remain', async () => {
@@ -279,7 +279,7 @@ describe('Body weight trend (history page)', () => {
       throw new Error('render');
     });
     const { el } = await renderHistory(SPREAD);
-    expect(byTestId(el, 'weight-chart')).toBeNull();
+    expect(byTestId(el, 'point-chart')).toBeNull();
     expect(clean(byTestId(el, 'chart-unavailable'))).toContain('The chart can’t be shown right now');
     expect(summaryText(el)).toContain('Latest 81.9 kg Today');
     expect(measurements(el)).toHaveLength(2);
@@ -292,7 +292,7 @@ describe('Body weight trend (history page)', () => {
     const service = TestBed.inject(WeightHistoryService);
     const added = await service.add({ weight: 81, unitSystem: 'metric', date: '2026-10-09' });
     fixture.detectChanges();
-    expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(2);
+    expect(el.querySelectorAll('[data-testid=chart-point]')).toHaveLength(2);
     expect(clean(byTestId(el, 'trend-change'))).toBe('−1.0 kg');
     if (!added.ok) {
       throw new Error('fixture');
@@ -306,15 +306,15 @@ describe('Body weight trend (history page)', () => {
     }
     await service.remove(state.entries[0]);
     fixture.detectChanges();
-    expect(el.querySelectorAll('[data-testid=weight-chart-point]')).toHaveLength(1);
+    expect(el.querySelectorAll('[data-testid=chart-point]')).toHaveLength(1);
     expect(el.querySelector<HTMLInputElement>('fit-segmented-control input:checked')?.value).toBe('90d');
   });
 
   it('calls out the latest measurement on the chart; the page uses the dashboard theme', async () => {
     const { el, fixture } = await renderHistory(SPREAD);
     expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-dashboard');
-    expect(clean(el.querySelector('[data-testid=weight-chart-callout] .callout-value'))).toBe('81.9 kg');
-    expect(clean(el.querySelector('[data-testid=weight-chart-callout] .callout-date'))).toBe('9 Oct');
+    expect(clean(el.querySelector('.value.latest'))).toBe('81.9');
+    expect(clean(el.querySelector('.date.latest'))).toBe('9 Oct');
   });
 
   it('no history at all keeps the original empty state (no range controls)', async () => {

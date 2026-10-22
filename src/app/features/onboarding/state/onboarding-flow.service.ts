@@ -2,11 +2,13 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { FirstRunOfferService } from '../../../core/entitlements/first-run-offer.service';
 import { FitnessProfileService } from '../../../core/profile/fitness-profile.service';
+import { ReportResults } from '../../body-composition/report-results.service';
 import { UserFitnessProfile } from '../../../domain/fitness-profile';
 import { firstIncompleteStep, validateStep } from '../validation/onboarding-validation';
 import { OnboardingDraft, applyDraftChange, draftFromProfile, toFitnessProfile } from './onboarding-draft';
 import { INITIAL_PROGRESS, OnboardingProgress, OnboardingProgressStore } from './onboarding-progress.store';
 import { OnboardingStepId, applicableSteps, stepById } from './onboarding-steps';
+import { ReportImport } from './report-import.service';
 
 export type ProfileSaveStatus = 'idle' | 'saving' | 'error';
 
@@ -37,6 +39,9 @@ export class OnboardingFlow {
   private readonly store = inject(OnboardingProgressStore);
   private readonly profiles = inject(FitnessProfileService);
   private readonly offer = inject(FirstRunOfferService);
+  /** The report read during setup, if any (provided with the flow on the onboarding route). */
+  private readonly report = inject(ReportImport, { optional: true });
+  private readonly reportResults = inject(ReportResults);
 
   private readonly state = signal<OnboardingProgress>(INITIAL_PROGRESS);
 
@@ -178,6 +183,12 @@ export class OnboardingFlow {
     // The name is the account's (set at the account step) or edited in You: never written from here.
     await this.store.clear().catch(() => undefined);
     if (this.mode() === 'new') {
+      // The InBody report read during setup becomes body composition (and weigh-ins), as on the You tab.
+      // Best effort: the profile exists either way, and everything can be added again from You.
+      const reading = this.report?.reading();
+      if (reading && this.report?.keepResults()) {
+        await this.reportResults.saveReading(reading.prefill, { logWeights: this.report.logWeights() }).catch(() => undefined);
+      }
       // A new user sees the plan offer once, after their assessment (the profile editor never does).
       await this.offer.markPending();
       // Not persisted: progress was just cleared and the profile now exists.

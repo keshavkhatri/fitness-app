@@ -142,6 +142,29 @@ describe('OnboardingPage (InBody report setup)', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('keeps nothing from the report when the user switches that off on the review', async () => {
+    const { el, flow, storage, startWithReport, pickImage, clickPrimary, confirmDetails, settle } = await render({ answers: [async () => json(200, rawExtraction())] });
+    await startWithReport();
+    await pickImage(reportImage());
+    await clickPrimary();
+    await vi.waitFor(() => expect(TestBed.inject(ReportImport).current().status).toBe('read'));
+    await settle();
+    await confirmDetails();
+    flow.update({ activityLevel: 'sedentary', primaryGoal: 'lose-fat', trainingExperience: 'beginner', trainingDaysPerWeek: 3, trainingLocation: 'gym', equipment: ['full-gym'] });
+    while (flow.stepId() !== 'summary') {
+      await clickPrimary();
+    }
+    el.querySelector<HTMLInputElement>('[data-testid="report-keep-results"]')!.click();
+    await settle();
+    expect(el.querySelector<HTMLInputElement>('[data-testid="report-log-weights"]')!.disabled).toBe(true);
+    await clickPrimary();
+    await flow.complete();
+    await settle();
+    expect(storage.values.has(PROFILE_KEY)).toBe(true);
+    expect(storage.values.has(BODY_COMPOSITION_KEY)).toBe(false);
+    expect(storage.values.has(WEIGHT_HISTORY_KEY)).toBe(false);
+  });
+
   it('reads the report once, then prefills each screen for review and saves only after confirmation', async () => {
     let answer!: (response: Response) => void;
     const { startWithReport, pickImage, primary, clickPrimary, clickButton, heading, field, type, el, flow, storage, fetch, settle, ruler } = await render({
@@ -195,6 +218,11 @@ describe('OnboardingPage (InBody report setup)', () => {
     }
     expect(storage.values.has(PROFILE_KEY)).toBe(false);
     expect(storage.values.get(PROGRESS_KEY)).not.toContain('inbody-extraction');
+    // The review says what keeping the report will save, with both choices on.
+    expect(el.querySelector('[data-testid="report-keep"]')?.textContent).toContain('21 values from this test and 3 earlier tests');
+    expect(el.querySelector<HTMLInputElement>('[data-testid="report-keep-results"]')!.checked).toBe(true);
+    expect(el.querySelector<HTMLInputElement>('[data-testid="report-log-weights"]')!.checked).toBe(true);
+    expect(storage.values.has(BODY_COMPOSITION_KEY)).toBe(false);
 
     // The summary leads to the account gate; nothing is saved before it (covered in onboarding-account.page.spec).
     await clickPrimary();
@@ -206,9 +234,18 @@ describe('OnboardingPage (InBody report setup)', () => {
 
     const saved = JSON.parse(storage.values.get(PROFILE_KEY)!).profile;
     expect(saved).toMatchObject({ dateOfBirth: '1988-03-09', sex: 'female', height: { centimeters: 173 }, weight: { kilograms: 68.4 } });
-    // Report measurements stay on the report: no weight entry or assessment is added.
-    expect(storage.values.has(WEIGHT_HISTORY_KEY)).toBe(false);
-    expect(storage.values.has(BODY_COMPOSITION_KEY)).toBe(false);
+    // Only once the profile exists: the report becomes body composition (its own test and the 3 earlier ones,
+    // as read) and its weights become weigh-ins on their dates. The profile keeps the weight the user confirmed.
+    const assessments = JSON.parse(storage.values.get(BODY_COMPOSITION_KEY)!).assessments as { date: string; source: { entryMethod: string } }[];
+    expect(assessments.map((a) => a.date).sort()).toEqual(['2026-03-14', '2026-05-09', '2026-07-18', '2026-09-14']);
+    expect(assessments.every((a) => a.source.entryMethod === 'import')).toBe(true);
+    const weighIns = JSON.parse(storage.values.get(WEIGHT_HISTORY_KEY)!).entries as { date: string; weight: { kilograms: number } }[];
+    expect(weighIns.map((w) => [w.date, w.weight.kilograms]).sort()).toEqual([
+      ['2026-03-14', 71.9],
+      ['2026-05-09', 70.6],
+      ['2026-07-18', 69.3],
+      ['2026-09-14', 68.4],
+    ]);
     // The finish screen makes the workout plan from the saved profile (replacing the stale one).
     await vi.waitFor(() => expect(JSON.parse(storage.values.get(WORKOUT_PLAN_KEY)!).plan.daysPerWeek).toBe(3));
   });

@@ -1,10 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 
 import { WEIGHT_RANGES, WeightRange } from '../../../domain/body-measurements';
-import { EmptyStateComponent, FitnessButtonComponent, SegmentOption, SegmentedControlComponent } from '../../../shared/ui';
+import { EmptyStateComponent, FitnessButtonComponent, PointChartComponent, SegmentOption, SegmentedControlComponent } from '../../../shared/ui';
 import { WEIGHT_HISTORY_COPY } from '../weight-history-content';
-import { TrendSummaryView, WeightChartView } from '../weight-trend-view-model';
-import { WeightChartComponent } from './weight-chart.component';
+import { PointChartView, TrendSummaryView } from '../weight-trend-view-model';
 
 /**
  * The selected range of recorded weights: range control, chart, first/latest
@@ -54,7 +53,7 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
         <div class="card">
           @if (chart(); as c) {
-            <app-weight-chart [chart]="c" [label]="t.description" area [callout]="callout()" />
+            <fit-point-chart [points]="c.points" [label]="t.description" [caption]="c.caption" [unit]="c.unit" [minSpan]="c.minSpan" [listLabel]="copy.measurementsLabel" />
           } @else {
             <p class="note" data-testid="chart-unavailable">{{ copy.chartUnavailable }}</p>
           }
@@ -74,7 +73,7 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
     </section>
   `,
   styleUrl: './weight-trend.component.scss',
-  imports: [EmptyStateComponent, FitnessButtonComponent, SegmentedControlComponent, WeightChartComponent],
+  imports: [EmptyStateComponent, FitnessButtonComponent, PointChartComponent, SegmentedControlComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeightTrendComponent {
@@ -82,10 +81,8 @@ export class WeightTrendComponent {
   /** null when the range has no measurements. */
   readonly trend = input.required<TrendSummaryView | null>();
   /** null when the chart couldn't be built (the summary and text remain). */
-  readonly chart = input.required<WeightChartView | null>();
+  readonly chart = input.required<PointChartView | null>();
   readonly emptyTitle = input.required<string>();
-  /** The latest value beside its point ("81.9 kg" / "9 Oct"). */
-  readonly callout = input<{ readonly value: string; readonly date: string } | null>(null);
   readonly addWeight = output<void>();
 
   protected readonly copy = WEIGHT_HISTORY_COPY.trend;

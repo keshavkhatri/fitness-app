@@ -29,10 +29,19 @@
       [(range)]="weightRange"
       [trend]="weightTrend()"
       [chart]="weightChart()"
-      [callout]="weightCallout()"
       (openHistory)="openWeightHistory()"
       (addWeight)="addWeight()"
     />
+
+    @if (compositionTrend(); as trend) {
+      <app-composition-trend-card
+        [view]="trend"
+        [(range)]="compositionRange"
+        [(metric)]="compositionMetric"
+        (openComposition)="openBodyComposition()"
+        (addAssessment)="addBodyComposition()"
+      />
+    }
   }
 
   <!-- Workouts: consistency, totals, exercises -->

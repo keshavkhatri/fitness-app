@@ -3,7 +3,7 @@ import { WeightEntry, createWeightEntry } from '../../../domain/body-measurement
 import { WorkoutLog, completedWorkouts, exercisePerformance, performedExercises } from '../../../domain/workout-session';
 import { BODYWEIGHT_PROFILE, finishedLog, planFor } from '../../../domain/workout-session/testing/workout-log-fixtures';
 import { ALL_AREAS, areaFilters, queryExercises, toExerciseRow } from './exercise-list-view-model';
-import { metricValue, performanceAxis, performanceRangeStart, toExercisePerformanceView } from './exercise-performance-view-model';
+import { metricValue, performanceRangeStart, toExercisePerformanceView } from './exercise-performance-view-model';
 import { formatPerformedSet, performedOnLabel, toBodyMetrics, toConsistency, toKeyMetrics, toProgressWorkouts } from './progress-view-model';
 
 const local = (month: number, d: number, hour = 9) => new Date(2026, month - 1, d, hour, 0);
@@ -172,7 +172,12 @@ describe('exercise performance view model', () => {
     const view = toExercisePerformanceView(performance, { range: '1m', metric: 'weight' }, NOW);
     expect(view.metrics).toEqual(['weight', 'volume', 'reps']);
     expect(view.chart?.points).toHaveLength(3);
-    expect(view.chart?.latest).toMatchObject({ value: '100 kg', date: '8 Oct' });
+    // Every session labelled: its value above, its date below.
+    expect(view.chart?.points.map((p) => [p.valueText, p.date])).toEqual([
+      ['92.5', '24 Sep'],
+      ['95', '1 Oct'],
+      ['100', '8 Oct'],
+    ]);
     expect(view.change).toEqual({ text: '+7.5 kg', since: 'since 24 Sep', direction: 'up' });
     expect(view.best).toEqual({ value: '100 kg × 6', date: '8 Oct 2026' });
     expect(view.chartLabel).toBe('Max weight, last month: 3 sessions, from 92.5 kg on 24 Sep to 100 kg on 8 Oct.');
@@ -198,7 +203,6 @@ describe('exercise performance view model', () => {
     const one = exercisePerformance([bench(local(10, 8), 100, 6)], 'barbell-bench-press')!;
     const view = toExercisePerformanceView(one, { range: 'all', metric: 'weight' }, NOW);
     expect(view.chart?.points).toHaveLength(1);
-    expect(view.chart?.path).toBe('');
     expect(view.change).toBeNull();
   });
 
@@ -210,10 +214,9 @@ describe('exercise performance view model', () => {
     expect(view.sessions[1].value).toBe('200 lb');
   });
 
-  it('axis: round steps, a minimum span (small changes aren’t exaggerated), never below zero', () => {
-    expect(performanceAxis([92.5, 100])).toEqual({ min: 85, max: 110, step: 5 });
-    expect(performanceAxis([2])).toEqual({ min: 1.5, max: 2.5, step: 0.5 });
-    expect(performanceAxis([0.4])).toEqual({ min: 0, max: 1, step: 0.5 });
+  it('small changes aren’t exaggerated: the chart spans at least a fifth of the largest value (and 1)', () => {
+    const view = toExercisePerformanceView(performance, { range: '1m', metric: 'weight' }, NOW);
+    expect(view.chart?.minSpan).toBe(20);
   });
 
   it('bodyweight work charts reps only', () => {

@@ -66,6 +66,11 @@ export class ReportImport {
   /** Bumped on every read and reset, so a late answer for an abandoned read is dropped. */
   private attempt = 0;
 
+  /** Onboarding: keep the report as body composition (its own test and its earlier ones) once the profile exists. */
+  readonly keepResults = signal(true);
+  /** Onboarding: also add its weights to the weight history. */
+  readonly logWeights = signal(true);
+
   /** False when this build can't upload reports: only manual entry is offered. */
   readonly available = this.client.available;
   readonly current = this.state.asReadonly();
@@ -111,6 +116,8 @@ export class ReportImport {
     }
     this.state.set({ status: 'read', reading: { extraction: result.extraction, prefill } });
     this.prefillPending.set(new Set(PREFILL_FIELDS));
+    this.keepResults.set(true);
+    this.logWeights.set(true);
   }
 
   /** The user confirmed a prefilled value: from now on the draft is its source. */

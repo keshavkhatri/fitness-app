@@ -1,0 +1,35 @@
+@use 'mixins' as fx;
+
+// The metric to follow: a row of chips that scrolls sideways on narrow screens.
+.metrics {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0 calc(-1 * var(--space-4));
+  padding: 2px var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.metric {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body-sm, semibold);
+
+  flex: none;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-4);
+  border: var(--border-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  white-space: nowrap;
+
+  &[aria-checked='true'] {
+    border-color: var(--color-ink, var(--color-text));
+    background: var(--color-ink, var(--color-text));
+    color: var(--color-surface);
+  }
+}

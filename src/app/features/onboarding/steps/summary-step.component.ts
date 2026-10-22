@@ -4,6 +4,7 @@ import { IonIcon } from '@ionic/angular';
 import { UserIdentityService } from '../../../core/identity/user-identity.service';
 import { FitnessAvatarComponent } from '../../../shared/ui';
 import { OnboardingFlow } from '../state/onboarding-flow.service';
+import { ReportImport } from '../state/report-import.service';
 import { STEP_HEADING_ID } from './onboarding-step-form';
 import { buildSummaryRows, groupSummaryRows } from './summary-rows';
 
@@ -35,6 +36,30 @@ import { buildSummaryRows, groupSummaryRows } from './summary-rows';
         <ion-icon name="alert-circle-outline" aria-hidden="true" />
         <p>We couldn't save your profile. Check your device storage and try again.</p>
       </div>
+    }
+
+    @if (flow.mode() === 'new' && reportSummary(); as r) {
+      <section class="group report" aria-labelledby="profile-report" data-testid="report-keep">
+        <h2 class="group-title" id="profile-report">From your InBody report</h2>
+        <p class="helper">{{ r.text }}</p>
+        <label class="check">
+          <input type="checkbox" data-testid="report-keep-results" [checked]="report!.keepResults()" (change)="report!.keepResults.set(!report!.keepResults())" />
+          <span>Save the report to my body composition</span>
+        </label>
+        @if (r.weights > 0) {
+          <label class="check">
+            <input
+              type="checkbox"
+              data-testid="report-log-weights"
+              [checked]="report!.logWeights()"
+              [disabled]="!report!.keepResults()"
+              (change)="report!.logWeights.set(!report!.logWeights())"
+            />
+            <span>Also add {{ r.weights === 1 ? 'its weight' : 'the ' + r.weights + ' weights' }} to my weight history</span>
+          </label>
+        }
+        <p class="helper small">You can check or change every value later in You › Body composition.</p>
+      </section>
     }
 
     @for (group of groups(); track group.id) {
@@ -72,6 +97,19 @@ export class SummaryStepComponent {
   protected readonly flow = inject(OnboardingFlow);
   protected readonly headingId = STEP_HEADING_ID;
   protected readonly identity = inject(UserIdentityService);
+  protected readonly report = inject(ReportImport, { optional: true });
+  /** What keeping the report would save: "36 values from Oct 1 and 6 earlier tests …". */
+  protected readonly reportSummary = computed(() => {
+    const prefill = this.report?.reading()?.prefill;
+    if (!prefill) {
+      return null;
+    }
+    const values = Object.values(prefill.assessment.values).filter((p) => p.kind === 'prefilled').length;
+    const earlier = prefill.history.length;
+    const weights = (prefill.assessment.values.weight?.kind === 'prefilled' ? 1 : 0) + prefill.history.filter((h) => h.values.weight).length;
+    const tests = earlier === 0 ? '' : ` and ${earlier === 1 ? '1 earlier test' : `${earlier} earlier tests`} from its history chart`;
+    return { text: `${values} ${values === 1 ? 'value' : 'values'} from this test${tests} will be saved as body composition.`, weights };
+  });
   protected readonly rows = computed(() => buildSummaryRows(this.flow.draft()));
   /** Review mode (the Profile editor): the same rows, grouped. */
   protected readonly groups = computed(() => groupSummaryRows(this.rows()));

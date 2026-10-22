@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 
 import { WEIGHT_RANGES, WeightRange } from '../../../domain/body-measurements';
-import { FitnessButtonComponent, SegmentOption, SegmentedControlComponent } from '../../../shared/ui';
-import { WeightChartComponent } from '../../body-weight/components/weight-chart.component';
-import { TrendSummaryView, WeightChartView } from '../../body-weight/weight-trend-view-model';
+import { FitnessButtonComponent, PointChartComponent, SegmentOption, SegmentedControlComponent } from '../../../shared/ui';
+import { PointChartView, TrendSummaryView } from '../../body-weight/weight-trend-view-model';
 import { WEIGHT_HISTORY_COPY } from '../../body-weight/weight-history-content';
 import { WORKOUT_COPY } from '../workout-content';
 
@@ -32,7 +31,7 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
         @case ('ready') {
           @if (trend(); as t) {
             @if (chart(); as c) {
-              <app-weight-chart [chart]="c" [label]="t.description" area [callout]="callout()" />
+              <fit-point-chart [points]="c.points" [label]="t.description" [caption]="c.caption" [unit]="c.unit" [minSpan]="c.minSpan" />
             }
             @if (t.measurements.length === 1) {
               <p class="note" data-testid="weight-single">{{ copy.single }}</p>
@@ -56,19 +55,17 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
     </section>
   `,
   styleUrl: './weight-trend-card.component.scss',
-  imports: [FitnessButtonComponent, SegmentedControlComponent, WeightChartComponent],
+  imports: [FitnessButtonComponent, PointChartComponent, SegmentedControlComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeightTrendCardComponent {
   readonly state = input.required<WeightTrendState>();
   readonly range = model.required<WeightRange>();
   readonly trend = input<TrendSummaryView | null>(null);
-  readonly chart = input<WeightChartView | null>(null);
+  readonly chart = input<PointChartView | null>(null);
   readonly openHistory = output<void>();
   readonly addWeight = output<void>();
 
-  /** The latest value beside its point: "72.4 kg" / "8 Oct". */
-  readonly callout = input<{ readonly value: string; readonly date: string } | null>(null);
 
   protected readonly copy = WORKOUT_COPY.progress.weight;
   protected readonly options: readonly SegmentOption<WeightRange>[] = WEIGHT_RANGES.map((value) => ({

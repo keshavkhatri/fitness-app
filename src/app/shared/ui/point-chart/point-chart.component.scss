@@ -1,0 +1,97 @@
+@use 'mixins' as fx;
+
+:host {
+  display: block;
+}
+
+.caption {
+  @include fx.text(caption, medium);
+  margin-bottom: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.scroller {
+  overflow-x: hidden;
+
+  &.scrolls {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+.chart {
+  display: block;
+  height: auto;
+  overflow: visible;
+}
+
+.guide {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.baseline {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+
+.area-top {
+  stop-color: var(--color-primary-strong);
+  stop-opacity: 0.16;
+}
+
+.area-bottom {
+  stop-color: var(--color-primary-strong);
+  stop-opacity: 0;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-primary-strong);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.point {
+  fill: var(--color-surface);
+  stroke: var(--color-text);
+  stroke-width: 2.5;
+
+  &.latest {
+    fill: var(--color-primary-strong);
+    stroke: var(--color-primary-strong);
+  }
+}
+
+.value {
+  @include fx.tabular-numbers;
+  fill: var(--color-text);
+  font-size: 12.5px;
+  font-weight: var(--font-weight-bold);
+
+  &.latest {
+    fill: var(--color-primary-strong);
+    font-size: 13.5px;
+  }
+}
+
+.date {
+  fill: var(--color-text);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+
+  &.latest {
+    fill: var(--color-primary-strong);
+  }
+}
+
+.detail {
+  fill: var(--color-text-secondary);
+  font-size: 10px;
+}

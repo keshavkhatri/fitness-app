@@ -480,6 +480,16 @@ export const WORKOUT_COPY = {
       add: 'Add weight',
       unavailable: "Couldn't read your weight history.",
     },
+    composition: {
+      title: 'Body composition trend',
+      rangeLegend: 'Body composition range',
+      metricLegend: 'Value to show',
+      seeAll: 'Body composition',
+      single: 'One reading in this range: add another assessment to see a trend.',
+      empty: 'No readings of this value in this range.',
+      none: 'Add an InBody assessment to follow body fat, muscle and more over time.',
+      add: 'Add assessment',
+    },
     consistency: {
       title: 'Workout consistency',
       summary: (active: number, weeks: number) => `${active} of ${weeks} ${weeks === 1 ? 'week' : 'weeks'} with a workout`,

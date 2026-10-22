@@ -1,5 +1,5 @@
 import { WeightEntry, weightRangeSummary } from '../../domain/body-measurements';
-import { CHART, axisDateLabel, toTrendSummary, toWeightChart, yAxis } from './weight-trend-view-model';
+import { axisDateLabel, toTrendSummary, toWeightPointChart } from './weight-trend-view-model';
 
 const TODAY = '2026-10-09';
 const entry = (id: string, date: string, kilograms: number, createdAt = `${date}T06:00:00.000Z`): WeightEntry => ({
@@ -11,7 +11,6 @@ const entry = (id: string, date: string, kilograms: number, createdAt = `${date}
 });
 const summaryOf = (list: WeightEntry[], range: '30d' | '90d' | 'all' = '30d', unit: 'metric' | 'imperial' = 'metric') =>
   weightRangeSummary(list, range, TODAY, unit)!;
-const LABELS = { start: 'Sep 10', end: 'Today' };
 
 describe('weight trend view model', () => {
   describe('summary', () => {
@@ -61,57 +60,22 @@ describe('weight trend view model', () => {
     });
   });
 
-  describe('chart geometry', () => {
-    const plot = { left: CHART.left, right: CHART.width - CHART.right, top: CHART.top, bottom: CHART.height - CHART.bottom };
-
-    it('places points by measurement date across the window and joins them in order', () => {
-      const chart = toWeightChart(summaryOf([entry('a', '2026-09-10', 82), entry('b', TODAY, 80)]), '2026-09-10', TODAY, 'metric', LABELS);
-      const [a, b] = chart.points;
-      expect(a.x).toBeGreaterThan(plot.left);
-      expect(a.x).toBeLessThan(plot.left + 10); // first day's slot
-      expect(b.x).toBeGreaterThan(plot.right - 10); // today's slot
-      expect(b.x).toBeLessThanOrEqual(plot.right);
-      expect(a.y).toBeLessThan(b.y); // heavier is higher
-      expect(chart.path).toBe(`${a.x},${a.y} ${b.x},${b.y}`);
-      expect(chart.xLabels.map((l) => l.label)).toEqual(['Sep 10', 'Today']);
-      expect(chart.unit).toBe('kg');
+  describe('chart', () => {
+    it('labels every weigh-in with its value and its date, oldest first, in the display unit', () => {
+      const chart = toWeightPointChart(summaryOf([entry('a', '2026-09-20', 82), entry('b', '2026-10-06', 81.25), entry('c', TODAY, 80.7)]), 'metric', TODAY);
+      expect(chart.caption).toBe('Weight (kg)');
+      expect(chart.points.map((p) => [p.valueText, p.date, p.detail])).toEqual([
+        ['82.0', '20 Sep', 'Sun'],
+        ['81.3', '6 Oct', 'Tue'],
+        ['80.7', '9 Oct', 'Fri'],
+      ]);
+      expect(chart.minSpan).toBe(4);
     });
 
-    it('a single measurement is a visible point with no line', () => {
-      const chart = toWeightChart(summaryOf([entry('a', TODAY, 80)], 'all'), TODAY, TODAY, 'metric', { start: 'Today', end: 'Today' });
-      expect(chart.points).toHaveLength(1);
-      expect(chart.path).toBe('');
-      const [p] = chart.points;
-      expect(p.x).toBeCloseTo((plot.left + plot.right) / 2, 0);
-      expect(p.y).toBeGreaterThan(plot.top);
-      expect(p.y).toBeLessThan(plot.bottom);
-    });
-
-    it('same-day measurements stay separate points within their day', () => {
-      const chart = toWeightChart(
-        summaryOf([entry('am', TODAY, 80, `${TODAY}T05:00:00.000Z`), entry('pm', TODAY, 80, `${TODAY}T19:00:00.000Z`)], 'all'),
-        TODAY,
-        TODAY,
-        'metric',
-        LABELS,
-      );
-      expect(chart.points.map((p) => p.key)).toEqual(['am', 'pm']);
-      expect(chart.points[0].x).toBeLessThan(chart.points[1].x);
-      expect(chart.points[0].y).toBe(chart.points[1].y);
-    });
-
-    it('small differences are not exaggerated: at least a 4 kg / 10 lb span', () => {
-      expect(yAxis([80, 80.2], 'metric')).toEqual({ min: 78, max: 83, step: 1 });
-      expect(yAxis([176, 176.4], 'imperial')).toEqual({ min: 170, max: 185, step: 5 });
-      expect(yAxis([70, 95], 'metric')).toEqual({ min: 70, max: 100, step: 10 });
-      const chart = toWeightChart(summaryOf([entry('a', '2026-10-01', 80), entry('b', TODAY, 80.2)]), '2026-09-10', TODAY, 'metric', LABELS);
-      const drop = Math.abs(chart.points[0].y - chart.points[1].y);
-      expect(drop).toBeLessThan((plot.bottom - plot.top) * 0.1); // 0.2 kg is a small step, not a cliff
-      expect(chart.yTicks.map((t) => t.label)).toEqual(['78', '79', '80', '81', '82', '83']);
-    });
-
-    it('an unusable window throws (the page then falls back to text)', () => {
-      expect(() => toWeightChart(summaryOf([entry('a', TODAY, 80)]), 'bad', TODAY, 'metric', LABELS)).toThrow();
+    it('shows pounds for an imperial profile, and the year once the weigh-ins span years', () => {
+      const chart = toWeightPointChart(summaryOf([entry('a', '2025-12-30', 80), entry('b', TODAY, 79)], 'all', 'imperial'), 'imperial', TODAY);
+      expect(chart.caption).toBe('Weight (lb)');
+      expect(chart.points.map((p) => p.detail)).toEqual(['2025', '2026']);
     });
   });
 });
