@@ -31,7 +31,7 @@ npx serve website            # then open http://localhost:3000  (clean URLs: /te
 ## Things to check before going public
 
 - **Contact address.** Every page uses `support@stokeform.com`. Create that mailbox (or change it in the four pages) before launch.
-- **Who "we" are.** The policy and terms say "StokeForm" and "we". Add the legal name (and address, if required where you are) of the person or company that runs the app, and the country whose law governs the terms (`terms.html`, section 14).
+- **Who "we" are.** Done (22 Oct 2026): Keshav Khatri, an individual based in India. Indian law governs the terms (`terms.html`, section 15), and the privacy policy names him as data fiduciary and Grievance Officer. If a company takes over the app, change all three.
 - **Legal review.** The texts describe how the app works today. Have them reviewed before launch, and update them (and the date) whenever the app starts collecting something new, for example backup or sync of fitness data.
 - **Facts that must stay true:**
   - Fitness data is encrypted on the phone and uploaded only with the opt-in cloud backup (encrypted on the server; turning it off deletes it).

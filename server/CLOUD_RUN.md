@@ -210,7 +210,8 @@ gcloud run jobs execute stokeform-cleanup --project $P --region $R --wait
 # Logs: Cloud Console > Cloud Run > Jobs > stokeform-cleanup > Logs. Read them before going further.
 
 # 3. Only when the preview lists nothing you would miss, and you have a Neon backup/branch, switch to delete:
-gcloud run jobs update stokeform-cleanup --project $P --region $R --args cleanup.mjs,--apply
+# (Quoted: unquoted commas make PowerShell pass a list, which gcloud rejects.)
+gcloud run jobs update stokeform-cleanup --project $P --region $R --args "cleanup.mjs,--apply"
 
 # 4. A service account that may only start this job, and a weekly schedule (Mondays 04:00).
 gcloud iam service-accounts create stokeform-scheduler --project $P --display-name "Runs the cleanup job"
