@@ -26,6 +26,6 @@ export const environment = {
    */
   privateTesting: { enabled: true, promoCode: PRIVATE_TESTING_PROMO_CODE } as { enabled: boolean; promoCode: string },
   /** Sentry error reporting: set the project's DSN (Sentry › Settings › Client Keys) to turn it on. */
-  sentryDsn: null as string | null,
+  sentryDsn: "https://ec04c59005cf045f9698ace9e6806c24@o4512301116948480.ingest.us.sentry.io/4512301121273856" as string | null,
   release: 'stokeform@1.0.0' as string | null,
 };
