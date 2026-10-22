@@ -20,20 +20,31 @@ export interface ReminderDevice {
   onTap(handler: (action: ReminderAction) => void): void;
 }
 
-const CHANNEL_ID = 'reminders';
+/** The app's one Android channel, for local reminders and server pushes alike (AndroidManifest.xml names it too). */
+export const CHANNEL_ID = 'reminders';
 
 const toPermission = (state: string): ReminderPermission => (state === 'granted' ? 'granted' : state === 'denied' ? 'denied' : 'prompt');
 
+let channel: Promise<void> | null = null;
+/**
+ * Creates the channel once. Android drops any notification posted to a channel that doesn't exist, so every
+ * path that shows one (reminders, pushes arriving while the app is open) awaits this first.
+ */
+export const ensureNotificationChannel = (): Promise<void> =>
+  (channel ??= LocalNotifications.createChannel({
+    id: CHANNEL_ID,
+    name: 'Reminders',
+    description: 'Training days, streaks, weigh-ins and meals',
+    importance: 3,
+    visibility: 0, // private: the lock screen shows only that there is a notification
+  }).catch(() => {
+    channel = null;
+  }));
+
 function capacitorDevice(): ReminderDevice {
-  let channel: Promise<void> | null = null;
-  const ensureChannel = () =>
-    (channel ??= LocalNotifications.createChannel({
-      id: CHANNEL_ID,
-      name: 'Reminders',
-      description: 'Training days, streaks, weigh-ins and meals',
-      importance: 3,
-      visibility: 0, // private: the lock screen shows only that there is a notification
-    }).catch(() => undefined));
+  const ensureChannel = ensureNotificationChannel;
+  // Created at launch too, so a push that arrives while the app is closed finds it.
+  void ensureChannel();
   return {
     available: true,
     permission: async () => toPermission((await LocalNotifications.checkPermissions()).display),

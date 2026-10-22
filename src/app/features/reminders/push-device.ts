@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications } from '@capacitor/push-notifications';
 
+import { CHANNEL_ID, ensureNotificationChannel } from './reminder-device';
+
 /** What a push carries besides its text (string fields only; never health values). */
 export type PushData = Readonly<Record<string, string>>;
 
@@ -27,14 +29,16 @@ const FOREGROUND_ID_BASE = 900_000_000;
 
 function capacitorPushDevice(): PushDevice {
   let foreground = 0;
-  void PushNotifications.addListener('pushNotificationReceived', (push) => {
+  void ensureNotificationChannel();
+  void PushNotifications.addListener('pushNotificationReceived', async (push) => {
+    await ensureNotificationChannel();
     void LocalNotifications.schedule({
       notifications: [
         {
           id: FOREGROUND_ID_BASE + (foreground++ % 1000),
           title: push.title ?? 'StokeForm',
           body: push.body ?? '',
-          channelId: 'reminders',
+          channelId: CHANNEL_ID,
           extra: { push: push.data ?? {} },
         },
       ],

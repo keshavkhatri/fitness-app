@@ -98,7 +98,8 @@ export class PushService {
   /** Asks the server to push a test to this account's phones. */
   async sendTest(): Promise<PushTestResult> {
     const session = await this.auth.token();
-    const response = session ? await this.post('/v1/push/test', session) : null;
+    // An empty JSON body: Google's front end refuses a POST without a Content-Length (411).
+    const response = session ? await this.post('/v1/push/test', session, {}) : null;
     if (!response) {
       return 'failed';
     }
