@@ -71,18 +71,11 @@ export const ASSESSMENT_COPY = {
   },
 
   views: {
-    macros: { title: 'Your macro targets', intro: 'How your daily calories are divided between protein, carbohydrates and fat.' },
     why: { title: 'Why these numbers?', intro: 'Your targets are calculated step by step from your profile, activity level and goal.' },
-    next: { title: 'Your next steps', intro: "You're all set. Here's how to get started." },
   },
 
   actions: {
-    viewMacros: 'View macro breakdown',
-    viewWhy: 'Why these numbers?',
-    viewNext: 'See your next steps',
-    goHome: 'Go to home',
-    viewAgain: 'View assessment again',
-    continue: 'Continue',
+    goHome: 'Go to your dashboard',
     review: 'Review my details',
     continueAnyway: 'Continue for now',
     retry: 'Try again',

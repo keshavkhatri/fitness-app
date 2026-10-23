@@ -102,7 +102,7 @@ export class NutritionWeekPage {
     },
   });
   protected readonly waterWeek = computed(() =>
-    this.water.hasValue() ? toWaterWeek(this.weekStart(), this.waterLog.days(), this.water.value(), this.nutrition.today()) : null,
+    this.water.hasValue() ? toWaterWeek(this.weekStart(), this.waterLog.days(), this.water.value(), this.nutrition.today(), this.waterLog.unit()) : null,
   );
 
   protected readonly calorieChart = computed(() => {

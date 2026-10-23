@@ -1,8 +1,9 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { IsoCalendarDate } from '../../domain/fitness-profile';
-import { WaterLog, isValidWater, parseWaterLog, waterGoalMl } from '../../domain/nutrition';
+import { IsoCalendarDate, UnitSystem } from '../../domain/fitness-profile';
+import { WaterLog, isValidWater, parseWaterLog, waterGlassMl, waterGoalMl } from '../../domain/nutrition';
 import { WeightHistoryService } from '../body-measurements/weight-history.service';
+import { GoalsService } from '../goals/goals.service';
 import { FitnessProfileService } from '../profile/fitness-profile.service';
 import { KeyValueStorage } from '../storage/key-value-storage';
 import { CLOCK, localIsoDate } from '../time/clock';
@@ -23,11 +24,16 @@ export class WaterLogService {
   private readonly clock = inject(CLOCK);
   private readonly weights = inject(WeightHistoryService);
   private readonly profiles = inject(FitnessProfileService);
+  private readonly goals = inject(GoalsService);
   private readonly current = signal<WaterLog>({});
   private queue: Promise<unknown> = Promise.resolve();
 
   /** Every day with water logged. */
   readonly days = this.current.asReadonly();
+  /** The person's units (metric until a profile says otherwise): imperial shows fluid ounces. */
+  readonly unit = computed<UnitSystem>(() => this.profiles.profile()?.unitSystem ?? 'metric');
+  /** One glass in ml for those units (what "+" adds). */
+  readonly glassMl = computed(() => waterGlassMl(this.unit()));
 
   today(): IsoCalendarDate {
     return localIsoDate(this.clock());
@@ -66,13 +72,19 @@ export class WaterLogService {
     });
   }
 
-  /** The daily goal from the latest weigh-in, else the profile's weight (3 L without either). */
+  /**
+   * The daily goal in ml: the one the person set, else worked out from the latest weigh-in (or the profile's
+   * weight; 3 L without either), in glasses of their units. Also loads the profile (for the units) and the goals.
+   */
   async goalMl(): Promise<number> {
-    await this.weights.load().catch(() => undefined);
+    const [profile] = await Promise.all([this.profiles.load().catch(() => null), this.goals.load(), this.weights.load().catch(() => undefined)]);
+    const override = this.goals.waterOverrideMl();
+    if (override !== null) {
+      return override;
+    }
     const s = this.weights.state();
-    const latest = s.status === 'ready' ? [...s.entries].sort((a, b) => b.date.localeCompare(a.date))[0] : undefined;
-    const profile = latest ? null : await this.profiles.load().catch(() => null);
-    return waterGoalMl(latest?.weight.kilograms ?? profile?.weight.kilograms ?? null);
+    const latest = s.status === 'ready' ? [...s.entries].sort((x, y) => y.date.localeCompare(x.date))[0] : undefined;
+    return waterGoalMl(latest?.weight.kilograms ?? profile?.weight.kilograms ?? null, this.unit());
   }
 
   private async read(): Promise<WaterLog> {

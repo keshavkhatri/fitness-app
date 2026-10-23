@@ -42,6 +42,16 @@ describe('DailyCheckInService', () => {
     expect(storage.values.has(KEY)).toBe(false);
   });
 
+  it('takes the device’s step totals: replaces a day, skips empty or invalid days, and writes only when something changed', async () => {
+    const { service, storage } = setup();
+    await service.setSteps('2026-10-08', 1_000);
+    expect(await service.applyDeviceSteps({ '2026-10-08': 4_000, '2026-10-07': 6_500, '2026-10-06': 0, 'not-a-date': 5, '2026-10-05': -3 })).toBe(2);
+    expect(service.checkIns().steps).toEqual({ '2026-10-08': 4_000, '2026-10-07': 6_500 });
+    const writes = vi.spyOn(storage, 'set');
+    expect(await service.applyDeviceSteps({ '2026-10-08': 4_000, '2026-10-07': 6_500 })).toBe(0);
+    expect(writes).not.toHaveBeenCalled();
+  });
+
   it('a failed write keeps the previous state', async () => {
     const { service, storage } = setup();
     storage.failWrites = true;

@@ -253,6 +253,12 @@
   }
 }
 
+// The page underneath a page transition holds still for its length (core/motion/page-transition.ts).
+.fit-calm,
+.fit-calm * {
+  animation-play-state: paused !important;
+}
+
 // Reduced motion: no animation anywhere (values show at once), transitions finish immediately.
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, input, model, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, model, output, signal } from '@angular/core';
 
 import { DEFAULT_STEP_GOAL, RecoveryLevel, STEPS_RANGE } from '../../../../domain/daily-check-in';
 import { BottomSheetComponent, ChoiceGroupComponent, ChoiceOption, FitnessButtonComponent, TextFieldComponent } from '../../../../shared/ui';
@@ -28,7 +28,7 @@ export function parseSteps(text: string): number | null {
 @Component({
   selector: 'app-check-in-sheets',
   template: `
-    <fit-bottom-sheet title="Log steps" [description]="stepsDescription" screenTheme="dashboard" [(open)]="stepsOpen">
+    <fit-bottom-sheet title="Log steps" [description]="stepsDescription()" screenTheme="dashboard" [(open)]="stepsOpen">
       <form class="form" novalidate (submit)="$event.preventDefault(); submitSteps()">
         <fit-text-field
           label="Steps today"
@@ -71,6 +71,10 @@ export class CheckInSheetsComponent {
   readonly recoveryOpen = model(false);
   /** Today's saved values, to prefill. */
   readonly steps = input<number | null>(null);
+  /** The person's daily step goal. */
+  readonly stepGoal = input(DEFAULT_STEP_GOAL);
+  /** The phone counts steps (Health Connect): a typed number is replaced by the phone's total for the day. */
+  readonly stepsFromPhone = input(false);
   readonly recovery = input<RecoveryLevel | null>(null);
   readonly saving = input(false);
   /** Shown when the page couldn't save. */
@@ -80,7 +84,11 @@ export class CheckInSheetsComponent {
   readonly saveRecovery = output<RecoveryLevel>();
 
 
-  protected readonly stepsDescription = `Your goal is ${NUMBER.format(DEFAULT_STEP_GOAL)} steps a day.`;
+  protected readonly stepsDescription = computed(
+    () =>
+      `Your goal is ${NUMBER.format(this.stepGoal())} steps a day.` +
+      (this.stepsFromPhone() ? " Your phone is counting your steps, so its total replaces a number typed here." : ''),
+  );
   protected readonly recoveryChoices = RECOVERY_CHOICES;
   protected readonly stepsText = signal('');
   protected readonly stepsError = signal<string | null>(null);

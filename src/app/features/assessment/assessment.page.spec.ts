@@ -23,13 +23,12 @@ import {
 } from './testing/assessment-fixtures';
 
 interface SetupOptions {
-  view?: string;
   profile?: UserFitnessProfile | null;
   config?: FitnessCalculationConfig;
   profileServiceFails?: boolean;
 }
 
-async function render({ view, profile = NORMAL_PROFILE, config = DEFAULT_CALCULATION_CONFIG, profileServiceFails }: SetupOptions = {}) {
+async function render({ profile = NORMAL_PROFILE, config = DEFAULT_CALCULATION_CONFIG, profileServiceFails }: SetupOptions = {}) {
   const storage = new MemoryKeyValueStorage();
   if (profile) {
     storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile }));
@@ -50,9 +49,6 @@ async function render({ view, profile = NORMAL_PROFILE, config = DEFAULT_CALCULA
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
 
   const fixture = TestBed.createComponent(AssessmentPage);
-  if (view) {
-    fixture.componentRef.setInput('view', view);
-  }
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
@@ -66,13 +62,13 @@ async function render({ view, profile = NORMAL_PROFILE, config = DEFAULT_CALCULA
     fixture.detectChanges();
   };
 
-  const show = async (next: string) => {
-    fixture.componentRef.setInput('view', next);
+  const openHow = async () => {
+    el.querySelector<HTMLButtonElement>('[data-testid="how-toggle"]')!.click();
     await fixture.whenStable();
     fixture.detectChanges();
   };
 
-  return { fixture, el, text, buttons, button, click, navigate, storage, show };
+  return { fixture, el, text, buttons, button, click, navigate, storage, openHow };
 }
 
 describe('AssessmentPage', () => {
@@ -108,108 +104,63 @@ describe('AssessmentPage', () => {
     });
   });
 
-  describe('moving through the views', () => {
-    it('Results → Macro breakdown → Why these numbers? → Next steps, each as a ?view= link', async () => {
-      const { buttons, click, navigate, show } = await render();
-      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['View macro breakdown']);
-      await click('View macro breakdown');
-      expect(navigate).toHaveBeenLastCalledWith('/assessment?view=macros');
-
-      await show('macros');
-      await click('Why these numbers?');
-      expect(navigate).toHaveBeenLastCalledWith('/assessment?view=why');
-
-      await show('why');
-      await click('See your next steps');
-      expect(navigate).toHaveBeenLastCalledWith('/assessment?view=next');
+  describe('one screen', () => {
+    it('shows the macros, the goal, what it is based on and the calories together, with no steps between', async () => {
+      const { el, text, buttons } = await render();
+      expect(el.querySelectorAll('h1')).toHaveLength(1);
+      expect(text('calorie-target')).toContain('2,306');
+      expect(text('macro-grams')).toContain('Protein 144 g');
+      expect(text('macro-focus')).toBeTruthy();
+      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Go to your dashboard', 'Review my details']);
     });
 
-    it('macro breakdown (light): a donut from the real grams, described in words, with every value listed', async () => {
-      const { fixture, el, text } = await render({ view: 'macros' });
-      expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-dashboard');
-      expect(el.querySelector('h1')?.textContent).toBe('Your macro targets');
-      expect(el.querySelector('[data-testid="macro-chart"] svg')?.getAttribute('aria-label')).toBe(
-        '2,306 kilocalories a day: Protein 25% (144 g), Carbohydrates 45% (259 g), Fat 30% (77 g)',
-      );
-      expect(el.querySelectorAll('.slice')).toHaveLength(3);
-      expect(text('macro-rows')).toContain('Protein 144 g 25% of calories (576 kcal)');
-      expect(text('macro-rows')).toContain('Fat 77 g 30% of calories (693 kcal)');
+    it('"Go to your dashboard" marks the assessment reviewed and goes Home', async () => {
+      const { click, navigate } = await render();
+      await click('Go to your dashboard');
+      expect(navigate).toHaveBeenLastCalledWith('/home', { replaceUrl: true });
+      expect(await TestBed.inject(OnboardingStatusService).status()).toBe('complete');
     });
 
-    it('why these numbers (dark): the engine’s steps, the target emphasised, confidence and collapsible factors', async () => {
-      const { fixture, el, text } = await render({ view: 'why' });
-      expect((fixture.nativeElement as HTMLElement).classList).toContain('fit-theme-immersive');
+    it('"Review my details" opens the Profile editor', async () => {
+      const { click, navigate } = await render();
+      await click('Review my details');
+      expect(navigate).toHaveBeenLastCalledWith('/onboarding/review');
+    });
+
+    it('how the numbers were worked out is folded away until asked for: steps, target emphasised, confidence, collapsible factors', async () => {
+      const { fixture, el, text, openHow } = await render();
+      const toggle = el.querySelector<HTMLButtonElement>('[data-testid="how-toggle"]')!;
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(el.querySelector('[data-testid="calculation-steps"]')).toBeNull();
+
+      await openHow();
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
       expect(text('calculation-steps')).toContain('Resting energy (BMR)');
       expect(text('calculation-steps')).toContain('1.55×');
       expect(el.querySelector('[data-step="target"]')?.textContent).toContain('2,306 kcal');
       expect(text('confidence-label')).toBe('Moderate');
 
-      const toggle = el.querySelector<HTMLButtonElement>('.factors-toggle')!;
+      const factorsToggle = el.querySelector<HTMLButtonElement>('.factors-toggle')!;
       const factors = el.querySelector<HTMLElement>('[data-testid="factors"]')!;
-      expect(toggle.getAttribute('aria-expanded')).toBe('false');
       expect(factors.hidden).toBe(true);
-      toggle.click();
+      factorsToggle.click();
       fixture.detectChanges();
-      expect(toggle.getAttribute('aria-expanded')).toBe('true');
       expect(factors.hidden).toBe(false);
       expect(factors.textContent).toContain('Moderately active');
-    });
-
-    it('Back goes to the previous view (straight to it when opened directly)', async () => {
-      const { el, navigate, fixture } = await render({ view: 'why' });
-      el.querySelector<HTMLButtonElement>('button.back')!.click();
-      await fixture.whenStable();
-      expect(navigate).toHaveBeenCalledWith('/assessment?view=macros', { replaceUrl: true });
-    });
-
-    it('an unknown view shows the results', async () => {
-      const { el } = await render({ view: 'nope' });
-      expect(el.querySelector('h1')?.textContent).toBe('Your assessment results');
-    });
-  });
-
-  describe('next steps', () => {
-    it('Go to home marks the assessment reviewed and goes Home; View again returns to the results', async () => {
-      const { buttons, click, navigate } = await render({ view: 'next' });
-      expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Go to home', 'View assessment again']);
-
-      await click('View assessment again');
-      expect(navigate).toHaveBeenLastCalledWith('/assessment', { replaceUrl: true });
-
-      await click('Go to home');
-      expect(navigate).toHaveBeenLastCalledWith('/home', { replaceUrl: true });
-      expect(await TestBed.inject(OnboardingStatusService).status()).toBe('complete');
-    });
-
-    it.each([
-      ['workout', '/workout'],
-      ['nutrition', '/nutrition'],
-      ['progress', '/progress'],
-    ])('the %s card opens %s (and counts the assessment as reviewed)', async (id, path) => {
-      const { el, navigate, fixture } = await render({ view: 'next' });
-      el.querySelector<HTMLButtonElement>(`[data-testid="next-${id}"]`)!.click();
-      await fixture.whenStable();
-      expect(navigate).toHaveBeenLastCalledWith(path, { replaceUrl: true });
-      expect(await TestBed.inject(OnboardingStatusService).status()).toBe('complete');
-    });
-
-    it('Adjust anytime opens the Profile editor', async () => {
-      const { el, navigate, fixture } = await render({ view: 'next' });
-      el.querySelector<HTMLButtonElement>('[data-testid="next-adjust"]')!.click();
-      await fixture.whenStable();
-      expect(navigate).toHaveBeenLastCalledWith('/onboarding/review');
     });
   });
 
   describe('confidence', () => {
     it('moderate', async () => {
-      const { text, el } = await render({ view: 'why' });
+      const { text, el, openHow } = await render();
+      await openHow();
       expect(text('confidence-label')).toBe('Moderate');
       expect(el.textContent).toContain('formula-based estimates');
     });
 
     it('low, with stronger uncertainty copy, never "high"', async () => {
-      const { text, el } = await render({ view: 'why', profile: profileWith({ sex: 'prefer-not-to-say' }) });
+      const { text, el, openHow } = await render({ profile: profileWith({ sex: 'prefer-not-to-say' }) });
+      await openHow();
       expect(text('confidence-label')).toBe('Low');
       expect(el.textContent).toContain('less precise');
       expect(el.textContent).not.toMatch(/high confidence/i);
@@ -241,7 +192,7 @@ describe('AssessmentPage', () => {
       const { text, buttons } = await render({ config: CONSTRAINED_MACROS_CONFIG });
       expect(text('macro-notice')).toContain('Macro balance needs review');
       expect(text('macro-grams')).toMatch(/\d+ g/);
-      expect(buttons()[0].textContent?.trim()).toBe('View macro breakdown');
+      expect(buttons()[0].textContent?.trim()).toBe('Go to your dashboard');
     });
 
     it('infeasible: no gram targets rendered, review first', async () => {

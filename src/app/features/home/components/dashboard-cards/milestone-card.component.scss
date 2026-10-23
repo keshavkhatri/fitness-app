@@ -141,7 +141,8 @@ fit-card {
 .flag {
   transform-box: fill-box;
   transform-origin: left center;
-  animation: fit-wave-flag 1.8s ease-in-out infinite;
+  // A few waves (SVG animation runs on the main thread, so it is not left looping).
+  animation: fit-wave-flag 1.8s ease-in-out 3;
 }
 
 .fill {

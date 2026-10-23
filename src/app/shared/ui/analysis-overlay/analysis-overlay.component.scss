@@ -15,11 +15,9 @@
   justify-content: center;
   gap: var(--space-6);
   padding: var(--space-6) var(--page-gutter);
-  background: rgba(10, 11, 10, 0.88);
+  background: rgba(10, 11, 10, 0.94);
   color: #ffffff;
   text-align: center;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   animation: appear 260ms ease both;
 }
 

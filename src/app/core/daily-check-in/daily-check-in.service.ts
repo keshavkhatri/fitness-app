@@ -8,7 +8,7 @@ import {
   isValidSteps,
   parseDailyCheckIns,
 } from '../../domain/daily-check-in';
-import { IsoCalendarDate } from '../../domain/fitness-profile';
+import { IsoCalendarDate, parseIsoCalendarDate } from '../../domain/fitness-profile';
 import { KeyValueStorage } from '../storage/key-value-storage';
 import { CLOCK, localIsoDate } from '../time/clock';
 
@@ -57,6 +57,26 @@ export class DailyCheckInService {
     }
     const next = { ...this.current(), steps: { ...this.current().steps, [date]: steps } };
     await this.save(next);
+  }
+
+  /**
+   * Takes step totals counted by the device (Health Connect): each day's value replaces what is stored for that day.
+   * Days without steps (0) are skipped (the device has nothing to say), invalid values are ignored, and nothing is
+   * written when nothing changed. Resolves with how many days changed.
+   */
+  async applyDeviceSteps(days: Readonly<Record<IsoCalendarDate, number>>): Promise<number> {
+    const steps = { ...this.current().steps };
+    let changed = 0;
+    for (const [date, value] of Object.entries(days)) {
+      if (parseIsoCalendarDate(date) && isValidSteps(value) && value > 0 && steps[date] !== value) {
+        steps[date] = value;
+        changed++;
+      }
+    }
+    if (changed > 0) {
+      await this.save({ ...this.current(), steps });
+    }
+    return changed;
   }
 
   /** Replaces the day's recovery check-in. */

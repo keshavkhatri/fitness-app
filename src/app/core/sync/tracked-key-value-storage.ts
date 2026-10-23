@@ -15,6 +15,8 @@ const DEVICE_ONLY: ReadonlySet<string> = new Set([
   'stokeform.reminders-planned',
   'stokeform.notification-log',
   'stokeform.test-access',
+  // Health Connect is set up per phone (each phone has its own step counter).
+  'stokeform.health-steps',
   'stokeform.onboarding-report',
   'fitness.workout-active',
   'fitness.onboarding-progress',

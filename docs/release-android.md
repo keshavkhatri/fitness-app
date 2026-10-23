@@ -59,6 +59,13 @@ Try the release on a phone first with `npm run android:release:apk`, then instal
    - Data safety: see below
    - Account deletion URL: see below
    - Health apps declaration: fitness tracking, not a medical device
+   - **Health Connect permissions declaration** (the app asks for `android.permission.health.READ_STEPS`, so Play requires this form before the app can go live):
+     - Data type: Steps, read only.
+     - What it is for: show the user's daily steps and progress towards their step goal; the user turns it on in Settings.
+     - It is only used inside the app; it is not sold, shared or used for ads.
+     - The privacy policy URL is `https://stokeform.com/privacy` (it has a Health Connect paragraph).
+     - Play may ask for a short screen recording of the permission being requested in the app (Settings, Step counting, Connect).
+     - The manifest already has the screen Health Connect needs to show the privacy policy (`HealthPrivacyActivity`).
    - Government, financial and news apps: not applicable
 5. **Store listing.**
    - Category: Health & Fitness
@@ -90,6 +97,7 @@ These follow what the app actually does today. If sync, billing or crash reporti
 | Health and fitness › Health info, Fitness info | Yes (optional) | No | Only if the person turns on Cloud backup: kept to back up and sync their own data, encrypted on the server. The form's "optional" applies. Without backup, the data stays on the phone. |
 | Personal info › Other info (date of birth) | Yes (optional) | No | Part of the backed-up profile. The server also uses it to refuse backup for anyone under 18. |
 | Photos (profile photo) | Yes (optional) | No | The profile photo, only if Cloud backup is on. |
+| Health and fitness › Fitness info (steps from Health Connect) | Yes (optional) | No | Only if the person turns on step counting: stays on the phone, and goes to the server only inside Cloud backup. Included in the answers for health and fitness info above. |
 | App info and performance › Crash logs, Diagnostics | Yes | No | Sentry, as a service provider, receives error reports without personal data. Used for app functionality and analytics (fixing bugs). |
 | App activity | No | No | No analytics. |
 | Device or other IDs | Yes | No | The Firebase push token, for notifications. It is stored with the account and deleted with it. |

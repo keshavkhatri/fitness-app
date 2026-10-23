@@ -2,7 +2,7 @@
 
 Written 2026-10-22. The motion is meant to make the app feel alive without slowing anyone down:
 - most animations are short, under 600 ms
-- the ones that loop are tiny and decorative: the flame, the flag and the water surface
+- the ones that loop are tiny and decorative: the flame (the flag and the water surface wave a few times, then rest: SVG animation runs on the main thread)
 - nothing important depends on an animation
 
 **Rules for every item:**
@@ -16,8 +16,10 @@ Written 2026-10-22. The motion is meant to make the app feel alive without slowi
 | # | Animation | Where | Status |
 | --- | --- | --- | --- |
 | 1 | Page transition on Android: the new page slides in a little from the right and fades in; Back reverses it. iOS keeps its native slide and swipe-back. | `core/motion/page-transition.ts`, `app.config.ts` | Built |
-| 2 | Switching tabs: the tab's content fades and rises in. It plays only on a tab change, never on pages opened inside a tab (it showed as a blink after their transition). | `shell/tabs/tabs.page.ts` | Built |
+| 2 | Switching tabs: the tab's content fades in (one opacity fade of the page). It plays only on a tab change, never on pages opened inside a tab (it showed as a blink after their transition). | `shell/tabs/tabs.page.ts` | Built |
 | 3 | Tab bar: the selected icon pops (a small bounce); the glow behind it already fades in. | `shell/tabs/tabs.page.scss` | Built |
+
+Smoothness rules (23 Oct): entrance animations (`fit-rise`, `fit-fade`, `fit-grow-x`, `progress-ring-in`, `body-reveal`) play once per element (`core/motion/play-once.ts`), because a tab page that is hidden and shown again restarts CSS animations; and the page underneath a page transition has its looping decorations paused for the transition (`.fit-calm`).
 
 ## Shared components
 

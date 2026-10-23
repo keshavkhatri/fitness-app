@@ -63,7 +63,8 @@ fit-card {
   fill: var(--water);
   // -50% of its own width (40) is one wave period (20): a seamless loop.
   transform-box: fill-box;
-  animation: fit-water-wave 2.4s linear infinite;
+  // SVG transforms run on the main thread (not the compositor): a few ripples, not an endless loop, so the Home tab stays cheap.
+  animation: fit-water-wave 2.4s linear 3;
 }
 
 // The level slides to the new amount, and rises from empty when the card first appears.

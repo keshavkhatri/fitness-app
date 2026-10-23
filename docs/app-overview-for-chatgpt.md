@@ -457,7 +457,7 @@ A deterministic review of one Monday–Sunday week, built from training logs, nu
 | `/you/body-composition`, `/:id`, `/new`, `/:id/edit` | InBody history / detail / entry | dashboard / immersive |
 | `/you/progress` | Progress (same module, reachable from You) | dashboard |
 | `/onboarding`, `/onboarding/review` | Onboarding / Profile editor | dashboard; immersive for the welcome screen and the Profile editor |
-| `/assessment` (`?view=macros|why|next`) | Assessment | immersive Results+Why, dashboard Macros+Next |
+| `/assessment` | Assessment | one immersive screen: calories, macros, goal, facts, folded "Why these numbers?" |
 
 Several screens keep their sub-views on **query parameters on the same route** (assessment, workout summary, notifications filter) so browser Back, in-page Back and Android hardware Back all move between views without re-creating the page.
 
@@ -843,7 +843,7 @@ The production web build now points at the Cloud Run API (`apiBaseUrl`, `inbodyE
 5. **The InBody extraction endpoint requires no sign-in** (origin allow-list + per-IP rate limit + daily cap + OpenAI spend cap only), even though accounts now exist; gating it on a session is possible once accounts are live.
 6. **A Neon database password leaked** into `server/.env.example`, was committed and pushed (commit `8981114`; a later "remove credentials" commit removed it from the files but it remains in Git history). The owner was told to reset it; **reset not confirmed**. Same for the OpenAI key (#3). Treat both as compromised until rotated.
 7. **Local runs hit the production database** (only one Neon DB exists), so development mistakes can affect real accounts.
-8. No dependency/licence audit documented; no CSP configured for the web build (the server's static reset/confirmation pages do use a nonce CSP); `android:allowBackup="true"` in the manifest means app data (incl. unencrypted `localStorage`) may be included in Android backups.
+8. No dependency/licence audit documented; no CSP configured for the web build (the server's static reset/confirmation pages do use a nonce CSP); Android's own backup is switched off (`allowBackup="false"` plus `data_extraction_rules.xml`).
 9. Custom-scheme deep link (`com.stokeformfitness.app://`) could be claimed by another app; mitigated by the PKCE-style verifier, Android App Links would be stronger.
 10. Email delivery (Resend) and production account flows are untested with real credentials.
 

@@ -83,10 +83,9 @@ import { DemoViewerComponent } from './demo-viewer.component';
       padding: 0 var(--space-3);
       border: var(--border-hairline) solid rgba(255, 255, 255, 0.22);
       border-radius: var(--radius-pill);
-      background: rgba(20, 22, 20, 0.62);
+      background: rgba(20, 22, 20, 0.74);
       color: #ffffff;
       font-size: 13px;
-      backdrop-filter: blur(6px);
 
       ion-icon {
         font-size: 13px;

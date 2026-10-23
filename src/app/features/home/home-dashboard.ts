@@ -239,6 +239,8 @@ export function toWeeklyProgress(input: {
   readonly nutrition: NutritionWeek | null;
   readonly targets: TargetState | null;
   readonly today: IsoCalendarDate;
+  /** The person's daily step goal (default 10,000). */
+  readonly stepGoal?: number;
 }): WeeklyProgressView {
   const monday = weekStartOf(input.today);
   const elapsed = monday ? weekDates(monday).filter((d) => d <= input.today) : [];
@@ -257,7 +259,7 @@ export function toWeeklyProgress(input: {
   const steps: WeeklyStatView = {
     label: 'Avg. Steps',
     value: avgSteps === null ? NONE : whole.format(avgSteps),
-    progress: avgSteps === null ? null : stepsFraction(avgSteps, DEFAULT_STEP_GOAL),
+    progress: avgSteps === null ? null : stepsFraction(avgSteps, input.stepGoal ?? DEFAULT_STEP_GOAL),
   };
   const calories: WeeklyStatView = {
     label: 'Avg. Calories',
@@ -284,9 +286,9 @@ export interface FocusItemView {
 }
 
 /** Today's three aims: the step goal, the protein target (when there is one) and a night's sleep. */
-export function toFocus(summary: DaySummaryView | null): readonly FocusItemView[] {
+export function toFocus(summary: DaySummaryView | null, stepGoal: number = DEFAULT_STEP_GOAL): readonly FocusItemView[] {
   const items: FocusItemView[] = [
-    { key: 'steps', value: `${formatSteps(DEFAULT_STEP_GOAL)}+`, label: 'Steps', ariaLabel: `Walk ${whole.format(DEFAULT_STEP_GOAL)} steps or more. Log steps` },
+    { key: 'steps', value: `${formatSteps(stepGoal)}+`, label: 'Steps', ariaLabel: `Walk ${whole.format(stepGoal)} steps or more. Log steps` },
   ];
   const protein = summary?.macros.find((m) => m.key === 'protein');
   if (protein?.target) {

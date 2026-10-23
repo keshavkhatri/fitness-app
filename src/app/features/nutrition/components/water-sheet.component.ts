@@ -1,27 +1,28 @@
-import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
 
-import { WATER_GLASS_ML, WATER_RANGE_ML } from '../../../domain/nutrition';
+import { UnitSystem } from '../../../domain/fitness-profile';
+import { WATER_RANGE_ML, waterGlassMl } from '../../../domain/nutrition';
 import { BottomSheetComponent, FitnessButtonComponent } from '../../../shared/ui';
-import { formatLitres } from '../nutrition-water';
+import { formatWater, glassLabel } from '../nutrition-water';
 
 /** A day's water, to correct: a glass less, a glass more, or a bottle. The page saves; the sheet stays open. */
 @Component({
   selector: 'app-water-sheet',
   template: `
-    <fit-bottom-sheet [title]="title()" [description]="'Your goal is ' + litres(goal()) + ' a day.'" screenTheme="dashboard" [(open)]="open">
+    <fit-bottom-sheet [title]="title()" [description]="'Your goal is ' + fmt(goal()) + ' a day.'" screenTheme="dashboard" [(open)]="open">
       <div class="water">
         <p class="amount" aria-live="polite" data-testid="water-sheet-amount">
-          <span class="value">{{ litres(water()) }}</span>&ngsp;<span class="goal">of {{ litres(goal()) }}</span>
+          <span class="value">{{ fmt(water()) }}</span>&ngsp;<span class="goal">of {{ fmt(goal()) }}</span>
         </p>
         <div class="actions">
-          <button fit-button type="button" variant="secondary" data-testid="water-sheet-less" [disabled]="saving() || water() < glass" (click)="save.emit(water() - glass)">
-            − {{ glass }} ml
+          <button fit-button type="button" variant="secondary" data-testid="water-sheet-less" [disabled]="saving() || water() < glass()" (click)="save.emit(water() - glass())">
+            − {{ label(1) }}
           </button>
-          <button fit-button type="button" data-testid="water-sheet-more" [disabled]="saving() || water() + glass > max" (click)="save.emit(water() + glass)">
-            + {{ glass }} ml
+          <button fit-button type="button" data-testid="water-sheet-more" [disabled]="saving() || water() + glass() > max" (click)="save.emit(water() + glass())">
+            + {{ label(1) }}
           </button>
-          <button fit-button type="button" variant="secondary" data-testid="water-sheet-bottle" [disabled]="saving() || water() + 2 * glass > max" (click)="save.emit(water() + 2 * glass)">
-            + {{ 2 * glass }} ml
+          <button fit-button type="button" variant="secondary" data-testid="water-sheet-bottle" [disabled]="saving() || water() + 2 * glass() > max" (click)="save.emit(water() + 2 * glass())">
+            + {{ label(2) }}
           </button>
         </div>
         @if (error(); as message) {
@@ -76,10 +77,13 @@ export class WaterSheetComponent {
   readonly goal = input(3_000);
   readonly saving = input(false);
   readonly error = input<string | null>(null);
+  /** The person's units: metric pours in 250 ml, imperial in 8 fl oz. */
+  readonly unit = input<UnitSystem>('metric');
   /** The day's new total (ml). */
   readonly save = output<number>();
 
-  protected readonly glass = WATER_GLASS_ML;
+  protected readonly glass = computed(() => waterGlassMl(this.unit()));
   protected readonly max = WATER_RANGE_ML.max;
-  protected readonly litres = formatLitres;
+  protected readonly fmt = (ml: number) => formatWater(ml, this.unit());
+  protected readonly label = (multiple: number) => glassLabel(multiple, this.unit());
 }

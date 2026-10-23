@@ -1,37 +1,18 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <div class="toolbar">
-      @if (current() !== 'results') {
-        <button type="button" class="back" aria-label="Back" (click)="back()">
-          <ion-icon name="chevron-back" aria-hidden="true" />
-        </button>
-      }
-    </div>
+    <div class="toolbar"></div>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <main class="body" [attr.data-view]="current()">
+  <main class="body">
     @if (screen.error()) {
       <h1 class="title" tabindex="-1" data-view-heading>{{ copy.title }}</h1>
       <fit-notice tone="danger" [headingLevel]="2" [title]="copy.notices.error.title" data-testid="error">
         {{ copy.notices.error.message }}
       </fit-notice>
     } @else if (result(); as r) {
-      @switch (current()) {
-        @case ('macros') {
-          <app-assessment-macros [macros]="r.macros" />
-        }
-        @case ('why') {
-          <app-assessment-why [view]="r" />
-        }
-        @case ('next') {
-          <app-assessment-next [busy]="navigating()" (selected)="openNextStep($event)" />
-        }
-        @default {
-          <app-assessment-results [view]="r" />
-        }
-      }
+      <app-assessment-results [view]="r" />
     } @else if (screen.hasValue()) {
       <h1 class="title" tabindex="-1" data-view-heading>{{ copy.title }}</h1>
       <fit-notice tone="warning" [headingLevel]="2" [title]="copy.notices.incomplete.title" data-testid="incomplete">
@@ -63,7 +44,7 @@
         (click)="run(action)"
       >
         {{ actionLabels[action] }}
-        @if (first && (action === 'macros' || action === 'why' || action === 'next' || action === 'home')) {
+        @if (first && action === 'home') {
           <ion-icon class="arrow" name="arrow-forward" aria-hidden="true" />
         }
       </button>

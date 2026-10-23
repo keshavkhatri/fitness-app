@@ -116,6 +116,16 @@ describe('home dashboard cards', () => {
     expect(view.stats[2].progress).toBeNull();
   });
 
+  it('uses the person’s own step goal: today’s focus and the weekly bar follow it', () => {
+    expect(toFocus(summary(true), 7_500).find((i) => i.key === 'steps')).toEqual(
+      expect.objectContaining({ value: '7.5k+', ariaLabel: 'Walk 7,500 steps or more. Log steps' }),
+    );
+    const input = { week: null, steps: { '2026-10-19': 5_000 }, nutrition: null, targets: null, today: '2026-10-22' as const };
+    expect(toWeeklyProgress(input).stats[1].progress).toBeCloseTo(0.5); // 5,000 of the default 10,000
+    expect(toWeeklyProgress({ ...input, stepGoal: 5_000 }).stats[1].progress).toBe(1);
+    expect(toWeeklyProgress({ ...input, stepGoal: 20_000 }).stats[1].progress).toBeCloseTo(0.25);
+  });
+
   it('keeps the same quote and tip all day', () => {
     expect(mindsetFor(20_000)).toEqual(mindsetFor(20_000));
     expect(mindsetFor(20_000).quote).not.toBe(mindsetFor(20_001).quote);

@@ -7,7 +7,7 @@ import { WaterLogService } from '../../core/nutrition/water-log.service';
 import { ONBOARDING_PATH, ONBOARDING_REVIEW_PATH } from '../../core/profile/onboarding.guards';
 import { CLOCK } from '../../core/time/clock';
 import { IsoCalendarDate } from '../../domain/fitness-profile';
-import { MealCategory, WATER_GLASS_ML } from '../../domain/nutrition';
+import { MealCategory } from '../../domain/nutrition';
 import {
   EmptyStateComponent,
   FitnessButtonComponent,
@@ -93,8 +93,10 @@ export class NutritionPage {
   protected readonly waterGoal = computed(() => (this.water.hasValue() ? this.water.value() : 3_000));
   protected readonly dayWater = computed(() => this.waterLog.days()[this.nutrition.selectedDate()] ?? 0);
   protected readonly hydration = computed(() =>
-    toHydration(this.dayWater(), this.waterGoal(), this.header().isToday ? 'today' : `on ${this.header().date}`),
+    toHydration(this.dayWater(), this.waterGoal(), this.waterUnit(), this.header().isToday ? 'today' : `on ${this.header().date}`),
   );
+  /** The person's units: imperial shows water in fluid ounces. */
+  protected readonly waterUnit = this.waterLog.unit;
   protected readonly waterOpen = signal(false);
   protected readonly savingWater = signal(false);
   protected readonly waterError = signal<string | null>(null);
@@ -117,7 +119,7 @@ export class NutritionPage {
 
   /** "+" on the hydration card: a glass more on the day shown. */
   protected addGlass(): void {
-    void this.saveWater(() => this.waterLog.add(this.nutrition.selectedDate(), WATER_GLASS_ML));
+    void this.saveWater(() => this.waterLog.add(this.nutrition.selectedDate(), this.waterLog.glassMl()));
   }
 
   protected openWater(): void {

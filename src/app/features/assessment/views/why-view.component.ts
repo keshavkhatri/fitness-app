@@ -10,10 +10,7 @@ import { AssessmentViewModel } from '../assessment-view-model';
   selector: 'app-assessment-why',
   template: `
     @let v = view();
-    <header class="header">
-      <h1 class="title" tabindex="-1" data-view-heading>{{ copy.title }}</h1>
-      <p class="lead">{{ copy.intro }}</p>
-    </header>
+    <p class="lead">{{ copy.intro }}</p>
 
     <ol class="steps" data-testid="calculation-steps">
       @for (step of v.calculation.steps; track step.key) {

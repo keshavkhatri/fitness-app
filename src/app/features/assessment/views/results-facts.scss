@@ -79,3 +79,61 @@
   @include fx.text(caption);
   color: var(--color-text-secondary);
 }
+
+// --- How the numbers were worked out (folded away) ---------------------------------------------
+.macro-focus {
+  @include fx.text(body-sm);
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.how-heading {
+  margin: 0;
+}
+
+.how-toggle {
+  @include fx.button-reset;
+  @include fx.focus-ring;
+  @include fx.text(body, semibold);
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target-min);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: start;
+
+  span {
+    flex: 1;
+  }
+
+  ion-icon {
+    font-size: 20px;
+    color: var(--color-text-secondary);
+  }
+
+  .chevron {
+    transition: transform var(--motion-fast, 150ms);
+  }
+
+  &[aria-expanded='true'] .chevron {
+    transform: rotate(180deg);
+  }
+}
+
+#assessment-how {
+  margin-top: var(--space-3);
+}
+
+.how-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.how-body[hidden] {
+  display: none;
+}

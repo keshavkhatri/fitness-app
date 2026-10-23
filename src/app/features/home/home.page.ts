@@ -14,7 +14,8 @@ import { WorkoutHistoryService } from '../../core/workout/workout-history.servic
 import { WorkoutLogService } from '../../core/workout/workout-log.service';
 import { WorkoutPlanService } from '../../core/workout/workout-plan.service';
 import { RecoveryLevel } from '../../domain/daily-check-in';
-import { WATER_GLASS_ML } from '../../domain/nutrition';
+import { GoalsService } from '../../core/goals/goals.service';
+import { HealthStepsService } from '../../core/health/health-steps.service';
 import { WaterLogService } from '../../core/nutrition/water-log.service';
 import { MealCategory } from '../../domain/nutrition';
 import { NotificationInboxService } from '../notifications/notification-inbox.service';
@@ -107,6 +108,8 @@ export class HomePage {
   private readonly identityService = inject(UserIdentityService);
   private readonly streakService = inject(ActivityStreakService);
   private readonly waterLog = inject(WaterLogService);
+  private readonly goals = inject(GoalsService);
+  private readonly health = inject(HealthStepsService);
   protected readonly inbox = inject(NotificationInboxService);
   private readonly clock = inject(CLOCK);
   private readonly router = inject(Router);
@@ -179,7 +182,13 @@ export class HomePage {
 
   protected readonly waterGoal = computed(() => (this.water.hasValue() ? this.water.value().goal : 3_000));
   protected readonly todayWater = computed(() => this.waterLog.days()[this.todayIso()] ?? 0);
-  protected readonly hydration = computed(() => toHydration(this.todayWater(), this.waterGoal()));
+  /** The person's units: imperial shows water in fluid ounces. */
+  protected readonly waterUnit = this.waterLog.unit;
+  protected readonly hydration = computed(() => toHydration(this.todayWater(), this.waterGoal(), this.waterUnit()));
+  /** Steps a day: the person's goal (Settings), else 10,000. Loaded with the water goal. */
+  protected readonly stepGoal = this.goals.stepGoal;
+  /** Steps are counted by the phone (Health Connect): the steps sheet says so. */
+  protected readonly stepsFromPhone = computed(() => this.health.state() === 'connected');
   protected readonly waterOpen = signal(false);
 
   protected readonly weekly = computed(() => {
@@ -190,6 +199,7 @@ export class HomePage {
       nutrition: week?.week ?? null,
       targets: week?.targets ?? null,
       today: this.todayIso(),
+      stepGoal: this.stepGoal(),
     });
   });
 
@@ -209,7 +219,7 @@ export class HomePage {
     }
     const history = this.history.hasValue() ? this.history.value() : null;
     const finishedToday = (history?.week[weekdayIndexOf(this.clock())]?.workouts ?? 0) > 0;
-    return toHomeDay({ workout, finishedToday, steps: this.todaySteps(), recovery: this.todayRecovery() });
+    return toHomeDay({ workout, finishedToday, steps: this.todaySteps(), recovery: this.todayRecovery(), stepGoal: this.stepGoal() });
   });
 
   protected readonly stepsOpen = signal(false);
@@ -232,7 +242,7 @@ export class HomePage {
   });
 
   protected readonly macroRings = computed(() => (this.nutrition.hasValue() ? toMacroRings(this.nutrition.value()) : null));
-  protected readonly focus = computed(() => toFocus(this.nutrition.hasValue() ? this.nutrition.value() : null));
+  protected readonly focus = computed(() => toFocus(this.nutrition.hasValue() ? this.nutrition.value() : null, this.stepGoal()));
 
   protected readonly starting = signal(false);
   protected readonly startMessage = signal('');
@@ -265,6 +275,8 @@ export class HomePage {
   }
 
   private reloadAll(): void {
+    // Steps counted by the phone first, so the day's ring is current when it is read.
+    void this.health.sync();
     this.identity.reload();
     this.streak.reload();
     this.plan.reload();
@@ -425,7 +437,7 @@ export class HomePage {
 
   /** "+" on the hydration card: one glass more. */
   protected addGlass(): void {
-    void this.saveWater(() => this.waterLog.add(this.todayIso(), WATER_GLASS_ML));
+    void this.saveWater(() => this.waterLog.add(this.todayIso(), this.waterLog.glassMl()));
   }
 
   protected openWater(): void {

@@ -807,18 +807,19 @@ the weight ruler.
 
 ## Assessment
 
-`/assessment` (`features/assessment`): one result, four views, chosen by the `view` query
-parameter on the same route (`?view=macros|why|next`; none is Results). The page and its loaded
-result stay put while browser Back, the in-page Back and Android back move between views.
+`/assessment` (`features/assessment`): the whole result on one immersive (dark) screen, with no steps between.
 
-| View | Theme | Content |
-|---|---|---|
-| Results | immersive (dark) | Confidence chip, calorie target (maintenance underneath), three macro tiles, goal focus, weight / height / activity. |
-| Macro breakdown | dashboard (warm light) | SVG donut of each macro's calories (labelled in words for screen readers; slices separated by gaps), rows with grams, % of calories and kcal, and how the split serves the goal. |
-| Why these numbers? | immersive (dark) | The engine's steps (`explanation`): resting energy, activity factor, maintenance (and a Calorie Check-in figure when one is in use), goal adjustment, then the target, emphasised. Estimate confidence and a collapsible *Factors we consider*. |
-| Next steps | dashboard | Workout plan, Nutrition, Progress (each marks the assessment reviewed, which the tab shell requires) and Adjust anytime (Profile editor); **Go to home**, *View assessment again*. |
+| Section | Content |
+|---|---|
+| Header | Confidence chip, title and intro. |
+| Calorie target | The target (maintenance underneath) and any notice. |
+| Macros | Three macro tiles (grams and % of calories) and how the split serves the goal. |
+| Goal and facts | Goal focus; weight / height / activity. |
+| Why these numbers? | Folded away until opened: the engine's steps (`explanation`), the target emphasised, estimate confidence and a collapsible *Factors we consider*. |
 
-Macro colours reuse theme fills: protein `--color-primary-strong`, carbohydrates `--color-primary`,
+Footer: **Go to your dashboard** (marks the assessment reviewed, which the tab shell requires) and *Review my details* (Profile editor; saving there brings the person back to a fresh assessment). When the numbers need a second look the footer is *Review my details* then *Continue for now*.
+
+Macro colours (tiles) reuse theme fills: protein `--color-primary-strong`, carbohydrates `--color-primary`,
 fat `--color-warning`; a macro is always named and valued next to its colour. Values come only from
 `FitnessAssessment` through `toAssessmentViewModel`; the only arithmetic in the view model is the
 goal adjustment in kcal (target minus maintenance, both engine values) and each macro's calories

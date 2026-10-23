@@ -37,6 +37,7 @@ npx serve website            # then open http://localhost:3000  (clean URLs: /te
   - Fitness data is encrypted on the phone and uploaded only with the opt-in cloud backup (encrypted on the server; turning it off deletes it).
   - The server checks that backed-up profiles are 18+.
   - Push notifications go through Firebase Cloud Messaging.
+  - Steps are read from Android's Health Connect only if the person turns that on (read-only, Steps permission only).
   - Crash and error reports go to Sentry, without personal data.
   - The server runs on Google Cloud in europe-west1, the database is Neon, email is sent through Resend, InBody reports are read through OpenAI, and sign-in uses Google.
   - Account deletion is in the app, and `delete-account.html` describes it (Google Play links to that page).

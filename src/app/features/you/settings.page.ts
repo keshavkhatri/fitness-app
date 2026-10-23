@@ -9,12 +9,14 @@ import { OFFER_PATH } from '../../core/profile/onboarding.guards';
 import { UnitPreferenceService } from '../../core/profile/unit-preference.service';
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
 import { UnitSystem } from '../../domain/fitness-profile';
-import { FitnessChipComponent, SegmentOption, SegmentedControlComponent } from '../../shared/ui';
+import { SegmentOption, SegmentedControlComponent } from '../../shared/ui';
 import { PromoCodeSheetComponent } from '../offer/components/promo-code-sheet.component';
 import { RestoreSheetComponent } from '../offer/components/restore-sheet.component';
 import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
 import { AccountCardComponent } from './account-card.component';
 import { CloudBackupComponent } from './cloud-backup.component';
+import { DailyGoalsComponent } from './daily-goals.component';
+import { HealthStepsCardComponent } from './health-steps-card.component';
 import { PlanStatusComponent } from './plan-status.component';
 import { DELETE_ACCOUNT_PATH } from './delete-account.page';
 
@@ -24,15 +26,13 @@ const THEME_OPTIONS: readonly SegmentOption<ThemePreference>[] = [
   { value: 'dark', label: 'Dark' },
 ];
 
-/** Settings that exist in the product plan but are not built yet. */
-const UPCOMING_SETTINGS: readonly string[] = ['Connected health apps'];
-
 export const SETTINGS_PATH = '/you/settings';
 
 /**
- * Every app setting in one place (from You): your account, appearance, units, your plan (with Restore purchases and, for
+ * Every app setting in one place (from You): your account, cloud backup, appearance, units, daily goals, step counting
+ * (Health Connect), your plan (with Restore purchases and, for
  * private testers, the promo code), reminders, privacy (the policy, terms and support on stokeform.com, and deleting
- * the account or erasing this phone's data), and what is coming.
+ * the account or erasing this phone's data).
  */
 @Component({
   selector: 'app-settings',
@@ -70,6 +70,10 @@ export const SETTINGS_PATH = '/you/settings';
             }
           </section>
         }
+
+        <app-daily-goals />
+
+        <app-health-steps-card />
 
         <section class="card" aria-labelledby="settings-plan">
           <h2 class="setting-title" id="settings-plan">Your plan</h2>
@@ -125,18 +129,6 @@ export const SETTINGS_PATH = '/you/settings';
                 ><ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
               </button>
             </li>
-          </ul>
-        </section>
-
-        <section class="card" aria-labelledby="settings-upcoming">
-          <h2 class="setting-title" id="settings-upcoming">Coming soon</h2>
-          <ul class="rows">
-            @for (setting of upcomingSettings; track setting) {
-              <li class="upcoming">
-                <span>{{ setting }}</span>
-                <fit-chip>Coming soon</fit-chip>
-              </li>
-            }
           </ul>
         </section>
       </main>
@@ -248,14 +240,6 @@ export const SETTINGS_PATH = '/you/settings';
     .row.danger {
       color: var(--color-danger-text);
     }
-
-    .upcoming {
-      @include fx.text(body-sm);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: var(--tap-target-min);
-    }
   `,
   host: { class: 'fit-theme-dashboard' },
   imports: [
@@ -264,7 +248,8 @@ export const SETTINGS_PATH = '/you/settings';
     IonIcon,
     AccountCardComponent,
     CloudBackupComponent,
-    FitnessChipComponent,
+    DailyGoalsComponent,
+    HealthStepsCardComponent,
     PlanStatusComponent,
     PromoCodeSheetComponent,
     RestoreSheetComponent,
@@ -277,7 +262,6 @@ export class SettingsPage {
   protected readonly testing = inject(PrivateTestingService);
   protected readonly themeOptions = THEME_OPTIONS;
   protected readonly unitOptions = UNIT_SYSTEM_OPTIONS;
-  protected readonly upcomingSettings = UPCOMING_SETTINGS;
 
   private readonly nav = inject(NavController);
   private readonly openExternal = inject(OPEN_EXTERNAL);

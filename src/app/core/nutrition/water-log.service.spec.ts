@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { KeyValueStorage } from '../storage/key-value-storage';
 import { MemoryKeyValueStorage } from '../storage/testing/memory-key-value-storage';
 import { CLOCK } from '../time/clock';
+import { PROFILE } from '../../features/workout/testing/workout-fixtures';
 import { WaterLogService } from './water-log.service';
 
 const KEY = 'fitness.water-log';
@@ -58,5 +59,25 @@ describe('WaterLogService', () => {
 
   it('the goal comes from the latest weigh-in, else the profile, else 3 L', async () => {
     expect(await setup().water.goalMl()).toBe(3_000);
+  });
+
+  it('the person’s own goal replaces the suggestion', async () => {
+    const storage = new MemoryKeyValueStorage();
+    storage.values.set('fitness.daily-goals', JSON.stringify({ version: 1, goals: { steps: null, waterMl: 2_250 } }));
+    expect(await setup(storage).water.goalMl()).toBe(2_250);
+  });
+
+  it('follows the profile’s units: metric glasses of 250 ml, imperial glasses of 8 fl oz (and a suggested goal in whole glasses)', async () => {
+    const metric = setup();
+    expect(metric.water.unit()).toBe('metric');
+    expect(metric.water.glassMl()).toBe(250);
+    TestBed.resetTestingModule();
+    const storage = new MemoryKeyValueStorage();
+    storage.values.set('fitness.profile', JSON.stringify({ version: 2, profile: { ...PROFILE, unitSystem: 'imperial' } }));
+    const imperial = setup(storage);
+    const goal = await imperial.water.goalMl();
+    expect(imperial.water.unit()).toBe('imperial');
+    expect(imperial.water.glassMl()).toBe(237);
+    expect(goal % 237).toBe(0);
   });
 });
