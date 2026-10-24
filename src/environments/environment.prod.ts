@@ -1,6 +1,6 @@
 // Bundled into the app and readable by anyone: public values only, never
 // API keys or other secrets.
-import { REVENUECAT_ANDROID_PUBLIC_KEY, REVENUECAT_PRO_ENTITLEMENT_ID } from './billing';
+import { PAID_PLANS_LIVE, REVENUECAT_ANDROID_PUBLIC_KEY, REVENUECAT_PRO_ENTITLEMENT_ID } from './billing';
 import { PRIVATE_TESTING_PROMO_CODE } from './private-testing';
 
 export const environment = {
@@ -14,6 +14,8 @@ export const environment = {
    * StokeForm guide image (assets/exercise-art), so nothing is loaded from another server.
    */
   exerciseMediaBaseUrl: null as string | null,
+  /** Pro is sold (billing.ts). Off: everything is free, Pro features included. */
+  paidPlans: PAID_PLANS_LIVE as boolean,
   /** RevenueCat subscriptions (Android). The key is shared by every environment: see billing.ts. */
   revenueCat: { androidApiKey: REVENUECAT_ANDROID_PUBLIC_KEY, entitlementId: REVENUECAT_PRO_ENTITLEMENT_ID } as {
     androidApiKey: string | null;

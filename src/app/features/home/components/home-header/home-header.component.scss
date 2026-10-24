@@ -90,6 +90,18 @@
   font-size: 0.8em;
 }
 
+// The last word and the wave wrap as one.
+.keep {
+  white-space: nowrap;
+}
+
+// 320px phones: one size down, so "afternoon 👋" fits beside the streak.
+@media (max-width: 359px) {
+  .name {
+    @include fx.text(h1, bold);
+  }
+}
+
 .streak {
   @include fx.button-reset;
   @include fx.focus-ring;

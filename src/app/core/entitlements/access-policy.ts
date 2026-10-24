@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { Plan } from './entitlement.service';
 
 /**
@@ -26,7 +27,7 @@ export type FeatureId =
   | 'weekly-review'
   | 'reminders'
   | 'account'
-  // Built, Premium. Billing isn't integrated, so nobody is Premium yet (docs/access-model.md).
+  // Built, Premium. Open to everyone while `paidPlans` is off (the free-only launch).
   | 'custom-workout-plan'
   // Not built: Premium candidates.
   | 'cloud-backup'
@@ -71,10 +72,13 @@ export function featureRule(id: FeatureId): FeatureRule {
   return rule;
 }
 
-/** Whether this plan may use the feature now. A feature that isn't built is never accessible. */
+/**
+ * Whether this plan may use the feature now. A feature that isn't built is never accessible. While Pro isn't sold
+ * (`paidPlans` off, the free-only launch) every built feature is open to everyone.
+ */
 export function canAccess(id: FeatureId, plan: Plan): boolean {
   const rule = featureRule(id);
-  return rule.available && (rule.tier === 'free' || plan === 'premium');
+  return rule.available && (rule.tier === 'free' || plan === 'premium' || !environment.paidPlans);
 }
 
 export const FREE_FEATURES = FEATURE_MATRIX.filter((r) => r.tier === 'free' && r.available);

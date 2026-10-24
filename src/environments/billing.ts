@@ -11,5 +11,11 @@
  */
 export const REVENUECAT_ANDROID_PUBLIC_KEY: string | null = null;
 
+/**
+ * Whether Pro is sold. false for the free-only launch: every built feature, Pro ones included, is open to everyone
+ * and the plan screen only says StokeForm is free. Turn on with subscriptions (docs/billing-launch-plan.md).
+ */
+export const PAID_PLANS_LIVE = false;
+
 /** The RevenueCat entitlement that unlocks Pro (the identifier given to it in the RevenueCat dashboard). */
 export const REVENUECAT_PRO_ENTITLEMENT_ID = 'pro';

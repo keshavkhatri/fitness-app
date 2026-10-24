@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
 import { IonIcon } from '@ionic/angular';
 
+import { environment } from '../../../../environments/environment';
 import { PlanIntent, PlanIntentService } from '../../../core/workout/plan-intent.service';
 import { WorkoutPlanService, WorkoutPlanState } from '../../../core/workout/workout-plan.service';
 import { STEP_HEADING_ID } from './onboarding-step-form';
@@ -75,7 +76,7 @@ const CONFETTI: readonly (readonly [number, number, number, 0 | 1 | 2])[] = [
             (click)="choose('custom')"
           >
             <ion-icon [name]="intent() === 'custom' ? 'checkmark-circle' : 'ellipse-outline'" aria-hidden="true" />
-            <span class="item"><strong>Build my own <span class="badge">Pro</span></strong> Choose your own exercises and edit your plan any time.</span>
+            <span class="item"><strong>Build my own @if (paidPlans) {<span class="badge">Pro</span>}</strong> Choose your own exercises and edit your plan any time.</span>
           </button>
         </div>
         @if (intent() === 'custom') {
@@ -120,6 +121,8 @@ export class FinishStepComponent {
     void this.intents.set(intent);
   }
 
+  /** The Pro badge only while Pro is sold (the free-only launch has none). */
+  protected readonly paidPlans = environment.paidPlans;
   protected readonly headingId = STEP_HEADING_ID;
   protected readonly confetti = CONFETTI;
 

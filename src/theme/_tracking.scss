@@ -21,6 +21,16 @@
     @include fx.text(h1, bold);
     flex: 1;
     min-width: 0;
+    // A long word ("composition") between Back and Add breaks with a hyphen, never mid-word without one.
+    overflow-wrap: normal;
+    hyphens: auto;
+  }
+
+  // 320px phones: a smaller title, so "Body composition" fits beside Back and Add.
+  @media (max-width: 359px) {
+    .heading {
+      @include fx.text(h2, bold);
+    }
   }
 
   .back {

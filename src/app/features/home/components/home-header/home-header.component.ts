@@ -29,12 +29,11 @@ import { FitnessAvatarComponent } from '../../../../shared/ui';
 
     <div class="greeting-row">
       <h1 class="greeting">
-        @if (name(); as n) {
+        @if (name()) {
           <span class="hello">{{ greeting() }},</span>
-          <span class="name">{{ n }}&nbsp;<span class="wave" aria-hidden="true">👋</span></span>
-        } @else {
-          <span class="name">{{ greeting() }}&nbsp;<span class="wave" aria-hidden="true">👋</span></span>
         }
+        @let line = waveLine();
+        <span class="name">{{ line.lead }}<span class="keep">{{ line.last }}&nbsp;<span class="wave" aria-hidden="true">👋</span></span></span>
       </h1>
       @if (streak(); as days) {
         <button type="button" class="streak" data-testid="home-streak" [attr.aria-label]="days + ' day streak: see your streak'" (click)="openStreak.emit()">
@@ -66,6 +65,15 @@ export class HomeHeaderComponent {
   readonly openStreak = output<void>();
 
   protected readonly brand = APP_BRAND;
+  /**
+   * The big line (the name, else the greeting) split before its last word: that word and the wave stay together on
+   * a narrow phone, so the wave never sits on a line of its own.
+   */
+  protected readonly waveLine = computed(() => {
+    const text = (this.name() || this.greeting()).trim();
+    const cut = text.lastIndexOf(' ') + 1;
+    return { lead: text.slice(0, cut), last: text.slice(cut) };
+  });
   protected readonly bellLabel = computed(() => {
     const n = this.unread();
     return n > 0 ? `Notifications, ${n} unread` : 'Notifications';

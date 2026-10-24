@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, UrlTree, provideRouter } from '@angular/router';
 
+import { environment } from '../../../environments/environment';
 import { routes } from '../../app.routes';
 import { UserFitnessProfile } from '../../domain/fitness-profile';
 import { FitnessProfileService } from '../profile/fitness-profile.service';
@@ -122,6 +123,17 @@ describe('access policy (feature matrix)', () => {
     expect(FEATURE_MATRIX.find((r) => r.id === 'custom-workout-plan')).toMatchObject({ tier: 'premium', available: true });
     expect(canAccess('custom-workout-plan', 'free')).toBe(false);
     expect(canAccess('custom-workout-plan', 'premium')).toBe(true);
+  });
+
+  it('free launch (Pro not sold): every built feature is open to Free, and unbuilt ones stay closed', () => {
+    const env = environment as { paidPlans: boolean };
+    env.paidPlans = false;
+    try {
+      expect(canAccess('custom-workout-plan', 'free')).toBe(true);
+      expect(canAccess('cloud-backup', 'free')).toBe(false);
+    } finally {
+      env.paidPlans = true;
+    }
   });
 
   it('the other Premium candidates are not built, so nobody can use them yet, Premium included', () => {

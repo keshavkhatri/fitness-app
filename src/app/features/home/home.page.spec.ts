@@ -171,6 +171,14 @@ describe('HomePage', () => {
       expect(parts((await render({ profile: null })).el.querySelector('h1'))).toBe('Welcome 👋');
     });
 
+    it('the last word and the wave wrap together, so the wave is never alone on a line', async () => {
+      const { el } = await render({ name: 'Keshav Khatri' });
+      const keep = el.querySelector('h1 .keep')!;
+      expect(clean(keep)).toBe('Khatri 👋');
+      expect(getComputedStyle(keep).whiteSpace).toBe('nowrap');
+      expect(clean(el.querySelector('h1 .name'))).toBe('Keshav Khatri 👋');
+    });
+
     it('the avatar opens You; it shows the name’s initial without a photo', async () => {
       const { el, fixture, navigateByUrl } = await render({ name: 'Alex Morgan' });
       const avatar = el.querySelector<HTMLButtonElement>('[data-testid=home-profile]')!;

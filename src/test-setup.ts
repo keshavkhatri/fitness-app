@@ -1,4 +1,5 @@
 import { registerAppIcons } from './app/core/icons/register-icons';
+import { environment } from './environments/environment';
 
 // Polyfills for running unit tests under jsdom (the default Vitest environment).
 // Ionic components such as ion-menu and ion-split-pane query `window.matchMedia`,
@@ -16,6 +17,10 @@ if (!window.matchMedia) {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// Specs cover the paid tiers: Pro is sold (the live app launches free, environments/billing.ts). A spec that
+// checks the free launch turns it off itself and back on afterwards.
+(environment as { paidPlans: boolean }).paidPlans = true;
 
 // Mirror the app initializer so <ion-icon> resolves names instead of trying
 // to fetch SVGs (which jsdom cannot do) and flooding output with warnings.

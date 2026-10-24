@@ -2,22 +2,17 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject
 import { IonBackButton, IonContent, IonIcon, NavController } from '@ionic/angular';
 
 import { AuthService } from '../../core/auth/auth.service';
-import { PrivateTestingService } from '../../core/entitlements/private-testing/private-testing.service';
 import { CONTACT_URL, OPEN_EXTERNAL, PRIVACY_URL, TERMS_URL } from '../../core/legal/legal-links';
 import { FitnessProfileService } from '../../core/profile/fitness-profile.service';
-import { OFFER_PATH } from '../../core/profile/onboarding.guards';
 import { UnitPreferenceService } from '../../core/profile/unit-preference.service';
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
 import { UnitSystem } from '../../domain/fitness-profile';
 import { SegmentOption, SegmentedControlComponent } from '../../shared/ui';
-import { PromoCodeSheetComponent } from '../offer/components/promo-code-sheet.component';
-import { RestoreSheetComponent } from '../offer/components/restore-sheet.component';
 import { UNIT_SYSTEM_OPTIONS } from '../onboarding/onboarding-content';
 import { AccountCardComponent } from './account-card.component';
 import { CloudBackupComponent } from './cloud-backup.component';
 import { DailyGoalsComponent } from './daily-goals.component';
 import { HealthStepsCardComponent } from './health-steps-card.component';
-import { PlanStatusComponent } from './plan-status.component';
 import { DELETE_ACCOUNT_PATH } from './delete-account.page';
 
 const THEME_OPTIONS: readonly SegmentOption<ThemePreference>[] = [
@@ -30,8 +25,7 @@ export const SETTINGS_PATH = '/you/settings';
 
 /**
  * Every app setting in one place (from You): your account, cloud backup, appearance, units, daily goals, step counting
- * (Health Connect), your plan (with Restore purchases and, for
- * private testers, the promo code), reminders, privacy (the policy, terms and support on stokeform.com, and deleting
+ * (Health Connect), reminders, privacy (the policy, terms and support on stokeform.com, and deleting
  * the account or erasing this phone's data).
  */
 @Component({
@@ -75,25 +69,6 @@ export const SETTINGS_PATH = '/you/settings';
 
         <app-health-steps-card />
 
-        <section class="card" aria-labelledby="settings-plan">
-          <h2 class="setting-title" id="settings-plan">Your plan</h2>
-          <app-plan-status (openPlans)="openPlans()" />
-          <ul class="rows">
-            @if (testing.available && !testing.active()) {
-              <li>
-                <button type="button" class="row" data-testid="settings-promo" (click)="promoOpen.set(true)">
-                  <ion-icon name="gift-outline" aria-hidden="true" /><span>Enter promo code</span><ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
-                </button>
-              </li>
-            }
-            <li>
-              <button type="button" class="row" data-testid="settings-restore" (click)="restoreOpen.set(true)">
-                <ion-icon name="sync-outline" aria-hidden="true" /><span>Restore purchases</span><ion-icon class="chevron" name="chevron-forward" aria-hidden="true" />
-              </button>
-            </li>
-          </ul>
-        </section>
-
         <section class="card" aria-labelledby="settings-notifications">
           <h2 class="setting-title" id="settings-notifications">Notifications</h2>
           <ul class="rows">
@@ -134,10 +109,6 @@ export const SETTINGS_PATH = '/you/settings';
       </main>
     </ion-content>
 
-    @if (testing.available) {
-      <app-promo-code-sheet [(open)]="promoOpen" />
-    }
-    <app-restore-sheet [(open)]="restoreOpen" />
   `,
   styles: `
     @use 'mixins' as fx;
@@ -250,16 +221,12 @@ export const SETTINGS_PATH = '/you/settings';
     CloudBackupComponent,
     DailyGoalsComponent,
     HealthStepsCardComponent,
-    PlanStatusComponent,
-    PromoCodeSheetComponent,
-    RestoreSheetComponent,
     SegmentedControlComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsPage {
   protected readonly theme = inject(ThemeService);
-  protected readonly testing = inject(PrivateTestingService);
   protected readonly themeOptions = THEME_OPTIONS;
   protected readonly unitOptions = UNIT_SYSTEM_OPTIONS;
 
@@ -292,8 +259,6 @@ export class SettingsPage {
   /** The profile's display units (follows edits made elsewhere); null until read and without a profile. */
   protected readonly unitSystem = linkedSignal<UnitSystem | null>(() => this.profiles.profile()?.unitSystem ?? null);
   protected readonly unitsError = signal(false);
-  protected readonly promoOpen = signal(false);
-  protected readonly restoreOpen = signal(false);
 
   constructor() {
     void this.profiles.load();
@@ -311,10 +276,5 @@ export class SettingsPage {
       this.unitSystem.set(previous);
       this.unitsError.set(true);
     }
-  }
-
-  /** The plan screen; choosing there comes back here. */
-  protected openPlans(): void {
-    void this.nav.navigateForward(OFFER_PATH, { queryParams: { next: SETTINGS_PATH } });
   }
 }

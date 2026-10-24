@@ -1,5 +1,7 @@
 # Pro subscriptions (RevenueCat) and private testing
 
+> **Free-only launch:** Pro is not sold yet. `PAID_PLANS_LIVE = false` (`src/environments/billing.ts`) opens every built feature to everyone, `/offer` only says StokeForm is free, and Settings has no plan, promo or restore rows. The steps to turn Pro on are in `docs/billing-launch-plan.md`.
+
 StokeForm's paid tier is **Pro**. It is sold on Android through Google Play Billing, managed by **RevenueCat**. Inside the code the paid tier is still called `premium` (`Plan`, `FEATURE_MATRIX` tier, route names): only what people read says Pro.
 
 What exists today: the app side of the integration, complete and tested. What does not exist until you set it up: a RevenueCat project, Google Play products and a public SDK key. Until a key is in `src/environments/billing.ts` the app behaves exactly as before: `NO_BILLING`, nobody can buy, `/offer` says Pro "isn't set up in this version of the app".

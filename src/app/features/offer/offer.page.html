@@ -1,228 +1,31 @@
-<ion-content [class.dark]="view() === 'success'">
-  @switch (view()) {
-    @case ('success') {
-      <app-promo-success (turnOff)="stopTestAccess()" />
-    }
-    @case ('pro') {
-      <header class="hero" role="banner">
-        <img class="hero-photo" src="assets/images/onboarding/offer-hero.webp" alt="" aria-hidden="true" decoding="async" />
-        <span class="hero-scrim" aria-hidden="true"></span>
-        <div class="hero-bar">
-          <button type="button" class="icon-button" aria-label="Back to plans" data-testid="offer-pro-back" (click)="view.set('plans')">
-            <ion-icon name="chevron-back" aria-hidden="true" />
-          </button>
-          <app-offer-brand />
-          <span class="icon-spacer" aria-hidden="true"></span>
-        </div>
-        <h1 class="title" data-testid="offer-title">{{ copy.goPro.title }}</h1>
-        <p class="lead">{{ copy.goPro.lead }}</p>
-      </header>
+<ion-content>
+  <header class="hero" role="banner">
+    <img class="hero-photo" src="assets/images/onboarding/offer-hero.webp" alt="" aria-hidden="true" decoding="async" />
+    <span class="hero-scrim" aria-hidden="true"></span>
+    <app-offer-brand />
+    <h1 class="title" data-testid="offer-title">{{ copy.title }}</h1>
+    <p class="lead">{{ copy.lead }}</p>
+  </header>
 
-      <main class="body">
-        <ul class="features" data-testid="offer-pro-features">
-          @for (feature of copy.goPro.features; track feature.title) {
-            <li class="feature">
-              <span class="feature-icon" aria-hidden="true"><ion-icon [name]="feature.icon" /></span>
-              <span>
-                <span class="feature-title">{{ feature.title }}</span>
-                <span class="feature-text">{{ feature.text }}</span>
-              </span>
-            </li>
-          }
-        </ul>
-
-        <section class="price-card" aria-labelledby="offer-premium" data-testid="offer-premium">
-          <h2 class="price-name" id="offer-premium">{{ copy.pro }}</h2>
-          @if (billing.isLoading()) {
-            <fit-skeleton height="48px" radius="md" />
-          } @else {
-            @for (product of shownProducts(); track product.id) {
-              <div class="product" [attr.data-testid]="'offer-product-' + product.id">
-                <p class="price">
-                  <strong>{{ product.price }}</strong>@if (product.period) {
-                    &ngsp;<span class="period">/ {{ product.period }}</span>
-                  }
-                </p>
-                <p class="terms">
-                  @if (product.trial; as trial) {
-                    Free for {{ trial.length }}, then {{ trial.renewalPrice }}. {{ trial.cancellationTerms }}
-                  } @else {
-                    {{ copy.goPro.cancelAnytime }}
-                  }
-                </p>
-                <button
-                  fit-button
-                  type="button"
-                  block
-                  [loading]="entitlements.purchase().status === 'pending'"
-                  [disabled]="entitlements.purchase().status === 'pending' || leaving() || hasPro()"
-                  (click)="subscribe(product)"
-                  [attr.data-testid]="'offer-buy-' + product.id"
-                >
-                  {{ product.trial ? 'Start ' + product.trial.length + ' free trial' : copy.goPro.subscribe }}
-                </button>
-              </div>
-            }
-            @if (previewNotice()) {
-              <p class="terms" role="status" data-testid="offer-premium-unavailable">{{ copy.goPro.notLive }}</p>
-            }
-            @if (unavailableReason() === 'store-error') {
-              <p class="terms" role="alert" data-testid="offer-store-error">We couldn't load the subscription options. Check your connection and try again.</p>
-              <button fit-button type="button" variant="outline" block icon="refresh-outline" data-testid="offer-retry" (click)="retry()">Try again</button>
-            }
-          }
-
-          @switch (entitlements.purchase().status) {
-            @case ('pending') {
-              <p class="terms" role="status" data-testid="offer-purchase-pending">Waiting for the store to confirm. You stay on Free until it does.</p>
-            }
-            @case ('cancelled') {
-              <p class="terms" role="status" data-testid="offer-purchase-cancelled">No purchase was made. You're on Free.</p>
-            }
-            @case ('failed') {
-              <p class="terms" role="alert" data-testid="offer-purchase-failed">The purchase didn't go through, so nothing was charged and you're on Free. Try again later.</p>
-            }
-          }
-        </section>
-
-        <button type="button" class="link" data-testid="offer-restore" (click)="restoreOpen.set(true)">
-          <ion-icon name="refresh-outline" aria-hidden="true" />{{ copy.goPro.restore }}
-        </button>
-      </main>
-    }
-    @default {
-      <header class="hero" role="banner">
-        <img class="hero-photo" src="assets/images/onboarding/offer-hero.webp" alt="" aria-hidden="true" decoding="async" />
-        <span class="hero-scrim" aria-hidden="true"></span>
-        <app-offer-brand />
-        <h1 class="title" data-testid="offer-title">{{ copy.title }}</h1>
-        <p class="lead">{{ copy.lead }}</p>
-        @if (subscribed() || testActive()) {
-          <span class="status-pill" data-testid="offer-hero-status">
-            <ion-icon name="checkmark-circle" aria-hidden="true" />{{ subscribed() ? 'Pro active' : 'Pro test access' }}
+  <main class="body">
+    <ul class="features" aria-label="What's included" data-testid="offer-features">
+      @for (feature of copy.features; track feature.title) {
+        <li class="feature">
+          <span class="feature-icon" aria-hidden="true"><ion-icon [name]="feature.icon" /></span>
+          <span>
+            <span class="feature-title">{{ feature.title }}</span>
+            <span class="feature-text">{{ feature.text }}</span>
           </span>
-        }
-      </header>
-
-      <main class="body plans">
-        <section class="plan-card" aria-label="Choose a plan">
-        <div class="tabs" role="radiogroup" aria-label="Choose a plan" data-testid="offer-tabs">
-          <button type="button" class="tab" role="radio" [attr.aria-checked]="choice() === 'free'" data-testid="offer-tab-free" (click)="choice.set('free')">
-            {{ copy.free }}
-          </button>
-          <button type="button" class="tab pro" role="radio" [attr.aria-checked]="choice() === 'pro'" data-testid="offer-tab-pro" (click)="choice.set('pro')">
-            <span class="popular">{{ copy.mostPopular }}</span>
-            {{ copy.pro }}
-          </button>
-        </div>
-
-        <section class="compare" aria-label="What each plan includes" data-testid="offer-compare">
-          <div class="column" data-testid="offer-free">
-            <h2 class="column-title">{{ copy.free }}</h2>
-            <ul>
-              @for (item of copy.freeList; track item) {
-                <li><ion-icon name="checkmark" aria-hidden="true" />{{ item }}</li>
-              }
-            </ul>
-          </div>
-          <div class="column pro">
-            <h2 class="column-title">{{ copy.pro }}</h2>
-            <ul>
-              @for (item of copy.proList; track item) {
-                <li><ion-icon name="checkmark" aria-hidden="true" />{{ item }}</li>
-              }
-            </ul>
-          </div>
-        </section>
-        </section>
-
-        @if (subscribed()) {
-          <fit-notice tone="info" [headingLevel]="2" title="You have Pro" data-testid="offer-premium-active">
-            Your subscription is confirmed by the store.
-          </fit-notice>
-        }
-        @if (testActive()) {
-          <fit-notice tone="warning" [headingLevel]="2" title="Test access is on" data-testid="offer-test-active">
-            You are using Pro with a private-testing code. This is not a subscription and nothing was charged.
-            <button fit-button type="button" variant="outline" block data-testid="offer-test-off" (click)="stopTestAccess()">Turn off test access</button>
-          </fit-notice>
-        }
-
-
-
-        @if (testing.available && !testActive()) {
-          <section class="promo" aria-labelledby="promo-title" data-testid="offer-promo">
-            <div class="promo-head">
-              <span class="promo-icon" aria-hidden="true"><ion-icon name="ticket-outline" /></span>
-              <div>
-                <h2 class="promo-title" id="promo-title">{{ copy.promo.title }}</h2>
-                <p class="promo-text">{{ copy.promo.text }}</p>
-              </div>
-            </div>
-            <form class="promo-form" (submit)="$event.preventDefault(); applyPromo()">
-              <label class="visually-hidden" for="offer-promo-input">Promo code</label>
-              <input
-                id="offer-promo-input"
-                class="promo-input"
-                type="text"
-                autocomplete="off"
-                maxlength="40"
-                [placeholder]="copy.promo.placeholder"
-                [value]="promoCode()"
-                [attr.aria-invalid]="promoProblem() ? 'true' : null"
-                [attr.aria-describedby]="promoProblem() ? 'offer-promo-error' : null"
-                data-testid="offer-promo-input"
-                (input)="promoCode.set($any($event.target).value); promoProblem.set(null)"
-              />
-              <button fit-button type="submit" [loading]="promoBusy()" [disabled]="promoBusy()" data-testid="offer-promo-apply">{{ copy.promo.apply }}</button>
-            </form>
-            @if (promoProblem(); as problem) {
-              <p class="promo-error" id="offer-promo-error" role="alert">{{ problem }}</p>
-            }
-          </section>
-        }
-      </main>
-    }
-  }
+        </li>
+      }
+    </ul>
+  </main>
 </ion-content>
 
-<ion-footer class="ion-no-border" [class.dark]="view() === 'success'">
+<ion-footer class="ion-no-border">
   <div class="footer">
-    @switch (view()) {
-      @case ('success') {
-        <button fit-button type="button" size="lg" block data-testid="offer-continue-free" (click)="continueFree()">{{ copy.success.continue }}</button>
-      }
-      @case ('pro') {
-        <button fit-button type="button" size="lg" block variant="outline" [loading]="leaving()" [disabled]="leaving()" data-testid="offer-continue-free" (click)="continueFree()">
-          {{ hasPro() ? copy.continue : copy.continueFree }}
-        </button>
-      }
-      @default {
-        @if (hasPro()) {
-          <button fit-button type="button" size="lg" block variant="ink" [loading]="leaving()" [disabled]="leaving()" data-testid="offer-continue-free" (click)="continueFree()">
-            {{ copy.continue }}
-          </button>
-        } @else {
-          @if (choice() === 'pro') {
-            <button fit-button type="button" size="lg" block variant="ink" data-testid="offer-continue-pro" (click)="showPro()">{{ copy.continuePro }}</button>
-          }
-          <button
-            fit-button
-            type="button"
-            size="lg"
-            block
-            [variant]="choice() === 'pro' ? 'ghost' : 'ink'"
-            [loading]="leaving()"
-            [disabled]="leaving()"
-            data-testid="offer-continue-free"
-            (click)="continueFree()"
-          >
-            {{ copy.continueFree }}
-          </button>
-        }
-      }
-    }
+    <button fit-button type="button" size="lg" block variant="ink" [loading]="leaving()" [disabled]="leaving()" data-testid="offer-continue-free" (click)="continueFree()">
+      {{ copy.continueFree }}
+    </button>
   </div>
 </ion-footer>
-
-<app-restore-sheet [(open)]="restoreOpen" />

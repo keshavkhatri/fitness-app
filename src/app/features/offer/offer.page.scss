@@ -1,15 +1,9 @@
 @use 'mixins' as fx;
 
-// Ink brand header, then the warm dashboard page (a dark page for the promo success). Works at 320 px.
+// Ink brand header, then the warm dashboard page. Works at 320 px.
 
 ion-content {
   --background: var(--color-bg);
-}
-
-ion-content.dark,
-ion-footer.dark .footer {
-  --background: var(--color-ink);
-  background: var(--color-ink);
 }
 
 .hero {
@@ -43,28 +37,6 @@ ion-footer.dark .footer {
   background: linear-gradient(90deg, rgba(10, 11, 10, 0.92) 30%, rgba(10, 11, 10, 0.35));
 }
 
-.hero-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.icon-button {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-  display: grid;
-  place-items: center;
-  width: var(--tap-target-min);
-  height: var(--tap-target-min);
-  margin-inline-start: calc(-1 * var(--space-3));
-  color: inherit;
-  font-size: 22px;
-}
-
-.icon-spacer {
-  width: var(--tap-target-min);
-}
-
 .title {
   @include fx.text(h1, bold);
   margin: var(--space-3) 0 0;
@@ -76,15 +48,6 @@ ion-footer.dark .footer {
   color: var(--color-on-ink-secondary);
 }
 
-.status-pill {
-  @include fx.text(caption, bold);
-  align-self: flex-start;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
 .body {
   display: flex;
   flex-direction: column;
@@ -94,95 +57,3 @@ ion-footer.dark .footer {
   padding: 0 var(--space-4) var(--space-6);
   position: relative;
 }
-
-// --- Plans: one card, its top edge the Free / Pro tabs --------------------------------------
-.body.plans {
-  margin-top: calc(-1 * var(--space-8));
-}
-
-.plan-card {
-  overflow: hidden;
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-hero);
-}
-
-.tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: #3b3f3a;
-}
-
-.tab {
-  @include fx.button-reset;
-  @include fx.focus-ring;
-  @include fx.text(h3, semibold);
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 56px;
-  padding-top: var(--space-2);
-  color: #fff;
-
-  &[aria-checked='true'] {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-  }
-}
-
-.popular {
-  @include fx.text(caption, bold);
-  position: absolute;
-  top: 4px;
-  left: 50%;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-ink);
-  color: var(--color-ink-accent);
-  font-size: 10px;
-  white-space: nowrap;
-  transform: translateX(-50%);
-}
-
-.tab.pro {
-  padding-top: var(--space-4);
-}
-
-.compare {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  padding: var(--space-4);
-
-  ul {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    margin: var(--space-2) 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  li {
-    @include fx.text(caption);
-    display: flex;
-    gap: var(--space-1);
-
-    ion-icon {
-      flex: none;
-      margin-top: 2px;
-      color: var(--color-primary-text);
-    }
-  }
-}
-
-.column + .column {
-  padding-inline-start: var(--space-3);
-  border-inline-start: var(--border-hairline) solid var(--color-border);
-}
-
-.column-title {
-  @include fx.text(body, bold);
-  margin: 0;
-}
-

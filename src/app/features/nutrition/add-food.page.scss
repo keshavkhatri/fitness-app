@@ -73,6 +73,13 @@ ion-content {
   --segment-selected-fg: var(--color-on-primary);
 }
 
+// Narrow phones: the four meals as an even two-by-two grid, not three in a row and Snacks stretched alone.
+@media (max-width: 374px) {
+  .meals {
+    --segment-flex: 1 1 40%;
+  }
+}
+
 // --- Search ----------------------------------------------------------------------------------
 .search {
   display: flex;

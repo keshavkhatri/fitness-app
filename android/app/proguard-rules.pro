@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Capacitor reads each plugin's permissions (the @CapacitorPlugin/@Permission annotations) by reflection. Without these
+# rules the release build loses them: permission checks come back empty and permission requests never answer, so
+# Health Connect and reminders can't be turned on.
+-keepattributes *Annotation*
+-keep class com.getcapacitor.annotation.** { *; }
+-keep class com.getcapacitor.PermissionState { *; }

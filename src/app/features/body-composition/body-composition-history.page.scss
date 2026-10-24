@@ -75,6 +75,8 @@
 .row-number {
   @include fx.tabular-numbers;
   font-weight: var(--font-weight-semibold);
+  // "35.4 kg" stays together; the metric name wraps instead.
+  white-space: nowrap;
 }
 
 .row-chevron {

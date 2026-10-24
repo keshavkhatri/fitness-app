@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { NavController, provideIonicAngular } from '@ionic/angular';
 
+import { environment } from '../../../../environments/environment';
 import { BILLING_PROVIDER } from '../../../core/entitlements/billing';
 import { PREMIUM_TEST_BILLING } from '../../../core/entitlements/testing/premium-billing';
 import { KeyValueStorage } from '../../../core/storage/key-value-storage';
@@ -54,6 +55,17 @@ describe('first-run plan presentation: generated plan or build my own', () => {
     expect(q('choice-build')!.textContent).toContain('Pro');
     expect(q('choice-build')!.textContent).not.toContain('Premium');
     expect(q('choice-build-note')).toBeNull();
+  });
+
+  it('while Pro is not sold (the free-only launch), "Build my own" has no Pro badge', async () => {
+    const env = environment as { paidPlans: boolean };
+    env.paidPlans = false;
+    try {
+      const { q } = await render(false);
+      expect(q('choice-build')!.textContent).not.toMatch(/Pro/);
+    } finally {
+      env.paidPlans = true;
+    }
   });
 
   for (const premium of [false, true]) {

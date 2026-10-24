@@ -128,8 +128,9 @@
   text-overflow: ellipsis;
 }
 
-// 375px phones (and smaller): the clock keeps only the time, the buttons tighten, so "Complete set" fits whole.
-@media (max-width: 399px) {
+// Most phones (up to 439px, e.g. a 411px Pixel): the clock keeps only the time and the buttons tighten, so
+// "Complete set" fits whole, even with an hour on the clock.
+@media (max-width: 439px) {
   .footer {
     gap: var(--space-2);
     padding-inline: 14px 10px;
@@ -161,9 +162,15 @@
   }
 }
 
-// 320px phones: no tick or clock icon.
+// 375px phones (and smaller): no clock icon either.
+@media (max-width: 399px) {
+  .clock-value ion-icon {
+    display: none;
+  }
+}
+
+// 320px phones: no tick.
 @media (max-width: 339px) {
-  .clock-value ion-icon,
   .main:not(.wide) .tick {
     display: none;
   }

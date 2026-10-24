@@ -78,81 +78,14 @@ describe('YouPage', () => {
     });
   });
 
-  it('Settings shows the plan (Free until the store confirms Premium) and opens the plan screen, returning to Settings', () => {
+  it('Settings has no plan, promo code or restore rows while StokeForm is free', () => {
     TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
-    const forward = vi.spyOn(TestBed.inject(NavController), 'navigateForward').mockResolvedValue(true);
     const fixture = TestBed.createComponent(SettingsPage);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
-    expect(clean(el.querySelector('[data-testid=plan-name]')!)).toBe('Free');
-    el.querySelector<HTMLElement>('[data-testid=plan-entry]')!.click();
-    expect(forward).toHaveBeenCalledExactlyOnceWith('/offer', { queryParams: { next: '/you/settings' } });
-  });
-
-  describe('Your plan row (in Settings)', () => {
-    const plan = (el: HTMLElement) => ({ name: clean(el.querySelector('[data-testid=plan-name]')!), hint: clean(el.querySelector('[data-testid=plan-hint]')!) });
-
-    it('Free, with billing not set up: says Pro cannot be bought yet', async () => {
-      TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
-      const fixture = TestBed.createComponent(SettingsPage);
-      fixture.detectChanges();
-      await TestBed.inject(EntitlementService).refresh();
-      fixture.detectChanges();
-      expect(plan(fixture.nativeElement)).toEqual({ name: 'Free', hint: "Pro isn't available to buy yet" });
-      expect(fixture.nativeElement.querySelector('[data-testid=plan-badge]')).toBeNull();
-    });
-
-    it('Free, with billing set up: says what Pro adds; while checking, says so', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideIonicAngular(), provideRouter([]), { provide: BILLING_PROVIDER, useValue: { ...NO_BILLING, id: 'fake' } }],
-      });
-      const fixture = TestBed.createComponent(SettingsPage);
-      fixture.detectChanges();
-      expect(plan(fixture.nativeElement).hint).toBe('Checking your plan…');
-      await TestBed.inject(EntitlementService).refresh();
-      fixture.detectChanges();
-      expect(plan(fixture.nativeElement)).toEqual({ name: 'Free', hint: 'See what Pro adds' });
-    });
-
-    it("couldn't check the subscription (offline): Free, and says so", async () => {
-      TestBed.configureTestingModule({
-        providers: [
-          provideIonicAngular(),
-          provideRouter([]),
-          { provide: BILLING_PROVIDER, useValue: { ...NO_BILLING, id: 'fake', activeSubscription: () => Promise.reject(new Error('offline')) } },
-        ],
-      });
-      const fixture = TestBed.createComponent(SettingsPage);
-      await TestBed.inject(EntitlementService).refresh();
-      fixture.detectChanges();
-      expect(plan(fixture.nativeElement)).toEqual({ name: 'Free', hint: "Couldn't check your subscription. Tap to try again." });
-    });
-
-    it('a confirmed subscription is Pro, confirmed by the store', async () => {
-      TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([]), { provide: BILLING_PROVIDER, useValue: PREMIUM_TEST_BILLING }] });
-      await TestBed.inject(EntitlementService).refresh();
-      const fixture = TestBed.createComponent(SettingsPage);
-      fixture.detectChanges();
-      expect(plan(fixture.nativeElement)).toEqual({ name: 'Pro', hint: 'Confirmed by the store' });
-    });
-
-    it('private-testing access is Pro but is labelled test access, not a subscription', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideIonicAngular(), provideRouter([]), { provide: PRIVATE_TESTING_CONFIG, useValue: { enabled: true, promoCode: 'STOKEFORMLAB' } }],
-      });
-      await TestBed.inject(PrivateTestingService).redeem('stokeformlab');
-      const fixture = TestBed.createComponent(SettingsPage);
-      fixture.detectChanges();
-      expect(plan(fixture.nativeElement)).toEqual({ name: 'Pro', hint: 'Test access, not a subscription' });
-      expect(clean(fixture.nativeElement.querySelector('[data-testid=plan-badge]'))).toBe('Test access');
-
-      // Turning it off here returns to the real state (Free), and never touches a subscription.
-      fixture.nativeElement.querySelector('[data-testid=plan-test-off]').click();
-      await vi.waitFor(() => expect(TestBed.inject(PrivateTestingService).active()).toBe(false));
-      fixture.detectChanges();
-      expect(plan(fixture.nativeElement).name).toBe('Free');
-      expect(fixture.nativeElement.querySelector('[data-testid=plan-test-off]')).toBeNull();
-    });
+    for (const id of ['plan-entry', 'settings-promo', 'settings-restore']) {
+      expect(el.querySelector(`[data-testid=${id}]`)).toBeNull();
+    }
   });
 
   it('You has no account or plan sections (they are in Settings); the gear and the Settings row open Settings', () => {

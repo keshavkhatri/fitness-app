@@ -48,6 +48,9 @@ ion-content {
   flex-direction: column;
   justify-content: flex-end;
   min-height: calc(var(--ion-safe-area-top, 0px) + clamp(260px, 78vw, 340px));
+  // Room for Back: on a narrow phone the text (wrapped chips, a two-line title) can be taller than the image,
+  // and would otherwise start under the button.
+  padding-top: calc(var(--ion-safe-area-top, 0px) + var(--space-2) + 44px + var(--space-3));
 }
 
 .hero-art {

@@ -16,6 +16,8 @@ export interface AppEnvironment {
   readonly apiBaseUrl: string | null;
   readonly inbodyExtractionEndpoint: string | null;
   readonly exerciseMediaBaseUrl: string | null;
+  /** Pro is sold. Omitted or false: every built feature is open to everyone (the free-only launch). */
+  readonly paidPlans?: boolean;
   readonly revenueCat?: RevenueCatEnvironment;
   readonly privateTesting?: PrivateTestingEnvironment;
   /** Sentry error reporting (core/monitoring): the project's DSN (public, not a secret); null turns reporting off. */
